@@ -1,0 +1,6 @@
+# Ignorer tous les fichiers utilisateurs sauf le .gitkeep
+users/*.json
+
+# Garder la structure
+!users/.gitkeep
+

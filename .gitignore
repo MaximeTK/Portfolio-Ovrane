@@ -1,0 +1,44 @@
+# Executables
+ngrok.exe
+
+# Dépendances
+node_modules/
+**/node_modules/
+
+# Builds & caches
+dist/
+build/
+out/
+.next/
+coverage/
+tmp/
+.cache/
+*.tsbuildinfo
+
+# Environnements & secrets
+.env
+.env.*
+*.env
+*.key
+*.pem
+*.pfx
+
+# Scripts locaux Windows
+*.bat
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Système & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*.code-workspace
+

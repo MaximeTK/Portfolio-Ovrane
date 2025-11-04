@@ -1,0 +1,35 @@
+{
+  "name": "venta-backend",
+  "version": "1.0.0",
+  "description": "Serveur backend pour le projet Venta avec IA et système RAG",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node test/test-server.js",
+    "test:memory": "node test/test-memory.js",
+    "test:profile": "node test/test-profile-system.js",
+    "test:rag": "node test/test-rag-system.js",
+    "check:rag": "node test/check-rag-setup.js",
+    "migrate": "node test/migrate-profiles.js",
+    "clean": "node test/clean-duplicates.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "fs": "^0.0.1-security",
+    "openai": "^4.67.3",
+    "path": "^0.12.7",
+    "vectra": "^0.11.1"
+  },
+  "keywords": [
+    "ai",
+    "rag",
+    "chat",
+    "backend"
+  ],
+  "author": "Venta Project",
+  "license": "MIT"
+}

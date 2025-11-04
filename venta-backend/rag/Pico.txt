@@ -1,0 +1,34 @@
+🌈 Le Projet Pico — Redonner une voix à ceux qui n’en ont pas
+
+Pico, c’est bien plus qu’une application : c’est une passerelle entre les mots et les émotions.
+Pensée pour tablettes et smartphones, elle permet aux personnes non verbales — enfants, patients, élèves ou adultes — de communiquer simplement grâce à des pictogrammes organisés sous forme de profils personnalisables.
+
+Chaque profil possède ses propres “decks” de pictos, son ordre d’affichage, ses thèmes visuels et même un pseudo pour garder une touche personnelle et humaine.
+
+🧩 L’idée
+
+Dans les hôpitaux, écoles, centres spécialisés ou cabinets de psychologues, les professionnels perdent un temps fou à tout reconfigurer à chaque appareil.
+Pico résout ça avec une synchronisation intelligente :
+
+Les données essentielles (profils, pictos, préférences) se sauvegardent en local, pour garantir la confidentialité.
+
+Mais les paramètres peuvent se partager entre appareils d’un même service via un système sécurisé — sans qu’aucune donnée sensible ne quitte l’environnement du professionnel.
+
+🛡️ La philosophie
+
+La santé et l’éducation sont des domaines où la confiance est sacrée.
+C’est pourquoi Pico ne collecte rien de personnel : aucune donnée médicale, aucune image privée, aucun suivi invisible.
+Tout est pensé pour être sécurisé, chiffré, et conforme au RGPD, avec un mode hors-ligne total pour fonctionner même sans Internet.
+
+⚙️ Pour qui ?
+
+👩‍⚕️ Les hôpitaux et orthophonistes : pour accompagner les patients sans les surcharger d’outils complexes.
+
+🧑‍🏫 Les écoles et instituts spécialisés : pour donner à chaque enfant sa propre manière d’exprimer ses besoins, ses envies, ou ses émotions.
+
+👨‍👩‍👧 Les familles et aidants : pour offrir un outil simple, accessible et chaleureux à la maison.
+
+💡 L’ambition
+
+Faire de Pico un outil universel, modulaire et humain, capable de s’adapter aussi bien à un grand hôpital qu’à une petite école de quartier.
+Un projet fait pour durer, évoluer, et surtout respecter la dignité de chaque utilisateur.

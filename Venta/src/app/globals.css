@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ===== Classes utilitaires pour les overlays et highlights ===== */
+
+/* Effet de highlight appliqué aux sections */
+.section-highlighted {
+  animation: highlight-pulse 2s ease-in-out;
+  position: relative;
+}
+
+.section-highlighted::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 3px solid rgba(125, 160, 255, 0.6);
+  border-radius: 16px;
+  pointer-events: none;
+  animation: highlight-glow 2s ease-in-out;
+}
+
+/* Animation de pulsation */
+@keyframes highlight-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Animation du glow */
+@keyframes highlight-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+
+/* Classe pour masquer visuellement mais garder accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ===== Styles pour fenêtres glassmorphisme ===== */
+
+.glass-morphisme {
+  max-width: 90vw;
+  max-height: 90vh;
+  position: fixed;
+  height: fit-content;
+  z-index: 50;
+}
+
+.glass-morphisme-background {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  pointer-events: none;
+}
+
+.glass-morphisme-background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.glass-morphisme-content {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+.glass-morphisme-titlebar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  position: relative;
+  user-select: none;
+}
+
+.glass-morphisme-titlebar-buttons {
+  position: absolute;
+  right: 18px;
+  display: flex;
+  gap: 8px;
+}
+
+.glass-morphisme-btn-window {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+  user-select: none;
+  font-size: 14px;
+}
+
+.glass-morphisme-btn-window:active {
+  transform: scale(0.97);
+}
+
+.glass-morphisme-content-area {
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glass-morphisme-content-area img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  padding: 0px 14px 14px 14px;
+}
+
+.glass-morphisme-content-area p {
+  padding: 18px;
+  margin: 0;
+  max-width: 65ch;
+  line-height: 1.6;
+}
+
+.glass-morphisme-content-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.glass-morphisme-content-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+}
+
+.glass-morphisme.minimized .glass-morphisme-content-area {
+  display: none;
+}
+
+.glass-morphisme.minimized {
+  height: fit-content;
+}
