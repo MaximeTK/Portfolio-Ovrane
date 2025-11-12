@@ -52,7 +52,7 @@ export function buildSystemPrompt(userProfile, userId, ragContext, ragCoverage) 
   const userInfo = `\n\n${formatUserInfo(userProfile.name, userProfile.visitCount)}`;
   
   let ragInstructions = getRagInstructions(ragCoverage);
-  
+
   return `${ragContext}${conversationHistory}${userInfo}${ragInstructions}${SYSTEM_PROMPTS.mainContext}`;
 }
 

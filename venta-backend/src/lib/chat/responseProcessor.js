@@ -138,11 +138,12 @@ export async function processResponse(response, userId, userProfile, prompt) {
     try {
       const ttsResult = await generateTTS(finalReply);
       if (ttsResult && !ttsResult.useClientTTS && ttsResult.buffer) {
+        const mimeType = ttsResult.mimeType || 'audio/mpeg';
         // Convertir l'audio en base64 pour l'inclure dans la réponse JSON
         ttsData = {
           audio: arrayBufferToBase64(ttsResult.buffer),
-          provider: ttsResult.provider,
-          format: 'audio/mpeg'
+          provider: ttsResult.provider || 'unknown',
+          format: mimeType
         };
       } else {
         // Fallback côté client

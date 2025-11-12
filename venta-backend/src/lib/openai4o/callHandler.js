@@ -1,17 +1,14 @@
 /**
- * Orchestration des appels OpenAI Chat Completions (GPT-4o-mini)
+ * Orchestration des appels OpenAI Chat Completions (GPT-4o)
  */
 import { OPENAI_4O_CONFIG, CONSOLE_LOGS, EMOJIS } from '../messages.js';
 import { convertMessagesToChatFormat } from './messageConverter.js';
 import { buildAPIParams } from './apiParams.js';
 import { parseOpenAIResponse } from './responseParser.js';
-import { executeToolCall } from '../openai/toolExecutor.js'; // Réutilise le toolExecutor commun
+import { executeToolCall } from '../openai/toolExecutor.js';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * Traite les tool calls de la réponse
- */
 async function processToolCalls(responseMessage, messages, calledFunctions) {
   console.log(`${EMOJIS.tool} ${CONSOLE_LOGS.backend} ${CONSOLE_LOGS.openaiWantsToCall} ${responseMessage.tool_calls.length} fonction(s)`);
   
@@ -38,26 +35,20 @@ async function processToolCalls(responseMessage, messages, calledFunctions) {
   return functionCallCount;
 }
 
-/**
- * Génère une réponse par défaut si limite atteinte
- */
 function generateDefaultResponse(calledFunctions) {
   if (calledFunctions.has('getAvailableColors')) {
     console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut avec SetBackground`);
     return "Je change le fond en océan ! /SetBackground ocean";
   }
-  
+
   if (calledFunctions.has('getAvailableAssets')) {
     console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut avec ShowPicture`);
     return "Voici une image d'exemple pour toi ! /ShowPicture exemple.png";
   }
-  
+
   return null;
 }
 
-/**
- * Appel OpenAI Chat Completions avec gestion des function calls
- */
 export async function callOpenAI(openai, messages, tools) {
   let totalFunctionCallCount = 0;
   const maxFunctionCalls = OPENAI_4O_CONFIG.maxFunctionCalls;
@@ -66,11 +57,10 @@ export async function callOpenAI(openai, messages, tools) {
   while (totalFunctionCallCount < maxFunctionCalls) {
     const chatMessages = convertMessagesToChatFormat(messages);
     
-    // Pour GPT-4o-mini : après le premier appel de fonction réussi, 
-    // on peut enlever les tools pour forcer une réponse textuelle
-    const shouldRemoveTools = totalFunctionCallCount > 0 && 
-                             (calledFunctions.has('getAvailableColors') || 
-                              calledFunctions.has('getAvailableAssets'));
+    const shouldRemoveTools = totalFunctionCallCount > 0 && (
+      calledFunctions.has('getAvailableColors') ||
+      calledFunctions.has('getAvailableAssets')
+    );
     
     const effectiveTools = shouldRemoveTools ? null : tools;
     const apiParams = buildAPIParams(chatMessages, effectiveTools, totalFunctionCallCount, messages.length);
@@ -82,7 +72,6 @@ export async function callOpenAI(openai, messages, tools) {
         console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Tools désactivés pour forcer une réponse textuelle`);
       }
       
-      // Log détaillé pour debug (seulement les 3 derniers messages)
       if (totalFunctionCallCount > 0) {
         const lastMessages = chatMessages.slice(-3);
         console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} 3 derniers messages envoyés à l'API:`);

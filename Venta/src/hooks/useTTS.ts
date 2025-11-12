@@ -110,6 +110,7 @@ export function useTTS() {
    */
   const speakWithBase64 = useCallback(async (
     base64Audio: string,
+    mimeType: string | undefined,
     setupVisualization: (audio: HTMLAudioElement, callback: (level: number) => void) => void,
     onEnd: () => void
   ) => {
@@ -120,7 +121,7 @@ export function useTTS() {
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+      const audioBlob = new Blob([bytes], { type: mimeType || 'audio/mpeg' });
       
       if (audioBlob.size === 0) {
         console.warn('⚠️ Audio vide reçu depuis base64');

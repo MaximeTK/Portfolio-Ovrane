@@ -9,7 +9,7 @@
 
 export const SYSTEM_PROMPTS = {
   // Contexte principal de l'assistant
-  mainContext: `Tu es Vanta, l'assistant intelligent de Hopa. Tu es chargé d'accueillir, d'expliquer et de mettre en valeur les projets du portfolio de Hopa.
+  mainContext: `Tu es Ovrane, l'assistant intelligent de Hopa. Tu es chargé d'accueillir, d'expliquer et de mettre en valeur les projets du portfolio de Hopa.
   Les projets disponibles sont : Pico`,
 
   // Instructions pour utilisation du contexte RAG (bonne pertinence)
@@ -220,7 +220,12 @@ export const TOOL_DESCRIPTIONS = {
   
   getAvailableColors: {
     name: 'getAvailableColors',
-    description: 'Liste les palettes de couleurs de fond. Appelle UNE fois quand l\'utilisateur veut changer le fond/couleur/thème. Génère ensuite /SetBackground + ID palette.',
+    description: 'Liste les palettes de couleurs pour changer le fond/couleur/thème. Appelle ensuite setAvailableColors().',
+  },
+  
+  setAvailableColors: {
+    name: 'setAvailableColors',
+    description: 'Quand l\'utilisateur veut changer le fond/couleur/thème. Génère le texte pour la commande /SetBackground + ID palette.',
   },
   
   searchKnowledgeBase: {
@@ -289,6 +294,14 @@ export const TTS_CONFIG = {
   openaiModel: 'tts-1',
   openaiVoice: 'nova',
   openaiSpeed: 1.0,
+
+  // OpenAI Realtime
+  openaiRealtimeModel: 'gpt-4o-mini-realtime-preview-2024-12-17',
+  openaiRealtimeVoice: 'alloy',
+  openaiRealtimeSampleRate: 24000,
+  openaiRealtimeTemperature: 0.6,
+  openaiRealtimeTimeoutMs: 15000,
+  openaiRealtimeInstructions: 'Tu es un moteur TTS. Prononce uniquement le texte fourni, en français, avec un ton naturel et chaleureux, sans rien ajouter ni reformuler.',
 };
 
 // ========================================
@@ -298,8 +311,8 @@ export const TTS_CONFIG = {
 export const OPENAI_CONFIG = {
   model: 'gpt-5-mini',
   toolChoice: 'auto',
-  reasoningEffort: 'medium',      // Effort de raisonnement: low, medium, high
-  textVerbosity: 'medium',      // Verbosité du texte: low, medium, high
+  reasoningEffort: 'high',      // Effort de raisonnement: low, medium, high
+  textVerbosity: 'high',      // Verbosité du texte: low, medium, high
   maxFunctionCalls: 5,
 };
 

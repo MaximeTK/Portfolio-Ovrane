@@ -10,8 +10,8 @@ function buildBaseParams(formattedInput) {
   return {
     model: OPENAI_CONFIG.model,
     input: formattedInput,
-    reasoning: { effort: OPENAI_CONFIG.reasoningEffort || "low" },
-    text: { verbosity: OPENAI_CONFIG.textVerbosity || "medium" }
+    reasoning: { effort: OPENAI_CONFIG.reasoningEffort || 'low' },
+    text: { verbosity: OPENAI_CONFIG.textVerbosity || 'medium' }
   };
 }
 
@@ -45,7 +45,8 @@ export function buildAPIParams(formattedInput, tools, functionCallCount, message
   const apiParams = buildBaseParams(formattedInput);
   addToolsToParams(apiParams, tools);
   logParamsDebug(apiParams, formattedInput, functionCallCount, messagesLength);
-  
+
   return apiParams;
 }
+
 

@@ -9,9 +9,18 @@ interface ImageOverlay {
   alt?: string;
 }
 
+interface TextWindow {
+  visible: boolean;
+  content?: string;
+  title?: string;
+  x: number;
+  y: number;
+}
+
 interface UIState {
   // État de l'overlay d'image
   imageOverlay: ImageOverlay;
+  textWindow: TextWindow;
   
   // ID de la section actuellement highlightée
   highlightedId?: string;
@@ -19,6 +28,9 @@ interface UIState {
   // Actions
   showImage: (assetId: string, alt?: string) => void;
   hideImage: () => void;
+  showTextWindow: (content: string, title?: string, position?: { x: number; y: number }) => void;
+  hideTextWindow: () => void;
+  setTextWindowPosition: (x: number, y: number) => void;
   highlight: (id: string) => void;
   clearHighlight: () => void;
 }
@@ -26,6 +38,11 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   imageOverlay: {
     visible: false,
+  },
+  textWindow: {
+    visible: false,
+    x: 160,
+    y: 160,
   },
   
   highlightedId: undefined,
@@ -48,6 +65,39 @@ export const useUIStore = create<UIState>((set) => ({
         alt: undefined,
       },
     });
+  },
+  
+  showTextWindow: (content: string, title?: string, position?: { x: number; y: number }) => {
+    set({
+      textWindow: {
+        visible: true,
+        content,
+        title,
+        x: position?.x ?? 160,
+        y: position?.y ?? 160,
+      },
+    });
+  },
+  
+  hideTextWindow: () => {
+    set((state) => ({
+      textWindow: {
+        ...state.textWindow,
+        visible: false,
+        content: undefined,
+        title: undefined,
+      },
+    }));
+  },
+
+  setTextWindowPosition: (x: number, y: number) => {
+    set((state) => ({
+      textWindow: {
+        ...state.textWindow,
+        x,
+        y,
+      },
+    }));
   },
   
   highlight: (id: string) => {
