@@ -2,18 +2,32 @@
 
 import { useEffect } from 'react';
 
-interface LottieAnimationsProps {
+type AnimationHandle = {
+  destroy?: () => void;
+};
+
+type LottieModule = {
+  loadAnimation: (params: {
+    container: HTMLElement;
+    renderer: 'svg';
+    loop: boolean;
+    autoplay: boolean;
+    path: string;
+  }) => AnimationHandle;
+};
+
+type LottieAnimationsProps = {
   standbyContainerRef: React.RefObject<HTMLDivElement>;
   thinkingContainerRef: React.RefObject<HTMLDivElement>;
   speakContainerRef: React.RefObject<HTMLDivElement>;
-  standbyAnimRef: React.MutableRefObject<any>;
-  thinkingAnimRef: React.MutableRefObject<any>;
-  speakAnimRef: React.MutableRefObject<any>;
+  standbyAnimRef: React.MutableRefObject<AnimationHandle | null>;
+  thinkingAnimRef: React.MutableRefObject<AnimationHandle | null>;
+  speakAnimRef: React.MutableRefObject<AnimationHandle | null>;
   currentAnimation: 'standby' | 'thinking' | 'speak';
   isSpeaking: boolean;
   audioLevel: number;
   startStandbyAnimation: () => void;
-}
+};
 
 export function LottieAnimations({
   standbyContainerRef,
@@ -28,32 +42,50 @@ export function LottieAnimations({
   startStandbyAnimation
 }: LottieAnimationsProps) {
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).lottie) {
-      const lottie = (window as any).lottie;
-      
-      const createAnimation = (container: HTMLElement, path: string, loop = true) => {
-        return lottie.loadAnimation({
-          container,
-          renderer: 'svg',
-          loop,
-          autoplay: false,
-          path
-        });
-      };
-
-      if (standbyContainerRef.current) {
-        standbyAnimRef.current = createAnimation(standbyContainerRef.current, '/assets/standby.json', true);
-      }
-      if (thinkingContainerRef.current) {
-        thinkingAnimRef.current = createAnimation(thinkingContainerRef.current, '/assets/thinking.json', true);
-      }
-      if (speakContainerRef.current) {
-        speakAnimRef.current = createAnimation(speakContainerRef.current, '/assets/speak.json', true);
-      }
-
-      startStandbyAnimation();
+    if (typeof window === 'undefined') return;
+    const lottie = (window as unknown as { lottie?: LottieModule }).lottie;
+    if (!lottie) return;
+    const createAnimation = (container: HTMLElement, path: string) =>
+      lottie.loadAnimation({
+        container,
+        renderer: 'svg',
+        loop: true,
+        autoplay: false,
+        path,
+      });
+    if (standbyContainerRef.current) {
+      standbyAnimRef.current = createAnimation(
+        standbyContainerRef.current,
+        '/assets/standby.json',
+      );
     }
-  }, []);
+    if (thinkingContainerRef.current) {
+      thinkingAnimRef.current = createAnimation(
+        thinkingContainerRef.current,
+        '/assets/thinking.json',
+      );
+    }
+    if (speakContainerRef.current) {
+      speakAnimRef.current = createAnimation(
+        speakContainerRef.current,
+        '/assets/speak.json',
+      );
+    }
+    startStandbyAnimation();
+    return () => {
+      standbyAnimRef.current?.destroy?.();
+      thinkingAnimRef.current?.destroy?.();
+      speakAnimRef.current?.destroy?.();
+    };
+  }, [
+    standbyContainerRef,
+    thinkingContainerRef,
+    speakContainerRef,
+    standbyAnimRef,
+    thinkingAnimRef,
+    speakAnimRef,
+    startStandbyAnimation,
+  ]);
 
   useEffect(() => {
     if (isSpeaking && audioLevel > 0) {
@@ -74,7 +106,13 @@ export function LottieAnimations({
         }
       });
     }
-  }, [isSpeaking, audioLevel]);
+  }, [
+    isSpeaking,
+    audioLevel,
+    standbyContainerRef,
+    thinkingContainerRef,
+    speakContainerRef,
+  ]);
 
   return (
     <div className="w-[400px] h-[400px] drop-shadow-[0_0_20px_rgba(59,130,246,0.5)]">

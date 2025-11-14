@@ -40,7 +40,7 @@ export function useChatController(): UseChatControllerReturn {
   const [skipNextPreferenceLoad, setSkipNextPreferenceLoad] = useState(false);
   const [currentTTS, setCurrentTTS] = useState<TTSData | null>(null);
   
-  const clientRef = useRef<any | null>(null);
+  const clientRef = useRef<WebSocket | null>(null);
   const loadUserPreference = useBackgroundStore((state) => state.loadUserPreference);
   
   useEffect(() => {
@@ -125,7 +125,7 @@ export function useChatController(): UseChatControllerReturn {
         
         // Vérifier si les commandes contiennent SetBackground
         const hasSetBackgroundCommand = data.commands?.some(
-          (cmd: any) => cmd.command.toLowerCase() === 'setbackground'
+          (cmd) => cmd.command.toLowerCase() === 'setbackground',
         );
         
         if (hasSetBackgroundCommand) {

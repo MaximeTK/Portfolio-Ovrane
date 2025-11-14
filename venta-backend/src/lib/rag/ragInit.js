@@ -29,7 +29,10 @@ export async function initializeRAG(apiKey, customConfig = {}) {
     isInitialized = true;
     console.log('✅ [RAG-SYSTEM] Système RAG prêt!\n');
   } catch (error) {
-    console.error('❌ [RAG-SYSTEM] Erreur d\'initialisation:', error.message);
+    console.error(
+      '❌ [RAG-SYSTEM] Erreur d\'initialisation:',
+      error.message,
+    );
     throw error;
   }
 }

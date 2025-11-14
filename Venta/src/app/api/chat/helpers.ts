@@ -1,42 +1,46 @@
 /**
  * Helpers pour la route API chat - max 5 fonctions, max 20 lignes
  */
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Extrait les informations utilisateur de la requête
  */
-export function extractUserInfo(request: any) {
-  const userIp = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
-                 request.headers.get('x-real-ip') || 
-                 request.ip || 
-                 'unknown';
-  const userAgent = request.headers.get('user-agent') || '';
+export function extractUserInfo(request: NextRequest) {
+  const headers = request.headers;
+  const forwarded = headers.get('x-forwarded-for');
+  const userIp =
+    forwarded?.split(',')[0].trim() ??
+    headers.get('x-real-ip') ??
+    request.ip ??
+    'unknown';
+  const userAgent = headers.get('user-agent') ?? '';
   return { userIp, userAgent };
 }
 
 /**
  * Appelle le backend
  */
-export async function callBackend(prompt: string, userIp: string, userAgent: string, currentUserId: string | undefined) {
+export async function callBackend(
+  prompt: string,
+  userIp: string,
+  userAgent: string,
+  currentUserId: string | undefined,
+) {
   const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:3001';
-  
   try {
     const response = await fetch(`${BACKEND_URL}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: prompt,
-        userIp: userIp,
-        userAgent: userAgent,
-        currentUserId: currentUserId
-      }),
-      signal: AbortSignal.timeout(60000)
+      body: JSON.stringify({ prompt, userIp, userAgent, currentUserId }),
+      signal: AbortSignal.timeout(60000),
     });
     return { response, BACKEND_URL };
   } catch (fetchError) {
-    console.error('❌ [NEXT API] Erreur de connexion au backend:', fetchError);
-    throw new Error(`Backend ${BACKEND_URL} non accessible: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
+    console.error('❌ [NEXT API] Connexion backend impossible:', fetchError);
+    const reason =
+      fetchError instanceof Error ? fetchError.message : String(fetchError);
+    throw new Error(`Backend ${BACKEND_URL} non accessible: ${reason}`);
   }
 }
 

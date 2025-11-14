@@ -8,30 +8,36 @@ import path from 'path';
  * Charge tous les fichiers .txt d'un dossier
  */
 export function loadDocumentsFromFolder(folderPath) {
-  const documents = [];
-  
   if (!fs.existsSync(folderPath)) {
     console.warn(`⚠️ [RAG-SYSTEM] Dossier non trouvé: ${folderPath}`);
-    return documents;
+    return [];
   }
-  
-  const files = fs.readdirSync(folderPath);
-  const txtFiles = files.filter(file => file.endsWith('.txt'));
-  
-  for (const filename of txtFiles) {
-    try {
-      const filePath = path.join(folderPath, filename);
-      const content = fs.readFileSync(filePath, 'utf8');
-      documents.push({
-        source: filename.replace('.txt', ''),
-        content,
-        metadata: { filename, path: filePath, size: content.length }
-      });
-    } catch (error) {
-      console.error(`❌ [RAG-SYSTEM] Erreur lecture ${filename}:`, error.message);
-    }
+  return getTxtFiles(folderPath)
+    .map((filename) => createDocument(folderPath, filename))
+    .filter(Boolean);
+}
+
+function getTxtFiles(folderPath) {
+  return fs
+    .readdirSync(folderPath)
+    .filter((file) => file.endsWith('.txt'));
+}
+
+function createDocument(folderPath, filename) {
+  const filePath = path.join(folderPath, filename);
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    return {
+      source: filename.replace('.txt', ''),
+      content,
+      metadata: { filename, path: filePath, size: content.length },
+    };
+  } catch (error) {
+    console.error(
+      `❌ [RAG-SYSTEM] Erreur lecture ${filename}:`,
+      error.message,
+    );
+    return null;
   }
-  
-  return documents;
 }
 

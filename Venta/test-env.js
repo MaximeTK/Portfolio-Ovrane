@@ -1,5 +1,10 @@
 // Test script pour vérifier les variables d'environnement
-require('dotenv').config({ path: '.env.local' });
+async function loadEnvironment() {
+  const { config } = await import('dotenv');
+  config({ path: '.env.local' });
+}
+
+void loadEnvironment();
 
 //console.log('=== Test des variables d\'environnement ===');
 //console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✅ Présente' : '❌ Manquante');

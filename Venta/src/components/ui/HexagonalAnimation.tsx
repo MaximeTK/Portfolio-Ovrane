@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface HexagonalAnimationProps {
   currentAnimation: 'standby' | 'thinking' | 'speak';
@@ -21,7 +21,8 @@ export function HexagonalAnimation({
   const lastWaveTimeRef = useRef<number>(0);
   const bounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [hexColor, setHexColor] = useState('#ffffff');
-  const HEX_POINTS = "0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6";
+  const HEX_POINTS =
+    '0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6';
   const MAX_WAVES = 3; // Réduit de 10 à 5 pour meilleures performances
   const MAX_EYE_MOVEMENT_X = 9; // Distance maximale horizontale en unités SVG
   const MAX_EYE_MOVEMENT_Y = 18; // Distance maximale verticale en unités SVG (plus grande car l'hexagone est plus haut)
@@ -43,7 +44,7 @@ export function HexagonalAnimation({
   }, [currentAnimation]);
 
   // Fonction pour créer l'effet de bounce sur les hexagones
-  const bounceHexagons = () => {
+  const bounceHexagons = useCallback(() => {
     if (!innerHexRef.current || !outerHexRef.current) return;
     
     // Annuler le timeout précédent si existe
@@ -90,10 +91,10 @@ export function HexagonalAnimation({
         }
       }
     }, 150);
-  };
+  }, []);
 
   // Fonction pour émettre une onde - optimisée avec bounce
-  const emitWave = (color: string) => {
+  const emitWave = useCallback((color: string) => {
     if (!wavesSvgRef.current) return;
     
     const currentWaves = wavesSvgRef.current.children.length;
@@ -125,11 +126,11 @@ export function HexagonalAnimation({
     setTimeout(() => {
       try {
         wave.remove();
-      } catch (e) {
+      } catch (_error) {
         // Déjà supprimé
       }
     }, 2000);
-  };
+  }, [bounceHexagons]);
 
   // Remettre l'œil au centre quand l'IA parle
   useEffect(() => {
@@ -142,7 +143,6 @@ export function HexagonalAnimation({
   // Effet "œil qui suit le curseur" - manipulation directe du DOM pour zéro lag
   useEffect(() => {
     let cachedRect: DOMRect | null = null;
-    let recalcInterval: NodeJS.Timeout;
     
     // Recalculer le rect toutes les 500ms
     const updateRect = () => {
@@ -152,7 +152,7 @@ export function HexagonalAnimation({
     };
     
     updateRect();
-    recalcInterval = setInterval(updateRect, 500);
+    const recalcInterval = setInterval(updateRect, 500);
     
     const handleMouseMove = (e: MouseEvent) => {
       // Ne pas suivre le curseur quand l'IA parle
@@ -239,7 +239,7 @@ export function HexagonalAnimation({
       }
       lastWaveTimeRef.current = 0;
     }
-  }, [currentAnimation, isSpeaking, audioLevel, hexColor]);
+  }, [currentAnimation, isSpeaking, audioLevel, hexColor, emitWave]);
 
   return (
     <>

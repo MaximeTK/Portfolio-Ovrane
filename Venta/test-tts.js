@@ -49,7 +49,7 @@ async function testTTS() {
     }
     
     // C'est un audio
-    const audioBuffer = await response.arrayBuffer();
+    const _audioBuffer = await response.arrayBuffer();
     const provider = response.headers.get('X-TTS-Provider');
     
     //console.log(`✅ Audio reçu de: ${provider}`);

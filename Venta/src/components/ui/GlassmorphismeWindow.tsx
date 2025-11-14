@@ -218,15 +218,29 @@ export default function GlassmorphismeWindow({
           </div>
         </header>
         <div className="glass-morphisme-content-area" ref={contentRef}>
-          {React.Children.map(children, child => {
-            if (React.isValidElement(child) && child.type === 'img') {
-              return React.cloneElement(child as React.ReactElement<any>, { ref: imageRef });
-            }
-            return child;
-          })}
+          {attachImageRef(children, imageRef)}
         </div>
       </div>
     </section>
   );
+}
+
+type ImageLikeElement = React.ReactElement<
+  React.ImgHTMLAttributes<HTMLImageElement> & {
+    'data-glass-image'?: boolean;
+  }
+>;
+
+function attachImageRef(
+  children: React.ReactNode,
+  imageRef: React.RefObject<HTMLImageElement>,
+) {
+  return React.Children.map(children, (child) => {
+    if (!React.isValidElement(child)) return child;
+    if (!child.props['data-glass-image']) return child;
+    return React.cloneElement(child as ImageLikeElement, {
+      ref: imageRef,
+    });
+  });
 }
 

@@ -55,10 +55,13 @@ export async function parseResponse(response: Response) {
   // Vérifier que la réponse est bien du JSON
   const contentType = response.headers.get('content-type');
   if (!contentType?.includes('application/json')) {
-    // Créer un clone pour lire le texte sans consommer le body original
     const clonedResponse = response.clone();
-    const text = await clonedResponse.text();
-    throw new Error(`Réponse invalide du serveur (${response.status}). Le backend retourne du HTML au lieu de JSON.`);
+    const snippet = (await clonedResponse.text()).slice(0, 200);
+    throw new Error(
+      `Réponse invalide (${response.status}).`
+        + ' Le backend retourne du HTML: '
+        + snippet,
+    );
   }
 
   const data = await response.json();
