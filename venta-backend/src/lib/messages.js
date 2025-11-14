@@ -311,8 +311,8 @@ export const TTS_CONFIG = {
 export const OPENAI_CONFIG = {
   model: 'gpt-5-mini',
   toolChoice: 'auto',
-  reasoningEffort: 'high',      // Effort de raisonnement: low, medium, high
-  textVerbosity: 'high',      // Verbosité du texte: low, medium, high
+  reasoningEffort: 'medium',      // Effort de raisonnement: low, medium, high
+  textVerbosity: 'medium',      // Verbosité du texte: low, medium, high
   maxFunctionCalls: 5,
 };
 
@@ -321,7 +321,7 @@ export const OPENAI_CONFIG = {
 // ========================================
 
 export const OPENAI_4O_CONFIG = {
-  model: 'gpt-4o',
+  model: 'gpt-4o-mini',
   toolChoice: 'auto',
   temperature: 0.7,
   maxTokens: 2000,

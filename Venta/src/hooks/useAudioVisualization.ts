@@ -12,12 +12,6 @@ type FilterConfig = {
 
 type PresetConfig = {
   description: string;
-  preDelay?: number;
-  impulse: {
-    duration: number;
-    decay: number;
-    highCut: number;
-  };
   filters: Record<'lowShelf' | 'peak' | 'highShelf', FilterConfig>;
   mix: {
     wet: number;
@@ -25,45 +19,8 @@ type PresetConfig = {
   };
 };
 
-const REVERB_PRESET: PresetConfig = {
-  description: 'Réverbération ample et brillante simulant une église.',
-  preDelay: 0.055,
-  impulse: {
-    duration: 3.5,
-    decay: 3.4,
-    highCut: 12000,
-  },
-  filters: {
-    lowShelf: {
-      type: 'lowshelf',
-      frequency: 150,
-      gain: -1,
-    },
-    peak: {
-      type: 'peaking',
-      frequency: 2000,
-      gain: 4,
-      Q: 0.9,
-    },
-    highShelf: {
-      type: 'highshelf',
-      frequency: 6000,
-      gain: 1,
-    },
-  },
-  mix: {
-    wet: 0.6,
-    dry: 0.4,
-  },
-};
-
 const DEPTH_PRESET: PresetConfig = {
   description: 'Effet chaud et grave simulant une voix proche et profonde.',
-  impulse: {
-    duration: 1.2,
-    decay: 1.8,
-    highCut: 8000,
-  },
   filters: {
     lowShelf: {
       type: 'lowshelf',
@@ -91,21 +48,6 @@ const DEPTH_PRESET: PresetConfig = {
 };
 
 const FILTER_ORDER: Array<'lowShelf' | 'peak' | 'highShelf'> = ['lowShelf', 'peak', 'highShelf'];
-
-const createImpulseResponse = (context: AudioContext, duration: number, decay: number) => {
-  const sampleRate = context.sampleRate;
-  const length = Math.max(1, Math.floor(sampleRate * duration));
-  const impulse = context.createBuffer(2, length, sampleRate);
-
-  for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
-    const channelData = impulse.getChannelData(channel);
-    for (let i = 0; i < length; i++) {
-      const position = length - i;
-      channelData[i] = (Math.random() * 2 - 1) * Math.pow(position / length, decay);
-    }
-  }
-  return impulse;
-};
 
 const applyFilterChain = (
   context: AudioContext,
@@ -153,17 +95,25 @@ export const useAudioVisualization = () => {
     return audioContextRef.current;
   }, []);
 
-  const disconnectNodes = () => {
+  const disconnectNodes = useCallback(() => {
     nodesRef.current.forEach((node) => {
       try {
         node.disconnect();
       } catch {}
     });
     nodesRef.current = [];
-  };
+  }, []);
+
+  const stopVisualization = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
 
   const setupAudioVisualization = useCallback((audio: HTMLAudioElement, onLevelUpdate: (level: number) => void) => {
     const audioContext = ensureAudioContext();
+    stopVisualization();
     disconnectNodes();
 
     const source = audioContext.createMediaElementSource(audio);
@@ -186,33 +136,11 @@ export const useAudioVisualization = () => {
     depthDryGain.connect(depthBus);
     depthWetGain.connect(depthBus);
 
-    // Réverbération (eglise_3)
-    const wetDelay = audioContext.createDelay();
-    wetDelay.delayTime.setValueAtTime(REVERB_PRESET.preDelay ?? 0, audioContext.currentTime);
+    const outputGain = audioContext.createGain();
+    outputGain.gain.setValueAtTime(1, audioContext.currentTime);
+    depthBus.connect(outputGain);
 
-    const convolver = audioContext.createConvolver();
-    convolver.buffer = createImpulseResponse(audioContext, REVERB_PRESET.impulse.duration, REVERB_PRESET.impulse.decay);
-
-    const reverbHighCut = audioContext.createBiquadFilter();
-    reverbHighCut.type = 'lowpass';
-    reverbHighCut.frequency.setValueAtTime(REVERB_PRESET.impulse.highCut, audioContext.currentTime);
-
-    depthBus.connect(wetDelay);
-    wetDelay.connect(convolver);
-    convolver.connect(reverbHighCut);
-
-    const reverbFilterChain = applyFilterChain(audioContext, reverbHighCut, REVERB_PRESET.filters);
-
-    const wetGain = audioContext.createGain();
-    wetGain.gain.setValueAtTime(REVERB_PRESET.mix.wet, audioContext.currentTime);
-    reverbFilterChain.output.connect(wetGain);
-
-    const dryGain = audioContext.createGain();
-    dryGain.gain.setValueAtTime(REVERB_PRESET.mix.dry, audioContext.currentTime);
-    depthBus.connect(dryGain);
-
-    dryGain.connect(analyser);
-    wetGain.connect(analyser);
+    outputGain.connect(analyser);
     analyser.connect(audioContext.destination);
 
     analyserRef.current = analyser;
@@ -222,27 +150,28 @@ export const useAudioVisualization = () => {
       depthDryGain,
       depthWetGain,
       depthBus,
-      wetDelay,
-      convolver,
-      reverbHighCut,
-      wetGain,
-      dryGain,
+      outputGain,
       ...depthFilterChain.nodes,
-      ...reverbFilterChain.nodes,
     ];
 
     startVisualizationLoop(analyser, onLevelUpdate);
 
-    audio.onplay = () => {
+    const handleAudioPlay = () => {
       try {
         audioContext.resume();
       } catch {}
     };
-    audio.onended = () => {
+
+    const handleAudioEnded = () => {
       stopVisualization();
       disconnectNodes();
+      audio.removeEventListener('play', handleAudioPlay);
+      audio.removeEventListener('ended', handleAudioEnded);
     };
-  }, [ensureAudioContext]);
+
+    audio.addEventListener('play', handleAudioPlay);
+    audio.addEventListener('ended', handleAudioEnded);
+  }, [ensureAudioContext, stopVisualization, disconnectNodes]);
 
   const startVisualizationLoop = (analyser: AnalyserNode, onLevelUpdate: (level: number) => void) => {
     const bufferData = new Uint8Array(analyser.frequencyBinCount);
@@ -262,13 +191,6 @@ export const useAudioVisualization = () => {
       }
     };
     loop();
-  };
-
-  const stopVisualization = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
   };
 
   const cleanup = useCallback(() => {
