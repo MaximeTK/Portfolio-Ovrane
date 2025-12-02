@@ -13,7 +13,8 @@
     "test:rag": "node test/test-rag-system.js",
     "check:rag": "node test/check-rag-setup.js",
     "migrate": "node test/migrate-profiles.js",
-    "clean": "node test/clean-duplicates.js"
+    "clean": "node test/clean-duplicates.js",
+    "update-rag": "node scripts/update-rag.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

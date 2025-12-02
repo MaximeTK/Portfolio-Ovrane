@@ -16,7 +16,12 @@ export async function initializeRAGSystem(ragDir, apiKey) {
       topK: 5, 
       minScore: 0.5
     });
-    await reindexFolder(ragDir, true);
+    
+    // En PROD : On ne force pas la réindexation (false)
+    // On ne réindexe que si l'index est vide ou corrompu
+    // Pour mettre à jour les textes, utiliser : npm run update-rag
+    await reindexFolder(ragDir, false);
+    
     console.log(`${EMOJIS.success} ${CONSOLE_LOGS.rag} ${SUCCESS_MESSAGES.ragInitialized}\n`);
     return true;
   } catch (error) {
