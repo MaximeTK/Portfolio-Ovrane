@@ -1,18 +1,9 @@
 /**
- * Gestion des profils utilisateurs - max 5 fonctions, max 20 lignes
+ * Gestion des profils utilisateurs avec MongoDB
+ * Remplace l'ancienne version basée sur les fichiers JSON
  */
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const USERS_DIR = path.join(__dirname, '..', '..', '..', 'data', 'users');
-
-if (!fs.existsSync(USERS_DIR)) {
-  fs.mkdirSync(USERS_DIR, { recursive: true });
-}
+import { User } from '../../models/User.js';
 
 /**
  * Génère un hash unique
@@ -23,67 +14,42 @@ export function generateUserHash(ip, userAgent = '') {
 }
 
 /**
- * Cherche un profil par ipHash (compatible avec ancien format ipHash et nouveau format ipHashes)
+ * Cherche un profil par ipHash
  */
-export function findUserByIpHash(ipHash) {
+export async function findUserByIpHash(ipHash) {
   try {
-    const files = fs.readdirSync(USERS_DIR);
-    for (const file of files) {
-      if (!file.endsWith('.json')) continue;
-      try {
-        const data = JSON.parse(fs.readFileSync(path.join(USERS_DIR, file), 'utf8'));
-        // Support ancien format (ipHash) et nouveau format (ipHashes)
-        if (data.ipHashes && Array.isArray(data.ipHashes)) {
-          if (data.ipHashes.includes(ipHash)) return data;
-        } else if (data.ipHash === ipHash) {
-          // Migration automatique : convertir ipHash en ipHashes
-          data.ipHashes = [data.ipHash];
-          delete data.ipHash;
-          const userFile = path.join(USERS_DIR, file);
-          fs.writeFileSync(userFile, JSON.stringify(data, null, 2));
-          return data;
-        }
-      } catch (err) {
-        continue;
-      }
+    // Chercher un utilisateur qui a cet IP dans sa liste ipHashes
+    const user = await User.findOne({ ipHashes: ipHash }).lean();
+    
+    // .lean() convertit le document Mongoose en objet JS simple (plus rapide et compatible avec le reste du code)
+    if (user) {
+      // Adaptation pour compatibilité avec le reste du code (id vs _id)
+      // Mongoose utilise _id, mais le reste du code utilise id
+      // Notre schéma a un champ 'id' explicite, donc c'est bon.
+      return user;
     }
+    
     return null;
   } catch (error) {
-    console.error('❌ Erreur recherche par ipHash:', error);
+    console.error('❌ Erreur recherche par ipHash (MongoDB):', error);
     return null;
   }
 }
 
 /**
- * Cherche un profil permanent par ipHash (compatible avec ancien format ipHash et nouveau format ipHashes)
+ * Cherche un profil permanent par ipHash
  */
-export function findPermanentUserByIpHash(ipHash) {
+export async function findPermanentUserByIpHash(ipHash) {
   try {
-    const files = fs.readdirSync(USERS_DIR);
-    for (const file of files) {
-      if (!file.endsWith('.json')) continue;
-      try {
-        const data = JSON.parse(fs.readFileSync(path.join(USERS_DIR, file), 'utf8'));
-        if (!data.isTemporary && data.name) {
-          // Support ancien format (ipHash) et nouveau format (ipHashes)
-          if (data.ipHashes && Array.isArray(data.ipHashes)) {
-            if (data.ipHashes.includes(ipHash)) return data;
-          } else if (data.ipHash === ipHash) {
-            // Migration automatique : convertir ipHash en ipHashes
-            data.ipHashes = [data.ipHash];
-            delete data.ipHash;
-            const userFile = path.join(USERS_DIR, file);
-            fs.writeFileSync(userFile, JSON.stringify(data, null, 2));
-            return data;
-          }
-        }
-      } catch (err) {
-        continue;
-      }
-    }
-    return null;
+    const user = await User.findOne({ 
+      ipHashes: ipHash,
+      isTemporary: false,
+      name: { $ne: null } // name n'est pas null
+    }).lean();
+    
+    return user;
   } catch (error) {
-    console.error('❌ Erreur recherche profil permanent:', error);
+    console.error('❌ Erreur recherche profil permanent (MongoDB):', error);
     return null;
   }
 }
@@ -91,46 +57,74 @@ export function findPermanentUserByIpHash(ipHash) {
 /**
  * Crée un nouveau profil temporaire
  */
-export function createNewUser(userId, ip) {
+export async function createNewUser(userId, ip) {
   const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
-  const profile = {
-    id: userId,
-    ipHashes: [ipHash], // Liste d'IPs au lieu d'une seule IP
-    firstVisit: new Date().toISOString(),
-    lastVisit: new Date().toISOString(),
-    visitCount: 1,
-    name: null,
-    isTemporary: true,
-    preferences: {},
-    conversations: []
-  };
-  const userFile = path.join(USERS_DIR, `${userId}.json`);
-  fs.writeFileSync(userFile, JSON.stringify(profile, null, 2));
-  return profile;
+  
+  try {
+    const newUser = new User({
+      id: userId,
+      ipHashes: [ipHash],
+      isTemporary: true,
+      name: null,
+      visitCount: 1,
+      preferences: {},
+      conversations: []
+    });
+    
+    await newUser.save();
+    
+    // Retourner l'objet simple
+    return newUser.toObject();
+  } catch (error) {
+    console.error('❌ Erreur création utilisateur (MongoDB):', error);
+    throw error;
+  }
 }
 
 /**
  * Ajoute une IP à un profil existant si elle n'existe pas déjà
  */
-export function addIpToProfile(profile, ipHash) {
-  if (!profile.ipHashes) {
-    // Migration automatique depuis ancien format
-    profile.ipHashes = profile.ipHash ? [profile.ipHash] : [];
-    delete profile.ipHash;
-  }
+export async function addIpToProfile(profile, ipHash) {
+  // Si profile est juste un ID, on le cherche
+  let userId = profile.id || profile;
   
-  if (!Array.isArray(profile.ipHashes)) {
-    profile.ipHashes = [];
+  try {
+    // Mise à jour atomique : ajoute ipHash s'il n'est pas déjà dans la liste
+    const updatedUser = await User.findOneAndUpdate(
+      { id: userId },
+      { $addToSet: { ipHashes: ipHash } },
+      { new: true } // Retourne le document mis à jour
+    ).lean();
+    
+    return updatedUser || profile;
+  } catch (error) {
+    console.error('❌ Erreur ajout IP au profil (MongoDB):', error);
+    return profile;
   }
-  
-  if (!profile.ipHashes.includes(ipHash)) {
-    profile.ipHashes.push(ipHash);
-  }
-  
-  return profile;
 }
 
+/**
+ * Fonction utilitaire pour sauvegarder un profil complet
+ * (Remplace fs.writeFileSync)
+ */
+export async function saveUserProfile(userProfile) {
+  if (!userProfile || !userProfile.id) return;
+  
+  try {
+    // On retire _id pour ne pas écraser l'ID interne MongoDB si présent
+    const { _id, createdAt, updatedAt, ...updateData } = userProfile;
+    
+    await User.updateOne(
+      { id: userProfile.id },
+      { $set: updateData }
+    );
+  } catch (error) {
+    console.error(`❌ Erreur sauvegarde profil ${userProfile.id}:`, error);
+  }
+}
+
+// Fonction legacy pour compatibilité (ne fait rien ou log un warning)
 export function getUsersDir() {
-  return USERS_DIR;
+  console.warn('⚠️ getUsersDir appelé : obsolète avec MongoDB');
+  return '';
 }
-

@@ -1,34 +1,31 @@
 /**
- * Gestion des profils (conversion, fusion) - max 5 fonctions, max 20 lignes
+ * Gestion des profils (conversion, fusion) - Version MongoDB
  */
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
-import { getUsersDir, generateUserHash } from './userProfiles.js';
+import { User } from '../../models/User.js';
 
 /**
  * Convertit un profil temporaire en permanent
  */
-export function convertToPermament(userId, name) {
-  const userFile = path.join(getUsersDir(), `${userId}.json`);
-  if (!fs.existsSync(userFile)) {
-    console.warn(`⚠️ Profil ${userId} non trouvé pour conversion`);
-    return null;
-  }
+export async function convertToPermament(userId, name) {
   try {
-    const profile = JSON.parse(fs.readFileSync(userFile, 'utf8'));
+    const updatedUser = await User.findOneAndUpdate(
+      { id: userId },
+      { 
+        $set: { 
+          name: name,
+          isTemporary: false,
+          convertedAt: new Date()
+        }
+      },
+      { new: true }
+    ).lean();
     
-    // Migration automatique vers nouveau format ipHashes si nécessaire
-    if (!profile.ipHashes && profile.ipHash) {
-      profile.ipHashes = [profile.ipHash];
-      delete profile.ipHash;
+    if (!updatedUser) {
+      console.warn(`⚠️ Profil ${userId} non trouvé pour conversion`);
+      return null;
     }
     
-    profile.name = name;
-    profile.isTemporary = false;
-    profile.convertedAt = new Date().toISOString();
-    fs.writeFileSync(userFile, JSON.stringify(profile, null, 2));
-    return profile;
+    return updatedUser;
   } catch (error) {
     console.error('❌ Erreur conversion profil:', error);
     return null;
@@ -38,51 +35,49 @@ export function convertToPermament(userId, name) {
 /**
  * Fusionne un profil temporaire dans un permanent
  */
-export function mergeTemporaryIntoPermanent(tempUserId, permanentUserId) {
-  const tempFile = path.join(getUsersDir(), `${tempUserId}.json`);
-  const permanentFile = path.join(getUsersDir(), `${permanentUserId}.json`);
-  
-  if (!fs.existsSync(tempFile) || !fs.existsSync(permanentFile)) {
-    console.warn('⚠️ Un des profils n\'existe pas pour la fusion');
-    return null;
-  }
-  
+export async function mergeTemporaryIntoPermanent(tempUserId, permanentUserId) {
   try {
-    const tempProfile = JSON.parse(fs.readFileSync(tempFile, 'utf8'));
-    const permanentProfile = JSON.parse(fs.readFileSync(permanentFile, 'utf8'));
-    
-    // Fusionner les IPs
-    const tempIps = tempProfile.ipHashes || (tempProfile.ipHash ? [tempProfile.ipHash] : []);
-    const permanentIps = permanentProfile.ipHashes || (permanentProfile.ipHash ? [permanentProfile.ipHash] : []);
-    
-    // Migrer permanent vers nouveau format si nécessaire
-    if (!permanentProfile.ipHashes && permanentProfile.ipHash) {
-      permanentProfile.ipHashes = [permanentProfile.ipHash];
-      delete permanentProfile.ipHash;
+    // 1. Récupérer les deux profils
+    const tempUser = await User.findOne({ id: tempUserId }).lean();
+    const permanentUser = await User.findOne({ id: permanentUserId }).lean();
+
+    if (!tempUser || !permanentUser) {
+      console.warn('⚠️ Un des profils n\'existe pas pour la fusion');
+      return null;
     }
+
+    // 2. Préparer les données à fusionner
+    const tempIps = tempUser.ipHashes || [];
+    const tempConversations = tempUser.conversations || [];
     
-    // Ajouter les IPs du temporaire qui ne sont pas déjà dans le permanent
-    tempIps.forEach(ip => {
-      if (!permanentProfile.ipHashes.includes(ip)) {
-        permanentProfile.ipHashes.push(ip);
-      }
-    });
-    
-    if (tempProfile.conversations && tempProfile.conversations.length > 0) {
-      permanentProfile.conversations = [
-        ...(permanentProfile.conversations || []),
-        ...tempProfile.conversations
-      ];
-      permanentProfile.conversations.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    }
-    
-    permanentProfile.visitCount = (permanentProfile.visitCount || 0) + (tempProfile.visitCount || 0);
-    permanentProfile.lastVisit = new Date().toISOString();
-    
-    fs.writeFileSync(permanentFile, JSON.stringify(permanentProfile, null, 2));
-    fs.unlinkSync(tempFile);
-    
-    return permanentProfile;
+    // 3. Mettre à jour le permanent
+    const updatedPermanent = await User.findOneAndUpdate(
+      { id: permanentUserId },
+      {
+        // Ajouter les IPs qui n'existent pas déjà ($addToSet ne gère qu'une valeur à la fois ou $each)
+        $addToSet: { 
+          ipHashes: { $each: tempIps } 
+        },
+        // Ajouter les conversations à la fin
+        $push: {
+          conversations: { $each: tempConversations }
+        },
+        // Additionner les visites
+        $inc: { 
+          visitCount: tempUser.visitCount || 0 
+        },
+        // Mettre à jour la dernière visite
+        $set: { 
+          lastVisit: new Date() 
+        }
+      },
+      { new: true }
+    ).lean();
+
+    // 4. Supprimer le temporaire
+    await User.deleteOne({ id: tempUserId });
+
+    return updatedPermanent;
   } catch (error) {
     console.error('❌ Erreur fusion temporaire→permanent:', error);
     return null;
@@ -92,33 +87,20 @@ export function mergeTemporaryIntoPermanent(tempUserId, permanentUserId) {
 /**
  * Nettoie les profils temporaires inactifs
  */
-export function cleanInactiveTemporaryProfiles() {
+export async function cleanInactiveTemporaryProfiles() {
   try {
-    const files = fs.readdirSync(getUsersDir()).filter(f => f.endsWith('.json'));
     const now = new Date();
-    const threshold = 24 * 60 * 60 * 1000;
-    let deletedCount = 0;
+    const threshold = new Date(now.getTime() - (24 * 60 * 60 * 1000)); // 24h avant
     
-    files.forEach(file => {
-      try {
-        const data = JSON.parse(fs.readFileSync(path.join(getUsersDir(), file), 'utf8'));
-        if (data.isTemporary) {
-          const lastVisit = new Date(data.lastVisit);
-          const inactiveTime = now - lastVisit;
-          if (inactiveTime > threshold) {
-            fs.unlinkSync(path.join(getUsersDir(), file));
-            deletedCount++;
-          }
-        }
-      } catch (err) {
-        console.error(`❌ Erreur nettoyage ${file}:`, err.message);
-      }
+    const result = await User.deleteMany({
+      isTemporary: true,
+      lastVisit: { $lt: threshold }
     });
     
-    if (deletedCount > 0) {
-      //console.log(`✅ ${deletedCount} profil(s) temporaire(s) nettoyé(s)`);
+    if (result.deletedCount > 0) {
+      // console.log(`✅ ${result.deletedCount} profil(s) temporaire(s) nettoyé(s)`);
     }
-    return deletedCount;
+    return result.deletedCount;
   } catch (error) {
     console.error('❌ Erreur nettoyage profils temporaires:', error);
     return 0;
@@ -126,26 +108,17 @@ export function cleanInactiveTemporaryProfiles() {
 }
 
 /**
- * Recherche un utilisateur par nom
+ * Recherche un utilisateur par nom (insensible à la casse)
  */
-export function searchUserByName(name) {
+export async function searchUserByName(name) {
   if (!name) return null;
   try {
-    const files = fs.readdirSync(getUsersDir());
-    const normalizedSearchName = name.toLowerCase().trim();
+    // Recherche insensible à la casse avec Regex
+    const user = await User.findOne({
+      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') }
+    }).lean();
     
-    for (const file of files) {
-      if (!file.endsWith('.json')) continue;
-      try {
-        const data = JSON.parse(fs.readFileSync(path.join(getUsersDir(), file), 'utf8'));
-        if (data.name && data.name.toLowerCase().trim() === normalizedSearchName) {
-          return data;
-        }
-      } catch (err) {
-        continue;
-      }
-    }
-    return null;
+    return user;
   } catch (error) {
     console.error('❌ Erreur recherche utilisateur par nom:', error);
     return null;
@@ -155,31 +128,27 @@ export function searchUserByName(name) {
 /**
  * Liste tous les utilisateurs
  */
-export function getAllUsers() {
+export async function getAllUsers() {
   try {
-    const files = fs.readdirSync(getUsersDir());
-    const users = files
-      .filter(f => f.endsWith('.json'))
-      .map(f => {
-        try {
-          const data = JSON.parse(fs.readFileSync(path.join(getUsersDir(), f), 'utf8'));
-          return {
-            id: data.id,
-            name: data.name,
-            visitCount: data.visitCount,
-            firstVisit: data.firstVisit,
-            lastVisit: data.lastVisit,
-            conversationCount: data.conversations?.length || 0
-          };
-        } catch (err) {
-          return null;
-        }
-      })
-      .filter(u => u !== null);
-    return users;
+    const users = await User.find({}, {
+      id: 1,
+      name: 1,
+      visitCount: 1,
+      firstVisit: 1,
+      lastVisit: 1,
+      'conversations': 1 // Pour compter la longueur
+    }).lean();
+
+    return users.map(u => ({
+      id: u.id,
+      name: u.name,
+      visitCount: u.visitCount,
+      firstVisit: u.firstVisit,
+      lastVisit: u.lastVisit,
+      conversationCount: u.conversations?.length || 0
+    }));
   } catch (error) {
     console.error('❌ Erreur liste utilisateurs:', error);
     return [];
   }
 }
-

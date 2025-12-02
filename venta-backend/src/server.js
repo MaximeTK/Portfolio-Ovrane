@@ -9,6 +9,7 @@ import { cleanInactiveTemporaryProfiles } from './lib/userMemory.js';
 import { setOpenAI } from './lib/openaiHandler.js';
 import { configureServer } from './lib/server/serverConfig.js';
 import { initializeRAGSystem } from './lib/server/ragInitializer.js';
+import { connectToDatabase } from './lib/database.js';
 import { watchRAGFolder } from './lib/server/ragWatcher.js';
 import { registerAllFunctions } from './lib/server/functionsRegistry.js';
 import { setupRoutes } from './lib/server/serverRoutes.js';
@@ -33,6 +34,9 @@ async function initializeServer() {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   setOpenAI(openai);
   
+  // Connexion à MongoDB
+  await connectToDatabase();
+
   registerAllFunctions();
   
   ragInitialized = await initializeRAGSystem(ragDir, process.env.OPENAI_API_KEY);

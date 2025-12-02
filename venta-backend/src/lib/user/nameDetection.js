@@ -1,10 +1,7 @@
 /**
- * Détection et gestion des noms d'utilisateurs
+ * Détection et gestion des noms d'utilisateurs - Version MongoDB
  */
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
-import { getUsersDir } from './userProfiles.js';
+import { User } from '../../models/User.js';
 import { convertToPermament, mergeTemporaryIntoPermanent, searchUserByName } from './profileManagement.js';
 import { generateUserHash } from './userProfiles.js';
 import { EMOJIS, ERROR_MESSAGES } from '../messages.js';
@@ -12,13 +9,13 @@ import { EMOJIS, ERROR_MESSAGES } from '../messages.js';
 /**
  * Convertit un profil temporaire
  */
-function handleTemporaryProfile(userId, detectedName) {
-  const existingPermanent = searchUserByName(detectedName);
+async function handleTemporaryProfile(userId, detectedName) {
+  const existingPermanent = await searchUserByName(detectedName);
   if (existingPermanent) {
-    const mergedProfile = mergeTemporaryIntoPermanent(userId, existingPermanent.id);
+    const mergedProfile = await mergeTemporaryIntoPermanent(userId, existingPermanent.id);
     return { action: 'merged', profile: mergedProfile };
   } else {
-    const convertedProfile = convertToPermament(userId, detectedName);
+    const convertedProfile = await convertToPermament(userId, detectedName);
     return { action: 'converted', profile: convertedProfile };
   }
 }
@@ -26,86 +23,88 @@ function handleTemporaryProfile(userId, detectedName) {
 /**
  * Corrige le nom d'un profil permanent
  */
-function handleNameCorrection(userId, detectedName, currentProfile) {
+async function handleNameCorrection(userId, detectedName, currentProfile) {
   console.log(`📝 Correction de nom détectée: ${currentProfile.name} → ${detectedName}`);
   
-  const existingProfileWithName = searchUserByName(detectedName);
+  const existingProfileWithName = await searchUserByName(detectedName);
   
   if (existingProfileWithName && existingProfileWithName.id !== userId) {
     console.log(`⚠️ Un profil existe déjà avec le nom "${detectedName}" → Switch au lieu de correction`);
     return { action: 'switchToDifferentUser', profile: existingProfileWithName };
   }
   
-  const userFile = path.join(getUsersDir(), `${userId}.json`);
-  currentProfile.name = detectedName;
-  currentProfile.correctedAt = new Date().toISOString();
-  fs.writeFileSync(userFile, JSON.stringify(currentProfile, null, 2));
+  const updatedProfile = await User.findOneAndUpdate(
+    { id: userId },
+    { 
+      $set: { 
+        name: detectedName,
+        correctedAt: new Date() 
+      } 
+    },
+    { new: true }
+  ).lean();
+
   console.log(`✅ Nom corrigé avec succès dans le profil ${userId}`);
-  return { action: 'corrected', profile: currentProfile };
+  return { action: 'corrected', profile: updatedProfile };
 }
 
 /**
  * Crée un nouveau profil
  */
-function createNewProfile(detectedName, currentProfile) {
-  // Récupérer la première IP (ou ipHash pour compatibilité)
-  const firstIpHash = currentProfile.ipHashes && currentProfile.ipHashes.length > 0 
-    ? currentProfile.ipHashes[0] 
-    : currentProfile.ipHash;
+async function createNewProfile(detectedName, currentProfile) {
+  // Récupérer la première IP
+  const ipHashes = currentProfile.ipHashes || [];
+  const firstIpHash = ipHashes.length > 0 ? ipHashes[0] : 'unknown';
   
   const newUserId = generateUserHash(firstIpHash, detectedName);
-  // Copier toutes les IPs du profil actuel
-  const ipHashes = currentProfile.ipHashes || (currentProfile.ipHash ? [currentProfile.ipHash] : []);
   
-  const newProfile = {
+  const newProfile = new User({
     id: newUserId,
     ipHashes: ipHashes, // Copier toutes les IPs
-    firstVisit: new Date().toISOString(),
-    lastVisit: new Date().toISOString(),
     visitCount: 1,
     name: detectedName,
     isTemporary: false,
     preferences: {},
     conversations: []
-  };
-  const newFile = path.join(getUsersDir(), `${newUserId}.json`);
-  fs.writeFileSync(newFile, JSON.stringify(newProfile, null, 2));
-  return { action: 'changeName', profile: newProfile };
+  });
+  
+  await newProfile.save();
+  
+  return { action: 'changeName', profile: newProfile.toObject() };
 }
 
 /**
  * Gère un changement d'utilisateur
  */
-function handleUserChange(detectedName, currentProfile) {
-  const existingWithNewName = searchUserByName(detectedName);
+async function handleUserChange(detectedName, currentProfile) {
+  const existingWithNewName = await searchUserByName(detectedName);
   if (existingWithNewName) {
     return { action: 'switchToDifferentUser', profile: existingWithNewName };
   }
-  return createNewProfile(detectedName, currentProfile);
+  return await createNewProfile(detectedName, currentProfile);
 }
 
 /**
- * Gère la détection de nom
+ * Gère la détection de nom (Fonction Publique)
  */
-export function handleNameDetection(userId, detectedName, isCorrection = false) {
-  const userFile = path.join(getUsersDir(), `${userId}.json`);
-  if (!fs.existsSync(userFile)) {
+export async function handleNameDetection(userId, detectedName, isCorrection = false) {
+  const currentProfile = await User.findOne({ id: userId }).lean();
+  
+  if (!currentProfile) {
     console.warn(`${EMOJIS.warning} ${ERROR_MESSAGES.userProfileNotFound} ${userId}`);
     return null;
   }
   
-  const currentProfile = JSON.parse(fs.readFileSync(userFile, 'utf8'));
-  
   if (currentProfile.isTemporary) {
-    return handleTemporaryProfile(userId, detectedName);
+    return await handleTemporaryProfile(userId, detectedName);
   }
   
   if (!currentProfile.isTemporary && currentProfile.name && currentProfile.name !== detectedName && isCorrection) {
-    return handleNameCorrection(userId, detectedName, currentProfile);
+    return await handleNameCorrection(userId, detectedName, currentProfile);
   }
   
   if (!currentProfile.isTemporary && currentProfile.name && currentProfile.name !== detectedName && !isCorrection) {
-    return handleUserChange(detectedName, currentProfile);
+    return await handleUserChange(detectedName, currentProfile);
   }
   
   if (!currentProfile.isTemporary && currentProfile.name === detectedName) {
@@ -114,4 +113,3 @@ export function handleNameDetection(userId, detectedName, isCorrection = false) 
   
   return null;
 }
-

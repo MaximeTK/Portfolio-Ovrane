@@ -1,7 +1,10 @@
 /**
- * Mise à jour de profils utilisateurs
+ * Mise à jour de profils utilisateurs - Version MongoDB
  */
 import { CONSOLE_LOGS, EMOJIS } from '../messages.js';
+import { User } from '../../models/User.js';
+import { searchUserByName } from '../user/profileManagement.js';
+import { updateUserProfile } from '../user/userConversations.js';
 
 /**
  * Mots-clés de correction
@@ -45,15 +48,11 @@ ACTION REQUISE:
  * Met à jour le profil avec le nouveau nom
  */
 async function updateProfileName(userId, name) {
-  const { updateUserProfile: updateUserProfileUtil } = await import('../user/userConversations.js');
-  updateUserProfileUtil(userId, { name: name, correctedAt: new Date().toISOString() });
+  await updateUserProfile(userId, { name: name, correctedAt: new Date() });
   
-  const fs = await import('fs');
-  const path = await import('path');
-  const { getUsersDir } = await import('../user/userProfiles.js');
-  
-  const userFile = path.default.join(getUsersDir(), `${userId}.json`);
-  return JSON.parse(fs.default.readFileSync(userFile, 'utf8'));
+  // Recharger le profil mis à jour depuis MongoDB
+  const updatedUser = await User.findOne({ id: userId }).lean();
+  return updatedUser;
 }
 
 /**
@@ -85,8 +84,7 @@ export async function UpdateUserProfile({ name, reason }, currentRequestContext)
       return { success: false, message: buildMissingKeywordError(name, currentProfile.name, reason) };
     }
 
-    const { searchUserByName } = await import('../user/profileManagement.js');
-    const existingUser = searchUserByName(name);
+    const existingUser = await searchUserByName(name);
     
     if (existingUser && existingUser.id !== currentRequestContext.userId) {
       console.warn(`   ${EMOJIS.warning} Le nom "${name}" existe déjà pour un autre utilisateur`);
@@ -113,4 +111,3 @@ export async function UpdateUserProfile({ name, reason }, currentRequestContext)
     return { success: false, message: `Erreur interne: ${error.message}` };
   }
 }
-

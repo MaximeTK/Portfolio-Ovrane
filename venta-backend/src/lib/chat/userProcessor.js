@@ -12,7 +12,7 @@ export async function processUserInfo(req, currentUserId) {
   const agent = req.body.userAgent || req.headers['user-agent'] || '';
   const userId = currentUserId || generateUserHash(ip, agent);
   
-  const userProfile = getUserProfile(userId, ip);
+  const userProfile = await getUserProfile(userId, ip);
   
   setRequestContext({ userId: userId, userProfile: userProfile, ip: ip });
   

@@ -1,7 +1,9 @@
 /**
- * Changement de profil utilisateur
+ * Changement de profil utilisateur - Version MongoDB
  */
 import { CONSOLE_LOGS, EMOJIS } from '../messages.js';
+import { User } from '../../models/User.js';
+import { searchUserByName } from '../user/profileManagement.js';
 
 /**
  * Vérifie si le nom correspond au profil actuel
@@ -15,14 +17,19 @@ function isCurrentProfile(currentProfile, name) {
  * Met à jour les statistiques du profil cible
  */
 async function updateTargetProfileStats(targetProfile) {
-  const fs = await import('fs');
-  const path = await import('path');
-  const { getUsersDir } = await import('../user/userProfiles.js');
-  
-  const targetFile = path.default.join(getUsersDir(), `${targetProfile.id}.json`);
-  targetProfile.lastVisit = new Date().toISOString();
-  targetProfile.visitCount = (targetProfile.visitCount || 0) + 1;
-  fs.default.writeFileSync(targetFile, JSON.stringify(targetProfile, null, 2));
+  try {
+    await User.updateOne(
+      { id: targetProfile.id },
+      { 
+        $set: { lastVisit: new Date() },
+        $inc: { visitCount: 1 }
+      }
+    );
+    // On met à jour l'objet local pour le retour
+    targetProfile.visitCount = (targetProfile.visitCount || 0) + 1;
+  } catch (error) {
+    console.error('❌ Erreur updateTargetProfileStats:', error);
+  }
 }
 
 /**
@@ -42,8 +49,7 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
       console.log(`   ${EMOJIS.subitem} Raison IA: ${reason}`);
     }
 
-    const { searchUserByName } = await import('../user/profileManagement.js');
-    const targetProfile = searchUserByName(name);
+    const targetProfile = await searchUserByName(name);
     
     if (!targetProfile) {
       console.warn(`   ${EMOJIS.warning} Le profil "${name}" n'existe pas en base de données`);
@@ -85,4 +91,3 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
     return { success: false, message: `Erreur interne: ${error.message}` };
   }
 }
-

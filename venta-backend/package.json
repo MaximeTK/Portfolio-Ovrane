@@ -9,11 +9,8 @@
     "dev": "node --watch src/server.js",
     "test": "node test/test-server.js",
     "test:memory": "node test/test-memory.js",
-    "test:profile": "node test/test-profile-system.js",
     "test:rag": "node test/test-rag-system.js",
     "check:rag": "node test/check-rag-setup.js",
-    "migrate": "node test/migrate-profiles.js",
-    "clean": "node test/clean-duplicates.js",
     "update-rag": "node scripts/update-rag.js"
   },
   "dependencies": {

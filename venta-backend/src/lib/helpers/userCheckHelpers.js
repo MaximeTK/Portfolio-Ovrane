@@ -59,7 +59,7 @@ export async function checkUser({ name }, currentRequestContext) {
     console.log(`${EMOJIS.search} ${CONSOLE_LOGS.functionCall} Vérification du nom: "${name}"`);
     
     const { searchUserByName } = await import('../user/profileManagement.js');
-    const existingUser = searchUserByName(name);
+    const existingUser = await searchUserByName(name);
     
     const currentProfile = currentRequestContext.userProfile;
     clearPendingCreation(currentRequestContext);

@@ -1,95 +1,87 @@
 /**
- * Chargement et récupération des profils utilisateurs
+ * Chargement et récupération des profils utilisateurs (Version MongoDB)
  */
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
-import { getUsersDir, findPermanentUserByIpHash, findUserByIpHash, createNewUser, addIpToProfile } from './userProfiles.js';
+import { User } from '../../models/User.js';
+import { findPermanentUserByIpHash, findUserByIpHash, createNewUser, addIpToProfile, saveUserProfile } from './userProfiles.js';
 import { EMOJIS, ERROR_MESSAGES } from '../messages.js';
 
 /**
- * Met à jour les statistiques de visite d'un profil
+ * Met à jour les statistiques de visite d'un profil en base
  */
-function updateVisitStats(profile) {
-  profile.lastVisit = new Date().toISOString();
-  profile.visitCount = (profile.visitCount || 0) + 1;
-  return profile;
-}
-
-/**
- * Sauvegarde un profil dans son fichier
- */
-function saveProfile(profile) {
-  const userFile = path.join(getUsersDir(), `${profile.id}.json`);
-  fs.writeFileSync(userFile, JSON.stringify(profile, null, 2));
-  return profile;
+async function updateVisitStats(userId) {
+  try {
+    const user = await User.findOneAndUpdate(
+      { id: userId },
+      { 
+        $set: { lastVisit: new Date() },
+        $inc: { visitCount: 1 }
+      },
+      { new: true }
+    ).lean();
+    return user;
+  } catch (error) {
+    console.error('❌ Erreur updateVisitStats:', error);
+    return null;
+  }
 }
 
 /**
  * Charge et met à jour un profil permanent
  */
-function loadPermanentProfile(ipHash) {
-  const permanentProfile = findPermanentUserByIpHash(ipHash);
+async function loadPermanentProfile(ipHash) {
+  const permanentProfile = await findPermanentUserByIpHash(ipHash);
   if (permanentProfile) {
-    updateVisitStats(permanentProfile);
-    return saveProfile(permanentProfile);
+    return await updateVisitStats(permanentProfile.id);
   }
   return null;
 }
 
 /**
- * Charge un profil existant depuis un fichier
+ * Charge un profil existant par ID
  */
-function loadExistingProfile(userId) {
-  const userFile = path.join(getUsersDir(), `${userId}.json`);
-  if (fs.existsSync(userFile)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(userFile, 'utf8'));
-      
-      // Migration automatique vers nouveau format ipHashes si nécessaire
-      if (!data.ipHashes && data.ipHash) {
-        data.ipHashes = [data.ipHash];
-        delete data.ipHash;
-      }
-      
-      updateVisitStats(data);
-      saveProfile(data);
-      return data;
-    } catch (error) {
-      console.error(`${EMOJIS.error} ${ERROR_MESSAGES.userProfileReadError}`, error);
-      return null;
+async function loadExistingProfile(userId) {
+  try {
+    const user = await User.findOne({ id: userId }).lean();
+    if (user) {
+      return await updateVisitStats(userId);
     }
+    return null;
+  } catch (error) {
+    console.error(`${EMOJIS.error} ${ERROR_MESSAGES.userProfileReadError}`, error);
+    return null;
   }
-  return null;
 }
 
 /**
  * Récupère ou crée un profil utilisateur
  */
-export function getUserProfile(userId, ip) {
+export async function getUserProfile(userId, ip) {
   const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
   
-  const permanentProfile = loadPermanentProfile(ipHash);
+  // 1. Chercher si l'IP correspond à un profil permanent existant
+  const permanentProfile = await loadPermanentProfile(ipHash);
   if (permanentProfile) {
     // Ajouter la nouvelle IP si elle n'existe pas déjà
-    addIpToProfile(permanentProfile, ipHash);
-    return saveProfile(permanentProfile);
+    await addIpToProfile(permanentProfile.id, ipHash);
+    return permanentProfile;
   }
   
-  const existingProfile = loadExistingProfile(userId);
+  // 2. Chercher si l'ID utilisateur existe déjà
+  const existingProfile = await loadExistingProfile(userId);
   if (existingProfile) {
     // Ajouter la nouvelle IP si elle n'existe pas déjà
-    addIpToProfile(existingProfile, ipHash);
-    return saveProfile(existingProfile);
+    await addIpToProfile(existingProfile.id, ipHash);
+    return await loadExistingProfile(userId); // Recharger pour avoir la version à jour
   }
   
-  const existingByIp = findUserByIpHash(ipHash);
+  // 3. Chercher si l'IP est liée à un profil temporaire existant
+  const existingByIp = await findUserByIpHash(ipHash);
   if (existingByIp) {
-    updateVisitStats(existingByIp);
-    // L'IP est déjà dans la liste, juste sauvegarder
-    return saveProfile(existingByIp);
+    await updateVisitStats(existingByIp.id);
+    return existingByIp;
   }
   
-  return createNewUser(userId, ip);
+  // 4. Sinon, créer un nouveau profil
+  return await createNewUser(userId, ip);
 }
-

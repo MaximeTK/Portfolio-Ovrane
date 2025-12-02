@@ -1,19 +1,26 @@
 /**
- * Création de profils utilisateurs
+ * Création de profils utilisateurs - Version MongoDB
  */
 import { CONSOLE_LOGS, EMOJIS } from '../messages.js';
+import { User } from '../../models/User.js';
+import { convertToPermament, searchUserByName } from '../user/profileManagement.js';
+import { generateUserHash } from '../user/userProfiles.js';
 
 /**
  * Convertit un profil temporaire en permanent
  */
 async function convertTemporaryProfile(userId, name, context) {
   console.log(`   ${EMOJIS.info} Conversion du profil temporaire en permanent`);
-  const { convertToPermament } = await import('../user/profileManagement.js');
-  const updatedProfile = convertToPermament(userId, name);
+  console.log(`   DEBUG: userId=${userId}, name=${name}`);
+  
+  const updatedProfile = await convertToPermament(userId, name);
 
   if (!updatedProfile) {
+    console.error(`   ❌ ERREUR: Profil ${userId} non trouvé ou non mis à jour`);
     return { success: false, message: 'Erreur lors de la conversion du profil temporaire' };
   }
+  
+  console.log(`   DEBUG: Profil mis à jour en BDD:`, JSON.stringify(updatedProfile, null, 2));
 
   context.userProfile = updatedProfile;
   context.userId = updatedProfile.id;
@@ -35,49 +42,47 @@ async function convertTemporaryProfile(userId, name, context) {
 async function createNewPermanentProfile(name, currentProfile, context) {
   console.log(`   ${EMOJIS.info} Création d'un NOUVEAU profil permanent pour "${name}" (profil actuel: "${currentProfile.name}")`);
   
-  const crypto = await import('crypto');
-  const fs = await import('fs');
-  const path = await import('path');
-  const { getUsersDir } = await import('../user/userProfiles.js');
+  const ipHashes = currentProfile.ipHashes || [];
+  const firstIpHash = ipHashes.length > 0 ? ipHashes[0] : 'unknown';
   
-  const newUserId = crypto.default.randomBytes(8).toString('hex');
-  // Copier toutes les IPs du profil actuel (ou migrer depuis ipHash)
-  const ipHashes = currentProfile.ipHashes || (currentProfile.ipHash ? [currentProfile.ipHash] : []);
+  const newUserId = generateUserHash(firstIpHash, name);
   
-  const newProfile = {
-    id: newUserId,
-    ipHashes: ipHashes, // Copier toutes les IPs
-    firstVisit: new Date().toISOString(),
-    lastVisit: new Date().toISOString(),
-    visitCount: 1,
-    name: name,
-    isTemporary: false,
-    preferences: {},
-    conversations: [],
-    createdFrom: currentProfile.id
-  };
-  
-  const userFile = path.default.join(getUsersDir(), `${newUserId}.json`);
-  fs.default.writeFileSync(userFile, JSON.stringify(newProfile, null, 2));
-  
-  context.userProfile = newProfile;
-  context.userId = newUserId;
-  context.pendingUserCreation = null;
-  
-  console.log(`   ${EMOJIS.success} Nouveau profil créé avec succès: ${name} (ID: ${newUserId})`);
-  console.log(`   ${EMOJIS.info} L'utilisateur "${currentProfile.name}" reste disponible avec l'ID: ${currentProfile.id}`);
+  try {
+    const newProfile = new User({
+      id: newUserId,
+      ipHashes: ipHashes, // Copier toutes les IPs
+      visitCount: 1,
+      name: name,
+      isTemporary: false,
+      preferences: {},
+      conversations: [],
+      // createdFrom: currentProfile.id // Optionnel, pas dans le schéma original mais MongoDB l'accepte si strict:false
+    });
+    
+    await newProfile.save();
+    
+    context.userProfile = newProfile.toObject();
+    context.userId = newUserId;
+    context.pendingUserCreation = null;
+    
+    console.log(`   ${EMOJIS.success} Nouveau profil créé avec succès: ${name} (ID: ${newUserId})`);
+    console.log(`   ${EMOJIS.info} L'utilisateur "${currentProfile.name}" reste disponible avec l'ID: ${currentProfile.id}`);
 
-  return {
-    success: true,
-    userName: name,
-    userId: newUserId,
-    previousUser: currentProfile.name,
-    message: `Accueille chaleureusement "${name}"`
-  };
+    return {
+      success: true,
+      userName: name,
+      userId: newUserId,
+      previousUser: currentProfile.name,
+      message: `Accueille chaleureusement "${name}"`
+    };
+  } catch (error) {
+    console.error('❌ Erreur création profil permanent:', error);
+    return { success: false, message: 'Erreur interne lors de la création du profil' };
+  }
 }
 
 /**
- * Crée un nouveau profil utilisateur
+ * Crée un nouveau profil utilisateur (Fonction exportée pour l'IA)
  */
 export async function CreateUserProfile({ name, reason }, currentRequestContext) {
   try {
@@ -93,8 +98,7 @@ export async function CreateUserProfile({ name, reason }, currentRequestContext)
       console.log(`   ${EMOJIS.subitem} Raison IA: ${reason}`);
     }
 
-    const { searchUserByName } = await import('../user/profileManagement.js');
-    const existingUser = searchUserByName(name);
+    const existingUser = await searchUserByName(name);
     
     if (existingUser) {
       console.warn(`   ${EMOJIS.warning} Le nom "${name}" existe déjà`);
@@ -115,4 +119,3 @@ export async function CreateUserProfile({ name, reason }, currentRequestContext)
     return { success: false, message: `Erreur interne: ${error.message}` };
   }
 }
-

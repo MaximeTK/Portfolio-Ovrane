@@ -1,33 +1,37 @@
 /**
- * Gestion des conversations utilisateurs - max 5 fonctions, max 20 lignes
+ * Gestion des conversations utilisateurs - Version MongoDB
  */
-import fs from 'fs';
-import path from 'path';
-import { getUsersDir } from './userProfiles.js';
+import { User } from '../../models/User.js';
 
 /**
  * Ajoute une conversation
  */
-export function addConversation(userId, prompt, response, metadata = {}) {
-  const userFile = path.join(getUsersDir(), `${userId}.json`);
-  if (!fs.existsSync(userFile)) {
-    console.warn(`⚠️ Profil utilisateur non trouvé: ${userId}`);
-    return;
-  }
+export async function addConversation(userId, prompt, response, metadata = {}) {
   try {
-    const profile = JSON.parse(fs.readFileSync(userFile, 'utf8'));
+    // Créer l'objet conversation
+    // Note: Dans MongoDB on n'a pas besoin de limiter manuellement à 100,
+    // on peut utiliser $slice dans $push, mais pour l'instant gardons simple.
     const conversation = {
-      timestamp: new Date().toISOString(),
+      role: 'user', // Pour compatibilité avec le schéma, mais on stocke prompt/response dans metadata ou structure libre
+      content: prompt, // On stocke le prompt comme contenu principal
+      timestamp: new Date(),
+      // On stocke les détails spécifiques à ton format actuel
       prompt: prompt,
       response: response,
       ...metadata
     };
-    if (!profile.conversations) profile.conversations = [];
-    profile.conversations.push(conversation);
-    if (profile.conversations.length > 100) {
-      profile.conversations = profile.conversations.slice(-100);
-    }
-    fs.writeFileSync(userFile, JSON.stringify(profile, null, 2));
+
+    await User.updateOne(
+      { id: userId },
+      { 
+        $push: { 
+          conversations: {
+            $each: [conversation],
+            $slice: -100 // Garder seulement les 100 derniers
+          }
+        } 
+      }
+    );
   } catch (error) {
     console.error('❌ Erreur ajout conversation:', error);
   }
@@ -36,16 +40,15 @@ export function addConversation(userId, prompt, response, metadata = {}) {
 /**
  * Met à jour le profil utilisateur
  */
-export function updateUserProfile(userId, updates) {
-  const userFile = path.join(getUsersDir(), `${userId}.json`);
-  if (!fs.existsSync(userFile)) {
-    console.warn(`⚠️ Profil utilisateur non trouvé: ${userId}`);
-    return;
-  }
+export async function updateUserProfile(userId, updates) {
   try {
-    const profile = JSON.parse(fs.readFileSync(userFile, 'utf8'));
-    Object.assign(profile, updates);
-    fs.writeFileSync(userFile, JSON.stringify(profile, null, 2));
+    // Retirer les champs protégés
+    const { _id, id, ...safeUpdates } = updates;
+    
+    await User.updateOne(
+      { id: userId },
+      { $set: safeUpdates }
+    );
   } catch (error) {
     console.error('❌ Erreur mise à jour profil:', error);
   }
@@ -54,31 +57,31 @@ export function updateUserProfile(userId, updates) {
 /**
  * Récupère l'historique des conversations
  */
-export function getConversationHistory(userId, limit = 5) {
-  const userFile = path.join(getUsersDir(), `${userId}.json`);
-  if (!fs.existsSync(userFile)) return '';
-  
+export async function getConversationHistory(userId, limit = 5) {
   try {
-    let profile = JSON.parse(fs.readFileSync(userFile, 'utf8'));
-    let allConversations = [...(profile.conversations || [])];
+    const user = await User.findOne({ id: userId }).lean();
     
-    if (profile.mainProfileId) {
-      const mainProfileFile = path.join(getUsersDir(), `${profile.mainProfileId}.json`);
-      if (fs.existsSync(mainProfileFile)) {
-        try {
-          const mainProfile = JSON.parse(fs.readFileSync(mainProfileFile, 'utf8'));
-          allConversations = [
+    if (!user) return '';
+    
+    // Si c'est un profil lié à un profil principal (legacy logic, peut-être inutile avec MongoDB mais gardons-le)
+    if (user.mainProfileId) {
+      try {
+        const mainProfile = await User.findOne({ id: user.mainProfileId }).lean();
+        if (mainProfile) {
+          // Fusionner les conversations
+          const allConversations = [
             ...(mainProfile.conversations || []),
-            ...allConversations
+            ...(user.conversations || [])
           ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-          profile = mainProfile;
-        } catch (err) {
-          console.warn('⚠️ Impossible de charger le profil principal');
+          
+          return formatHistory(allConversations, mainProfile, limit);
         }
+      } catch (err) {
+        console.warn('⚠️ Impossible de charger le profil principal');
       }
     }
     
-    return formatHistory(allConversations, profile, limit);
+    return formatHistory(user.conversations || [], user, limit);
   } catch (error) {
     console.error('❌ Erreur récupération historique:', error);
     return '';
@@ -97,10 +100,15 @@ function formatHistory(allConversations, profile, limit) {
   
   recentConversations.forEach((conv) => {
     const date = new Date(conv.timestamp).toLocaleString('fr-FR');
-    history += `[${date}]\nUtilisateur: ${conv.prompt}\nIA: ${conv.response}\n\n`;
+    // Support ancien format (prompt/response) et nouveau format Mongoose (role/content)
+    if (conv.prompt && conv.response) {
+       history += `[${date}]\nUtilisateur: ${conv.prompt}\nIA: ${conv.response}\n\n`;
+    } else {
+       // Fallback si structure différente
+       history += `[${date}]\n${conv.role}: ${conv.content}\n\n`;
+    }
   });
   
   history += '=== FIN DE L\'HISTORIQUE ===\n';
   return history;
 }
-
