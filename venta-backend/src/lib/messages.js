@@ -236,22 +236,22 @@ export const TOOL_DESCRIPTIONS = {
   
   checkUser: {
     name: 'checkUser',
-    description: 'Vérifie si un nom existe en base. Appelle quand l\'utilisateur mentionne un nom (présentation/correction). Retourne: exists (bool), isCurrentUser (bool), isTemporaryProfile (bool). Selon résultat → CreateUserProfile OU UpdateUserProfile OU SwitchUserProfile OU rien.',
+    description: 'CRITIQUE: Appelle CETTE fonction EN PREMIER dès qu\'un nom est mentionné. Vérifie si le nom existe en base. Retourne: exists, isCurrentUser, isTemporaryProfile. Attends le résultat avant de décider de créer/corriger/changer.',
   },
   
   CreateUserProfile: {
     name: 'CreateUserProfile',
-    description: 'Crée un profil utilisateur. Appelle UNIQUEMENT si checkUser retourne exists:false. Si profil actuel temporaire → convertit en permanent. Si profil actuel permanent → crée nouveau profil séparé.',
+    description: 'Crée un profil utilisateur. INTERDIT si checkUser n\'a pas été appelé juste avant. Appelle UNIQUEMENT si checkUser retourne exists:false.',
   },
   
   UpdateUserProfile: {
     name: 'UpdateUserProfile',
-    description: 'Corrige le nom du profil actuel. Appelle UNIQUEMENT si: (1) mots de correction explicites ("pardon", "non", "désolé", "en fait", "erreur", "corrige") ET (2) profil non temporaire. Reason DOIT contenir un mot de correction sinon refusé.',
+    description: 'Corrige le nom du profil actuel. STRICTEMENT RÉSERVÉ aux corrections d\'erreurs explicites. INTERDIT si l\'utilisateur se présente juste avec un nouveau nom (dans ce cas, utilise checkUser puis potentiellement CreateUserProfile).',
   },
   
   SwitchUserProfile: {
     name: 'SwitchUserProfile',
-    description: 'Bascule vers un profil existant. Appelle quand: (1) checkUser confirme que profil existe et n\'est pas l\'actuel, ET (2) utilisateur confirme vouloir s\'y connecter. Ne pas utiliser pour créer/corriger profil.',
+    description: 'Bascule vers un profil existant. Appelle quand checkUser confirme que le profil existe et n\'est pas l\'actuel.',
   },
 };
 
