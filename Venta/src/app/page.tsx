@@ -30,8 +30,8 @@ export default function Home() {
     startSpeakAnimation 
   } = useAnimations();
   const { isSpeaking, audioLevel, speakWithAPI, speakWithBase64, speakWithBrowser } = useTTS();
-  const showTextWindow = useUIStore((state) => state.showTextWindow);
-  const hideTextWindow = useUIStore((state) => state.hideTextWindow);
+  const addTextWindow = useUIStore((state) => state.addTextWindow);
+  const closeTextWindow = useUIStore((state) => state.closeTextWindow);
   const appState = useUIStore((state) => state.appState);
 
   // Callback stable pour CommandProcessor
@@ -56,7 +56,7 @@ export default function Home() {
 
     setInputValue('');
     setLastProcessedTranscript('');
-    hideTextWindow();
+    // Les fenêtres de texte restent ouvertes et on en créera une nouvelle pour la prochaine réponse
     setCurrentAnimation('thinking');
     startThinkingAnimation();
     sendChatMessage(question);
@@ -72,9 +72,9 @@ export default function Home() {
         // car il est déjà affiché par IntroSequence.
         if (isFirstResponseRef.current) {
           isFirstResponseRef.current = false;
-        } else {
-          // Pour les messages suivants, on affiche la fenêtre normale
-          showTextWindow(currentTranscript);
+        } else if (currentTranscript.trim() !== '') {
+          // Pour les messages suivants, on ajoute une NOUVELLE fenêtre SEULEMENT SI LE TEXTE N'EST PAS VIDE
+          addTextWindow(currentTranscript);
         }
       }
       
@@ -83,7 +83,8 @@ export default function Home() {
       startSpeakAnimation();
       
       const onEnd = () => {
-        hideTextWindow();
+        // On ne ferme plus automatiquement la fenêtre de texte à la fin de la parole
+        // hideTextWindow(); 
         setCurrentAnimation('standby');
         startStandbyAnimation();
       };
@@ -96,7 +97,7 @@ export default function Home() {
         speakWithAPI(currentTranscript, setupAudioVisualization, onEnd);
       }
     }
-  }, [chatStatus, currentTranscript, lastProcessedTranscript, currentTTS, startSpeakAnimation, startStandbyAnimation, speakWithAPI, speakWithBase64, speakWithBrowser, setupAudioVisualization, showTextWindow, hideTextWindow, appState]);
+  }, [chatStatus, currentTranscript, lastProcessedTranscript, currentTTS, startSpeakAnimation, startStandbyAnimation, speakWithAPI, speakWithBase64, speakWithBrowser, setupAudioVisualization, addTextWindow, closeTextWindow, appState]);
 
   return (
     <>
@@ -104,7 +105,13 @@ export default function Home() {
       <div className="min-h-screen text-white font-sans overflow-hidden relative bg-transparent">
         
         {/* INTRO SEQUENCE - Contient le logo en mode Sleep et l'input */}
-        <IntroSequence send={sendChatMessage} currentTTS={currentTTS} messages={messages} currentUserProfile={currentUserProfile} />
+        <IntroSequence 
+          send={sendChatMessage} 
+          currentTTS={currentTTS} 
+          messages={messages} 
+          currentUserProfile={currentUserProfile}
+          currentUserId={currentUserId}
+        />
 
         {/* MAIN CONTENT - Visible seulement quand awake */}
         <div className={`fixed inset-0 flex flex-col items-center justify-center transition-opacity duration-1000 ${appState === 'awake' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
@@ -169,13 +176,11 @@ export default function Home() {
           <TextWindow />
           <ImageOverlay />
           <SectionHighlight />
-          {lastCommands && lastCommands.length > 0 && (
-            <CommandProcessor 
-              commands={lastCommands} 
-              onCommandsProcessed={handleCommandsProcessed}
-              currentUserId={currentUserId}
-            />
-          )}
+          <CommandProcessor 
+            commands={lastCommands || []} 
+            onCommandsProcessed={handleCommandsProcessed}
+            currentUserId={currentUserId}
+          />
         </>
       )}
     </>

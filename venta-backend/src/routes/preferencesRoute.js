@@ -25,13 +25,13 @@ export function setupPreferencesRoute(app) {
       }
       
       const { ip } = prepareUserInfo(req, currentUserId);
-      const userProfile = getUserProfile(currentUserId, ip);
+      const userProfile = await getUserProfile(currentUserId, ip);
       
       if (!userProfile) {
         return res.status(404).json({ error: 'Profil utilisateur non trouvé' });
       }
       
-      const success = saveUserPreference(currentUserId, preference, value);
+      const success = await saveUserPreference(currentUserId, preference, value);
       
       if (success) {
         console.log(`✅ Préférence ${preference} sauvegardée pour ${userProfile.name || currentUserId}: ${value}`);
@@ -56,7 +56,7 @@ export function setupPreferencesRoute(app) {
       }
       
       const { ip } = prepareUserInfo(req, userId);
-      const userProfile = getUserProfile(userId, ip);
+      const userProfile = await getUserProfile(userId, ip);
       
       if (!userProfile) {
         return res.status(404).json({ error: 'Profil utilisateur non trouvé' });

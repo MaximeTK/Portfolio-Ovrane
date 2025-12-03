@@ -10,11 +10,13 @@ interface ImageOverlay {
 }
 
 interface TextWindow {
+  id: string;
   visible: boolean;
   content?: string;
   title?: string;
   x: number;
   y: number;
+  zIndex: number;
 }
 
 // Nouveaux états pour l'intro
@@ -28,7 +30,11 @@ interface UIState {
 
   // État de l'overlay d'image
   imageOverlay: ImageOverlay;
-  textWindow: TextWindow;
+  textWindows: TextWindow[];
+  
+  // Gestion globale du Z-Index pour toutes les fenêtres (Texte + Commandes)
+  maxZIndex: number;
+  incrementMaxZIndex: () => number; // Retourne la nouvelle valeur
   
   // ID de la section actuellement highlightée
   highlightedId?: string;
@@ -40,14 +46,15 @@ interface UIState {
   
   showImage: (assetId: string, alt?: string) => void;
   hideImage: () => void;
-  showTextWindow: (content: string, title?: string, position?: { x: number; y: number }) => void;
-  hideTextWindow: () => void;
-  setTextWindowPosition: (x: number, y: number) => void;
+  addTextWindow: (content: string, title?: string, position?: { x: number; y: number }) => void;
+  closeTextWindow: (id: string) => void;
+  setTextWindowPosition: (id: string, x: number, y: number) => void;
+  bringTextWindowToFront: (id: string) => void;
   highlight: (id: string) => void;
   clearHighlight: () => void;
 }
 
-export const useUIStore = create<UIState>((set) => ({
+export const useUIStore = create<UIState>((set, get) => ({
   // Initial state
   appState: 'sleeping',
   userName: null,
@@ -56,15 +63,19 @@ export const useUIStore = create<UIState>((set) => ({
   imageOverlay: {
     visible: false,
   },
-  textWindow: {
-    visible: false,
-    x: 160,
-    y: 160,
-  },
+  textWindows: [],
+  
+  maxZIndex: 50, // Commence à 50
   
   highlightedId: undefined,
   
   // Actions
+  incrementMaxZIndex: () => {
+    const newMax = get().maxZIndex + 1;
+    set({ maxZIndex: newMax });
+    return newMax;
+  },
+  
   setAppState: (appState) => set({ appState }),
   setUserName: (userName) => set({ userName }),
   setWelcomeMessage: (welcomeMessage) => set({ welcomeMessage }),
@@ -89,36 +100,53 @@ export const useUIStore = create<UIState>((set) => ({
     });
   },
   
-  showTextWindow: (content: string, title?: string, position?: { x: number; y: number }) => {
-    set({
-      textWindow: {
-        visible: true,
-        content,
-        title,
-        x: position?.x ?? 160,
-        y: position?.y ?? 160,
-      },
-    });
+  addTextWindow: (content: string, title?: string, position?: { x: number; y: number }) => {
+    const id = Math.random().toString(36).substring(7);
+    const randomOffset = Math.floor(Math.random() * 40) - 20; 
+    const zIndex = get().incrementMaxZIndex();
+    
+    set((state) => ({
+      textWindows: [
+        ...state.textWindows,
+        {
+          id,
+          visible: true,
+          content,
+          title: title ?? 'Réponse',
+          x: (position?.x ?? 160) + randomOffset,
+          y: (position?.y ?? 160) + randomOffset,
+          zIndex,
+        }
+      ]
+    }));
   },
   
-  hideTextWindow: () => {
+  closeTextWindow: (id: string) => {
     set((state) => ({
-      textWindow: {
-        ...state.textWindow,
-        visible: false,
-        content: undefined,
-        title: undefined,
-      },
+      textWindows: state.textWindows.filter((window) => window.id !== id),
     }));
   },
 
-  setTextWindowPosition: (x: number, y: number) => {
+  setTextWindowPosition: (id: string, x: number, y: number) => {
     set((state) => ({
-      textWindow: {
-        ...state.textWindow,
-        x,
-        y,
-      },
+      textWindows: state.textWindows.map((window) => 
+        window.id === id ? { ...window, x, y } : window
+      ),
+    }));
+  },
+  
+  bringTextWindowToFront: (id: string) => {
+    const currentMax = get().maxZIndex;
+    const window = get().textWindows.find(w => w.id === id);
+    
+    // Si la fenêtre est déjà au premier plan (zIndex == maxZIndex), inutile d'incrémenter
+    if (window && window.zIndex === currentMax) return;
+    
+    const newZIndex = get().incrementMaxZIndex();
+    set((state) => ({
+      textWindows: state.textWindows.map((w) => 
+        w.id === id ? { ...w, zIndex: newZIndex } : w
+      ),
     }));
   },
   

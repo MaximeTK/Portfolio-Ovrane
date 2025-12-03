@@ -27,12 +27,16 @@ const CODE_BLOCK_STYLE = {
   fontSize: '14px',
 };
 
+import { useUIStore } from '@/lib/state/uiStore';
+
 export default function CommandProcessor({
   commands,
   onCommandsProcessed,
   currentUserId,
 }: CommandProcessorProps) {
   const [windows, setWindows] = useState<WindowData[]>([]);
+  const incrementMaxZIndex = useUIStore((state) => state.incrementMaxZIndex);
+  const maxZIndex = useUIStore((state) => state.maxZIndex);
   
   // Historique des commandes pour ne pas retraiter les anciennes (sauf si nouvelle référence)
   const processedCommandsRef = useRef<Set<string>>(new Set());
@@ -49,6 +53,12 @@ export default function CommandProcessor({
   const processCommands = useCallback(
     (pending: Command[]) => {
       const newWindows: WindowData[] = [];
+      
+      // Pour éviter d'appeler incrementMaxZIndex pendant le rendu ou de manière synchrone directe
+      // qui causerait un update d'état dans un autre composant pendant le render de celui-ci
+      // on prépare les fenêtres mais on assignera le zIndex final via un effet ou une action différée
+      // ICI: Comme processCommands est appelé dans un useEffect, c'est safe d'appeler des setters
+      
       pending.forEach((cmd, index) => {
         console.log(`⚙️ [CommandProcessor] Traitement commande: ${cmd.command} -> ${cmd.parameter}`);
         
@@ -58,14 +68,20 @@ export default function CommandProcessor({
           index,
           currentUserId,
         );
-        if (win) newWindows.push(win);
+        if (win) {
+          // Assigner le z-index global
+          // NOTE: incrementMaxZIndex est une action Zustand qui met à jour le store.
+          // Appelée ici, à l'intérieur du useEffect qui appelle processCommands, c'est correct.
+          win.zIndex = incrementMaxZIndex();
+          newWindows.push(win);
+        }
       });
       if (newWindows.length) {
         setWindows((prev) => [...prev, ...newWindows]);
       }
       onCommandsProcessed();
     },
-    [currentUserId, onCommandsProcessed],
+    [currentUserId, onCommandsProcessed, incrementMaxZIndex],
   );
 
   useEffect(() => {
@@ -118,6 +134,21 @@ export default function CommandProcessor({
     );
   }, []);
 
+  const bringWindowToFront = useCallback((id: string) => {
+    // Utilisation de setTimeout pour sortir du cycle de rendu React actuel
+    // Cela évite l'erreur "Cannot update a component while rendering a different component"
+    setTimeout(() => {
+      setWindows((prev) => {
+        const win = prev.find((w) => w.id === id);
+        if (!win) return prev;
+        
+        const newZIndex = incrementMaxZIndex();
+        
+        return prev.map((w) => (w.id === id ? { ...w, zIndex: newZIndex } : w));
+      });
+    }, 0);
+  }, [incrementMaxZIndex]);
+
   const renderedWindows = useMemo(
     () =>
       windows.map((window) => (
@@ -126,13 +157,15 @@ export default function CommandProcessor({
           title={window.title}
           x={window.x}
           y={window.y}
+          zIndex={window.zIndex}
           onClose={() => closeWindow(window.id)}
           onMove={(nextX, nextY) => updateWindowPosition(window.id, nextX, nextY)}
+          onFocus={() => bringWindowToFront(window.id)}
         >
           {renderWindowContent(window)}
         </GlassmorphismeWindow>
       )),
-    [windows, closeWindow, updateWindowPosition],
+    [windows, closeWindow, updateWindowPosition, bringWindowToFront],
   );
 
   return <>{renderedWindows}</>;

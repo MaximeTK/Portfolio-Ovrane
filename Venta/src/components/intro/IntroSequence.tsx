@@ -3,16 +3,19 @@ import { useUIStore } from '@/lib/state/uiStore';
 import { HexagonalAnimation } from '../ui/HexagonalAnimation';
 import { NameInput } from './NameInput';
 import { TTSData, Message, UserProfileData } from '@/lib/chat/types';
+import { useBackgroundStore } from '@/lib/state/backgroundStore';
 
 interface IntroSequenceProps {
   send: (message: string) => void;
   currentTTS: TTSData | null;
   messages: Message[];
   currentUserProfile: UserProfileData | null;
+  currentUserId: string | null;
 }
 
-export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile }: IntroSequenceProps) => {
+export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, currentUserId }: IntroSequenceProps) => {
   const { appState, setAppState, setUserName, userName } = useUIStore();
+  const loadUserPreference = useBackgroundStore((state) => state.loadUserPreference);
   const [hasTriggeredAwake, setHasTriggeredAwake] = useState(false);
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
 
@@ -22,8 +25,15 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile }
       // On a reçu l'audio (TTS) du backend !
       setAppState('awake');
       setHasTriggeredAwake(true);
+      
+      // C'est le bon moment pour appliquer les préférences utilisateur
+      // car l'utilisateur vient d'être identifié par le backend
+      if (currentUserId) {
+        console.log(`🎨 [IntroSequence] Application des préférences pour l'utilisateur: ${currentUserId}`);
+        loadUserPreference(currentUserId);
+      }
     }
-  }, [appState, currentTTS, messages, setAppState, hasTriggeredAwake]);
+  }, [appState, currentTTS, messages, setAppState, hasTriggeredAwake, currentUserId, loadUserPreference]);
 
   // Gestion de la disparition du message de bienvenue après 10 secondes
   useEffect(() => {

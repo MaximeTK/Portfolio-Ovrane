@@ -10,6 +10,8 @@ interface GlassmorphismeWindowProps {
   children: React.ReactNode;
   onClose: () => void;
   onMove: (x: number, y: number) => void;
+  zIndex?: number;
+  onFocus?: () => void;
 }
 
 export default function GlassmorphismeWindow({ 
@@ -18,7 +20,9 @@ export default function GlassmorphismeWindow({
   y, 
   children, 
   onClose, 
-  onMove 
+  onMove,
+  zIndex,
+  onFocus
 }: GlassmorphismeWindowProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -32,6 +36,13 @@ export default function GlassmorphismeWindow({
   const initialPosRef = useRef({ x: 0, y: 0 });
   const [isInitialized, setIsInitialized] = useState(false);
   const [windowId] = useState(() => `window-${Math.random().toString(36).substr(2, 9)}`);
+
+  // Gestion du focus (mettre au premier plan) lors du clic
+  const handleMouseDown = () => {
+    if (onFocus) {
+      onFocus();
+    }
+  };
 
   // Contraintes identiques à glass.html
   const baseMaxSize = 31; // base ~31vh
@@ -162,6 +173,7 @@ export default function GlassmorphismeWindow({
       role="dialog"
       aria-modal="true"
       aria-labelledby={windowId}
+      onMouseDownCapture={handleMouseDown}
       style={{
         left: isInitialized ? x + 'px' : undefined,
         top: isInitialized ? y + 'px' : undefined,
@@ -172,7 +184,7 @@ export default function GlassmorphismeWindow({
         maxHeight: '90vh',
         position: 'fixed',
         height: 'fit-content',
-        zIndex: 50
+        zIndex: zIndex ?? 50
       }}
     >
       <div 

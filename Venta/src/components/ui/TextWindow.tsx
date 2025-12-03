@@ -8,26 +8,33 @@ import { useUIStore } from '@/lib/state/uiStore';
 const markdownPlugins = [remarkGfm];
 
 export function TextWindow() {
-  const { textWindow, hideTextWindow, setTextWindowPosition } = useUIStore();
+  const { textWindows, closeTextWindow, setTextWindowPosition, bringTextWindowToFront } = useUIStore();
 
-  if (!textWindow.visible || !textWindow.content) {
+  if (!textWindows || textWindows.length === 0) {
     return null;
   }
 
   return (
-    <GlassmorphismeWindow
-      title={textWindow.title ?? 'Réponse'}
-      x={textWindow.x}
-      y={textWindow.y}
-      onClose={hideTextWindow}
-      onMove={setTextWindowPosition}
-    >
-      <div className="text-window-markdown">
-        <ReactMarkdown remarkPlugins={markdownPlugins}>
-          {textWindow.content}
-        </ReactMarkdown>
-      </div>
-    </GlassmorphismeWindow>
+    <>
+      {textWindows.map((window) => (
+        <GlassmorphismeWindow
+          key={window.id}
+          title={window.title ?? 'Réponse'}
+          x={window.x}
+          y={window.y}
+          zIndex={window.zIndex}
+          onClose={() => closeTextWindow(window.id)}
+          onMove={(x, y) => setTextWindowPosition(window.id, x, y)}
+          onFocus={() => bringTextWindowToFront(window.id)}
+        >
+          <div className="text-window-markdown">
+            <ReactMarkdown remarkPlugins={markdownPlugins}>
+              {window.content ?? ''}
+            </ReactMarkdown>
+          </div>
+        </GlassmorphismeWindow>
+      ))}
+    </>
   );
 }
 

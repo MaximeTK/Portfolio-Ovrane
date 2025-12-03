@@ -43,18 +43,24 @@ export function useChatController(): UseChatControllerReturn {
       const storedUserId = localStorage.getItem('venta_userId');
       if (storedUserId) {
         setCurrentUserId(storedUserId);
-        // Charger les préférences au premier montage
-        loadUserPreference(storedUserId);
+        // NE PAS charger les préférences au premier montage pour éviter le flash
+        // On attend l'interaction explicite (IntroSequence) ou la confirmation d'identité
       }
     }
   }, [loadUserPreference]);
-  
+
   // Charger les préférences utilisateur quand l'userId change
   // SAUF si on vient de faire un SetBackground (pour éviter d'écraser la nouvelle couleur)
+  // ET SAUF au démarrage initial (géré par IntroSequence)
   useEffect(() => {
     if (currentUserId && !skipNextPreferenceLoad) {
-      console.log(`🔄 [useEffect] Chargement auto des préférences pour: ${currentUserId}`);
-      loadUserPreference(currentUserId);
+      // On ne charge plus automatiquement ici au montage initial pour éviter le flash
+      // C'est IntroSequence qui s'en charge au moment du "réveil"
+      // Mais on garde ce hook pour les changements ultérieurs (switch user)
+      
+      // Hack pour détecter si c'est le premier montage ou un vrai changement
+      // (si on voulait être très précis, on utiliserait une ref)
+      // Pour l'instant, on laisse IntroSequence gérer le premier chargement
     } else if (skipNextPreferenceLoad) {
       console.log(`⏭️ [useEffect] Skip du chargement auto (SetBackground actif)`);
       setSkipNextPreferenceLoad(false);
@@ -103,9 +109,10 @@ export function useChatController(): UseChatControllerReturn {
       }
       setCurrentTranscript(replyText);
       
-      // Stocker les données TTS si disponibles
+      // Stocker les données TTS si disponibles (MAIS on ne l'applique pas tout de suite pour éviter le réveil prématuré)
+      let pendingTTS = null;
       if (data.tts) {
-        setCurrentTTS(data.tts);
+        pendingTTS = data.tts;
       }
 
       // Stocker le profil utilisateur s'il est renvoyé
@@ -123,6 +130,8 @@ export function useChatController(): UseChatControllerReturn {
       if (newUserId !== currentUserId && newUserId) {
         console.log(`🔄 [FRONTEND] Switch de profil détecté: ${currentUserId} → ${newUserId}`);
         
+        // On ne reset PAS le background ici pour éviter le passage par le noir si on a une préférence
+        
         // Vérifier si les commandes contiennent SetBackground
         const hasSetBackgroundCommand = data.commands?.some(
           (cmd) => cmd.command.toLowerCase() === 'setbackground',
@@ -130,12 +139,10 @@ export function useChatController(): UseChatControllerReturn {
         
         if (hasSetBackgroundCommand) {
           console.log(`⏭️ [FRONTEND] SetBackground détecté, on skip le rechargement des préférences`);
-          // Activer le flag pour que le useEffect ne charge pas les préférences
           setSkipNextPreferenceLoad(true);
         }
         
-        // Mettre à jour l'userId (cela déclenchera le useEffect qui charge les préférences)
-        // MAIS le useEffect sera skippé si skipNextPreferenceLoad est true
+        // Mettre à jour l'userId
         setCurrentUserId(newUserId);
         
         // Si pas de SetBackground, charger les préférences manuellement AVANT le traitement des commandes
@@ -144,6 +151,14 @@ export function useChatController(): UseChatControllerReturn {
           await loadUserPreference(newUserId);
         }
       }
+      
+      // APPLIQUER LE TTS MAINTENANT SEULEMENT (après avoir chargé les préférences)
+      // Cela garantit que IntroSequence ne déclenche pas 'awake' avant que le store de background ne soit à jour
+      if (pendingTTS) {
+        setCurrentTTS(pendingTTS);
+      }
+      
+      setMessages((prev) => [...prev, assistantMessage]);
       
       setMessages((prev) => [...prev, assistantMessage]);
       setStatus('idle');

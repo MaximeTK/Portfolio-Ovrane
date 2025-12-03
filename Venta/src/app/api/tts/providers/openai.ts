@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 
-const MODEL = 'tts-1';
+const MODEL = 'tts-1-hd';
 const VOICE = 'nova';
 const SPEED = 1;
 

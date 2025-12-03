@@ -21,6 +21,7 @@ type BaseWindow = {
   title: string;
   x: number;
   y: number;
+  zIndex?: number;
 };
 
 export type ImageWindow = BaseWindow & {
