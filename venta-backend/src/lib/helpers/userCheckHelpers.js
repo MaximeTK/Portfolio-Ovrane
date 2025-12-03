@@ -100,7 +100,7 @@ export async function checkUser({ name }, currentRequestContext) {
       currentUserName: currentProfile?.name || null,
       isTemporaryProfile: currentProfile?.isTemporary || false,
       existingUserInfo: { id: existingUser.id, name: existingUser.name, visitCount: existingUser.visitCount },
-      message: `Le nom "${name}" existe en base mais appartient à un autre utilisateur. L'IA doit déterminer si c'est une correction de nom (appeler UpdateUserProfile) ou juste un contexte ("je vais chez ${name}").`
+      message: `Le nom "${name}" existe en base mais appartient à un autre utilisateur. L'IA doit déterminer selon le contexte si c'est une correction de nom (appeler UpdateUserProfile) ou bien le nom de l'utilisateur actuel (appeler SwitchUserProfile si c'est le cas et que le profil actuel n'est pas le bon ET que ça ne semble pas etre une correction de nom) ou bien juste un contexte ("je vais chez ${name}"), tu n'as pas le droit de demander des précisions sur le nom de l'utilisateur.`
     };
 
   } catch (error) {

@@ -1,5 +1,5 @@
 /**
- * Store Zustand pour l'état de l'UI (overlay d'images, highlight de sections)
+ * Store Zustand pour l'état de l'UI (overlay d'images, highlight de sections, intro)
  */
 import { create } from 'zustand';
 
@@ -17,7 +17,15 @@ interface TextWindow {
   y: number;
 }
 
+// Nouveaux états pour l'intro
+export type AppState = 'sleeping' | 'processing' | 'awake';
+
 interface UIState {
+  // État global de l'application
+  appState: AppState;
+  userName: string | null;
+  welcomeMessage: string | null;
+
   // État de l'overlay d'image
   imageOverlay: ImageOverlay;
   textWindow: TextWindow;
@@ -26,6 +34,10 @@ interface UIState {
   highlightedId?: string;
   
   // Actions
+  setAppState: (state: AppState) => void;
+  setUserName: (name: string) => void;
+  setWelcomeMessage: (message: string) => void;
+  
   showImage: (assetId: string, alt?: string) => void;
   hideImage: () => void;
   showTextWindow: (content: string, title?: string, position?: { x: number; y: number }) => void;
@@ -36,6 +48,11 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
+  // Initial state
+  appState: 'sleeping',
+  userName: null,
+  welcomeMessage: null,
+  
   imageOverlay: {
     visible: false,
   },
@@ -46,6 +63,11 @@ export const useUIStore = create<UIState>((set) => ({
   },
   
   highlightedId: undefined,
+  
+  // Actions
+  setAppState: (appState) => set({ appState }),
+  setUserName: (userName) => set({ userName }),
+  setWelcomeMessage: (welcomeMessage) => set({ welcomeMessage }),
   
   showImage: (assetId: string, alt?: string) => {
     set({

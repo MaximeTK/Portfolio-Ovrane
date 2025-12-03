@@ -4,16 +4,9 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Message, ChatStatus, Command } from '../chat/types';
+import { Message, ChatStatus, Command, TTSData, UserProfileData } from '../chat/types';
 import { createMessage, parseResponse, updateStoredUserId } from './chatHelpers';
 import { useBackgroundStore } from '../state/backgroundStore';
-
-interface TTSData {
-  audio?: string; // base64
-  provider?: string;
-  format?: string;
-  useClientTTS?: boolean;
-}
 
 interface UseChatControllerReturn {
   messages: Message[];
@@ -24,6 +17,7 @@ interface UseChatControllerReturn {
   currentTranscript: string;
   lastCommands: Command[];
   currentUserId: string | null;
+  currentUserProfile: UserProfileData | null;
   currentTTS: TTSData | null;
 }
 
@@ -37,6 +31,7 @@ export function useChatController(): UseChatControllerReturn {
   const [currentTranscript, setCurrentTranscript] = useState<string>('');
   const [lastCommands, setLastCommands] = useState<Command[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfileData | null>(null);
   const [skipNextPreferenceLoad, setSkipNextPreferenceLoad] = useState(false);
   const [currentTTS, setCurrentTTS] = useState<TTSData | null>(null);
   
@@ -112,6 +107,11 @@ export function useChatController(): UseChatControllerReturn {
       if (data.tts) {
         setCurrentTTS(data.tts);
       }
+
+      // Stocker le profil utilisateur s'il est renvoyé
+      if (data.userProfile) {
+        setCurrentUserProfile(data.userProfile);
+      }
       
       const assistantMessage = createMessage('assistant', replyText);
       if (data.commands && data.commands.length > 0) {
@@ -166,6 +166,7 @@ export function useChatController(): UseChatControllerReturn {
     currentTranscript,
     lastCommands,
     currentUserId,
+    currentUserProfile,
     currentTTS,
   };
 }

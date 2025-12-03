@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import GlassmorphismeWindow from './GlassmorphismeWindow';
 import type { WindowData } from './commandTypes';
 import { processCommand } from './commandHandlers';
@@ -33,17 +33,25 @@ export default function CommandProcessor({
   currentUserId,
 }: CommandProcessorProps) {
   const [windows, setWindows] = useState<WindowData[]>([]);
-  const processedCommandsRef = React.useRef<Set<string>>(new Set());
+  
+  // Historique des commandes pour ne pas retraiter les anciennes (sauf si nouvelle référence)
+  const processedCommandsRef = useRef<Set<string>>(new Set());
+  
+  // Référence vers le dernier tableau de commandes traité
+  // Permet d'éviter de retraiter les commandes si le composant re-render mais que les commandes n'ont pas changé
+  const lastProcessedCommandsRef = useRef<Command[] | null>(null);
 
   const trimHistory = useCallback(() => {
     const entries = Array.from(processedCommandsRef.current);
-    processedCommandsRef.current = new Set(entries.slice(-5));
+    processedCommandsRef.current = new Set(entries.slice(-20));
   }, []);
 
   const processCommands = useCallback(
     (pending: Command[]) => {
       const newWindows: WindowData[] = [];
       pending.forEach((cmd, index) => {
+        console.log(`⚙️ [CommandProcessor] Traitement commande: ${cmd.command} -> ${cmd.parameter}`);
+        
         const win = processCommand(
           cmd.command,
           cmd.parameter,
@@ -61,12 +69,41 @@ export default function CommandProcessor({
   );
 
   useEffect(() => {
-    if (!commands.length) return;
+    // Sécurité anti-boucle : Si on a déjà traité exactement ce tableau (même référence), on arrête tout de suite.
+    if (commands === lastProcessedCommandsRef.current) {
+      return;
+    }
+    
+    if (!commands.length) {
+      lastProcessedCommandsRef.current = commands;
+      return;
+    }
+
+    // Clé unique basée sur le contenu JSON pour l'historique global
     const commandKey = JSON.stringify(commands);
-    if (processedCommandsRef.current.has(commandKey)) return;
-    processedCommandsRef.current.add(commandKey);
+    
+    // Détection si c'est une commande de background
+    const isBackgroundCommand = commands.some(c => c.command.toLowerCase() === 'setbackground');
+    
+    // Si ce n'est PAS un changement de fond et qu'on a déjà vu cette commande exacte dans l'historique, on ignore.
+    // (Pour SetBackground, on accepte de le refaire même si c'est la même commande, tant que c'est un nouveau tableau)
+    if (!isBackgroundCommand && processedCommandsRef.current.has(commandKey)) {
+      lastProcessedCommandsRef.current = commands; // On marque comme vu
+      return;
+    }
+    
+    // On ajoute à l'historique
+    if (!processedCommandsRef.current.has(commandKey)) {
+      processedCommandsRef.current.add(commandKey);
+    }
+    
+    // On traite les commandes
     processCommands(commands);
-    if (processedCommandsRef.current.size > 10) {
+    
+    // On met à jour la référence pour empêcher le re-traitement au prochain render
+    lastProcessedCommandsRef.current = commands;
+    
+    if (processedCommandsRef.current.size > 20) {
       trimHistory();
     }
   }, [commands, processCommands, trimHistory]);

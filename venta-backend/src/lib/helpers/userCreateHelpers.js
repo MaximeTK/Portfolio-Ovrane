@@ -5,6 +5,7 @@ import { CONSOLE_LOGS, EMOJIS } from '../messages.js';
 import { User } from '../../models/User.js';
 import { convertToPermament, searchUserByName } from '../user/profileManagement.js';
 import { generateUserHash } from '../user/userProfiles.js';
+import { SwitchUserProfile } from './userSwitchHelpers.js';
 
 /**
  * Convertit un profil temporaire en permanent
@@ -56,7 +57,6 @@ async function createNewPermanentProfile(name, currentProfile, context) {
       isTemporary: false,
       preferences: {},
       conversations: [],
-      // createdFrom: currentProfile.id // Optionnel, pas dans le schéma original mais MongoDB l'accepte si strict:false
     });
     
     await newProfile.save();
@@ -101,11 +101,9 @@ export async function CreateUserProfile({ name, reason }, currentRequestContext)
     const existingUser = await searchUserByName(name);
     
     if (existingUser) {
-      console.warn(`   ${EMOJIS.warning} Le nom "${name}" existe déjà`);
-      return {
-        success: false,
-        message: `Le nom "${name}" existe déjà en base de données. Vous auriez dû détecter cela avec checkUser.`
-      };
+      console.log(`   ${EMOJIS.info} Le nom "${name}" existe déjà -> Switch automatique`);
+      // Au lieu de renvoyer une erreur, on switch automatiquement
+      return await SwitchUserProfile({ name, reason: 'Auto-switch via CreateUserProfile' }, currentRequestContext);
     }
 
     if (currentProfile.isTemporary) {

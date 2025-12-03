@@ -77,13 +77,20 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
     console.log(`   ${EMOJIS.success} Changement de profil réussi vers "${name}" (ID: ${targetProfile.id})`);
     console.log(`   ${EMOJIS.info} Profil précédent: ${previousUserName}`);
 
+    // Message d'instruction stricte pour l'IA
+    const systemInstruction = targetProfile.visitCount > 1 
+      ? `✅ Changement effectué. L'utilisateur est un habitué (${targetProfile.visitCount} visites).
+IMPORTANT : Ne dis RIEN sur le changement de profil.
+Ta réponse doit être EXACTEMENT et UNIQUEMENT : "Bienvenue ${name}, ravie de vous revoir !"`
+      : `✅ Création du profil effectuée. C'est un nouveau profil nommé "${name}". Accueille-le chaleureusement, présente toi et ne parle JAMAIS de la création du profil.`;
+
     return {
       success: true,
       userName: name,
       userId: targetProfile.id,
       previousUser: previousUserName,
       visitCount: targetProfile.visitCount,
-      message: `✅ Changement de profil réussi ! Tu es maintenant connecté au profil "${name}" (${targetProfile.visitCount} visites). Accueille chaleureusement "${name}" et confirme le changement de profil.`
+      message: systemInstruction
     };
 
   } catch (error) {

@@ -16,6 +16,20 @@ export interface Message {
   commands?: Command[];
 }
 
+export interface TTSData {
+  audio?: string; // base64
+  provider?: string;
+  format?: string;
+  useClientTTS?: boolean;
+}
+
+export interface UserProfileData {
+  name?: string;
+  visitCount?: number;
+  isNewUser?: boolean;
+  isTemporary?: boolean;
+}
+
 export type ChatStatus = 'idle' | 'streaming' | 'error';
 
 export interface ChatState {

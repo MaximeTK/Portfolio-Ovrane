@@ -59,7 +59,19 @@ async function loadExistingProfile(userId) {
 export async function getUserProfile(userId, ip) {
   const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
   
-  // 1. Chercher si l'IP correspond à un profil permanent existant
+  // 1. PRIORITÉ ABSOLUE : Si un userId est fourni et valide, on l'utilise.
+  // Cela permet de "sortir" de la détection automatique par IP quand on a switché de profil.
+  if (userId) {
+    const existingProfile = await loadExistingProfile(userId);
+    if (existingProfile) {
+      // Ajouter la nouvelle IP si elle n'existe pas déjà (pour garder une trace)
+      await addIpToProfile(existingProfile.id, ipHash);
+      // On recharge pour être sûr d'avoir la version à jour avec l'IP
+      return await loadExistingProfile(userId); 
+    }
+  }
+
+  // 2. Si aucun userId valide n'est fourni, on cherche si l'IP correspond à un profil PERMANENT existant
   const permanentProfile = await loadPermanentProfile(ipHash);
   if (permanentProfile) {
     // Ajouter la nouvelle IP si elle n'existe pas déjà
@@ -67,15 +79,7 @@ export async function getUserProfile(userId, ip) {
     return permanentProfile;
   }
   
-  // 2. Chercher si l'ID utilisateur existe déjà
-  const existingProfile = await loadExistingProfile(userId);
-  if (existingProfile) {
-    // Ajouter la nouvelle IP si elle n'existe pas déjà
-    await addIpToProfile(existingProfile.id, ipHash);
-    return await loadExistingProfile(userId); // Recharger pour avoir la version à jour
-  }
-  
-  // 3. Chercher si l'IP est liée à un profil temporaire existant
+  // 3. Chercher si l'IP est liée à un profil TEMPORAIRE existant
   const existingByIp = await findUserByIpHash(ipHash);
   if (existingByIp) {
     await updateVisitStats(existingByIp.id);

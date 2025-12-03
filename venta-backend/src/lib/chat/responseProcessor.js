@@ -113,6 +113,10 @@ export async function processResponse(response, userId, userProfile, prompt) {
   const { rawResponse, ragCoverage, ragSources } = response;
   const { commands, cleanResponse } = extractCommands(rawResponse);
 
+  // Sauvegarde de l'état avant les commandes
+  const wasTemporary = userProfile.isTemporary;
+  const previousUserId = userId;
+
   await handleBackendCommands(commands);
   await handlePendingUserCreationFallback();
   
@@ -121,12 +125,35 @@ export async function processResponse(response, userId, userProfile, prompt) {
     finalReply = MISC_MESSAGES.defaultResponse;
   }
   
+  // Vérification post-commandes
   const updatedContext = getRequestContext();
+  let hasSwitchedUser = false;
+  
   if (updatedContext && updatedContext.userProfile) {
     userId = updatedContext.userId;
     userProfile = updatedContext.userProfile;
+    
     if (userProfile.name) {
-      console.log(`${EMOJIS.success} ${CONSOLE_LOGS.backend} Profil mis à jour par l'IA: ${userProfile.name}`);
+      console.log(`${EMOJIS.success} ${CONSOLE_LOGS.backend} Profil actif: ${userProfile.name}`);
+    }
+    
+    // Détection du switch : Si on était temporaire et qu'on ne l'est plus
+    // OU si l'ID a changé
+    if ((wasTemporary && !userProfile.isTemporary) || (previousUserId !== userId)) {
+      hasSwitchedUser = true;
+    }
+  }
+  
+  // LOGIQUE DE REMPLACEMENT DU MESSAGE (TTS + TEXTE)
+  // Si on a changé d'utilisateur, on force un message de bienvenue standardisé
+  // pour que le TTS corresponde exactement à l'affichage frontend (IntroSequence.tsx)
+  if (hasSwitchedUser && userProfile.name) {
+    if (userProfile.visitCount > 1) {
+      console.log(`✨ [AUTO-REPLY] Utilisateur récurrent détecté (${userProfile.name}), remplacement de la réponse.`);
+      finalReply = `Bienvenue ${userProfile.name}, ravie de vous revoir !`;
+    } else {
+      console.log(`✨ [AUTO-REPLY] Nouvel utilisateur détecté (${userProfile.name}), remplacement de la réponse.`);
+      finalReply = `Bienvenue ${userProfile.name}, enchantée de faire votre connaissance !`;
     }
   }
   
@@ -170,4 +197,3 @@ export async function processResponse(response, userId, userProfile, prompt) {
     tts: ttsData
   };
 }
-

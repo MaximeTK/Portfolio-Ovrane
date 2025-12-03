@@ -7,48 +7,49 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
   const currentPalette = useBackgroundStore((state) => state.currentPalette);
   
   // Système de fondu croisé pour transitions douces entre dégradés
-  const [previousPalette, setPreviousPalette] = useState(currentPalette);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [activePalette, setActivePalette] = useState(currentPalette);
+  const [nextPalette, setNextPalette] = useState<typeof currentPalette | null>(null);
   
   useEffect(() => {
-    if (currentPalette.id !== previousPalette.id) {
-      // Au premier chargement, pas de transition
-      if (isFirstLoad) {
-        setPreviousPalette(currentPalette);
-        setIsFirstLoad(false);
-        return;
-      }
+    // Si la palette change et qu'elle est différente de celle active
+    if (currentPalette.id !== activePalette.id) {
+      console.log(`🎨 [BackgroundProvider] Transition de ${activePalette.name} vers ${currentPalette.name}`);
       
-      // Pour les changements suivants, faire une transition douce
-      setIsTransitioning(true);
+      // On définit la prochaine palette (ce qui va déclencher l'apparition de la couche supérieure)
+      setNextPalette(currentPalette);
+      
+      // Après la transition (2.5s), on met à jour la palette active et on retire la "prochaine"
+      // pour préparer le prochain changement
       const timer = setTimeout(() => {
-        setPreviousPalette(currentPalette);
-        setIsTransitioning(false);
-      }, 2500); // Durée de la transition
+        setActivePalette(currentPalette);
+        setNextPalette(null);
+        console.log(`🎨 [BackgroundProvider] Transition terminée, palette active: ${currentPalette.name}`);
+      }, 2500);
+      
       return () => clearTimeout(timer);
     }
-  }, [currentPalette, previousPalette.id, isFirstLoad]);
+  }, [currentPalette, activePalette.id, activePalette.name]);
 
   return (
     <>
       {/* Système de double couche pour transition douce entre dégradés */}
-      <div className="fixed inset-0 min-h-screen">
-        {/* Couche de fond (ancienne palette) */}
+      <div className="fixed inset-0 min-h-screen pointer-events-none z-0">
+        {/* Couche de BASE (Palette Active) - Toujours visible */}
         <div 
-          className="absolute inset-0"
+          className="absolute inset-0 transition-colors duration-[2500ms]"
           style={{
-            background: `linear-gradient(180deg, ${previousPalette.topColor} 0%, ${previousPalette.bottomColor} 100%)`
+            background: `linear-gradient(180deg, ${activePalette.topColor} 0%, ${activePalette.bottomColor} 100%)`
           }}
         />
         
-        {/* Couche de dessus (nouvelle palette) avec transition d'opacité */}
+        {/* Couche de TRANSITION (Nouvelle Palette) - Apparaît en fondu par dessus */}
         <div 
-          className="absolute inset-0"
+          className="absolute inset-0 transition-opacity duration-[2500ms] ease-in-out"
           style={{
-            background: `linear-gradient(180deg, ${currentPalette.topColor} 0%, ${currentPalette.bottomColor} 100%)`,
-            opacity: isTransitioning ? 1 : 0,
-            transition: 'opacity 2.5s cubic-bezier(0.4, 0, 0.2, 1)'
+            background: nextPalette 
+              ? `linear-gradient(180deg, ${nextPalette.topColor} 0%, ${nextPalette.bottomColor} 100%)`
+              : 'transparent',
+            opacity: nextPalette ? 1 : 0,
           }}
         />
       </div>
@@ -60,4 +61,3 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
     </>
   );
 }
-

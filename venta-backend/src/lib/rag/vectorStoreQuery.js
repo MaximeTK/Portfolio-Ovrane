@@ -4,7 +4,7 @@
 import { getVectorIndex } from './vectorStoreCore.js';
 
 /**
- * Recherche les chunks les plus similaires
+ * Recherche les chunks les plus similaires avec dé-duplication
  */
 export async function searchSimilarChunks(queryEmbedding, topK = 5, minScore = 0.0) {
   const vectorIndex = getVectorIndex();
@@ -13,9 +13,18 @@ export async function searchSimilarChunks(queryEmbedding, topK = 5, minScore = 0
   }
 
   try {
-    const results = await vectorIndex.queryItems(queryEmbedding, topK);
+    const results = await vectorIndex.queryItems(queryEmbedding, topK * 2); // On demande 2x plus pour filtrer
+    const seenTexts = new Set();
+    
     return results
-      .filter(result => result.score >= minScore)
+      .filter(result => {
+        if (result.score < minScore) return false;
+        const textSignature = result.item.metadata.text.substring(0, 100); // Dédoublonnage basique
+        if (seenTexts.has(textSignature)) return false;
+        seenTexts.add(textSignature);
+        return true;
+      })
+      .slice(0, topK) // On garde que le topK après filtrage
       .map(result => ({
         id: result.item.metadata.id,
         text: result.item.metadata.text,
@@ -85,4 +94,3 @@ export async function getChunksBySource(source) {
     return [];
   }
 }
-

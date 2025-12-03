@@ -20,7 +20,8 @@
 }
 
 body {
-  background: var(--background);
+  /* background: var(--background);  <-- SUPPRIMÉ pour ne pas masquer BackgroundProvider */
+  background: transparent; /* Explicite */
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
