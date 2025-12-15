@@ -55,7 +55,52 @@ export async function updateUserProfile(userId, updates) {
 }
 
 /**
- * Récupère l'historique des conversations
+ * Récupère l'historique brut des conversations (JSON)
+ */
+export async function getRawConversationHistory(userId, limit = 50, skip = 0) {
+  try {
+    const user = await User.findOne({ id: userId }).lean();
+    
+    if (!user) return [];
+    
+    let allConversations = user.conversations || [];
+
+    // Si c'est un profil lié à un profil principal
+    if (user.mainProfileId) {
+      try {
+        const mainProfile = await User.findOne({ id: user.mainProfileId }).lean();
+        if (mainProfile) {
+          allConversations = [
+            ...(mainProfile.conversations || []),
+            ...allConversations
+          ];
+        }
+      } catch (err) {
+        console.warn('⚠️ Impossible de charger le profil principal');
+      }
+    }
+    
+    // Trier par date
+    allConversations.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    // Retourner les N messages avec pagination
+    // slice(-limit) prend les derniers, mais avec skip c'est plus complexe sur un tableau en mémoire
+    // Pour une pagination standard "remonter le temps":
+    // On veut les messages de (Total - Skip - Limit) à (Total - Skip)
+    
+    const total = allConversations.length;
+    const start = Math.max(0, total - skip - limit);
+    const end = Math.max(0, total - skip);
+    
+    return allConversations.slice(start, end);
+  } catch (error) {
+    console.error('❌ Erreur récupération historique brut:', error);
+    return [];
+  }
+}
+
+/**
+ * Récupère l'historique des conversations formaté pour le prompt
  */
 export async function getConversationHistory(userId, limit = 5) {
   try {
@@ -63,25 +108,27 @@ export async function getConversationHistory(userId, limit = 5) {
     
     if (!user) return '';
     
+    let allConversations = user.conversations || [];
+    
     // Si c'est un profil lié à un profil principal (legacy logic, peut-être inutile avec MongoDB mais gardons-le)
     if (user.mainProfileId) {
       try {
         const mainProfile = await User.findOne({ id: user.mainProfileId }).lean();
         if (mainProfile) {
           // Fusionner les conversations
-          const allConversations = [
+          allConversations = [
             ...(mainProfile.conversations || []),
             ...(user.conversations || [])
-          ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-          
-          return formatHistory(allConversations, mainProfile, limit);
+          ];
         }
       } catch (err) {
         console.warn('⚠️ Impossible de charger le profil principal');
       }
     }
+
+    allConversations.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     
-    return formatHistory(user.conversations || [], user, limit);
+    return formatHistory(allConversations, user, limit);
   } catch (error) {
     console.error('❌ Erreur récupération historique:', error);
     return '';

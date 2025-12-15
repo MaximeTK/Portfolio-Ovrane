@@ -7,7 +7,7 @@
 export { generateUserHash } from './user/userProfiles.js';
 
 // Réexporter depuis userConversations.js
-export { addConversation, updateUserProfile, getConversationHistory } from './user/userConversations.js';
+export { addConversation, updateUserProfile, getConversationHistory, getRawConversationHistory } from './user/userConversations.js';
 
 // Réexporter depuis profileManagement.js
 export { 

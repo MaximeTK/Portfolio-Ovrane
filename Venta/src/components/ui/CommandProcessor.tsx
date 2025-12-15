@@ -45,6 +45,14 @@ export default function CommandProcessor({
   // Permet d'éviter de retraiter les commandes si le composant re-render mais que les commandes n'ont pas changé
   const lastProcessedCommandsRef = useRef<Command[] | null>(null);
 
+  // Fermer toutes les fenêtres quand l'utilisateur change
+  useEffect(() => {
+    if (currentUserId) {
+      console.log(`🧹 [CommandProcessor] Changement utilisateur (${currentUserId}), fermeture des fenêtres.`);
+      setWindows([]);
+    }
+  }, [currentUserId]);
+
   const trimHistory = useCallback(() => {
     const entries = Array.from(processedCommandsRef.current);
     processedCommandsRef.current = new Set(entries.slice(-20));
@@ -59,27 +67,29 @@ export default function CommandProcessor({
       // on prépare les fenêtres mais on assignera le zIndex final via un effet ou une action différée
       // ICI: Comme processCommands est appelé dans un useEffect, c'est safe d'appeler des setters
       
-      pending.forEach((cmd, index) => {
-        console.log(`⚙️ [CommandProcessor] Traitement commande: ${cmd.command} -> ${cmd.parameter}`);
-        
-        const win = processCommand(
-          cmd.command,
-          cmd.parameter,
-          index,
-          currentUserId,
-        );
-        if (win) {
-          // Assigner le z-index global
-          // NOTE: incrementMaxZIndex est une action Zustand qui met à jour le store.
-          // Appelée ici, à l'intérieur du useEffect qui appelle processCommands, c'est correct.
-          win.zIndex = incrementMaxZIndex();
-          newWindows.push(win);
+      // Utilisation de setTimeout pour sortir du cycle de rendu et éviter l'erreur
+      // "Cannot update a component while rendering a different component"
+      setTimeout(() => {
+        pending.forEach((cmd, index) => {
+          console.log(`⚙️ [CommandProcessor] Traitement commande: ${cmd.command} -> ${cmd.parameter}`);
+          
+          const win = processCommand(
+            cmd.command,
+            cmd.parameter,
+            index,
+            currentUserId,
+          );
+          if (win) {
+            // Assigner le z-index global de manière safe
+            win.zIndex = incrementMaxZIndex();
+            newWindows.push(win);
+          }
+        });
+        if (newWindows.length) {
+          setWindows((prev) => [...prev, ...newWindows]);
         }
-      });
-      if (newWindows.length) {
-        setWindows((prev) => [...prev, ...newWindows]);
-      }
-      onCommandsProcessed();
+        onCommandsProcessed();
+      }, 0);
     },
     [currentUserId, onCommandsProcessed, incrementMaxZIndex],
   );
@@ -138,11 +148,13 @@ export default function CommandProcessor({
     // Utilisation de setTimeout pour sortir du cycle de rendu React actuel
     // Cela évite l'erreur "Cannot update a component while rendering a different component"
     setTimeout(() => {
+      // On calcule le nouveau Z-Index EN DEHORS du setState car c'est un effet de bord (mise à jour du store)
+      // Les fonctions de mise à jour d'état (comme celle passée à setWindows) doivent être pures.
+      const newZIndex = incrementMaxZIndex();
+
       setWindows((prev) => {
         const win = prev.find((w) => w.id === id);
         if (!win) return prev;
-        
-        const newZIndex = incrementMaxZIndex();
         
         return prev.map((w) => (w.id === id ? { ...w, zIndex: newZIndex } : w));
       });

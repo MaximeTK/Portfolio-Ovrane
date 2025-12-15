@@ -121,7 +121,8 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
       set({ currentPalette: COLOR_PALETTES[savedPaletteId] });
       console.log(`✅ [BACKGROUND STORE] Palette appliquée avec succès`);
     } else {
-      console.log(`⚠️ [BACKGROUND STORE] Aucune préférence de couleur trouvée pour ce profil, utilisation du défaut`);
+      console.log(`⚠️ [BACKGROUND STORE] Aucune préférence trouvée, réinitialisation au défaut (Noir)`);
+      set({ currentPalette: getDefaultPalette() });
     }
   },
 }));

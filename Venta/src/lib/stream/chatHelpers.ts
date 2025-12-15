@@ -6,12 +6,12 @@ import { Message } from '../chat/types';
 /**
  * Crée un message
  */
-export function createMessage(role: 'user' | 'assistant', content: string): Message {
+export function createMessage(role: 'user' | 'assistant', content: string, timestamp?: number): Message {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     role,
     content,
-    timestamp: Date.now(),
+    timestamp: timestamp || Date.now(),
   };
 }
 

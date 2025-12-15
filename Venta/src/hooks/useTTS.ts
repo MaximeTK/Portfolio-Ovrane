@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 export function useTTS() {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
+  // Utilisation d'une ref pour éviter les re-renders excessifs (performance)
+  const audioLevelRef = useRef(0);
 
   const speakWithBrowser = useCallback((text: string, onEnd: () => void) => {
     if (!('speechSynthesis' in window)) {
@@ -25,13 +26,13 @@ export function useTTS() {
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => {
       setIsSpeaking(false);
-      setAudioLevel(0);
+      audioLevelRef.current = 0;
       onEnd();
     };
     utterance.onerror = (e) => {
       console.error('❌ Web Speech API erreur:', e);
       setIsSpeaking(false);
-      setAudioLevel(0);
+      audioLevelRef.current = 0;
       setTimeout(onEnd, 5000);
     };
     
@@ -46,11 +47,13 @@ export function useTTS() {
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
     
-    setupVisualization(audio, (level) => setAudioLevel(level));
+    setupVisualization(audio, (level) => {
+      audioLevelRef.current = level;
+    });
     audio.onplay = () => setIsSpeaking(true);
     audio.onended = () => {
       setIsSpeaking(false);
-      setAudioLevel(0);
+      audioLevelRef.current = 0;
       onEnd();
       URL.revokeObjectURL(audioUrl);
     };
@@ -138,7 +141,7 @@ export function useTTS() {
 
   return {
     isSpeaking,
-    audioLevel,
+    getAudioLevel: () => audioLevelRef.current,
     speakWithBrowser,
     speakWithAPI,
     speakWithBase64

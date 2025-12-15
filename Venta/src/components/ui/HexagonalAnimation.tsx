@@ -1,20 +1,25 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { useUIStore } from '@/lib/state/uiStore';
+
+export interface HexagonalAnimationHandle {
+  triggerWave: () => void;
+}
 
 interface HexagonalAnimationProps {
   currentAnimation: 'standby' | 'thinking' | 'speak';
   isSpeaking: boolean;
-  audioLevel: number;
-  mode?: 'sleep' | 'awake'; // Nouveau mode
+  getAudioLevel: () => number;
+  mode?: 'sleep' | 'awake';
 }
 
-export function HexagonalAnimation({
+export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, HexagonalAnimationProps>(({
   currentAnimation,
   isSpeaking,
-  audioLevel,
-  mode = 'awake' // Par défaut 'awake' pour compatibilité
-}: HexagonalAnimationProps) {
+  getAudioLevel,
+  mode = 'awake'
+}, ref) => {
   const wavesSvgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const innerHexRef = useRef<SVGGElement>(null);
@@ -22,8 +27,14 @@ export function HexagonalAnimation({
   const animationFrameRef = useRef<number | null>(null);
   const lastWaveTimeRef = useRef<number>(0);
   const bounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [hexColor, setHexColor] = useState('#ffffff');
+  // Initialisation à #333333 (gris foncé) pour éviter le flash blanc au chargement
+  const [hexColor, setHexColor] = useState('#333333');
   const [isBreathingIn, setIsBreathingIn] = useState(true);
+  
+  // Gestion du geste (swipe)
+  const touchStartY = useRef<number | null>(null);
+  const viewMode = useUIStore((state) => state.viewMode);
+  const setViewMode = useUIStore((state) => state.setViewMode);
   
   const HEX_POINTS = '0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6';
   const MAX_WAVES = 3;
@@ -111,8 +122,8 @@ export function HexagonalAnimation({
   }, [mode]);
 
   // Émettre une onde
-  const emitWave = useCallback((color: string) => {
-    if (mode === 'sleep') return; // Pas d'ondes en mode sleep
+  const emitWave = useCallback((color: string, force = false) => {
+    if (mode === 'sleep' && !force) return; // Pas d'ondes en mode sleep sauf si forcé
     if (!wavesSvgRef.current) return;
     
     const currentWaves = wavesSvgRef.current.children.length;
@@ -141,6 +152,17 @@ export function HexagonalAnimation({
       try { wave.remove(); } catch (_error) {}
     }, 2000);
   }, [bounceHexagons, mode]);
+
+  // Gestion du clic pour changer de mode
+  const handleClick = () => {
+    if (mode === 'sleep') return;
+    
+    if (viewMode === 'dashboard') {
+      setViewMode('messaging');
+    } else {
+      setViewMode('dashboard');
+    }
+  };
 
   // Suivre la souris (Désactivé en mode Sleep)
   useEffect(() => {
@@ -191,10 +213,11 @@ export function HexagonalAnimation({
       const animate = () => {
         const now = Date.now();
         const threshold = 0.05;
-        if (audioLevel > threshold) {
+        const currentAudioLevel = getAudioLevel();
+        if (currentAudioLevel > threshold) {
           const minInterval = 25;
           const maxInterval = 250;
-          const normalizedLevel = Math.min(1, Math.max(0, (audioLevel - threshold) / (1 - threshold)));
+          const normalizedLevel = Math.min(1, Math.max(0, (currentAudioLevel - threshold) / (1 - threshold)));
           const interval = maxInterval - (normalizedLevel * (maxInterval - minInterval));
           
           if (now - lastWaveTimeRef.current >= interval) {
@@ -215,7 +238,15 @@ export function HexagonalAnimation({
       }
       lastWaveTimeRef.current = 0;
     }
-  }, [currentAnimation, isSpeaking, audioLevel, hexColor, emitWave, mode]);
+  }, [currentAnimation, isSpeaking, getAudioLevel, hexColor, emitWave, mode]);
+
+  // Exposer la méthode triggerWave
+  useImperativeHandle(ref, () => ({
+    triggerWave: () => {
+      // Forcer une vague blanche
+      emitWave('#ffffff', true);
+    }
+  }));
 
   return (
     <>
@@ -226,7 +257,13 @@ export function HexagonalAnimation({
         }
       `}</style>
       
-      <div ref={containerRef} className="relative w-[min(78vmin,900px)] aspect-square">
+      <div 
+        ref={containerRef} 
+        className={`relative w-[90vmin] md:w-[min(78vmin,900px)] aspect-square transition-all duration-500 ease-out cursor-pointer ${
+          viewMode === 'messaging' ? 'translate-y-[-38vh] scale-[0.35] md:scale-[0.40]' : ''
+        }`}
+        onClick={handleClick}
+      >
         <div 
           className="absolute inset-0 m-auto w-full h-full grid place-items-center"
           style={{ scale: '0.25', willChange: 'transform', transform: 'translateZ(0)' }}
@@ -301,7 +338,17 @@ export function HexagonalAnimation({
             </g>
           </svg>
         </div>
+
+        {/* Zone de clic agrandie pour le mode mobile/messagerie */}
+        <div 
+          className={`absolute z-50 bg-transparent rounded-full transition-all duration-500 ease-out ${
+            viewMode === 'messaging' ? '-inset-[40%]' : 'inset-0'
+          }`}
+          aria-hidden="true"
+        />
       </div>
     </>
   );
-}
+});
+
+HexagonalAnimation.displayName = 'HexagonalAnimation';

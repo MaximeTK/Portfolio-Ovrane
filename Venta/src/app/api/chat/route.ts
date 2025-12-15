@@ -7,7 +7,7 @@ import { extractUserInfo, callBackend, handleBackendError, processBackendRespons
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { prompt, currentUserId } = body;
+    const { prompt, currentUserId, isEphemeral } = body;
     
     if (!prompt || typeof prompt !== 'string') {
       console.error('❌ [NEXT API] Prompt manquant ou invalide');
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     
     let response;
     try {
-      const result = await callBackend(prompt, userIp, userAgent, currentUserId);
+      const result = await callBackend(prompt, userIp, userAgent, currentUserId, isEphemeral);
       response = result.response;
     } catch (error) {
       return NextResponse.json(

@@ -109,7 +109,7 @@ async function handlePendingUserCreationFallback() {
 /**
  * Traite la réponse générée et génère le TTS en parallèle
  */
-export async function processResponse(response, userId, userProfile, prompt) {
+export async function processResponse(response, userId, userProfile, prompt, isEphemeral = false) {
   const { rawResponse, ragCoverage, ragSources } = response;
   const { commands, cleanResponse } = extractCommands(rawResponse);
 
@@ -157,7 +157,9 @@ export async function processResponse(response, userId, userProfile, prompt) {
     }
   }
   
-  addConversation(userId, prompt, finalReply, { commands });
+  if (!isEphemeral) {
+    addConversation(userId, prompt, finalReply, { commands });
+  }
   
   // Générer le TTS en parallèle (ne bloque pas la réponse)
   let ttsData = null;

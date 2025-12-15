@@ -21,18 +21,26 @@ export function extractUserInfo(request: NextRequest) {
 /**
  * Appelle le backend
  */
+export function getBackendUrl() {
+  return process.env.BACKEND_URL || 'http://127.0.0.1:3001';
+}
+
+/**
+ * Appelle le backend
+ */
 export async function callBackend(
   prompt: string,
   userIp: string,
   userAgent: string,
   currentUserId: string | undefined,
+  isEphemeral?: boolean,
 ) {
-  const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:3001';
+  const BACKEND_URL = getBackendUrl();
   try {
     const response = await fetch(`${BACKEND_URL}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, userIp, userAgent, currentUserId }),
+      body: JSON.stringify({ prompt, userIp, userAgent, currentUserId, isEphemeral }),
       signal: AbortSignal.timeout(60000),
     });
     return { response, BACKEND_URL };

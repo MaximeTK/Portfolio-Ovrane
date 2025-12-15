@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useUIStore } from '@/lib/state/uiStore';
-import { HexagonalAnimation } from '../ui/HexagonalAnimation';
+import { HexagonalAnimation, HexagonalAnimationHandle } from '../ui/HexagonalAnimation';
 import { NameInput } from './NameInput';
 import { TTSData, Message, UserProfileData } from '@/lib/chat/types';
 import { useBackgroundStore } from '@/lib/state/backgroundStore';
 
 interface IntroSequenceProps {
-  send: (message: string) => void;
+  send: (message: string, options?: { isEphemeral?: boolean }) => void;
   currentTTS: TTSData | null;
   messages: Message[];
   currentUserProfile: UserProfileData | null;
@@ -14,10 +14,13 @@ interface IntroSequenceProps {
 }
 
 export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, currentUserId }: IntroSequenceProps) => {
-  const { appState, setAppState, setUserName, userName } = useUIStore();
+  const { appState, setAppState, setUserName, userName, viewMode } = useUIStore();
   const loadUserPreference = useBackgroundStore((state) => state.loadUserPreference);
   const [hasTriggeredAwake, setHasTriggeredAwake] = useState(false);
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
+  
+  // Ref vers l'animation pour déclencher des vagues manuelles
+  const hexAnimationRef = useRef<HexagonalAnimationHandle>(null);
 
   // Gestion de la transition vers 'awake' quand l'audio arrive
   useEffect(() => {
@@ -48,11 +51,22 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
     };
   }, [appState]);
 
+  // Disparition immédiate si on passe en mode messagerie
+  useEffect(() => {
+    if (viewMode === 'messaging') {
+      setIsWelcomeVisible(false);
+    }
+  }, [viewMode]);
+
   const handleNameSubmit = (name: string) => {
+    // Déclencher une vague visuelle immédiate
+    hexAnimationRef.current?.triggerWave();
+    
     setAppState('processing');
     setUserName(name); // On sauvegarde le nom pour l'affichage
     // On envoie le nom avec une intention claire
-    send(`Je m'appelle ${name}`);
+    // isEphemeral: true pour ne pas sauvegarder ce message en base de données
+    send(`Je m'appelle ${name}`, { isEphemeral: true });
   };
 
   const getWelcomeMessage = () => {
@@ -72,8 +86,9 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
     >
       
       {/* Logo Centré - Utilise HexagonalAnimation en mode sleep tant que pas awake */}
-      <div className={`transition-opacity duration-500 ${appState === 'awake' ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`transition-opacity duration-500 ${appState === 'awake' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <HexagonalAnimation 
+          ref={hexAnimationRef}
           currentAnimation="standby"
           isSpeaking={false}
           audioLevel={0}

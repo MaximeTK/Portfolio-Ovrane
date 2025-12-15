@@ -21,10 +21,12 @@ interface TextWindow {
 
 // Nouveaux états pour l'intro
 export type AppState = 'sleeping' | 'processing' | 'awake';
+export type ViewMode = 'dashboard' | 'messaging';
 
 interface UIState {
   // État global de l'application
   appState: AppState;
+  viewMode: ViewMode;
   userName: string | null;
   welcomeMessage: string | null;
 
@@ -41,6 +43,7 @@ interface UIState {
   
   // Actions
   setAppState: (state: AppState) => void;
+  setViewMode: (mode: ViewMode) => void;
   setUserName: (name: string) => void;
   setWelcomeMessage: (message: string) => void;
   
@@ -52,11 +55,13 @@ interface UIState {
   bringTextWindowToFront: (id: string) => void;
   highlight: (id: string) => void;
   clearHighlight: () => void;
+  closeAllWindows: () => void;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
   // Initial state
   appState: 'sleeping',
+  viewMode: 'dashboard',
   userName: null,
   welcomeMessage: null,
   
@@ -77,6 +82,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   },
   
   setAppState: (appState) => set({ appState }),
+  setViewMode: (viewMode) => set({ viewMode }),
   setUserName: (userName) => set({ userName }),
   setWelcomeMessage: (welcomeMessage) => set({ welcomeMessage }),
   
@@ -166,5 +172,13 @@ export const useUIStore = create<UIState>((set, get) => ({
   
   clearHighlight: () => {
     set({ highlightedId: undefined });
+  },
+
+  closeAllWindows: () => {
+    set({
+      textWindows: [],
+      imageOverlay: { visible: false, assetId: undefined, alt: undefined },
+      highlightedId: undefined
+    });
   },
 }));
