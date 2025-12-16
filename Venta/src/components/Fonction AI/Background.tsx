@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useBackgroundStore } from '@/lib/state/backgroundStore';
 
-export function BackgroundFunctionAI({ children }: { children: React.ReactNode }) {
+export function Background({ children }: { children: React.ReactNode }) {
   const currentPalette = useBackgroundStore((state) => state.currentPalette);
   
   // Système de fondu croisé pour transitions douces entre dégradés

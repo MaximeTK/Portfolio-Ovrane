@@ -1,10 +1,12 @@
+'use client';
+
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useAudioVisualization } from '@/hooks/useAudioVisualization';
+import { useAudioVisualization } from '@/hooks/setupAudioVisualization';
 import { useChatController } from '@/lib/stream/useChatController';
 import { useAnimations } from '@/hooks/useAnimations';
 import { useTTS } from '@/hooks/useTTS';
 import { HexagonalAnimation, HexagonalAnimationHandle } from '@/components/ui/HexagonalAnimation';
-import CommandProcessor from '@/components/ui/CommandProcessor';
+import CommandProcessor from '@/components/Fonction AI/CommandProcessor';
 import { TextWindowsManager } from '@/components/ui/GlassmorphismeWindow';
 import { useUIStore } from '@/lib/state/uiStore';
 import { InputArea } from '@/components/ui/InputArea';
@@ -53,7 +55,7 @@ export default function Home() {
     // Optionnel : Logique post-traitement si nécessaire
   }, []);
 
-  // Fermer toutes les fenêtres (TextWindows, ImageOverlay) quand l'utilisateur change
+  // Fermer toutes les fenêtres (TextWindows) quand l'utilisateur change
   useEffect(() => {
     if (currentUserId) {
       closeAllWindows();
