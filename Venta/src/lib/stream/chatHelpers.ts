@@ -1,17 +1,18 @@
 /**
  * Helpers pour le chat - max 5 fonctions, max 20 lignes
  */
-import { Message } from '../chat/types';
+import { Message, Command } from '../chat/types';
 
 /**
  * Crée un message
  */
-export function createMessage(role: 'user' | 'assistant', content: string, timestamp?: number): Message {
+export function createMessage(role: 'user' | 'assistant', content: string, timestamp?: number, commands?: Command[]): Message {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     role,
     content,
     timestamp: timestamp || Date.now(),
+    commands,
   };
 }
 

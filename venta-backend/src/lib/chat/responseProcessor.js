@@ -156,6 +156,32 @@ export async function processResponse(response, userId, userProfile, prompt, isE
       finalReply = `Bienvenue ${userProfile.name}, enchantée de faire votre connaissance !`;
     }
   }
+
+  // Injection des images dans le texte sauvegardé si commandes présentes
+  if (commands && commands.length > 0) {
+    const imageCommands = commands.filter(c => c.command.toLowerCase() === 'showpicture' || c.command.toLowerCase() === 'showimage');
+    if (imageCommands.length > 0) {
+       finalReply += '\n\n<div class="image-grid">';
+       imageCommands.forEach(cmd => {
+          let imageUrl = cmd.parameter;
+           if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+              if (!imageUrl.startsWith('assets/')) {
+                 imageUrl = '/assets/' + imageUrl;
+              } else {
+                 imageUrl = '/' + imageUrl;
+              }
+           }
+           // Nettoyage point final
+           if (imageUrl.endsWith('.')) {
+              imageUrl = imageUrl.slice(0, -1);
+           }
+           const encodedUrl = imageUrl.replace(/\s/g, '%20');
+           // Utilisation de balises HTML img car le markdown n'est pas parsé dans les blocs HTML div
+           finalReply += `<img src="${encodedUrl}" alt="Image" />`;
+       });
+       finalReply += '</div>';
+    }
+  }
   
   if (!isEphemeral) {
     addConversation(userId, prompt, finalReply, { commands });

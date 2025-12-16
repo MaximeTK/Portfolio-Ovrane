@@ -89,7 +89,43 @@ export function useChatController(): UseChatControllerReturn {
         if (res.ok) {
           const data = await res.json();
           if (data.history && Array.isArray(data.history)) {
-            const initialMessages = data.history.map((h: any) => createMessage(h.role, h.content, h.timestamp ? new Date(h.timestamp).getTime() : undefined));
+            const initialMessages = data.history.map((h: any) => {
+              let content = h.content;
+
+              // Logique de récupération rétroactive des images pour l'historique
+              // Si le message a des commandes ShowPicture mais PAS de balise image dans le contenu, on les rajoute.
+              // Cela répare l'affichage pour les anciens messages avant le patch backend.
+              if (h.commands && Array.isArray(h.commands)) {
+                const imageCommands = h.commands.filter((cmd: Command) => {
+                  const name = cmd.command.toLowerCase();
+                  return name === 'showpicture' || name === 'showimage';
+                });
+
+                // Si on a des images et qu'elles ne sont PAS déjà dans le contenu (ni en md ni en html)
+                const hasImagesInContent = content.includes('![Image]') || content.includes('<img');
+                
+                if (imageCommands.length > 0 && !hasImagesInContent) {
+                  let imagesHtml = '\n\n<div class="image-grid">';
+                  imageCommands.forEach((cmd: Command) => {
+                     let imageUrl = cmd.parameter;
+                     if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+                        if (!imageUrl.startsWith('assets/')) {
+                           imageUrl = '/assets/' + imageUrl;
+                        } else {
+                           imageUrl = '/' + imageUrl;
+                        }
+                     }
+                     if (imageUrl.endsWith('.')) imageUrl = imageUrl.slice(0, -1);
+                     const encodedUrl = imageUrl.replace(/\s/g, '%20');
+                     imagesHtml += `<img src="${encodedUrl}" alt="Image" />`;
+                  });
+                  imagesHtml += '</div>';
+                  content += imagesHtml;
+                }
+              }
+
+              return createMessage(h.role, content, h.timestamp ? new Date(h.timestamp).getTime() : undefined, h.commands);
+            });
             
             // Si on a un message d'accueil en attente (suite à une création de profil), on l'ajoute
             if (pendingWelcomeMessageRef.current) {
@@ -130,7 +166,37 @@ export function useChatController(): UseChatControllerReturn {
       if (res.ok) {
         const data = await res.json();
         if (data.history && Array.isArray(data.history) && data.history.length > 0) {
-          const olderMessages = data.history.map((h: any) => createMessage(h.role, h.content, h.timestamp ? new Date(h.timestamp).getTime() : undefined));
+          const olderMessages = data.history.map((h: any) => {
+             // Pareil pour le chargement des anciens messages
+             let content = h.content;
+             if (h.commands && Array.isArray(h.commands)) {
+                const imageCommands = h.commands.filter((cmd: Command) => {
+                  const name = cmd.command.toLowerCase();
+                  return name === 'showpicture' || name === 'showimage';
+                });
+                const hasImagesInContent = content.includes('![Image]') || content.includes('<img');
+                
+                if (imageCommands.length > 0 && !hasImagesInContent) {
+                  let imagesHtml = '\n\n<div class="image-grid">';
+                  imageCommands.forEach((cmd: Command) => {
+                     let imageUrl = cmd.parameter;
+                     if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+                        if (!imageUrl.startsWith('assets/')) {
+                           imageUrl = '/assets/' + imageUrl;
+                        } else {
+                           imageUrl = '/' + imageUrl;
+                        }
+                     }
+                     if (imageUrl.endsWith('.')) imageUrl = imageUrl.slice(0, -1);
+                     const encodedUrl = imageUrl.replace(/\s/g, '%20');
+                     imagesHtml += `<img src="${encodedUrl}" alt="Image" />`;
+                  });
+                  imagesHtml += '</div>';
+                  content += imagesHtml;
+                }
+             }
+             return createMessage(h.role, content, h.timestamp ? new Date(h.timestamp).getTime() : undefined, h.commands);
+          });
           setMessages((prev) => [...olderMessages, ...prev]);
           setHistorySkip((prev) => prev + olderMessages.length);
           
@@ -212,17 +278,50 @@ export function useChatController(): UseChatControllerReturn {
         replyText = 'D\'accord, j\'applique ta demande.';
       }
       
-      // Si une commande ShowImage est présente, on ajoute l'image au message pour l'affichage in-line
+      // Si une commande ShowPicture (ou ShowImage) est présente, on ajoute l'image au message pour l'affichage in-line
+      // Gestion de MULTIPLES images
       if (data.commands) {
-        data.commands.forEach((cmd) => {
-          if (cmd.command === 'ShowImage') {
-             let imageUrl = cmd.parameter;
-             if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-                imageUrl = '/' + imageUrl;
-             }
-             replyText += `\n\n![Image](${imageUrl})`;
-          }
+        // Filtrer les commandes d'image
+        const imageCommands = data.commands.filter((cmd: Command) => {
+          const name = cmd.command.toLowerCase();
+          return name === 'showpicture' || name === 'showimage';
         });
+
+        if (imageCommands.length > 0) {
+          // On ajoute un conteneur spécial (syntaxe HTML ou Markdown custom)
+          // Ici on utilise une liste d'images Markdown séparées par un caractère spécial que MessagingView pourra interpréter comme une grille
+          
+          replyText += '\n\n<div class="image-grid">';
+          
+          imageCommands.forEach((cmd: Command) => {
+             let imageUrl = cmd.parameter;
+             
+             // Si c'est un chemin relatif vers assets, on s'assure qu'il est correct
+             if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+                // Si l'image est dans public/assets/
+                if (!imageUrl.startsWith('assets/')) {
+                   imageUrl = '/assets/' + imageUrl;
+                } else {
+                   imageUrl = '/' + imageUrl;
+                }
+             }
+             
+             // Nettoyage: retirer le point à la fin de l'extension si présent (ex: .png. -> .png)
+             // OpenAI a tendance à mettre un point final même aux URL dans les arguments de fonction
+             if (imageUrl.endsWith('.')) {
+                imageUrl = imageUrl.slice(0, -1);
+             }
+             
+             // Encodage des espaces pour le Markdown
+             const encodedUrl = imageUrl.replace(/\s/g, '%20');
+             
+             // On ajoute l'image (format HTML pour être valide dans la div)
+             // Markdown standard ne parse pas le markdown à l'intérieur de blocs HTML
+             replyText += `<img src="${encodedUrl}" alt="Image" />`;
+          });
+          
+          replyText += '</div>';
+        }
       }
 
       setCurrentTranscript(replyText);

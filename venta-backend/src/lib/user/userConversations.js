@@ -27,7 +27,7 @@ export async function addConversation(userId, prompt, response, metadata = {}) {
         $push: { 
           conversations: {
             $each: [conversation],
-            $slice: -100 // Garder seulement les 100 derniers
+            $slice: -500 // Garder les 500 dernières conversations (environ 1000 messages)
           }
         } 
       }

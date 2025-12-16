@@ -62,25 +62,52 @@ export function setupChatRoute(app, openai, ragInitialized) {
         return res.status(400).json({ error: 'UserId required' });
       }
 
-      const history = await getRawConversationHistory(userId, parseInt(limit), parseInt(skip));
+      const limitInt = parseInt(limit);
+      const skipInt = parseInt(skip);
+
+      // On récupère TOUT l'historique brut (limit large) pour faire la pagination
+      // sur les messages individuels et non sur les objets conversations groupés.
+      // Cela évite le décalage quand une conversation contient 2 messages (prompt + response).
+      const history = await getRawConversationHistory(userId, 1000, 0);
       
-      // Formater pour le frontend (tableau de messages)
-      const formattedHistory = [];
+      // Formater pour le frontend (tableau de messages plat)
+      const allMessages = [];
       
       history.forEach(conv => {
+        // Priorité à la structure prompt/response (paires)
         if (conv.prompt) {
-          formattedHistory.push({ role: 'user', content: conv.prompt, timestamp: conv.timestamp });
+          allMessages.push({ role: 'user', content: conv.prompt, timestamp: conv.timestamp });
         }
         if (conv.response) {
-          formattedHistory.push({ role: 'assistant', content: conv.response, timestamp: conv.timestamp });
+          // On inclut les commandes pour permettre au frontend de reconstruire l'affichage (images, etc.)
+          // si elles n'ont pas été "buit-in" dans le texte lors de la sauvegarde.
+          allMessages.push({ 
+            role: 'assistant', 
+            content: conv.response, 
+            timestamp: conv.timestamp,
+            commands: conv.commands 
+          });
         }
-        // Fallback pour structure différente
+        // Fallback pour structure différente (message unique)
         if (!conv.prompt && !conv.response && conv.role && conv.content) {
-          formattedHistory.push({ role: conv.role, content: conv.content, timestamp: conv.timestamp });
+          allMessages.push({ 
+            role: conv.role, 
+            content: conv.content, 
+            timestamp: conv.timestamp,
+            commands: conv.commands
+          });
         }
       });
       
-      res.json({ history: formattedHistory });
+      // Appliquer la pagination sur le tableau de messages PLAT
+      // Logique : on veut les messages les plus récents moins ceux déjà chargés (skip)
+      const total = allMessages.length;
+      const start = Math.max(0, total - skipInt - limitInt);
+      const end = Math.max(0, total - skipInt);
+      
+      const pagedMessages = allMessages.slice(start, end);
+      
+      res.json({ history: pagedMessages });
       
     } catch (error) {
       console.error('❌ Erreur récupération historique:', error);

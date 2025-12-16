@@ -3,6 +3,7 @@ import { Message } from '@/lib/chat/types';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -126,17 +127,26 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     setShouldScrollToBottom(isAtBottom);
 
     // Chargement historique en haut
-    if (scrollTop === 0 && onLoadHistory && !isLoadingHistory && hasMoreMessages) {
+    // On utilise un seuil (ex: 50px) plutôt que 0 strict pour faciliter le déclenchement sur mobile/touch
+    if (scrollTop < 50 && onLoadHistory && !isLoadingHistory && hasMoreMessages) {
+      console.log('📜 [MessagingView] Trigger chargement historique (scrollTop < 50)');
       setIsLoadingHistory(true);
       // Sauvegarder la hauteur avant chargement pour restaurer la position
       const oldHeight = scrollHeight;
+      const oldScrollTop = scrollTop; // On garde aussi l'offset actuel
       
       await onLoadHistory();
       
       // Restaurer la position de scroll
       if (scrollContainerRef.current) {
+        // On calcule le delta de hauteur ajouté
         const newHeight = scrollContainerRef.current.scrollHeight;
-        scrollContainerRef.current.scrollTop = newHeight - oldHeight;
+        const heightAdded = newHeight - oldHeight;
+        
+        // Si du contenu a été ajouté, on ajuste le scroll pour maintenir la position relative
+        if (heightAdded > 0) {
+           scrollContainerRef.current.scrollTop = heightAdded + oldScrollTop;
+        }
       }
       setIsLoadingHistory(false);
     }
@@ -252,16 +262,99 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
                   >
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
                       components={{
+                        // Gestion des divs pour la grille d'images
+                        div: ({node, className, children, ...props}) => {
+                          if (className === 'image-grid') {
+                            // On filtre pour ne compter que les éléments React valides (ignorer les sauts de ligne/texte vide)
+                            const validChildren = React.Children.toArray(children).filter(
+                              (child) => React.isValidElement(child)
+                            );
+                            const count = validChildren.length;
+                            
+                            // If only one image, render normally (no grid layout, no square enforcement)
+                            if (count <= 1) {
+                                return <div className="my-2 w-full max-w-md" {...props}>{children}</div>;
+                            }
+
+                            // Calcul dynamique des colonnes : on reste sur la logique de structure mais on va contraindre la taille
+                            let gridCols = 'grid-cols-1';
+                            if (count === 2) gridCols = 'grid-cols-2';
+                            if (count >= 3) gridCols = 'grid-cols-3';
+                            
+                            // Limitation à 9 images max
+                            const maxImages = 9;
+                            const hasOverflow = count > maxImages;
+                            const displayItems = validChildren.slice(0, maxImages);
+                            const remainingCount = count - maxImages;
+
+                            return (
+                              <div className={`grid ${gridCols} gap-2 my-2 w-fit image-grid-layout`} {...props}>
+                                {displayItems.map((child, index) => {
+                                  // On clone l'élément pour forcer les styles carrés et la taille fixe de 10vh
+                                  let styledChild = child;
+                                  
+                                  if (React.isValidElement(child)) {
+                                     const childElement = child as React.ReactElement<any>;
+                                     styledChild = React.cloneElement(childElement, {
+                                        className: `${childElement.props.className || ''} !aspect-square !relative !block !object-cover`,
+                                        style: { 
+                                          ...childElement.props.style, 
+                                          width: '25vh', 
+                                          height: '25vh',
+                                          aspectRatio: '1/1'
+                                        }
+                                      });
+                                  }
+
+                                  // Si c'est la dernière image visible ET qu'il y a du surplus
+                                  if (hasOverflow && index === maxImages - 1) {
+                                    return (
+                                      <div key={index} className="relative group/overlay" style={{ width: '10vh', height: '10vh' }}>
+                                        {styledChild}
+                                        <div 
+                                          className="absolute inset-0 bg-gray-900/60 flex items-center justify-center rounded-lg backdrop-blur-[2px] transition-colors cursor-pointer hover:bg-gray-900/70 z-10"
+                                          onClick={(e) => {
+                                            const img = e.currentTarget.parentElement?.querySelector('img');
+                                            if (img) {
+                                                const src = img.getAttribute('src');
+                                                if (src) setSelectedImage(src);
+                                            }
+                                          }}
+                                        >
+                                          <span className="text-white font-bold text-lg drop-shadow-md">+{remainingCount}</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return <React.Fragment key={index}>{styledChild}</React.Fragment>;
+                                })}
+                              </div>
+                            );
+                          }
+                          return <div className={className} {...props}>{children}</div>;
+                        },
                         // Gestion des images pour qu'elles restent dans la bulle et soient cliquables
-                        img: ({node, ...props}) => (
-                          <span 
-                            className="block my-2 rounded-lg overflow-hidden cursor-zoom-in hover:brightness-90 transition-all"
-                            onClick={() => setSelectedImage(props.src || null)}
-                          >
-                            <img {...props} className="max-w-full h-auto" alt={props.alt || ''} />
-                          </span>
-                        ),
+                        img: ({node, className, style, ...props}) => {
+                          const src = props.src || '';
+                          return (
+                            <span 
+                              className={`chat-image-wrapper block relative rounded-lg overflow-hidden cursor-zoom-in hover:brightness-90 transition-all border border-white/10 bg-black/20 w-full ${className || ''}`}
+                              onClick={() => setSelectedImage(src)}
+                              style={style}
+                            >
+                              <img 
+                                {...props} 
+                                src={src}
+                                className={`w-full h-full ${className?.includes('aspect-square') ? 'object-cover' : 'object-contain'}`}
+                                style={{ maxHeight: className?.includes('aspect-square') ? 'none' : '400px' }}
+                                alt={props.alt || ''} 
+                                loading="lazy"
+                              />
+                            </span>
+                          );
+                        },
                         // Gestion du code avec coloration syntaxique
                         code: ({node, className, children, ...props}) => {
                           const match = /language-(\w+)/.exec(className || '');
@@ -319,29 +412,80 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
       {/* Lightbox pour images */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center animate-in fade-in duration-300"
           onClick={() => setSelectedImage(null)}
         >
-          <div className="relative max-w-[95vw] max-h-[95vh]">
+          {/* Overlay Interface Style (Pico Inspired) */}
+          <div 
+            className="relative w-full h-full flex items-center justify-center p-4 md:p-12"
+            onClick={(e) => {
+               // Si on clique sur le fond (pas sur l'image), on ferme
+               if (e.target === e.currentTarget) setSelectedImage(null);
+            }}
+          >
+            {/* Bouton Fermer */}
             <button 
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors p-2"
+              className="absolute top-6 right-6 z-50 group bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white rounded-full p-3 transition-all duration-200 transform hover:scale-110 hover:rotate-90"
               onClick={() => setSelectedImage(null)}
+              aria-label="Fermer"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
-            <img 
-              src={selectedImage} 
-              alt="Agrandissement" 
-              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()} 
-            />
+
+            {/* Conteneur Image avec Effet Glow */}
+            <div className="relative max-w-full max-h-full flex items-center justify-center group" onClick={(e) => e.stopPropagation()}>
+               {/* Glow effect behind image */}
+               <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
+               
+               <img 
+                 src={selectedImage} 
+                 alt="Agrandissement" 
+                 className="relative max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl border border-white/10"
+               />
+
+               {/* Toolbar optionnelle en bas (télécharger, etc.) */}
+               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
+                  <a 
+                    href={selectedImage} 
+                    download 
+                    className="bg-black/50 hover:bg-black/70 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium border border-white/10 flex items-center gap-2 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Télécharger
+                  </a>
+               </div>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+<style jsx global>{`
+  /* On force le ratio carré et le positionnement absolu pour les images DANS la grille */
+  .image-grid-layout .chat-image-wrapper {
+    aspect-ratio: 1 / 1 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: block !important;
+    /* On laisse la width/height être gérée par le JS inline pour la taille fixe en vh */
+  }
+  .image-grid-layout .chat-image-wrapper img {
+    position: absolute !important;
+    inset: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+    object-fit: cover !important;
+    max-height: none !important;
+  }
+`}</style>
 
