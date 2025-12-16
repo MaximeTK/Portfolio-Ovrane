@@ -1,15 +1,48 @@
 'use client';
 
-import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import GlassmorphismeWindow from './GlassmorphismeWindow';
-import type { WindowData } from './commandTypes';
-import { processCommand } from './commandHandlers';
+import Image from 'next/image';
+import Window from '../ui/GlassmorphismeWindow';
+import { useUIStore } from '@/lib/state/uiStore';
+import { useBackgroundStore } from '@/lib/state/backgroundStore';
+import { Command } from '@/lib/chat/types';
 
-type Command = {
-  command: string;
-  parameter: string;
+type BaseWindow = {
+  id: string;
+  title: string;
+  x: number;
+  y: number;
+  zIndex?: number;
 };
+
+type ImageWindow = BaseWindow & {
+  type: 'image';
+  content: {
+    src: string;
+    alt: string;
+    width: number;
+    height: number;
+    onError?: () => void;
+  };
+};
+
+type CodeWindow = BaseWindow & {
+  type: 'code';
+  content: {
+    language: string;
+    code: string;
+  };
+};
+
+type GenericWindow = BaseWindow & {
+  type: 'generic';
+  content: {
+    text: string;
+    timestamp?: string;
+  };
+};
+
+type WindowData = ImageWindow | CodeWindow | GenericWindow;
 
 type CommandProcessorProps = {
   commands: Command[];
@@ -17,6 +50,7 @@ type CommandProcessorProps = {
   currentUserId?: string | null;
 };
 
+// === STYLES ===
 const CODE_WRAPPER_STYLE = { padding: '18px' };
 const CODE_INFO_STYLE = { marginBottom: '8px', fontSize: '14px' };
 const CODE_BLOCK_STYLE = {
@@ -27,7 +61,91 @@ const CODE_BLOCK_STYLE = {
   fontSize: '14px',
 };
 
-import { useUIStore } from '@/lib/state/uiStore';
+// === CONSTANTS & HELPERS ===
+const OFFSET = 50;
+const BASE_IMAGE_SIZE = 512;
+
+function buildId(prefix: string, index: number) {
+  const random = Math.random().toString(36).slice(2, 11);
+  return `${prefix}-${Date.now()}-${random}-${index}`;
+}
+
+// === HANDLERS (Logique interne) ===
+
+function createImageWindow(imageName: string, index: number): WindowData {
+  const id = buildId('image', index);
+  return {
+    id,
+    type: 'image',
+    content: {
+      src: `/assets/${imageName}`,
+      alt: `Image ${imageName}`,
+      width: BASE_IMAGE_SIZE,
+      height: BASE_IMAGE_SIZE,
+      onError: () => console.error(`❌ Image introuvable: ${imageName}`),
+    },
+    title: `Image: ${imageName}`,
+    x: 100 + index * OFFSET,
+    y: 100 + index * OFFSET,
+  };
+}
+
+function createCodeWindow(language: string, index: number): WindowData {
+  const id = buildId('code', index);
+  const code = [
+    `// Exemple de code ${language}`,
+    `console.log('Hello from ${language}!');`,
+  ].join('\n');
+  return {
+    id,
+    type: 'code',
+    content: { language, code },
+    title: `Code: ${language}`,
+    x: 200 + index * OFFSET,
+    y: 150 + index * OFFSET,
+  };
+}
+
+function createGenericWindow(title: string, index: number): WindowData {
+  const id = buildId('window', index);
+  return {
+    id,
+    type: 'generic',
+    content: {
+      text: `Fenêtre: ${title}`,
+      timestamp: new Date().toLocaleTimeString(),
+    },
+    title,
+    x: 300 + index * OFFSET,
+    y: 200 + index * OFFSET,
+  };
+}
+
+function processCommand(
+  command: string,
+  parameter: string,
+  index: number,
+  userId?: string | null,
+): WindowData | null {
+  switch (command.toLowerCase()) {
+    case 'showpicture':
+      return createImageWindow(parameter, index);
+    case 'showcode':
+      return createCodeWindow(parameter, index);
+    case 'openwindow':
+      return createGenericWindow(parameter, index);
+    case 'setbackground':
+      // Commande spéciale : change le background sans créer de fenêtre
+      useBackgroundStore.getState().setBackground(parameter, true, userId || undefined);
+      console.log(`🎨 Background changé vers: ${parameter}${userId ? ` pour l'utilisateur ${userId}` : ''}`);
+      return null;
+    default:
+      console.warn(`Commande inconnue: ${command}`);
+      return null;
+  }
+}
+
+// === COMPONENT ===
 
 export default function CommandProcessor({
   commands,
@@ -36,13 +154,11 @@ export default function CommandProcessor({
 }: CommandProcessorProps) {
   const [windows, setWindows] = useState<WindowData[]>([]);
   const incrementMaxZIndex = useUIStore((state) => state.incrementMaxZIndex);
-  const maxZIndex = useUIStore((state) => state.maxZIndex);
   
   // Historique des commandes pour ne pas retraiter les anciennes (sauf si nouvelle référence)
   const processedCommandsRef = useRef<Set<string>>(new Set());
   
   // Référence vers le dernier tableau de commandes traité
-  // Permet d'éviter de retraiter les commandes si le composant re-render mais que les commandes n'ont pas changé
   const lastProcessedCommandsRef = useRef<Command[] | null>(null);
 
   // Fermer toutes les fenêtres quand l'utilisateur change
@@ -62,13 +178,7 @@ export default function CommandProcessor({
     (pending: Command[]) => {
       const newWindows: WindowData[] = [];
       
-      // Pour éviter d'appeler incrementMaxZIndex pendant le rendu ou de manière synchrone directe
-      // qui causerait un update d'état dans un autre composant pendant le render de celui-ci
-      // on prépare les fenêtres mais on assignera le zIndex final via un effet ou une action différée
-      // ICI: Comme processCommands est appelé dans un useEffect, c'est safe d'appeler des setters
-      
       // Utilisation de setTimeout pour sortir du cycle de rendu et éviter l'erreur
-      // "Cannot update a component while rendering a different component"
       setTimeout(() => {
         pending.forEach((cmd, index) => {
           console.log(`⚙️ [CommandProcessor] Traitement commande: ${cmd.command} -> ${cmd.parameter}`);
@@ -112,21 +222,17 @@ export default function CommandProcessor({
     const isBackgroundCommand = commands.some(c => c.command.toLowerCase() === 'setbackground');
     
     // Si ce n'est PAS un changement de fond et qu'on a déjà vu cette commande exacte dans l'historique, on ignore.
-    // (Pour SetBackground, on accepte de le refaire même si c'est la même commande, tant que c'est un nouveau tableau)
     if (!isBackgroundCommand && processedCommandsRef.current.has(commandKey)) {
-      lastProcessedCommandsRef.current = commands; // On marque comme vu
+      lastProcessedCommandsRef.current = commands;
       return;
     }
-    
-    // On ajoute à l'historique
-    if (!processedCommandsRef.current.has(commandKey)) {
+
+    // On ajoute à l'historique (sauf si background qui peut être répété)
+    if (!isBackgroundCommand) {
       processedCommandsRef.current.add(commandKey);
     }
     
-    // On traite les commandes
     processCommands(commands);
-    
-    // On met à jour la référence pour empêcher le re-traitement au prochain render
     lastProcessedCommandsRef.current = commands;
     
     if (processedCommandsRef.current.size > 20) {
@@ -146,10 +252,7 @@ export default function CommandProcessor({
 
   const bringWindowToFront = useCallback((id: string) => {
     // Utilisation de setTimeout pour sortir du cycle de rendu React actuel
-    // Cela évite l'erreur "Cannot update a component while rendering a different component"
     setTimeout(() => {
-      // On calcule le nouveau Z-Index EN DEHORS du setState car c'est un effet de bord (mise à jour du store)
-      // Les fonctions de mise à jour d'état (comme celle passée à setWindows) doivent être pures.
       const newZIndex = incrementMaxZIndex();
 
       setWindows((prev) => {
@@ -164,8 +267,9 @@ export default function CommandProcessor({
   const renderedWindows = useMemo(
     () =>
       windows.map((window) => (
-        <GlassmorphismeWindow
+        <Window
           key={window.id}
+          id={window.id}
           title={window.title}
           x={window.x}
           y={window.y}
@@ -175,7 +279,7 @@ export default function CommandProcessor({
           onFocus={() => bringWindowToFront(window.id)}
         >
           {renderWindowContent(window)}
-        </GlassmorphismeWindow>
+        </Window>
       )),
     [windows, closeWindow, updateWindowPosition, bringWindowToFront],
   );

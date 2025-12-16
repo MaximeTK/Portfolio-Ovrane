@@ -1,17 +1,13 @@
-'use client';
-
 import { useEffect, useState, useRef, useCallback } from 'react';
-import Image from 'next/image';
 import { useAudioVisualization } from '@/hooks/useAudioVisualization';
 import { useChatController } from '@/lib/stream/useChatController';
 import { useAnimations } from '@/hooks/useAnimations';
 import { useTTS } from '@/hooks/useTTS';
-import { ImageOverlay } from '@/components/ui/ImageOverlay';
-import { SectionHighlight } from '@/components/ui/SectionHighlight';
 import { HexagonalAnimation, HexagonalAnimationHandle } from '@/components/ui/HexagonalAnimation';
 import CommandProcessor from '@/components/ui/CommandProcessor';
-import { TextWindow } from '@/components/ui/TextWindow';
+import { TextWindowsManager } from '@/components/ui/GlassmorphismeWindow';
 import { useUIStore } from '@/lib/state/uiStore';
+import { InputArea } from '@/components/ui/InputArea';
 import { IntroSequence } from '@/components/intro/IntroSequence';
 import { MessagingView } from '@/components/chat/MessagingView';
 
@@ -20,16 +16,12 @@ export default function Home() {
   const [scrollTrigger, setScrollTrigger] = useState(0); // Trigger pour le scroll
   const [currentAnimation, setCurrentAnimation] = useState<'standby' | 'thinking' | 'speak'>('standby');
   const [lastProcessedTranscript, setLastProcessedTranscript] = useState<string>('');
-  const [isSingleLine, setIsSingleLine] = useState(true);
   
   // Ref pour traquer si c'est la toute première réponse (bienvenue)
   const isFirstResponseRef = useRef(true);
 
   // Ref pour l'animation hexagonale (pour déclencher des vagues manuelles)
   const hexAnimationRef = useRef<HexagonalAnimationHandle>(null);
-  
-  // Ref pour le textarea auto-extensible
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { setupAudioVisualization, cleanup } = useAudioVisualization();
   const { 
@@ -77,52 +69,6 @@ export default function Home() {
     }
     return () => cleanup();
   }, [cleanup]);
-
-  const adjustTextareaHeight = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      
-      const scrollHeight = textarea.scrollHeight;
-      
-      // Si une seule ligne (seuil approx ~60px pour padding standard + line-height)
-      const isSingle = scrollHeight < 60;
-      setIsSingleLine(isSingle);
-      
-      // Limite max height à 200px avec scroll si nécessaire
-      const newHeight = Math.min(textarea.scrollHeight, 200); 
-      textarea.style.height = `${newHeight}px`;
-    }
-  }, []);
-
-  // Ajuster la hauteur quand la valeur change
-  useEffect(() => {
-    adjustTextareaHeight();
-  }, [inputValue, adjustTextareaHeight]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const question = inputValue.trim();
-    if (!question) return;
-
-    setInputValue('');
-    setLastProcessedTranscript('');
-    // Reset height après envoi
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-
-    // On force le scroll en bas car l'utilisateur vient d'envoyer un message
-    setScrollTrigger(prev => prev + 1);
-
-    // Déclencher une vague visuelle à l'envoi du message
-    hexAnimationRef.current?.triggerWave();
-    
-    // Les fenêtres de texte restent ouvertes et on en créera une nouvelle pour la prochaine réponse
-    setCurrentAnimation('thinking');
-    startThinkingAnimation();
-    sendChatMessage(question);
-  };
 
   useEffect(() => {
     if (chatStatus === 'idle' && currentTranscript && currentTranscript !== lastProcessedTranscript) {
@@ -213,82 +159,18 @@ export default function Home() {
 
         {/* Input Form - Sorti du conteneur principal pour garantir le Z-Index 30 */}
         <div className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[min(600px,90vw)] z-30 transition-all duration-1000 delay-1000 ${appState === 'awake' ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
-          
-          {/* Indicateur de limite de caractères */}
-          <div 
-            className={`absolute -top-6 right-2 text-xs font-mono transition-all duration-300 ${
-              inputValue.length >= 5000 ? 'text-red-500' : 'text-white'
-            } ${
-              inputValue.length > 4500 ? 'opacity-25' : 'opacity-0'
-            }`}
-          >
-            {inputValue.length} / 5000
-          </div>
-
-          <div className="relative rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 pr-4">
-            <style jsx>{`
-              .scrollbar-shorter::-webkit-scrollbar-track {
-                margin-bottom: 30px;
-                margin-top: 12px;
-                background: transparent;
-                cursor: default;
-              }
-              .scrollbar-shorter::-webkit-scrollbar-thumb {
-                background-color: rgba(255, 255, 255, 0.2);
-                border-radius: 20px;
-                border: 3px solid transparent;
-                background-clip: content-box;
-                cursor: default;
-              }
-              .scrollbar-shorter::-webkit-scrollbar {
-                width: 12px;
-                cursor: default;
-              }
-            `}</style>
-            <form
-              onSubmit={handleSubmit}
-              className="relative z-10 w-full flex items-center"
-            >
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                maxLength={5000}
-                rows={1}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-                placeholder="Posez moi une question"
-                className={`scrollbar-shorter w-full bg-transparent text-white placeholder-gray-300 outline-none focus:outline-none resize-none overflow-y-auto max-h-[200px] pl-4 pr-4 ${
-                  isSingleLine ? 'py-3' : 'py-3'
-                }`}
-                aria-label="Question"
-                style={{
-                  minHeight: '24px',
-                  maskImage: 'linear-gradient(to bottom, transparent 0px, black 12px, black calc(100% - 12px), transparent 100%)',
-                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, black 12px, black calc(100% - 12px), transparent 100%)'
-                }}
-              />
-              <button
-                type="submit"
-                className={`absolute right-0 group bg-transparent text-white p-1 rounded-md transition-colors flex items-center justify-center cursor-pointer ${
-                  isSingleLine ? 'top-1/2 -translate-y-1/2' : 'bottom-2'
-                }`}
-                aria-label="Envoyer"
-              >
-                <Image
-                  src="/send.png"
-                  alt=""
-                  width={24}
-                  height={24}
-                  className="w-5 h-5 transition duration-200 group-hover:brightness-75"
-                />
-              </button>
-            </form>
-          </div>
+          <InputArea
+            onSubmit={(text) => {
+              setInputValue('');
+              setLastProcessedTranscript('');
+              setScrollTrigger(prev => prev + 1);
+              setCurrentAnimation('thinking');
+              startThinkingAnimation();
+              sendChatMessage(text);
+            }}
+            triggerWave={() => hexAnimationRef.current?.triggerWave()}
+            onInputChange={setInputValue}
+          />
         </div>
 
         {/* Sections IDs pour navigation */}
@@ -304,9 +186,7 @@ export default function Home() {
         <div className={viewMode === 'messaging' ? 'hidden' : 'block md:block hidden:max-md'}>
           {/* hidden:max-md -> masqué sur mobile (taille < md) même en mode dashboard */}
           <div className="hidden md:block">
-            <TextWindow />
-            <ImageOverlay />
-            <SectionHighlight />
+            <TextWindowsManager />
             <CommandProcessor 
               commands={lastCommands || []} 
               onCommandsProcessed={handleCommandsProcessed}
