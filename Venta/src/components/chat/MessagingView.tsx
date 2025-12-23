@@ -1,6 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Message } from '@/lib/chat/types';
 import { MessageBubble } from './MessageBubble';
+import { ImageGallery } from './ImageGallery';
+import { useBackgroundStore } from '@/lib/state/backgroundStore';
 
 interface MessagingViewProps {
   messages: Message[];
@@ -60,7 +62,52 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const isFirstLoadRef = useRef(true);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  
+  const currentPalette = useBackgroundStore((state) => state.currentPalette);
+  
+  const [galleryState, setGalleryState] = useState<{
+    isOpen: boolean;
+    initialIndex: number;
+    images: string[];
+  }>({
+    isOpen: false,
+    initialIndex: 0,
+    images: []
+  });
+
+  const extractAllImages = useCallback((msgs: Message[]): string[] => {
+    const images: string[] = [];
+    const mdRegex = /!\[.*?\]\((.*?)\)/g;
+    const htmlRegex = /<img\s+[^>]*src=["']([^"']+)["'][^>]*>/g;
+
+    msgs.forEach(msg => {
+      let match;
+      // Copie du contenu pour éviter les problèmes de regex stateful si nécessaire
+      const content = msg.content || '';
+      
+      while ((match = mdRegex.exec(content)) !== null) {
+        if (match[1]) images.push(match[1]);
+      }
+      
+      while ((match = htmlRegex.exec(content)) !== null) {
+        if (match[1]) images.push(match[1]);
+      }
+    });
+    return images;
+  }, []);
+
+  const handleImageClick = (src: string, messageImages: string[]) => {
+    // Si des images sont fournies par le message, on les utilise
+    // Sinon on garde le comportement de fallback (bien que MessageBubble devrait maintenant toujours fournir la liste)
+    const images = messageImages && messageImages.length > 0 ? messageImages : [src];
+    const index = images.findIndex(img => img === src);
+    
+    setGalleryState({
+      isOpen: true,
+      images: images,
+      initialIndex: index !== -1 ? index : 0
+    });
+  };
 
   useEffect(() => {
     if (scrollTrigger > 0) {
@@ -79,7 +126,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
     }
-  }, [messages, visible, shouldScrollToBottom]);
+  }, [messages, visible]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -90,6 +137,26 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     if (!visible) {
       isFirstLoadRef.current = true;
     }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleGlobalWheel = (e: WheelEvent) => {
+      // Si l'élément cible est déjà dans le conteneur scrollable (ou est le conteneur lui-même),
+      // le navigateur gère le scroll nativement, donc on ne fait rien pour éviter le double scroll.
+      if (scrollContainerRef.current && scrollContainerRef.current.contains(e.target as Node)) {
+        return;
+      }
+      
+      // Si on est en dehors du conteneur (ex: sur les côtés vides), on redirige le scroll
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop += e.deltaY;
+      }
+    };
+
+    window.addEventListener('wheel', handleGlobalWheel, { passive: true });
+    return () => window.removeEventListener('wheel', handleGlobalWheel);
   }, [visible]);
 
   const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
@@ -131,11 +198,12 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
           !shouldScrollToBottom && messages.length > 0 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >
-        <div className="bg-gray-900/90 backdrop-blur-md text-gray-200 px-4 py-2.5 rounded-r-full rounded-l-full shadow-2xl flex items-center gap-4 pointer-events-auto border border-gray-700/50 hover:bg-gray-900 transition-colors">
+        <div className="bg-black/50 backdrop-blur-md text-gray-200 px-4 py-2.5 rounded-r-full rounded-l-full shadow-2xl flex items-center gap-4 pointer-events-auto border border-gray-700/50 hover:bg-black/50 transition-colors">
           <span className="text-sm font-medium">Tu consultes d'anciens messages</span>
           <button 
             onClick={scrollToBottom}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+            className="text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-white/10 shadow-lg hover:brightness-110"
+            style={{ backgroundColor: currentPalette.topColor }}
           >
             <span>Revenir aux messages les plus récents</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -180,7 +248,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
                 showDateDivider={showDateDivider}
                 formatDateDivider={formatDateDivider}
                 formatMessageTime={formatMessageTime}
-                onImageClick={setSelectedImage}
+                onImageClick={handleImageClick}
               />
             );
           })}
@@ -188,57 +256,13 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
         </div>
       </div>
 
-      {/* Lightbox */}
-      {selectedImage && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center animate-in fade-in duration-300"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div 
-            className="relative w-full h-full flex items-center justify-center p-4 md:p-12"
-            onClick={(e) => {
-               if (e.target === e.currentTarget) setSelectedImage(null);
-            }}
-          >
-            <button 
-              className="absolute top-6 right-6 z-50 group bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white rounded-full p-3 transition-all duration-200 transform hover:scale-110 hover:rotate-90"
-              onClick={() => setSelectedImage(null)}
-              aria-label="Fermer"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-
-            <div className="relative max-w-full max-h-full flex items-center justify-center group" onClick={(e) => e.stopPropagation()}>
-               <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-500"></div>
-               
-               {/* eslint-disable-next-line @next/next/no-img-element */}
-               <img 
-                 src={selectedImage} 
-                 alt="Agrandissement" 
-                 className="relative max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl border border-white/10"
-               />
-
-               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
-                  <a 
-                    href={selectedImage} 
-                    download 
-                    className="bg-black/50 hover:bg-black/70 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium border border-white/10 flex items-center gap-2 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Télécharger
-                  </a>
-               </div>
-            </div>
-          </div>
-        </div>
+      {/* Lightbox / Gallery */}
+      {galleryState.isOpen && (
+        <ImageGallery 
+          images={galleryState.images}
+          initialIndex={galleryState.initialIndex}
+          onClose={() => setGalleryState(prev => ({ ...prev, isOpen: false }))}
+        />
       )}
       
       <style jsx global>{`

@@ -288,39 +288,53 @@ export function useChatController(): UseChatControllerReturn {
         });
 
         if (imageCommands.length > 0) {
-          // On ajoute un conteneur spécial (syntaxe HTML ou Markdown custom)
-          // Ici on utilise une liste d'images Markdown séparées par un caractère spécial que MessagingView pourra interpréter comme une grille
-          
-          replyText += '\n\n<div class="image-grid">';
-          
-          imageCommands.forEach((cmd: Command) => {
-             let imageUrl = cmd.parameter;
-             
-             // Si c'est un chemin relatif vers assets, on s'assure qu'il est correct
-             if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-                // Si l'image est dans public/assets/
-                if (!imageUrl.startsWith('assets/')) {
-                   imageUrl = '/assets/' + imageUrl;
-                } else {
-                   imageUrl = '/' + imageUrl;
-                }
-             }
-             
-             // Nettoyage: retirer le point à la fin de l'extension si présent (ex: .png. -> .png)
-             // OpenAI a tendance à mettre un point final même aux URL dans les arguments de fonction
-             if (imageUrl.endsWith('.')) {
-                imageUrl = imageUrl.slice(0, -1);
-             }
-             
-             // Encodage des espaces pour le Markdown
-             const encodedUrl = imageUrl.replace(/\s/g, '%20');
-             
-             // On ajoute l'image (format HTML pour être valide dans la div)
-             // Markdown standard ne parse pas le markdown à l'intérieur de blocs HTML
-             replyText += `<img src="${encodedUrl}" alt="Image" />`;
+          // Filtrer les images déjà présentes dans le replyText pour éviter les doublons FRONTEND immédiats
+          const imagesToInject = imageCommands.filter((cmd: Command) => {
+            const filename = cmd.parameter.trim();
+            if (!filename) return false;
+            
+            // Même logique de détection que le backend mais côté client
+            const decodedResponse = decodeURIComponent(replyText);
+            const decodedFilename = decodeURIComponent(filename);
+            
+            return !decodedResponse.includes(decodedFilename);
           });
-          
-          replyText += '</div>';
+
+          if (imagesToInject.length > 0) {
+            // On ajoute un conteneur spécial (syntaxe HTML ou Markdown custom)
+            // Ici on utilise une liste d'images Markdown séparées par un caractère spécial que MessagingView pourra interpréter comme une grille
+            
+            replyText += '\n\n<div class="image-grid">';
+            
+            imagesToInject.forEach((cmd: Command) => {
+               let imageUrl = cmd.parameter;
+               
+               // Si c'est un chemin relatif vers assets, on s'assure qu'il est correct
+               if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+                  // Si l'image est dans public/assets/
+                  if (!imageUrl.startsWith('assets/')) {
+                     imageUrl = '/assets/' + imageUrl;
+                  } else {
+                     imageUrl = '/' + imageUrl;
+                  }
+               }
+               
+               // Nettoyage: retirer le point à la fin de l'extension si présent (ex: .png. -> .png)
+               // OpenAI a tendance à mettre un point final même aux URL dans les arguments de fonction
+               if (imageUrl.endsWith('.')) {
+                  imageUrl = imageUrl.slice(0, -1);
+               }
+               
+               // Encodage des espaces pour le Markdown
+               const encodedUrl = imageUrl.replace(/\s/g, '%20');
+               
+               // On ajoute l'image (format HTML pour être valide dans la div)
+               // Markdown standard ne parse pas le markdown à l'intérieur de blocs HTML
+               replyText += `<img src="${encodedUrl}" alt="Image" />`;
+            });
+            
+            replyText += '</div>';
+          }
         }
       }
 

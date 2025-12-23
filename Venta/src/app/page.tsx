@@ -172,6 +172,7 @@ export default function Home() {
             }}
             triggerWave={() => hexAnimationRef.current?.triggerWave()}
             onInputChange={setInputValue}
+            isLoading={currentAnimation === 'thinking'}
           />
         </div>
 

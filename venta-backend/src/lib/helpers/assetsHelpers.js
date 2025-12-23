@@ -103,20 +103,25 @@ export function getRulePicture() {
 Tu PEUX afficher des images avec la commande /ShowPicture suivie du nom de l'image.
 
 PROCESSUS À SUIVRE:
-1. Si tu n'as pas encore appelé getAvailableAssets(), appelle-le MAINTENANT pour obtenir la liste des images disponibles
-2. Une fois que tu as la liste des assets, génère ta réponse avec la commande /ShowPicture suivie du nom EXACT du fichier
-3. Exemple: "Voici une image d'exemple ! /ShowPicture exemple.png"
-4. Si l'image demandée n'existe pas dans la liste, dis-le clairement et ne génère PAS de commande /ShowPicture
+1. Si tu n'as pas encore appelé getAvailableAssets(), appelle-le MAINTENANT pour obtenir la liste des images disponibles.
+2. Une fois que tu as la liste des assets, génère ta réponse avec la commande /ShowPicture suivie du nom EXACT du fichier.
+3. Si l'image demandée n'existe pas dans la liste, dis-le clairement et ne génère PAS de commande /ShowPicture.
 
 RÈGLES IMPORTANTES:
-- N'appelle getAvailableAssets() qu'UNE SEULE FOIS maximum par conversation
-- Utilise TOUJOURS le nom exact du fichier (sensible à la casse)
-- La commande /ShowPicture doit être dans ta réponse finale à l'utilisateur
-- Tu peux afficher plusieurs images en utilisant plusieurs commandes /ShowPicture dans la même réponse
+- N'appelle getAvailableAssets() qu'UNE SEULE FOIS maximum par conversation.
+- Utilise TOUJOURS le nom exact du fichier (sensible à la casse).
+- La commande /ShowPicture doit être dans ta réponse finale à l'utilisateur.
+
+MULTIPLE IMAGES:
+- Tu peux afficher plusieurs images dans UN SEUL message en ajoutant plusieurs commandes à la fin de ton texte.
+- NE FAIS PAS UNE PHRASE PAR IMAGE. Fais une phrase d'introduction globale, puis liste les commandes.
+- Exemple CORRECT: "Voici les images que tu as demandées : les interfaces et le logo. /ShowPicture interface.png /ShowPicture logo.png"
+- Exemple INCORRECT: "Voici l'interface. /ShowPicture interface.png. Et voici le logo. /ShowPicture logo.png"
 
 EXEMPLES:
 ✅ BON: "Regarde cette image ! /ShowPicture Pico Interface.png"
-✅ BON: "Voici le logo Pico /ShowPicture Pico Logo.png et son interface /ShowPicture Pico Interface.png"
+✅ BON: "Voici le logo Pico et son interface. /ShowPicture Pico Logo.png /ShowPicture Pico Interface.png"
+❌ MAUVAIS: "Voici le logo. /ShowPicture Pico Logo.png. Et voici l'interface. /ShowPicture Pico Interface.png" (Trop verbeux)
 ❌ MAUVAIS: Utiliser /ShowPicture sans avoir vérifié que l'image existe`;
 
     console.log(`${EMOJIS.success} ${CONSOLE_LOGS.functionCall} Instructions d'affichage d'images fournies`);

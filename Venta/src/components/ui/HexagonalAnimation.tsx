@@ -164,7 +164,7 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
     }
   };
 
-  // Suivre la souris (Désactivé en mode Sleep)
+  // Suivre la souris (Désactivé en mode Sleep ou Thinking)
   useEffect(() => {
     if (mode === 'sleep') return; // Pas de suivi en mode sleep
 
@@ -179,7 +179,9 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
     const recalcInterval = setInterval(updateRect, 500);
     
     const handleMouseMove = (e: MouseEvent) => {
-      if (currentAnimation === 'speak') return;
+      // Désactiver le suivi de souris pendant l'animation "thinking" ou "speak"
+      if (currentAnimation === 'speak' || currentAnimation === 'thinking') return;
+      
       if (!cachedRect || !innerHexRef.current) return;
       
       const centerX = cachedRect.left + cachedRect.width / 2;
@@ -205,6 +207,47 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
       clearInterval(recalcInterval);
     };
   }, [currentAnimation, mode]);
+
+  // Animation "Thinking" (Regard aux 4 coins)
+  useEffect(() => {
+    if (currentAnimation !== 'thinking' || mode === 'sleep') return;
+
+    // Séquence: Bas Droite -> Bas Gauche -> Haut Droite -> Haut Gauche
+    const sequence = [
+      { x: MAX_EYE_MOVEMENT_X, y: MAX_EYE_MOVEMENT_Y },   // Coin droite bas
+      { x: -MAX_EYE_MOVEMENT_X, y: MAX_EYE_MOVEMENT_Y },  // Coin gauche bas
+      { x: MAX_EYE_MOVEMENT_X, y: -MAX_EYE_MOVEMENT_Y },  // Coin droite haut
+      { x: -MAX_EYE_MOVEMENT_X, y: -MAX_EYE_MOVEMENT_Y }, // Coin gauche haut
+    ];
+
+    let step = 0;
+
+    const animateThinking = () => {
+      if (!innerHexRef.current) return;
+      
+      const pos = sequence[step];
+      // On applique la translation tout en gardant l'échelle de 0.25
+      innerHexRef.current.setAttribute('transform', `translate(${pos.x}, ${pos.y}) scale(0.25)`);
+      
+      // Passage à l'étape suivante
+      step = (step + 1) % sequence.length;
+    };
+
+    // Lancer la première étape immédiatement
+    animateThinking();
+
+    // Changer de position toutes les 800ms
+    const interval = setInterval(animateThinking, 800);
+
+    return () => clearInterval(interval);
+  }, [currentAnimation, mode]);
+
+  // Centrer l'hexagone quand l'IA parle
+  useEffect(() => {
+    if (currentAnimation === 'speak' && innerHexRef.current) {
+      innerHexRef.current.setAttribute('transform', 'scale(0.25)');
+    }
+  }, [currentAnimation]);
 
   // Audio Visualizer
   useEffect(() => {

@@ -12,7 +12,7 @@ interface MessageBubbleProps {
   showDateDivider?: boolean;
   formatDateDivider?: (ts: number) => string;
   formatMessageTime?: (ts: number) => string;
-  onImageClick?: (src: string) => void;
+  onImageClick?: (src: string, allImagesInMessage: string[]) => void;
 }
 
 export function MessageBubble({ 
@@ -24,6 +24,29 @@ export function MessageBubble({
   formatMessageTime,
   onImageClick 
 }: MessageBubbleProps) {
+  
+  // Extraction de toutes les images du message courant pour la navigation de la galerie
+  const extractImagesFromContent = (text: string): string[] => {
+    const images: string[] = [];
+    const mdRegex = /!\[.*?\]\((.*?)\)/g;
+    const htmlRegex = /<img\s+[^>]*src=["']([^"']+)["'][^>]*>/g;
+    
+    let match;
+    const contentCopy = text || '';
+    
+    while ((match = mdRegex.exec(contentCopy)) !== null) {
+      if (match[1]) images.push(match[1]);
+    }
+    
+    while ((match = htmlRegex.exec(contentCopy)) !== null) {
+      if (match[1]) images.push(match[1]);
+    }
+    
+    return images;
+  };
+
+  const messageImages = React.useMemo(() => extractImagesFromContent(content), [content]);
+
   return (
     <>
       {showDateDivider && formatDateDivider && (
@@ -45,7 +68,7 @@ export function MessageBubble({
           {/* En-tête du message */}
           <div className={`flex items-baseline gap-2 mb-1 px-1 ${role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
             <span className="text-sm font-bold text-gray-200">
-              {role === 'user' ? 'Vous' : 'Hopa'}
+              {role === 'user' ? 'Vous' : 'Ovrane'}
             </span>
             <span className="text-[10px] text-gray-400">
               {formatMessageTime ? formatMessageTime(timestamp) : new Date(timestamp).toLocaleTimeString()}
@@ -53,7 +76,7 @@ export function MessageBubble({
           </div>
 
           <div
-            className="px-4 py-3 rounded-2xl text-sm md:text-base prose prose-invert break-words break-all whitespace-pre-wrap prose-p:my-1 prose-pre:my-2 prose-pre:bg-black/30 transition-opacity duration-200"
+            className="px-4 py-3 rounded-2xl text-sm md:text-base prose prose-invert break-words whitespace-pre-wrap prose-p:my-1 prose-pre:my-2 prose-pre:bg-black/30 transition-opacity duration-200"
             style={{
               boxShadow: '0 2px 8px 0 rgba(0, 0, 0, 0.15)',
               background: role === 'user' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.5)',
@@ -81,14 +104,14 @@ export function MessageBubble({
                   return (
                     <span 
                       className={`chat-image-wrapper block relative rounded-lg overflow-hidden cursor-zoom-in hover:brightness-90 transition-all border border-white/10 bg-black/20 w-fit ${className || ''}`}
-                      onClick={() => onImageClick?.(String(src))}
-                      style={{ ...style, height: '20vh' }}
+                      onClick={() => onImageClick?.(String(src), messageImages)}
+                      style={{ ...style, maxHeight: '500px', width: 'auto', maxWidth: '100%' }}
                     >
                       <img 
                         {...props} 
                         src={src}
-                        className={`h-full w-auto max-w-full ${className?.includes('aspect-square') ? 'object-cover' : 'object-contain'}`}
-                        style={{ height: '100%', width: 'auto' }}
+                        className={`h-auto w-auto max-w-full ${className?.includes('aspect-square') ? 'object-cover' : 'object-contain'}`}
+                        style={{ height: 'auto', width: 'auto', maxHeight: '500px' }}
                         alt={props.alt || ''} 
                         loading="lazy"
                       />
@@ -150,13 +173,18 @@ function ImageGrid({ children }: { children: React.ReactNode }) {
   const validChildren = React.Children.toArray(children).filter((child) => React.isValidElement(child));
   const count = validChildren.length;
 
-  if (count <= 1) {
-    return <div className="my-2 w-full max-w-md">{children}</div>;
+  if (count === 0) return null;
+
+  // Si une seule image, on la retourne telle quelle avec une largeur minimale garantie
+  if (count === 1) {
+    return <div className="my-2 w-full max-w-md min-w-[240px] md:min-w-[320px]">{children}</div>;
   }
 
-  let gridCols = 'grid-cols-1';
-  if (count === 2) gridCols = 'grid-cols-2';
-  if (count >= 3) gridCols = 'grid-cols-3';
+  // Configuration de la grille
+  // Mobile : 2 colonnes minimum pour éviter les images minuscules
+  // Desktop : 3 colonnes max
+  let gridCols = 'grid-cols-2';
+  if (count >= 3) gridCols = 'grid-cols-2 md:grid-cols-3';
 
   const maxImages = 9;
   const hasOverflow = count > maxImages;
@@ -164,29 +192,36 @@ function ImageGrid({ children }: { children: React.ReactNode }) {
   const remainingCount = count - maxImages;
 
   return (
-    <div className={`grid ${gridCols} gap-2 my-2 w-fit image-grid-layout`}>
+    <div className={`grid ${gridCols} gap-2 my-2 w-full max-w-full min-w-[240px] md:min-w-[400px] image-grid-layout`}>
       {displayItems.map((child, index) => {
         let styledChild = child;
         if (React.isValidElement(child)) {
            const childElement = child as React.ReactElement<{ className?: string; style?: React.CSSProperties }>;
            styledChild = React.cloneElement(childElement, {
-              className: `${childElement.props.className || ''} !aspect-square !relative !block !object-cover`,
+              className: `${childElement.props.className || ''} !aspect-square !relative !block !object-cover !w-full !h-full`,
               style: { 
                 ...childElement.props.style, 
-                width: '20vh',
-                height: '20vh',
-                aspectRatio: '1/1'
+                width: '100%',
+                height: '100%',
+                aspectRatio: '1/1',
+                maxWidth: '100%'
               }
             });
         }
 
         if (hasOverflow && index === maxImages - 1) {
           return (
-            <div key={index} className="relative group/overlay" style={{ width: '20vh', height: '20vh' }}>
+            <div key={index} className="relative group/overlay w-full h-full aspect-square">
               {styledChild}
               <div 
                 className="absolute inset-0 bg-gray-900/60 flex items-center justify-center rounded-lg backdrop-blur-[2px] transition-colors cursor-pointer hover:bg-gray-900/70 z-10"
-                // Note: Le click handler global sur l'image fonctionnera quand même via propagation ou ciblage CSS
+                onClick={(e) => {
+                  // Déclencher manuellement le clic sur l'image sous-jacente
+                  const imgWrapper = e.currentTarget.previousElementSibling as HTMLElement;
+                  if (imgWrapper) {
+                    imgWrapper.click();
+                  }
+                }}
               >
                 <span className="text-white font-bold text-lg drop-shadow-md">+{remainingCount}</span>
               </div>

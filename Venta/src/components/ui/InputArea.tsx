@@ -9,6 +9,7 @@ interface InputAreaProps {
   triggerWave?: () => void;
   maxLength?: number;
   className?: string;
+  isLoading?: boolean;
 }
 
 export function InputArea({ 
@@ -18,7 +19,8 @@ export function InputArea({
   placeholder = "Posez moi une question", 
   triggerWave,
   maxLength = 5000,
-  className
+  className,
+  isLoading = false
 }: InputAreaProps) {
   const [inputValue, setInputValue] = useState('');
   const [isSingleLine, setIsSingleLine] = useState(true);
@@ -48,7 +50,7 @@ export function InputArea({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = inputValue.trim();
-    if (!text) return;
+    if (!text || isLoading) return;
 
     // Reset UI
     setInputValue('');
@@ -129,9 +131,10 @@ export function InputArea({
           />
           <button
             type="submit"
-            className={`absolute right-0 group bg-transparent text-white p-1 rounded-md transition-colors flex items-center justify-center cursor-pointer ${
+            disabled={isLoading || !inputValue.trim()}
+            className={`absolute right-0 group bg-transparent text-white p-1 rounded-md transition-colors flex items-center justify-center ${
               isSingleLine ? 'top-1/2 -translate-y-1/2' : 'bottom-2'
-            }`}
+            } ${isLoading || !inputValue.trim() ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
             aria-label="Envoyer"
           >
             <Image
@@ -139,7 +142,7 @@ export function InputArea({
               alt=""
               width={24}
               height={24}
-              className="w-5 h-5 transition duration-200 group-hover:brightness-75"
+              className={`w-5 h-5 transition duration-200 ${isLoading || !inputValue.trim() ? '' : 'group-hover:brightness-75'}`}
             />
           </button>
         </form>

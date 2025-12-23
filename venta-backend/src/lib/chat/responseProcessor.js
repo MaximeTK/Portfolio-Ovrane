@@ -111,7 +111,29 @@ async function handlePendingUserCreationFallback() {
  */
 export async function processResponse(response, userId, userProfile, prompt, isEphemeral = false) {
   const { rawResponse, ragCoverage, ragSources } = response;
-  const { commands, cleanResponse } = extractCommands(rawResponse);
+  let { commands, cleanResponse } = extractCommands(rawResponse);
+
+  // Nettoyage proactif des images Markdown si une commande ShowPicture est présente
+  // Cela évite le double affichage (TextWindow + ImageWindow) dans le Dashboard
+  if (commands && commands.length > 0) {
+    const imageCommands = commands.filter(c => c.command.toLowerCase() === 'showpicture' || c.command.toLowerCase() === 'showimage');
+    
+    imageCommands.forEach(cmd => {
+      const filename = cmd.parameter.trim();
+      if (!filename) return;
+
+      const escapedFilename = filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const encodedFilename = filename.replace(/\s/g, '%20');
+      
+      // Regex pour trouver ![alt](...filename...) et le supprimer
+      // On cherche les variantes avec /assets/ ou sans
+      // et avec encodage %20 ou espaces
+      const pathVariants = `(${escapedFilename}|${encodedFilename})`;
+      const markdownImageRegex = new RegExp(`!\\[[^\\]]*\\]\\([^)]*${pathVariants}[^)]*\\)`, 'gi');
+      
+      cleanResponse = cleanResponse.replace(markdownImageRegex, '');
+    });
+  }
 
   // Sauvegarde de l'état avant les commandes
   const wasTemporary = userProfile.isTemporary;
@@ -160,9 +182,30 @@ export async function processResponse(response, userId, userProfile, prompt, isE
   // Injection des images dans le texte sauvegardé si commandes présentes
   if (commands && commands.length > 0) {
     const imageCommands = commands.filter(c => c.command.toLowerCase() === 'showpicture' || c.command.toLowerCase() === 'showimage');
-    if (imageCommands.length > 0) {
+    
+    // Filtrer les images déjà présentes dans le texte (Markdown ou HTML) pour éviter les doublons
+    const imagesToInject = imageCommands.filter(cmd => {
+      const filename = cmd.parameter.trim();
+      if (!filename) return false;
+      
+      // On vérifie de manière plus large si le nom du fichier est déjà dans la réponse nettoyée
+      // (Car l'IA peut parfois insérer l'image en Markdown [alt](/assets/img.png)
+      // ou juste mentionner le fichier, ou le mettre en HTML)
+      
+      // Normalisation: on remplace les %20 par des espaces pour la recherche
+      const decodedResponse = decodeURIComponent(cleanResponse);
+      const decodedFilename = decodeURIComponent(filename);
+      
+      // Si le nom du fichier apparait déjà dans la réponse (hors de la commande qui a été extraite),
+      // on suppose qu'il est déjà affiché ou mentionné, donc on n'injecte pas une 2ème fois.
+      // cleanResponse ne contient PLUS la commande /ShowPicture, donc si le nom est encore là,
+      // c'est qu'il est dans un lien Markdown ou une balise img.
+      return !decodedResponse.includes(decodedFilename);
+    });
+
+    if (imagesToInject.length > 0) {
        finalReply += '\n\n<div class="image-grid">';
-       imageCommands.forEach(cmd => {
+       imagesToInject.forEach(cmd => {
           let imageUrl = cmd.parameter;
            if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
               if (!imageUrl.startsWith('assets/')) {
