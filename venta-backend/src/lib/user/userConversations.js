@@ -1,12 +1,32 @@
 /**
  * Gestion des conversations utilisateurs - Version MongoDB
  */
+import mongoose from 'mongoose';
 import { User } from '../../models/User.js';
+import { memoryUsers } from '../memoryStore.js';
 
 /**
  * Ajoute une conversation
  */
 export async function addConversation(userId, prompt, response, metadata = {}) {
+  // Mode mémoire
+  if (mongoose.connection.readyState !== 1) {
+    const user = memoryUsers.get(userId);
+    if (user) {
+      if (!user.conversations) user.conversations = [];
+      user.conversations.push({
+        role: 'user',
+        content: prompt,
+        timestamp: new Date(),
+        prompt: prompt,
+        response: response,
+        ...metadata
+      });
+      memoryUsers.set(userId, user);
+    }
+    return;
+  }
+
   try {
     // Créer l'objet conversation
     // Note: Dans MongoDB on n'a pas besoin de limiter manuellement à 100,
@@ -41,6 +61,14 @@ export async function addConversation(userId, prompt, response, metadata = {}) {
  * Met à jour le profil utilisateur
  */
 export async function updateUserProfile(userId, updates) {
+  // Mode mémoire
+  if (mongoose.connection.readyState !== 1) {
+    const user = memoryUsers.get(userId) || {};
+    const { _id, id, ...safeUpdates } = updates;
+    memoryUsers.set(userId, { ...user, ...safeUpdates });
+    return;
+  }
+
   try {
     // Retirer les champs protégés
     const { _id, id, ...safeUpdates } = updates;
@@ -59,7 +87,14 @@ export async function updateUserProfile(userId, updates) {
  */
 export async function getRawConversationHistory(userId, limit = 50, skip = 0) {
   try {
-    const user = await User.findOne({ id: userId }).lean();
+    let user;
+
+    // Mode mémoire
+    if (mongoose.connection.readyState !== 1) {
+      user = memoryUsers.get(userId);
+    } else {
+      user = await User.findOne({ id: userId }).lean();
+    }
     
     if (!user) return [];
     
@@ -68,7 +103,13 @@ export async function getRawConversationHistory(userId, limit = 50, skip = 0) {
     // Si c'est un profil lié à un profil principal
     if (user.mainProfileId) {
       try {
-        const mainProfile = await User.findOne({ id: user.mainProfileId }).lean();
+        let mainProfile;
+        if (mongoose.connection.readyState !== 1) {
+            mainProfile = memoryUsers.get(user.mainProfileId);
+        } else {
+            mainProfile = await User.findOne({ id: user.mainProfileId }).lean();
+        }
+
         if (mainProfile) {
           allConversations = [
             ...(mainProfile.conversations || []),
@@ -84,10 +125,6 @@ export async function getRawConversationHistory(userId, limit = 50, skip = 0) {
     allConversations.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     
     // Retourner les N messages avec pagination
-    // slice(-limit) prend les derniers, mais avec skip c'est plus complexe sur un tableau en mémoire
-    // Pour une pagination standard "remonter le temps":
-    // On veut les messages de (Total - Skip - Limit) à (Total - Skip)
-    
     const total = allConversations.length;
     const start = Math.max(0, total - skip - limit);
     const end = Math.max(0, total - skip);
@@ -104,16 +141,29 @@ export async function getRawConversationHistory(userId, limit = 50, skip = 0) {
  */
 export async function getConversationHistory(userId, limit = 5) {
   try {
-    const user = await User.findOne({ id: userId }).lean();
+    let user;
+
+    // Mode mémoire
+    if (mongoose.connection.readyState !== 1) {
+      user = memoryUsers.get(userId);
+    } else {
+      user = await User.findOne({ id: userId }).lean();
+    }
     
     if (!user) return '';
     
     let allConversations = user.conversations || [];
-    
+      
     // Si c'est un profil lié à un profil principal (legacy logic, peut-être inutile avec MongoDB mais gardons-le)
     if (user.mainProfileId) {
       try {
-        const mainProfile = await User.findOne({ id: user.mainProfileId }).lean();
+        let mainProfile;
+        if (mongoose.connection.readyState !== 1) {
+              mainProfile = memoryUsers.get(user.mainProfileId);
+        } else {
+              mainProfile = await User.findOne({ id: user.mainProfileId }).lean();
+        }
+        
         if (mainProfile) {
           // Fusionner les conversations
           allConversations = [

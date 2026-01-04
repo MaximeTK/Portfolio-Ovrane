@@ -1,6 +1,7 @@
 /**
  * Gestion des profils (conversion, fusion) - Version MongoDB
  */
+import mongoose from 'mongoose';
 import { User } from '../../models/User.js';
 
 /**
@@ -88,6 +89,11 @@ export async function mergeTemporaryIntoPermanent(tempUserId, permanentUserId) {
  * Nettoie les profils temporaires inactifs
  */
 export async function cleanInactiveTemporaryProfiles() {
+  // Si pas connecté à MongoDB, on ignore
+  if (mongoose.connection.readyState !== 1) {
+    return 0;
+  }
+
   try {
     const now = new Date();
     const threshold = new Date(now.getTime() - (24 * 60 * 60 * 1000)); // 24h avant

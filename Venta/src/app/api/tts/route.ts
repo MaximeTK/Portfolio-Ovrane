@@ -1,69 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getElevenAudio } from './providers/elevenLabs';
-import { getOpenAIAudio } from './providers/openai';
 
-type Provider = {
-  id: string;
-  load: (text: string) => Promise<ArrayBuffer | null>;
-};
-
-const PROVIDERS: Provider[] = [
-  { id: 'elevenlabs', load: getElevenAudio },
-  { id: 'openai', load: getOpenAIAudio },
-];
-
-type SynthesisResult = {
-  buffer: ArrayBuffer | null;
-  provider: string;
-};
-
-async function synthesize(
-  text: string,
-): Promise<SynthesisResult> {
-  for (const provider of PROVIDERS) {
-    const buffer = await provider.load(text);
-    if (buffer) {
-      return { buffer, provider: provider.id };
-    }
-  }
-  return { buffer: null, provider: 'none' };
-}
-
-function buildHeaders(
-  buffer: ArrayBuffer,
-  provider: string,
-) {
-  return {
-    'Content-Type': 'audio/mpeg',
-    'Content-Length': buffer.byteLength.toString(),
-    'Cache-Control': 'no-cache',
-    'X-TTS-Provider': provider,
-  };
-}
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
 export async function POST(request: NextRequest) {
-  let text = '';
   try {
     const body = await request.json();
-    text = typeof body?.text === 'string' ? body.text : '';
-    if (!text) {
-      return NextResponse.json({ error: 'Texte requis' }, {
-        status: 400,
-      });
-    }
-    const result = await synthesize(text);
-    if (!result.buffer) {
-      return NextResponse.json({ useClientTTS: true, text }, {
-        status: 200,
-      });
-    }
-    return new NextResponse(result.buffer, {
-      headers: buildHeaders(result.buffer, result.provider),
+    
+    // On relaie la requête au backend Node.js
+    const response = await fetch(`${BACKEND_URL}/api/tts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     });
+
+    if (!response.ok) {
+      // Si le backend échoue, on renvoie une instruction de fallback client
+      return NextResponse.json({ useClientTTS: true, text: body.text }, { status: 200 });
+    }
+
+    // Si le backend renvoie du JSON (cas d'erreur gérée ou fallback)
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      return NextResponse.json(data);
+    }
+
+    // Sinon, on stream l'audio reçu
+    const arrayBuffer = await response.arrayBuffer();
+    
+    return new NextResponse(arrayBuffer, {
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': arrayBuffer.byteLength.toString(),
+        'Cache-Control': 'no-cache',
+        'X-TTS-Provider': response.headers.get('X-TTS-Provider') || 'backend-proxy',
+      },
+    });
+
   } catch (error) {
-    console.error('[TTS] Route erreur', error);
-    return NextResponse.json({ useClientTTS: true, text }, {
-      status: 200,
-    });
+    console.error('[TTS Proxy] Erreur:', error);
+    return NextResponse.json({ useClientTTS: true, text: '' }, { status: 200 });
   }
 }

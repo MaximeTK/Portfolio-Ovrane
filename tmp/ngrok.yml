@@ -1,0 +1,18 @@
+version: "3"
+agent:
+  authtoken: 343GfZvpDjO1Py1KY2oIoR65yJR_4nMU5QtvahVbFoxMxum9V
+tunnels:
+  venta-front:
+    addr: 3000
+    proto: http
+    schemes:
+      - https
+      - http
+  venta-back:
+    addr: 3001
+    proto: http
+    schemes:
+      - https
+      - http
+
+

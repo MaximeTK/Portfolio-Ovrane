@@ -27,6 +27,8 @@ export async function connectToDatabase() {
     console.error(`${EMOJIS.error} [DATABASE] Erreur de connexion MongoDB:`, error.message);
     // En dev, on ne crash pas l'app si la BDD échoue, on log juste l'erreur
     // En prod, c'est peut-être mieux de crash
+    isConnected = false;
+    console.warn(`${EMOJIS.warning} [DATABASE] Mode sans échec activé: Le serveur continue sans base de données (données volatiles).`);
   }
 }
 
