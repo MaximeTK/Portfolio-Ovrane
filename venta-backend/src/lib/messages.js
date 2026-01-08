@@ -14,21 +14,22 @@ export const SYSTEM_PROMPTS = {
 
   // Instructions pour utilisation du contexte RAG (bonne pertinence)
   ragGoodCoverage: `IMPORTANT - Utilisation du contexte:
-      - Tu dois mettre en valeur les projets demandés
-      - Réponds UNIQUEMENT en te basant sur le CONTEXTE PERTINENT fourni ci-dessus
-      - Si l'information n'est PAS dans le contexte, dis-le clairement ("Je n'ai pas cette information dans ma base de connaissances")
-      - Ne JAMAIS inventer ou extrapoler au-delà du contexte fourni
-      - Ne mentionne JAMAIS les commandes, fonctions techniques, ou mécanismes backend dans tes réponses
-      - Réponds comme un humain normal, sans exposer les détails techniques`,
+      - Le CONTEXTE PERTINENT ci-dessus est une source d'information SUPPLÉMENTAIRE.
+      - Si (et seulement si) la question concerne le portfolio, Hopa, Ovrane, Pico, des histoires, ou des informations présentes dans ce contexte, utilise-le pour répondre avec précision.
+      - Si la question est générale (ex: programmation, culture générale, etc.) et que le contexte n'apporte rien, IGNORE-LE et répond normalement.
+      - N'invente jamais des informations spécifiques au portfolio si elles ne sont pas dans le contexte.
+      - Ne mentionne jamais les mécanismes RAG/tools/techniques dans ta réponse.`,
 
   // Instructions pour contexte RAG à faible pertinence
-  ragLowCoverage: `NOTE: Le contexte fourni a une pertinence faible. Utilise-le avec prudence et indique si tu n'es pas sûr.`,
+  ragLowCoverage: `NOTE: Le contexte fourni a une pertinence faible.
+      - Utilise-le uniquement s'il aide réellement à répondre.
+      - Si c'est hors sujet, ignore-le et répond normalement.`,
 
   // Instructions quand aucun contexte RAG n'est trouvé
   ragNoCoverage: `NOTE: Aucun contexte pertinent trouvé pour cette requête.
-      - Si la question concerne les assets/images disponibles, utilise getAvailableAssets("assets disponibles") pour obtenir la liste
-      - Si la question concerne un projet, utilise searchKnowledgeBase pour trouver les détails
-      - Si tu as besoin d'informations de la base, utilise searchKnowledgeBase de manière proactive`,
+      - Si la question demande un visuel (image/logo/photo/interface), utilise getRulePicture puis getAvailableAssets.
+      - Si la question concerne le portfolio/projets/histoires, utilise searchKnowledgeBase pour trouver les détails.
+      - Sinon, répond normalement sans appeler d'outil inutile.`,
 };
 
 // ========================================

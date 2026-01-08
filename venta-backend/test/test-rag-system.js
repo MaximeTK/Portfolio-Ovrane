@@ -56,6 +56,7 @@ async function testRAGSystem() {
       "Quelles commandes sont disponibles ?",
       "Comment afficher une image ?",
       "Parle-moi de Toty",
+      "Est-ce que Toty c'est un alligator ?",
       "Qu'est-ce que Cracotille ?",
     ];
 

@@ -33,18 +33,34 @@ export async function loadAssetsFromFrontend(frontendUrl) {
  */
 export function extractCommands(response) {
   // Commandes: "/Command param..."
-  // - Doit être en début de texte OU précédée d'un whitespace (évite les URLs type https://)
+  // - Doit être en début de texte OU précédée d'un séparateur (évite les URLs type https://)
   // - Le paramètre s'arrête avant la prochaine commande (si plusieurs sur la même ligne)
   // - Ne traverse pas les retours à la ligne
-  const commandRegex = /(^|\s)\/(\w+)\s*([^\n\r]*?)(?=(?:\s\/\w+)|$|\n|\r)/g;
+  const commandRegex = /(^|[\s([{\<"'`«»“”.,;:!?-])\/(\w+)\s*([^\n\r]*?)(?=(?:\s\/\w+)|$|\n|\r)/g;
+  const KNOWN_COMMANDS = new Set([
+    'showpicture',
+    'showimage',
+    'setbackground',
+    'showcode',
+    'openwindow',
+    'createuserprofile',
+    'updateuserprofile',
+    'switchuserprofile',
+  ]);
+  const QUOTE_PREFIXES = new Set(['"', "'", '`', '«', '»', '“', '”']);
   const commands = [];
   let cleanResponse = response;
   let match;
   
   while ((match = commandRegex.exec(response)) !== null) {
-    const prefix = match[1] || '';
+    let prefix = match[1] || '';
     const command = match[2];
     const rawParameter = (match[3] || '').trim();
+
+    // Ne traiter que les commandes connues pour éviter de casser des chemins/URLs (ex: "/assets/...")
+    if (!KNOWN_COMMANDS.has(String(command).toLowerCase())) {
+      continue;
+    }
 
     let parameter = rawParameter;
     let replacementText = '';
@@ -71,11 +87,16 @@ export function extractCommands(response) {
           .trimStart()
           .replace(/^[\"'`“”«»]+/, '')
           .trimStart();
+
+        // Si la commande était entourée de guillemets/backticks (ex: "`/ShowPicture ...`"),
+        // on retire aussi le guillemet ouvrant pour éviter un caractère "fantôme" après extraction.
+        if (QUOTE_PREFIXES.has(prefix)) {
+          prefix = '';
+        }
       } else {
         // Paramètre invalide : on ne traite pas comme une commande image (évite /assets/ vide)
-        // On réinjecte le texte tel quel.
+        // On laisse le texte tel quel (pas d'extraction / pas de suppression)
         shouldStoreCommand = false;
-        replacementText = rawParameter.trimStart();
       }
     }
 
@@ -84,11 +105,10 @@ export function extractCommands(response) {
         command,
         parameter
       });
+      // On enlève uniquement la partie commande, mais on réinjecte le texte qui suit le nom de fichier
+      const injectedText = replacementText ? `${prefix}${replacementText}` : prefix;
+      cleanResponse = cleanResponse.replace(match[0], injectedText);
     }
-
-    // On enlève uniquement la partie commande, mais on réinjecte le texte qui suit le nom de fichier
-    const injectedText = replacementText ? `${prefix}${replacementText}` : prefix;
-    cleanResponse = cleanResponse.replace(match[0], injectedText);
   }
   
   return {

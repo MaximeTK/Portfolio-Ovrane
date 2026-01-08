@@ -130,7 +130,17 @@ export function useChatController(): UseChatControllerReturn {
             
             // Si on a un message d'accueil en attente (suite à une création de profil), on l'ajoute
             if (pendingWelcomeMessageRef.current) {
-              initialMessages.push(pendingWelcomeMessageRef.current);
+              const pending = pendingWelcomeMessageRef.current;
+              const normalize = (value: string) => String(value ?? '').replace(/\s+/g, ' ').trim();
+              const pendingContent = normalize(pending.content);
+
+              const alreadyPresent = initialMessages.some((m) => (
+                m.role === pending.role && normalize(m.content) === pendingContent
+              ));
+
+              if (!alreadyPresent) {
+                initialMessages.push(pending);
+              }
               pendingWelcomeMessageRef.current = null;
             }
 
@@ -304,8 +314,11 @@ export function useChatController(): UseChatControllerReturn {
            isNewUserFlowRef.current = true;
         }
 
-        // On sauvegarde le message d'accueil pour qu'il soit restauré après le chargement de l'historique
-        pendingWelcomeMessageRef.current = assistantMessage;
+        // On sauvegarde le message d'accueil UNIQUEMENT quand il ne sera pas présent dans l'historique
+        // (ex: message éphémère d'intro / flux nouveau profil). Sinon, cela peut provoquer un doublon
+        // car l'historique contient déjà la réponse de bienvenue.
+        const shouldCarryWelcomeMessage = !!options?.isEphemeral || !!data.userProfile?.isNewUser;
+        pendingWelcomeMessageRef.current = shouldCarryWelcomeMessage ? assistantMessage : null;
 
         // Mettre à jour l'userId - cela déclenchera automatiquement le chargement de l'historique et des préférences via les useEffects
         setCurrentUserId(newUserId);

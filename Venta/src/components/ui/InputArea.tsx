@@ -10,6 +10,8 @@ interface InputAreaProps {
   maxLength?: number;
   className?: string;
   isLoading?: boolean;
+  tipsEnabled?: boolean;
+  tipsUrl?: string; // ex: "/astuces.txt"
 }
 
 export function InputArea({ 
@@ -20,11 +22,22 @@ export function InputArea({
   triggerWave,
   maxLength = 5000,
   className,
-  isLoading = false
+  isLoading = false,
+  tipsEnabled = true,
+  tipsUrl = '/astuces.txt',
 }: InputAreaProps) {
   const [inputValue, setInputValue] = useState('');
   const [isSingleLine, setIsSingleLine] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // ===== Astuces =====
+  const [tips, setTips] = useState<string[]>([]);
+  const [activeTip, setActiveTip] = useState<string>('');
+  const [isTipVisible, setIsTipVisible] = useState(false);
+  const tipCursorRef = useRef(0);
+  const tipsLoadedRef = useRef(false);
+  const intervalRef = useRef<number | null>(null);
+  const hideTimeoutRef = useRef<number | null>(null);
 
   // Ajuster la hauteur du textarea
   const adjustTextareaHeight = () => {
@@ -46,6 +59,86 @@ export function InputArea({
   useEffect(() => {
     adjustTextareaHeight();
   }, [inputValue]);
+
+  // Charger les astuces depuis le fichier .txt (une seule fois)
+  useEffect(() => {
+    if (!tipsEnabled) return;
+    if (tipsLoadedRef.current) return;
+
+    tipsLoadedRef.current = true;
+
+    const loadTips = async () => {
+      try {
+        const res = await fetch(tipsUrl, { cache: 'no-store' });
+        if (!res.ok) return;
+        const text = await res.text();
+
+        const lines = text
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0 && !l.startsWith('#'));
+
+        if (lines.length > 0) {
+          setTips(lines);
+        }
+      } catch {
+        // Silencieux : les astuces sont optionnelles
+      }
+    };
+
+    loadTips();
+  }, [tipsEnabled, tipsUrl]);
+
+  // Timer: toutes les 180s afficher une astuce 15s
+  useEffect(() => {
+    // Nettoyage
+    if (intervalRef.current !== null) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (hideTimeoutRef.current !== null) {
+      window.clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    setIsTipVisible(false);
+
+    if (!tipsEnabled) return;
+    if (!tips || tips.length === 0) return;
+
+    const showTip = () => {
+      if (!tips || tips.length === 0) return;
+
+      // Stopper le hide précédent si nécessaire
+      if (hideTimeoutRef.current !== null) {
+        window.clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+
+      const idx = tipCursorRef.current % tips.length;
+      tipCursorRef.current = (idx + 1) % tips.length;
+      setActiveTip(tips[idx] || '');
+      setIsTipVisible(true);
+
+      hideTimeoutRef.current = window.setTimeout(() => {
+        setIsTipVisible(false);
+        hideTimeoutRef.current = null;
+      }, 15000);
+    };
+
+    // Première astuce après 180 secondes
+    intervalRef.current = window.setInterval(showTip, 180000);
+
+    return () => {
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (hideTimeoutRef.current !== null) {
+        window.clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+    };
+  }, [tipsEnabled, tips]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +166,20 @@ export function InputArea({
 
   return (
     <div className={`relative ${className || ''}`}>
+      {/* Bulle d'astuce (toutes les 180s, 15s) */}
+      {tipsEnabled && activeTip && (
+        <div
+          className={`absolute -top-12 left-1/2 -translate-x-1/2 w-[min(520px,90%)] transition-all duration-300 ease-out ${
+            isTipVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+          }`}
+          aria-hidden={!isTipVisible}
+        >
+          <div className="mx-auto w-full text-white/90 text-xs md:text-sm text-center drop-shadow-md truncate">
+            {activeTip}
+          </div>
+        </div>
+      )}
+
       {/* Indicateur de limite de caractères */}
       <div 
         className={`absolute -top-6 right-2 text-xs font-mono transition-all duration-300 ${

@@ -62,6 +62,12 @@ export default function Window({
   const minZoom = minMaxSize / baseMaxSize;
   const maxZoom = maxMaxSize / baseMaxSize;
 
+  // Base sizing pour les fenêtres de texte (dashboard)
+  // (On applique le même facteur/limites de zoom que les images)
+  const TEXT_BASE_FONT_PX = 15;
+  const TEXT_BASE_MAX_WIDTH_PX = 640;
+  const TEXT_BASE_MAX_HEIGHT_VH = 55;
+
   // Initialisation position
   useEffect(() => {
     if (windowRef.current && !isInitialized) {
@@ -249,7 +255,14 @@ export default function Window({
         </header>
         <div className="glass-morphisme-content-area" ref={contentRef}>
           {isMarkdown ? (
-            <div className="text-window-markdown">
+            <div
+              className="text-window-markdown"
+              style={{
+                fontSize: `${(TEXT_BASE_FONT_PX * zoomLevel).toFixed(2)}px`,
+                maxWidth: `min(${Math.round(TEXT_BASE_MAX_WIDTH_PX * zoomLevel)}px, 90vw)`,
+                maxHeight: `${Math.min(TEXT_BASE_MAX_HEIGHT_VH * zoomLevel, 90).toFixed(1)}vh`,
+              }}
+            >
                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                  {content || ''}
                </ReactMarkdown>

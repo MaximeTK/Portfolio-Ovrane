@@ -21,6 +21,11 @@ export default function Home() {
   
   // Ref pour traquer si c'est la toute première réponse (bienvenue)
   const isFirstResponseRef = useRef(true);
+  const isNewAccountRef = useRef(false);
+  const hasSentFirstRealUserMessageRef = useRef(false);
+  const pendingMessagingHintAfterResponseRef = useRef(false);
+  const messagingHintTimerRef = useRef<number | null>(null);
+  const [overlayOverrideText, setOverlayOverrideText] = useState<string | null>(null);
 
   // Ref pour l'animation hexagonale (pour déclencher des vagues manuelles)
   const hexAnimationRef = useRef<HexagonalAnimationHandle>(null);
@@ -50,6 +55,35 @@ export default function Home() {
   const appState = useUIStore((state) => state.appState);
   const viewMode = useUIStore((state) => state.viewMode);
   const isAppLocked = useUIStore((state) => state.isAppLocked);
+
+  // Mémoriser "nouveau compte" dès qu'on le sait (évite que l'API flippe isNewUser ensuite)
+  useEffect(() => {
+    if (currentUserProfile?.isNewUser) {
+      isNewAccountRef.current = true;
+    }
+  }, [currentUserProfile?.isNewUser]);
+
+  // Reset onboarding quand on change de profil
+  useEffect(() => {
+    hasSentFirstRealUserMessageRef.current = false;
+    pendingMessagingHintAfterResponseRef.current = false;
+    setOverlayOverrideText(null);
+    if (messagingHintTimerRef.current !== null) {
+      window.clearTimeout(messagingHintTimerRef.current);
+      messagingHintTimerRef.current = null;
+    }
+  }, [currentUserId]);
+
+  // Cacher l'overlay dès qu'on passe en messagerie
+  useEffect(() => {
+    if (viewMode === 'messaging') {
+      setOverlayOverrideText(null);
+      if (messagingHintTimerRef.current !== null) {
+        window.clearTimeout(messagingHintTimerRef.current);
+        messagingHintTimerRef.current = null;
+      }
+    }
+  }, [viewMode]);
 
   // Callback stable pour CommandProcessor
   const handleCommandsProcessed = useCallback(() => {
@@ -92,6 +126,47 @@ export default function Home() {
         // affiche bien le texte + les images (CommandProcessor) quand on bascule de mode.
         addTextWindow(currentTranscript);
       }
+
+      // Onboarding "messagerie" : afficher après la réponse IA au 1er message utilisateur (InputArea),
+      // uniquement pour un nouveau compte, en dashboard.
+      if (
+        pendingMessagingHintAfterResponseRef.current &&
+        !isAppLocked &&
+        viewMode !== 'messaging' &&
+        currentUserId
+      ) {
+        const storageKey = `vanta:onboarding:messagingHintSeen:${currentUserId}`;
+        let alreadySeen = false;
+        try {
+          if (typeof window !== 'undefined') {
+            alreadySeen = window.localStorage.getItem(storageKey) === '1';
+          }
+        } catch {
+          alreadySeen = false;
+        }
+
+        if (!alreadySeen) {
+          setOverlayOverrideText('Vous pouvez accéder à la messagerie en cliquant sur OVRANE au centre');
+          try {
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem(storageKey, '1');
+            }
+          } catch {
+            // ignore
+          }
+
+          if (messagingHintTimerRef.current !== null) {
+            window.clearTimeout(messagingHintTimerRef.current);
+            messagingHintTimerRef.current = null;
+          }
+          messagingHintTimerRef.current = window.setTimeout(() => {
+            setOverlayOverrideText(null);
+            messagingHintTimerRef.current = null;
+          }, 20000);
+        }
+
+        pendingMessagingHintAfterResponseRef.current = false;
+      }
       
       setLastProcessedTranscript(currentTranscript);
       setCurrentAnimation('speak');
@@ -132,6 +207,7 @@ export default function Home() {
           messages={messages} 
           currentUserProfile={currentUserProfile}
           currentUserId={currentUserId}
+          overlayOverrideText={overlayOverrideText}
         />
 
         {/* Interface de Messagerie (Z-10, derrière le contenu principal) */}
@@ -170,11 +246,36 @@ export default function Home() {
               setScrollTrigger(prev => prev + 1);
               setCurrentAnimation('thinking');
               startThinkingAnimation();
+
+              // Marquer le 1er vrai message utilisateur (champ de texte)
+              if (
+                !hasSentFirstRealUserMessageRef.current &&
+                isNewAccountRef.current &&
+                currentUserId
+              ) {
+                // Ne pas re-montrer si déjà vu pour ce profil
+                const storageKey = `vanta:onboarding:messagingHintSeen:${currentUserId}`;
+                let alreadySeen = false;
+                try {
+                  if (typeof window !== 'undefined') {
+                    alreadySeen = window.localStorage.getItem(storageKey) === '1';
+                  }
+                } catch {
+                  alreadySeen = false;
+                }
+
+                if (!alreadySeen) {
+                  pendingMessagingHintAfterResponseRef.current = true;
+                }
+                hasSentFirstRealUserMessageRef.current = true;
+              }
+
               sendChatMessage(text);
             }}
             triggerWave={() => hexAnimationRef.current?.triggerWave()}
             onInputChange={setInputValue}
             isLoading={currentAnimation === 'thinking'}
+            tipsEnabled={appState === 'awake' && !isAppLocked}
           />
         </div>
 

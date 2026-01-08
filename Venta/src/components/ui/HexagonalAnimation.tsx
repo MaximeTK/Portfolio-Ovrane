@@ -30,10 +30,12 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
   // Initialisation à #333333 (gris foncé) pour éviter le flash blanc au chargement
   const [hexColor, setHexColor] = useState('#333333');
   const [isBreathingIn, setIsBreathingIn] = useState(true);
+  const [isLogoHover, setIsLogoHover] = useState(false);
   
   const viewMode = useUIStore((state) => state.viewMode);
   const setViewMode = useUIStore((state) => state.setViewMode);
   const isAppLocked = useUIStore((state) => state.isAppLocked);
+  const isInteractive = mode !== 'sleep' && !isAppLocked;
   
   const HEX_POINTS = '0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6';
   const MAX_WAVES = 3;
@@ -301,11 +303,18 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
       
       <div 
         ref={containerRef} 
-        className={`relative w-[90vmin] md:w-[min(78vmin,900px)] aspect-square transition-all duration-500 ease-out cursor-pointer ${
+        className={`relative w-[90vmin] md:w-[min(78vmin,900px)] aspect-square transition-all duration-500 ease-out ${
           viewMode === 'messaging' ? 'translate-y-[-38vh] scale-[0.35] md:scale-[0.40]' : ''
         }`}
-        onClick={handleClick}
       >
+        {/* Wrapper de hover: plein-size + origin-center pour grossir sans décaler */}
+        <div
+          className={
+            isInteractive
+              ? `absolute inset-0 origin-center transition-transform duration-200 ease-out ${isLogoHover ? 'scale-[1.05]' : ''}`
+              : 'absolute inset-0'
+          }
+        >
         <div 
           className="absolute inset-0 m-auto w-full h-full grid place-items-center"
           style={{ scale: '0.25', willChange: 'transform', transform: 'translateZ(0)' }}
@@ -382,12 +391,22 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
         </div>
 
         {/* Zone de clic agrandie pour le mode mobile/messagerie */}
-        <div 
+        <button
+          type="button"
+          aria-label="Basculer affichage"
           className={`absolute z-50 bg-transparent rounded-full transition-all duration-500 ease-out ${
-            viewMode === 'messaging' ? '-inset-[40%]' : 'inset-0'
-          }`}
-          aria-hidden="true"
+            // Réduction ~20% de la hitbox:
+            // - Dashboard: 80% -> 64% (inset 10% -> 18%)
+            // - Messaging: 144% -> ~115% (-22% -> ~-8%)
+            viewMode === 'messaging' ? '-inset-[8%]' : 'inset-[18%]'
+          } ${isInteractive ? 'cursor-pointer' : 'cursor-default pointer-events-none'}`}
+          onClick={handleClick}
+          onMouseEnter={() => isInteractive && setIsLogoHover(true)}
+          onMouseLeave={() => setIsLogoHover(false)}
+          onFocus={() => isInteractive && setIsLogoHover(true)}
+          onBlur={() => setIsLogoHover(false)}
         />
+        </div>
       </div>
     </>
   );

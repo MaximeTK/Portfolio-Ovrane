@@ -11,9 +11,10 @@ interface IntroSequenceProps {
   messages: Message[];
   currentUserProfile: UserProfileData | null;
   currentUserId: string | null;
+  overlayOverrideText?: string | null;
 }
 
-export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, currentUserId }: IntroSequenceProps) => {
+export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, currentUserId, overlayOverrideText }: IntroSequenceProps) => {
   const { appState, setAppState, setUserName, userName, viewMode, isAppLocked, lockedMessage } = useUIStore();
   const loadUserPreference = useBackgroundStore((state) => state.loadUserPreference);
   const [hasTriggeredAwake, setHasTriggeredAwake] = useState(false);
@@ -64,6 +65,11 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
       setIsWelcomeVisible(false);
     }
   }, [viewMode, isAppLocked]);
+
+  // Disparition auto de l'astuce après 20 secondes
+  useEffect(() => {
+    // Le timing est géré côté HomeClient, ici on ne fait rien.
+  }, []);
 
   const handleNameSubmit = (name: string) => {
     // Déclencher une vague visuelle immédiate
@@ -123,19 +129,30 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
         </div>
 
         {/* État 3: Awake (Message de bienvenue STATIQUE ou Message de Verrouillage) */}
-        <div 
-          className={`transition-all duration-1000 delay-300 flex flex-col items-center text-center w-full px-6 absolute ${
-            appState === 'awake' && isWelcomeVisible
-              ? 'opacity-100 translate-y-0' 
-              : 'opacity-0 translate-y-0'
-          }`}
-        >
-          <h1 className="text-sm md:text-base font-bold text-white tracking-[0.15em] uppercase drop-shadow-lg max-w-2xl leading-relaxed">
-            {isAppLocked ? getWelcomeMessage() : `BIENVENUE ${userName?.toUpperCase()}, ${getWelcomeMessage()}`}
-          </h1>
-        </div>
+        <OverlayMessage visible={appState === 'awake' && isWelcomeVisible && !overlayOverrideText}>
+          {isAppLocked ? getWelcomeMessage() : `BIENVENUE ${userName?.toUpperCase()}, ${getWelcomeMessage()}`}
+        </OverlayMessage>
+
+        {/* Message overlay piloté depuis HomeClient (même design que le welcome) */}
+        <OverlayMessage visible={appState === 'awake' && !isAppLocked && viewMode !== 'messaging' && !!overlayOverrideText}>
+          {String(overlayOverrideText || '').toUpperCase()}
+        </OverlayMessage>
 
       </div>
     </div>
   );
 };
+
+function OverlayMessage({ visible, children }: { visible: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      className={`transition-all duration-1000 delay-300 flex flex-col items-center text-center w-full px-6 absolute ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-0 pointer-events-none'
+      }`}
+    >
+      <h1 className="text-sm md:text-base font-bold text-white tracking-[0.15em] uppercase drop-shadow-lg max-w-2xl leading-relaxed">
+        {children}
+      </h1>
+    </div>
+  );
+}

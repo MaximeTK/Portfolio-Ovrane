@@ -1,0 +1,8 @@
+# Une astuce par ligne. Les lignes vides et celles commençant par # sont ignorées.
+
+Astuce : Cliquez sur OVRANE (au centre) pour basculer entre le dashboard et la messagerie.
+Astuce : Vous pouvez demander des visuels, par exemple « Montre-moi Pico ».
+Astuce : Utilisez Shift + Entrée pour revenir à la ligne.
+Astuce : En dashboard, les images s’ouvrent dans des fenêtres séparées.
+Astuce : Plus votre question est précise, plus la réponse sera pertinente.
+

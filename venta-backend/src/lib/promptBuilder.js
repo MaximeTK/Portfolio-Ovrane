@@ -10,6 +10,48 @@ import {
   formatUserInfo 
 } from './messages.js';
 
+const ALWAYS_EXCLUDED_SOURCES = new Set(['assets', 'colors', 'instructions']);
+
+function normalizeForMatch(text) {
+  return String(text ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isCommandsIntent(prompt) {
+  const p = normalizeForMatch(prompt);
+  if (!p) return false;
+  // présence explicite de commandes ou question sur les commandes
+  if (p.includes('/')) return true;
+  return /\b(commande|commandes|showpicture|showimage|setbackground|openwindow|showcode)\b/i.test(prompt);
+}
+
+function isRagLinkedToPrompt(prompt, sources) {
+  const p = normalizeForMatch(prompt);
+  if (!p) return false;
+
+  // Si l'utilisateur parle explicitement du portfolio / projets, on considère le RAG pertinent
+  if (/\b(hopa|ovrane|portfolio|projet|projets|pico)\b/i.test(prompt)) return true;
+
+  const keywords = new Set(p.split(' ').filter((t) => t.length >= 3));
+  if (keywords.size === 0) return false;
+
+  for (const src of sources) {
+    const s = normalizeForMatch(src);
+    if (!s) continue;
+    const parts = s.split(' ').filter((t) => t.length >= 3);
+    // Si au moins un mot "significatif" du titre/source est dans la requête, on considère lié
+    if (parts.some((w) => keywords.has(w))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Construit le contexte RAG
  */
@@ -20,19 +62,48 @@ export async function buildRAGContextForPrompt(prompt, ragInitialized) {
   
   try {
     const ragResult = await buildRAGContext(prompt, 5);
+
+    // Filtrage des sources RAG "méta" (assets/couleurs/instructions) qui ne doivent JAMAIS parasiter
+    // une requête générale (ex: "exemple de code en C").
+    const commandsIntent = isCommandsIntent(prompt);
+    const filteredChunks = (ragResult.chunks || []).filter((c) => {
+      const source = String(c?.source || '');
+      const sourceNorm = normalizeForMatch(source);
+      if (ALWAYS_EXCLUDED_SOURCES.has(sourceNorm)) return false;
+      if (sourceNorm === 'commandes' && !commandsIntent) return false;
+      return true;
+    });
+
+    const filteredSources = [...new Set(filteredChunks.map((c) => c.source))];
+    if (filteredChunks.length === 0) {
+      return { ragContext: '', ragSources: [], ragCoverage: 'none' };
+    }
+
+    // Si le prompt n'est pas clairement lié aux sources remontées, on ignore le RAG.
+    if (!isRagLinkedToPrompt(prompt, filteredSources)) {
+      return { ragContext: '', ragSources: [], ragCoverage: 'none' };
+    }
+
+    const averageScore = filteredChunks.reduce((sum, c) => sum + (c.score || 0), 0) / filteredChunks.length;
+
+    // Reconstruire le texte de contexte à partir des chunks filtrés
+    const contextParts = filteredChunks.map((chunk) => {
+      return `[SOURCE: ${chunk.source} | Chunk ${chunk.chunkIndex + 1}/${chunk.totalChunks} | Score: ${(chunk.score * 100).toFixed(1)}%]\n${chunk.text}`;
+    });
+    const contextText = contextParts.join('\n\n---\n\n');
     
-    if (ragResult.hasSources && ragResult.averageScore >= 0.5) {
+    if (averageScore >= 0.55) {
       return {
-        ragContext: `\n\n${RAG_HEADERS.contextRelevant}\n${ragResult.contextText}\n\n`,
-        ragSources: ragResult.sources,
+        ragContext: `\n\n${RAG_HEADERS.contextRelevant}\n${contextText}\n\n`,
+        ragSources: filteredSources,
         ragCoverage: 'good'
       };
     }
     
-    if (ragResult.hasSources) {
+    if (filteredChunks.length > 0) {
       return {
-        ragContext: `\n\n${RAG_HEADERS.contextLowRelevance}\n${ragResult.contextText}\n\n`,
-        ragSources: ragResult.sources,
+        ragContext: `\n\n${RAG_HEADERS.contextLowRelevance}\n${contextText}\n\n`,
+        ragSources: filteredSources,
         ragCoverage: 'low'
       };
     }
