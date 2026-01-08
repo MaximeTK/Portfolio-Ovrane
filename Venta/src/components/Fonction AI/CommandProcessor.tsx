@@ -70,6 +70,40 @@ function buildId(prefix: string, index: number) {
   return `${prefix}-${Date.now()}-${random}-${index}`;
 }
 
+function safeEncodeAssetName(value: string) {
+  const raw = String(value || '');
+  try {
+    return encodeURIComponent(decodeURIComponent(raw));
+  } catch {
+    return encodeURIComponent(raw);
+  }
+}
+
+function extractImageFilename(param: string) {
+  const raw = String(param || '').trim();
+  if (!raw) return '';
+
+  // Si une URL est passée directement, on la refuse ici (dashboard attend des assets locaux)
+  // et on ne crée pas de fenêtre image.
+  if (/^https?:\/\//i.test(raw) || /^\/assets\//i.test(raw)) {
+    return '';
+  }
+
+  let cleaned = raw
+    .replace(/^[\"'`“”«»]+/, '')
+    .replace(/[\"'`“”«»]+$/, '')
+    .trim();
+
+  // basename only
+  cleaned = cleaned.split(/[\\/]/).pop()?.trim() || cleaned;
+
+  const fileMatch = cleaned.match(
+    /([a-zA-Z0-9 _.\-()]+?\.(?:png|jpe?g|gif|webp|svg))(?![a-zA-Z0-9_])/i,
+  );
+
+  return fileMatch ? fileMatch[1].trim() : '';
+}
+
 // === HANDLERS (Logique interne) ===
 
 function createImageWindow(imageName: string, index: number): WindowData {
@@ -78,7 +112,7 @@ function createImageWindow(imageName: string, index: number): WindowData {
     id,
     type: 'image',
     content: {
-      src: `/assets/${imageName}`,
+      src: `/assets/${safeEncodeAssetName(imageName)}`,
       alt: `Image ${imageName}`,
       width: BASE_IMAGE_SIZE,
       height: BASE_IMAGE_SIZE,
@@ -129,7 +163,14 @@ function processCommand(
 ): WindowData | null {
   switch (command.toLowerCase()) {
     case 'showpicture':
-      return createImageWindow(parameter, index);
+    case 'showimage': {
+      const filename = extractImageFilename(parameter);
+      if (!filename) {
+        console.warn(`Commande image ignorée (paramètre invalide): ${parameter}`);
+        return null;
+      }
+      return createImageWindow(filename, index);
+    }
     case 'showcode':
       return createCodeWindow(parameter, index);
     case 'openwindow':

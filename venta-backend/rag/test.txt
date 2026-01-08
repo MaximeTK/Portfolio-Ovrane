@@ -1,0 +1,1 @@
+le test 44 est un test visant a ecrire des commandes comme /ShowPicture Pico Logo.png dans les textes

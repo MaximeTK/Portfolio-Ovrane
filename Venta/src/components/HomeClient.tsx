@@ -14,7 +14,7 @@ import { IntroSequence } from '@/components/intro/IntroSequence';
 import { MessagingView } from '@/components/chat/MessagingView';
 
 export default function Home() {
-  const [inputValue, setInputValue] = useState('');
+  const [_inputValue, setInputValue] = useState('');
   const [scrollTrigger, setScrollTrigger] = useState(0); // Trigger pour le scroll
   const [currentAnimation, setCurrentAnimation] = useState<'standby' | 'thinking' | 'speak'>('standby');
   const [lastProcessedTranscript, setLastProcessedTranscript] = useState<string>('');
@@ -43,12 +43,13 @@ export default function Home() {
     startThinkingAnimation, 
     startSpeakAnimation 
   } = useAnimations();
-  const { isSpeaking, getAudioLevel, speakWithAPI, speakWithBase64, speakWithBrowser } = useTTS();
+  const { isSpeaking, getAudioLevel, speakWithAPI, speakWithBase64, speakWithBrowser, speakWithUrl } = useTTS();
   const addTextWindow = useUIStore((state) => state.addTextWindow);
   const closeTextWindow = useUIStore((state) => state.closeTextWindow);
   const closeAllWindows = useUIStore((state) => state.closeAllWindows);
   const appState = useUIStore((state) => state.appState);
   const viewMode = useUIStore((state) => state.viewMode);
+  const isAppLocked = useUIStore((state) => state.isAppLocked);
 
   // Callback stable pour CommandProcessor
   const handleCommandsProcessed = useCallback(() => {
@@ -79,19 +80,17 @@ export default function Home() {
       // Sur mobile (viewMode messaging) on n'affiche pas les fenêtres flottantes
       // On utilise une simple classe CSS media query pour masquer sur mobile, 
       // mais ici on peut aussi empêcher la création si on détecte le mode messagerie
-      if (appState === 'awake') {
-        // Si on vient juste de se réveiller (isFirstResponseRef est true),
-        // c'est le message de bienvenue -> ON NE L'AFFICHE PAS dans la fenêtre flottante
-        // car il est déjà affiché par IntroSequence.
-        if (isFirstResponseRef.current) {
-          isFirstResponseRef.current = false;
-        } else if (currentTranscript.trim() !== '') {
-          // Pour les messages suivants, on ajoute une NOUVELLE fenêtre SEULEMENT SI LE TEXTE N'EST PAS VIDE
-          // ET si on n'est pas en mode messagerie (bien que masqué par CSS, c'est mieux d'éviter la logique inutile)
-          if (viewMode !== 'messaging') {
-            addTextWindow(currentTranscript);
-          }
-        }
+      // IMPORTANT: la 1ère réponse (welcome) peut arriver pendant appState='processing'.
+      // On doit donc consommer isFirstResponseRef même si on n'est pas encore "awake",
+      // sinon la réponse suivante (ex: image) sera traitée à tort comme "première" et la fenêtre texte ne s'affichera jamais.
+      const isFirst = isFirstResponseRef.current;
+      if (isFirst) {
+        isFirstResponseRef.current = false;
+      } else if (currentTranscript.trim() !== '') {
+        // Pour les messages suivants, on ajoute une NOUVELLE fenêtre SEULEMENT SI LE TEXTE N'EST PAS VIDE.
+        // Note: même si on est en mode messagerie, on garde la fenêtre en "background" pour que le Dashboard
+        // affiche bien le texte + les images (CommandProcessor) quand on bascule de mode.
+        addTextWindow(currentTranscript);
       }
       
       setLastProcessedTranscript(currentTranscript);
@@ -108,6 +107,9 @@ export default function Home() {
       // Pas de TTS en mode messagerie
       if (viewMode === 'messaging') {
         onEnd(); // On termine immédiatement l'animation
+      } else if (currentTTS && currentTTS.isStaticFile && currentTTS.staticUrl) {
+         // Lecture fichier statique (ex: fin de session)
+         speakWithUrl(currentTTS.staticUrl, setupAudioVisualization, onEnd);
       } else if (currentTTS && currentTTS.audio && !currentTTS.useClientTTS) {
         speakWithBase64(currentTTS.audio, currentTTS.format, setupAudioVisualization, onEnd);
       } else if (currentTTS && currentTTS.useClientTTS) {
@@ -160,7 +162,7 @@ export default function Home() {
         </div>
 
         {/* Input Form - Sorti du conteneur principal pour garantir le Z-Index 30 */}
-        <div className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[min(600px,90vw)] z-30 transition-all duration-1000 delay-1000 ${appState === 'awake' ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+        <div className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[min(600px,90vw)] z-30 transition-all duration-1000 delay-1000 ${appState === 'awake' && !isAppLocked ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
           <InputArea
             onSubmit={(text) => {
               setInputValue('');
@@ -201,3 +203,4 @@ export default function Home() {
     </>
   );
 }
+

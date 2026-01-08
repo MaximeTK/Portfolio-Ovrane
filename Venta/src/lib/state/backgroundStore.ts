@@ -3,6 +3,7 @@
  */
 import { create } from 'zustand';
 import { COLOR_PALETTES, getDefaultPalette, type ColorPalette } from '../colorPalettes';
+import { getOrCreateUserId } from '../userId';
 
 interface BackgroundState {
   currentPalette: ColorPalette;
@@ -19,7 +20,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:300
 async function savePreferenceToBackend(paletteId: string, userId?: string) {
   try {
     // Utiliser l'userId fourni ou récupérer depuis localStorage
-    const userIdToUse = userId || (typeof window !== 'undefined' ? localStorage.getItem('venta_userId') : null);
+    const userIdToUse = userId || (typeof window !== 'undefined' ? getOrCreateUserId() : null);
     
     console.log('🔍 [DEBUG] savePreferenceToBackend appelée', {
       paletteId,

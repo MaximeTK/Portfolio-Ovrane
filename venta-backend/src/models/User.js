@@ -36,6 +36,7 @@ const UserSchema = new mongoose.Schema({
   firstVisit: { type: Date, default: Date.now },
   lastVisit: { type: Date, default: Date.now },
   visitCount: { type: Number, default: 1 },
+  messageCount: { type: Number, default: 0 },
   
   // Préférences utilisateur
   preferences: {
@@ -46,6 +47,9 @@ const UserSchema = new mongoose.Schema({
     type: Map,
     of: String
   },
+  
+  // Historique des liens visités
+  visitedLinks: { type: [String], default: [] },
   
   // Historique des conversations
   conversations: [ConversationSchema]

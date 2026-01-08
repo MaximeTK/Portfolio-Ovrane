@@ -2,6 +2,8 @@
  * Helpers pour le chat - max 5 fonctions, max 20 lignes
  */
 import { Message, Command } from '../chat/types';
+import { FRONTEND_ERRORS } from '../messages';
+import { isValidUserId, setStoredUserId } from '../userId';
 
 /**
  * Crée un message
@@ -21,7 +23,7 @@ export function createMessage(role: 'user' | 'assistant', content: string, times
  */
 export async function parseResponse(response: Response) {
   if (!response.ok) {
-    let errorMessage = `Erreur API: ${response.status}`;
+    let errorMessage = FRONTEND_ERRORS.apiError(response.status);
     
     // Vérifier le Content-Type avant de parser
     const contentType = response.headers.get('content-type');
@@ -39,7 +41,7 @@ export async function parseResponse(response: Response) {
         // Si ce n'est pas du JSON, lire le texte (probablement HTML)
         const text = await response.text();
         if (text.includes('<!DOCTYPE') || text.includes('<html')) {
-          errorMessage = `Le serveur n'est pas accessible (erreur ${response.status}). Vérifiez que le backend est démarré sur le port 3001.`;
+          errorMessage = FRONTEND_ERRORS.backendNotAccessible;
         } else {
           errorMessage = text.substring(0, 200); // Limiter la longueur
         }
@@ -47,7 +49,7 @@ export async function parseResponse(response: Response) {
     } catch (parseErr) {
       console.error('❌ [FRONTEND] Impossible de parser la réponse:', parseErr);
       if (response.status === 503) {
-        errorMessage = 'Le backend n\'est pas accessible. Vérifiez qu\'il est démarré sur le port 3001.';
+        errorMessage = FRONTEND_ERRORS.backendNotAccessible;
       }
     }
     throw new Error(errorMessage);
@@ -59,9 +61,7 @@ export async function parseResponse(response: Response) {
     const clonedResponse = response.clone();
     const snippet = (await clonedResponse.text()).slice(0, 200);
     throw new Error(
-      `Réponse invalide (${response.status}).`
-        + ' Le backend retourne du HTML: '
-        + snippet,
+      FRONTEND_ERRORS.invalidResponseHtml(response.status, snippet),
     );
   }
 
@@ -70,7 +70,7 @@ export async function parseResponse(response: Response) {
     throw new Error(data.error);
   }
   if (!data.reply && data.reply !== '') {
-    throw new Error('Réponse du serveur invalide: pas de reply');
+    throw new Error(FRONTEND_ERRORS.invalidReplyMissing);
   }
   if (data.reply === '') {
     console.warn('⚠️ [FRONTEND] Reply est une chaîne vide');
@@ -83,14 +83,16 @@ export async function parseResponse(response: Response) {
  * Met à jour l'userId dans localStorage
  */
 export function updateStoredUserId(activeUserId: string, currentUserId: string | null) {
-  if (activeUserId && activeUserId !== currentUserId) {
+  if (!isValidUserId(activeUserId)) {
+    return currentUserId;
+  }
+
+  const shouldUpdate = (activeUserId && activeUserId !== currentUserId) || (activeUserId && !currentUserId);
+
+  if (shouldUpdate) {
+    console.log(`🔄 [CHAT HELPERS] Update userId: ${currentUserId} -> ${activeUserId}`);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('venta_userId', activeUserId);
-    }
-    return activeUserId;
-  } else if (activeUserId && !currentUserId) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('venta_userId', activeUserId);
+      setStoredUserId(activeUserId);
     }
     return activeUserId;
   }

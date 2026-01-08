@@ -76,7 +76,7 @@ export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProp
       const filename = decoded.split('/').pop() || '';
       // Enlever l'extension
       return filename.replace(/\.[^/.]+$/, "");
-    } catch (e) {
+    } catch (_e) {
       return '';
     }
   };

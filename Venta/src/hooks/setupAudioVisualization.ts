@@ -233,7 +233,7 @@ function cleanupAudio(
   
   if (state.nodes.length) {
     state.nodes.forEach((node) => {
-        try { node.disconnect(); } catch (e) { /* ignore */ }
+        try { node.disconnect(); } catch (_e) { /* ignore */ }
     });
     state.nodes = [];
   }

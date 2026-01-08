@@ -3,42 +3,43 @@
  */
 import express from 'express';
 import cors from 'cors';
-import { ERROR_MESSAGES } from '../messages.js';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { CONSOLE_LOGS, EMOJIS, ERROR_MESSAGES } from '../messages.js';
 
 /**
  * Crée le middleware CORS
  */
-function createCorsMiddleware(allowedOrigins) {
+function isNgrokOrigin(origin) {
+  const o = origin.toLowerCase();
+  return o.includes('ngrok') || o.endsWith('.ngrok.io') || o.endsWith('.ngrok-free.app');
+}
+
+function createCorsMiddleware(allowedOrigins, { allowNgrok = false, logCors = false } = {}) {
+  const allowAll = allowedOrigins.includes('*');
   return cors({
     origin: (origin, callback) => {
-      // Log pour debugging
-      console.log(`🌐 [CORS] Requête depuis l'origine: ${origin || 'No Origin'}`);
-      
-      // Autoriser les requêtes sans origine (par ex. Postman)
-      if (!origin) {
-        console.log(`✅ [CORS] Autorisation: No Origin`);
-        return callback(null, true);
+      if (logCors) {
+        console.log(`🌐 [CORS] Origine: ${origin || 'No Origin'}`);
       }
-      
-      // Autoriser si dans la liste des origines autorisées
-      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-        console.log(`✅ [CORS] Autorisation: Origine autorisée`);
-        return callback(null, true);
+
+      // Autoriser les requêtes sans origine (par ex. server-to-server / Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowAll) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowNgrok && isNgrokOrigin(origin)) return callback(null, true);
+
+      if (logCors) {
+        console.log(`❌ [CORS] Origine non autorisée: ${origin}`);
+        console.log(`📋 [CORS] Origines autorisées:`, allowedOrigins);
       }
-      
-      // Autoriser automatiquement toutes les URL ngrok
-      if (origin.includes('ngrok')) {
-        console.log(`✅ [CORS] Autorisation: URL ngrok détectée`);
-        return callback(null, true);
-      }
-      
-      console.log(`❌ [CORS] Blocage: Origine non autorisée`);
-      console.log(`📋 [CORS] Origines autorisées:`, allowedOrigins);
-      callback(new Error(ERROR_MESSAGES.corsNotAllowed));
+
+      return callback(new Error(ERROR_MESSAGES.corsNotAllowed));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-Key', 'X-Admin-Token']
   });
 }
 
@@ -47,16 +48,51 @@ function createCorsMiddleware(allowedOrigins) {
  */
 export function configureServer() {
   const app = express();
-  const allowedOrigins = process.env.FRONTEND_URL 
-    ? process.env.FRONTEND_URL.split(',') 
+  const isProd = process.env.NODE_ENV === 'production';
+
+  // Important pour req.ip derrière proxy (Nginx, Vercel, etc.)
+  // En prod on active par défaut.
+  if (isProd || process.env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', 1);
+  }
+
+  app.disable('x-powered-by');
+
+  // Headers de sécurité (API + assets)
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }));
+
+  // Limite de taille body (DoS)
+  const bodyLimit = process.env.REQUEST_BODY_LIMIT || '1mb';
+  app.use(express.json({ limit: bodyLimit }));
+  app.use(express.urlencoded({ extended: false, limit: bodyLimit }));
+
+  const allowedOriginsRaw = process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_URL;
+  const allowedOrigins = allowedOriginsRaw
+    ? allowedOriginsRaw.split(',').map(s => s.trim()).filter(Boolean)
     : ['http://localhost:3000'];
-  
-  console.log(`🔧 [SERVER CONFIG] Origines CORS autorisées:`, allowedOrigins);
-  console.log(`🔧 [SERVER CONFIG] Toutes les URLs ngrok seront autorisées automatiquement`);
-  
-  app.use(createCorsMiddleware(allowedOrigins));
-  app.use(express.json());
-  
+
+  const allowNgrok = process.env.ALLOW_NGROK_ORIGINS === 'true' || (!isProd && process.env.ALLOW_NGROK_ORIGINS !== 'false');
+  const logCors = !isProd && process.env.LOG_CORS === 'true';
+
+  console.log(`${EMOJIS.tool} ${CONSOLE_LOGS.startup} CORS autorisées:`, allowedOrigins);
+  if (allowNgrok) {
+    console.log(`${EMOJIS.warning} ${CONSOLE_LOGS.startup} CORS: origines ngrok autorisées (dev/flag)`);
+  }
+
+  app.use(createCorsMiddleware(allowedOrigins, { allowNgrok, logCors }));
+
+  // Rate limiting global (anti-abus)
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: isProd ? 300 : 5000,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api', apiLimiter);
+
   return { app, allowedOrigins };
 }
 

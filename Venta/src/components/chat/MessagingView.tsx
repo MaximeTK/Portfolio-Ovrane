@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Message } from '@/lib/chat/types';
 import { MessageBubble } from './MessageBubble';
 import { ImageGallery } from './ImageGallery';
 import { useBackgroundStore } from '@/lib/state/backgroundStore';
+import { CHAT_UI } from '@/lib/messages';
 
 interface MessagingViewProps {
   messages: Message[];
@@ -19,9 +20,9 @@ function formatDateDivider(timestamp: number): string {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (date.toDateString() === now.toDateString()) {
-    return `Aujourd'hui`;
+    return CHAT_UI.today;
   } else if (date.toDateString() === yesterday.toDateString()) {
-    return `Hier`;
+    return CHAT_UI.yesterday;
   } else {
     return date.toLocaleDateString('fr-FR', { 
       day: 'numeric', 
@@ -45,7 +46,7 @@ function formatMessageTime(timestamp: number): string {
   if (date.toDateString() === now.toDateString()) {
     return timeStr;
   } else if (date.toDateString() === yesterday.toDateString()) {
-    return `Hier ${timeStr}`;
+    return `${CHAT_UI.yesterday} ${timeStr}`;
   } else {
     const dateStr = date.toLocaleDateString('fr-FR', {
       day: '2-digit',
@@ -62,6 +63,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const isFirstLoadRef = useRef(true);
+  const stickRafRef = useRef<number | null>(null);
   
   const currentPalette = useBackgroundStore((state) => state.currentPalette);
   
@@ -74,27 +76,6 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     initialIndex: 0,
     images: []
   });
-
-  const extractAllImages = useCallback((msgs: Message[]): string[] => {
-    const images: string[] = [];
-    const mdRegex = /!\[.*?\]\((.*?)\)/g;
-    const htmlRegex = /<img\s+[^>]*src=["']([^"']+)["'][^>]*>/g;
-
-    msgs.forEach(msg => {
-      let match;
-      // Copie du contenu pour éviter les problèmes de regex stateful si nécessaire
-      const content = msg.content || '';
-      
-      while ((match = mdRegex.exec(content)) !== null) {
-        if (match[1]) images.push(match[1]);
-      }
-      
-      while ((match = htmlRegex.exec(content)) !== null) {
-        if (match[1]) images.push(match[1]);
-      }
-    });
-    return images;
-  }, []);
 
   const handleImageClick = (src: string, messageImages: string[]) => {
     // Si des images sont fournies par le message, on les utilise
@@ -115,6 +96,26 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     }
   }, [scrollTrigger]);
 
+  const stickToBottomIfNeeded = useCallback(() => {
+    if (!visible) return;
+    if (!shouldScrollToBottom) return;
+    if (stickRafRef.current !== null) return;
+
+    stickRafRef.current = requestAnimationFrame(() => {
+      stickRafRef.current = null;
+      // "auto" évite l'effet de scroll smooth en boucle si plusieurs images loadent
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    });
+  }, [visible, shouldScrollToBottom]);
+
+  useEffect(() => {
+    return () => {
+      if (stickRafRef.current !== null) {
+        cancelAnimationFrame(stickRafRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (visible && messages.length > 0) {
       if (isFirstLoadRef.current) {
@@ -126,7 +127,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
     }
-  }, [messages, visible]);
+  }, [messages, visible, shouldScrollToBottom]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -199,13 +200,13 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
         }`}
       >
         <div className="bg-black/50 backdrop-blur-md text-gray-200 px-4 py-2.5 rounded-r-full rounded-l-full shadow-2xl flex items-center gap-4 pointer-events-auto border border-gray-700/50 hover:bg-black/50 transition-colors">
-          <span className="text-sm font-medium">Tu consultes d'anciens messages</span>
+          <span className="text-sm font-medium">{CHAT_UI.viewingOldMessages}</span>
           <button 
             onClick={scrollToBottom}
             className="text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-white/10 shadow-lg hover:brightness-110"
             style={{ backgroundColor: currentPalette.topColor }}
           >
-            <span>Revenir aux messages les plus récents</span>
+            <span>{CHAT_UI.backToLatest}</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
@@ -231,7 +232,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
 
           {messages.length === 0 && !isLoadingHistory && (
             <div className="h-full flex items-center justify-center text-gray-500 italic animate-in fade-in zoom-in duration-500">
-              Aucun message pour le moment...
+              {CHAT_UI.noMessagesYet}
             </div>
           )}
           
@@ -245,10 +246,12 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
                 content={msg.content}
                 role={msg.role}
                 timestamp={msg.timestamp}
+                commands={msg.commands}
                 showDateDivider={showDateDivider}
                 formatDateDivider={formatDateDivider}
                 formatMessageTime={formatMessageTime}
                 onImageClick={handleImageClick}
+                onImageLoad={stickToBottomIfNeeded}
               />
             );
           })}

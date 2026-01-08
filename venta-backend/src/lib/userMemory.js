@@ -26,4 +26,4 @@ export { handleNameDetection } from './user/nameDetection.js';
 export { mergeUserProfiles } from './user/userMerge.js';
 
 // Réexporter depuis userPreferences.js
-export { saveUserPreference } from './user/userPreferences.js';
+export { saveUserPreference, saveVisitedLink } from './user/userPreferences.js';

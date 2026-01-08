@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { User } from '../../models/User.js';
 import { findPermanentUserByIpHash, findUserByIpHash, createNewUser, addIpToProfile, saveUserProfile } from './userProfiles.js';
 import { EMOJIS, ERROR_MESSAGES } from '../messages.js';
+import { isValidUserId } from '../validators.js';
 
 /**
  * Met à jour les statistiques de visite d'un profil en base
@@ -61,7 +62,7 @@ export async function getUserProfile(userId, ip) {
   
   // 1. PRIORITÉ ABSOLUE : Si un userId est fourni et valide, on l'utilise.
   // Cela permet de "sortir" de la détection automatique par IP quand on a switché de profil.
-  if (userId) {
+  if (isValidUserId(userId)) {
     const existingProfile = await loadExistingProfile(userId);
     if (existingProfile) {
       // Ajouter la nouvelle IP si elle n'existe pas déjà (pour garder une trace)
@@ -69,6 +70,10 @@ export async function getUserProfile(userId, ip) {
       // On recharge pour être sûr d'avoir la version à jour avec l'IP
       return await loadExistingProfile(userId); 
     }
+
+    // userId fourni mais inexistant => on crée un nouveau profil associé à cet ID.
+    // (Plus robuste en environnement proxy et évite les confusions inter-utilisateurs via IP partagée)
+    return await createNewUser(userId, ip);
   }
 
   // 2. Si aucun userId valide n'est fourni, on cherche si l'IP correspond à un profil PERMANENT existant

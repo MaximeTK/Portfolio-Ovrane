@@ -3,15 +3,17 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { extractUserInfo, callBackend, handleBackendError, processBackendResponse } from './helpers';
+import { API_ERRORS } from '@/lib/messages';
 
 export async function POST(request: NextRequest) {
+  const isProd = process.env.NODE_ENV === 'production';
   try {
     const body = await request.json();
     const { prompt, currentUserId, isEphemeral } = body;
     
     if (!prompt || typeof prompt !== 'string') {
       console.error('❌ [NEXT API] Prompt manquant ou invalide');
-      return NextResponse.json({ error: 'Prompt requis' }, { status: 400 });
+      return NextResponse.json({ error: API_ERRORS.promptRequired }, { status: 400 });
     }
 
     const { userIp, userAgent } = extractUserInfo(request);
@@ -23,8 +25,8 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       return NextResponse.json(
         { 
-          error: 'Impossible de contacter le backend',
-          details: error instanceof Error ? error.message : String(error)
+          error: API_ERRORS.backendUnreachable,
+          ...(isProd ? {} : { details: error instanceof Error ? error.message : String(error) })
         },
         { status: 503 }
       );
@@ -39,8 +41,8 @@ export async function POST(request: NextRequest) {
     console.error('❌ [NEXT API] Erreur globale:', error);
     return NextResponse.json(
       { 
-        error: 'Erreur interne du serveur',
-        details: error instanceof Error ? error.message : String(error)
+        error: API_ERRORS.internalServerError,
+        ...(isProd ? {} : { details: error instanceof Error ? error.message : String(error) })
       }, 
       { status: 500 }
     );

@@ -21,6 +21,8 @@ export interface TTSData {
   provider?: string;
   format?: string;
   useClientTTS?: boolean;
+  isStaticFile?: boolean;
+  staticUrl?: string;
 }
 
 export interface UserProfileData {

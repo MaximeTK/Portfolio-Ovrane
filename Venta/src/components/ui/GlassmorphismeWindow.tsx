@@ -81,13 +81,23 @@ export default function Window({
     setMinWidth(`${calculatedMinWidth}px`);
   }, [title]);
 
+  // Référence sur l'image rendue (Next/Image ou <img>) pour le zoom
+  useEffect(() => {
+    if (isMarkdown) {
+      imageRef.current = null;
+      return;
+    }
+    const root = contentRef.current;
+    if (!root) return;
+    imageRef.current = root.querySelector('img[data-glass-image]') as HTMLImageElement | null;
+  }, [children, isMarkdown]);
+
   // Zoom Image
   useEffect(() => {
-    if (!imageRef.current) return;
+    const img = imageRef.current;
+    if (!img) return;
 
     const applyZoom = () => {
-      if (!imageRef.current) return;
-      const img = imageRef.current;
       const isPortrait = img.naturalHeight > img.naturalWidth;
       const newSizeVh = baseMaxSize * zoomLevel;
 
@@ -102,12 +112,14 @@ export default function Window({
       }
     };
 
-    if (imageRef.current.complete) {
+    if (img.complete) {
       applyZoom();
-    } else {
-      imageRef.current.addEventListener('load', applyZoom);
+      return;
     }
-  }, [zoomLevel]);
+
+    img.addEventListener('load', applyZoom);
+    return () => img.removeEventListener('load', applyZoom);
+  }, [zoomLevel, children, isMarkdown]);
 
   // Drag & Drop
   useEffect(() => {
@@ -243,35 +255,12 @@ export default function Window({
                </ReactMarkdown>
             </div>
           ) : (
-            attachImageRef(children, imageRef as React.RefObject<HTMLImageElement>)
+            children
           )}
         </div>
       </div>
     </section>
   );
-}
-
-// Helpers
-type ImageLikeElement = React.ReactElement<
-  React.ImgHTMLAttributes<HTMLImageElement> & {
-    'data-glass-image'?: boolean;
-  }
->;
-
-function attachImageRef(
-  children: React.ReactNode,
-  imageRef: React.RefObject<HTMLImageElement>,
-) {
-  return React.Children.map(children, (child) => {
-    if (!React.isValidElement(child)) return child;
-    const props = child.props as Record<string, unknown>;
-    if (!props['data-glass-image']) return child;
-    // On utilise any pour contourner la limitation de cloneElement avec ref sur des types génériques
-    // C'est safe ici car on a vérifié que c'est un ReactElement valide
-    return React.cloneElement(child as any, {
-      ref: imageRef,
-    });
-  });
 }
 
 // Composant Helper pour afficher la liste des fenêtres de texte (ex-TextWindow)

@@ -31,10 +31,9 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
   const [hexColor, setHexColor] = useState('#333333');
   const [isBreathingIn, setIsBreathingIn] = useState(true);
   
-  // Gestion du geste (swipe)
-  const touchStartY = useRef<number | null>(null);
   const viewMode = useUIStore((state) => state.viewMode);
   const setViewMode = useUIStore((state) => state.setViewMode);
+  const isAppLocked = useUIStore((state) => state.isAppLocked);
   
   const HEX_POINTS = '0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6';
   const MAX_WAVES = 3;
@@ -155,7 +154,7 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
 
   // Gestion du clic pour changer de mode
   const handleClick = () => {
-    if (mode === 'sleep') return;
+    if (mode === 'sleep' || isAppLocked) return;
     
     if (viewMode === 'dashboard') {
       setViewMode('messaging');

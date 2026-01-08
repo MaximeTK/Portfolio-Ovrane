@@ -2,14 +2,10 @@
  * Route pour gérer les préférences utilisateur
  */
 import { getUserProfile, saveUserPreference } from '../lib/userMemory.js';
+import { CONSOLE_LOGS, EMOJIS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../lib/messages.js';
+import { isNonEmptyString, isValidUserId } from '../lib/validators.js';
 
-/**
- * Helper pour extraire les infos de la requête
- */
-function prepareUserInfo(req, currentUserId) {
-  const ip = req.body.userIp || req.ip || req.connection.remoteAddress || 'unknown';
-  return { ip };
-}
+const ALLOWED_PREFERENCES = new Set(['backgroundColor']);
 
 /**
  * Configuration des routes de préférences
@@ -20,29 +16,43 @@ export function setupPreferencesRoute(app) {
     try {
       const { currentUserId, preference, value } = req.body;
       
-      if (!currentUserId || !preference || value === undefined) {
-        return res.status(400).json({ error: 'Paramètres manquants' });
+      if (!isValidUserId(currentUserId)) {
+        return res.status(400).json({ error: ERROR_MESSAGES.invalidUserId });
+      }
+
+      if (!isNonEmptyString(preference) || !ALLOWED_PREFERENCES.has(preference)) {
+        return res.status(400).json({ error: ERROR_MESSAGES.badRequest });
+      }
+
+      if (value === undefined) {
+        return res.status(400).json({ error: ERROR_MESSAGES.preferencesMissingParams });
       }
       
-      const { ip } = prepareUserInfo(req, currentUserId);
+      const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+      
       const userProfile = await getUserProfile(currentUserId, ip);
       
       if (!userProfile) {
-        return res.status(404).json({ error: 'Profil utilisateur non trouvé' });
+        return res.status(404).json({ error: ERROR_MESSAGES.preferencesUserNotFound });
       }
       
       const success = await saveUserPreference(currentUserId, preference, value);
       
       if (success) {
-        console.log(`✅ Préférence ${preference} sauvegardée pour ${userProfile.name || currentUserId}: ${value}`);
-        res.json({ success: true, message: 'Préférence sauvegardée' });
+        console.log(`${EMOJIS.success} ${CONSOLE_LOGS.backend} Préférence "${preference}" sauvegardée pour ${userProfile.name || currentUserId}`);
+        res.json({ success: true, message: SUCCESS_MESSAGES.preferencesSaved });
       } else {
-        res.status(500).json({ error: 'Erreur lors de la sauvegarde' });
+        res.status(500).json({ error: ERROR_MESSAGES.preferencesSaveError });
       }
       
     } catch (error) {
-      console.error('❌ Erreur sauvegarde préférence:', error);
-      res.status(500).json({ error: 'Erreur interne', details: error.message });
+      const isProd = process.env.NODE_ENV === 'production';
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} Erreur sauvegarde préférence:`, msg);
+      res.status(500).json({
+        error: ERROR_MESSAGES.internalServerError,
+        ...(isProd ? {} : { details: msg }),
+      });
     }
   });
   
@@ -51,15 +61,15 @@ export function setupPreferencesRoute(app) {
     try {
       const { userId } = req.params;
       
-      if (!userId) {
-        return res.status(400).json({ error: 'userId manquant' });
+      if (!isValidUserId(userId)) {
+        return res.status(400).json({ error: ERROR_MESSAGES.preferencesUserIdMissing });
       }
       
-      const { ip } = prepareUserInfo(req, userId);
+      const ip = req.ip || req.connection?.remoteAddress || 'unknown';
       const userProfile = await getUserProfile(userId, ip);
       
       if (!userProfile) {
-        return res.status(404).json({ error: 'Profil utilisateur non trouvé' });
+        return res.status(404).json({ error: ERROR_MESSAGES.preferencesUserNotFound });
       }
       
       res.json({ 
@@ -68,8 +78,13 @@ export function setupPreferencesRoute(app) {
       });
       
     } catch (error) {
-      console.error('❌ Erreur chargement préférences:', error);
-      res.status(500).json({ error: 'Erreur interne', details: error.message });
+      const isProd = process.env.NODE_ENV === 'production';
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} Erreur chargement préférences:`, msg);
+      res.status(500).json({
+        error: ERROR_MESSAGES.internalServerError,
+        ...(isProd ? {} : { details: msg }),
+      });
     }
   });
 }

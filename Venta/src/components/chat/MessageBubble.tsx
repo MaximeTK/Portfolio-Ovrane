@@ -2,27 +2,44 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CHAT_UI } from '@/lib/messages';
+import type { Command } from '@/lib/chat/types';
+
+const sanitizeSchema = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), 'div', 'img'],
+  attributes: {
+    ...defaultSchema.attributes,
+    div: ['className'],
+    img: ['src', 'alt'],
+  },
+};
 
 interface MessageBubbleProps {
   content: string;
   role: 'user' | 'assistant';
   timestamp: number;
+  commands?: Command[];
   showDateDivider?: boolean;
   formatDateDivider?: (ts: number) => string;
   formatMessageTime?: (ts: number) => string;
   onImageClick?: (src: string, allImagesInMessage: string[]) => void;
+  onImageLoad?: () => void;
 }
 
 export function MessageBubble({ 
   content, 
   role, 
   timestamp, 
+  commands,
   showDateDivider, 
   formatDateDivider, 
   formatMessageTime,
-  onImageClick 
+  onImageClick,
+  onImageLoad,
 }: MessageBubbleProps) {
   
   // Extraction de toutes les images du message courant pour la navigation de la galerie
@@ -45,7 +62,97 @@ export function MessageBubble({
     return images;
   };
 
-  const messageImages = React.useMemo(() => extractImagesFromContent(content), [content]);
+  const extractImagesFromCommands = (cmds?: Command[]): string[] => {
+    if (!Array.isArray(cmds) || cmds.length === 0) return [];
+    const images: string[] = [];
+
+    for (const cmd of cmds) {
+      const name = String(cmd?.command || '').toLowerCase();
+      if (name !== 'showpicture' && name !== 'showimage') continue;
+
+      const raw = String(cmd?.parameter || '').trim();
+      if (!raw) continue;
+
+      // Si l'IA a déjà renvoyé une URL, on la conserve (sécurité gérée plus bas dans le renderer)
+      if (/^\/assets\//i.test(raw) || /^https?:\/\//i.test(raw)) {
+        images.push(raw);
+        continue;
+      }
+
+      // Normalisation: suppression guillemets + extraction stricte du fichier image (stop à l'extension)
+      let cleaned = raw
+        .replace(/^[\"'`“”«»]+/, '')
+        .replace(/[\"'`“”«»]+$/, '')
+        .trim();
+
+      // Sécurité: basename uniquement
+      cleaned = cleaned.split(/[\\/]/).pop()?.trim() || cleaned;
+      if (!cleaned) continue;
+
+      const fileMatch = cleaned.match(
+        /([a-zA-Z0-9 _.\-()]+?\.(?:png|jpe?g|gif|webp|svg))(?![a-zA-Z0-9_])/i,
+      );
+      if (!fileMatch) continue;
+
+      const filename = fileMatch[1].trim();
+      const url = `/assets/${encodeURIComponent(filename)}`;
+
+      images.push(url);
+    }
+
+    return images;
+  };
+
+  const normalizeForCompare = (value: string) => {
+    const s = String(value || '');
+    try {
+      return decodeURIComponent(s).toLowerCase().trim();
+    } catch {
+      return s.toLowerCase().trim();
+    }
+  };
+
+  const contentImages = React.useMemo(() => extractImagesFromContent(content), [content]);
+  const commandImages = React.useMemo(() => extractImagesFromCommands(commands), [commands]);
+
+  const messageImages = React.useMemo(() => {
+    const seen = new Set<string>();
+    const merged: string[] = [];
+    for (const src of [...contentImages, ...commandImages]) {
+      const key = normalizeForCompare(src);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(src);
+    }
+    return merged;
+  }, [contentImages, commandImages]);
+
+  const imagesToRenderFromCommands = React.useMemo(() => {
+    if (!commandImages.length) return [];
+    if (!contentImages.length) return commandImages;
+
+    const contentSet = new Set(contentImages.map(normalizeForCompare));
+    return commandImages.filter((src) => !contentSet.has(normalizeForCompare(src)));
+  }, [commandImages, contentImages]);
+
+  const renderChatImage = (src: string, alt: string, extraClassName?: string) => (
+    <span
+      key={src}
+      className={`chat-image-wrapper block relative rounded-lg overflow-hidden cursor-zoom-in hover:brightness-90 transition-all border border-white/10 bg-black/20 w-fit ${extraClassName || ''}`}
+      onClick={() => onImageClick?.(String(src), messageImages)}
+      style={{ maxHeight: '500px', width: 'auto', maxWidth: '100%' }}
+    >
+      <img
+        src={src}
+        className="h-auto w-auto max-w-full object-contain"
+        style={{ height: 'auto', width: 'auto', maxHeight: '500px' }}
+        alt={alt}
+        loading="lazy"
+        onLoad={() => onImageLoad?.()}
+        onError={() => onImageLoad?.()}
+      />
+    </span>
+  );
 
   return (
     <>
@@ -68,7 +175,7 @@ export function MessageBubble({
           {/* En-tête du message */}
           <div className={`flex items-baseline gap-2 mb-1 px-1 ${role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
             <span className="text-sm font-bold text-gray-200">
-              {role === 'user' ? 'Vous' : 'Ovrane'}
+              {role === 'user' ? CHAT_UI.youLabel : CHAT_UI.assistantLabel}
             </span>
             <span className="text-[10px] text-gray-400">
               {formatMessageTime ? formatMessageTime(timestamp) : new Date(timestamp).toLocaleTimeString()}
@@ -89,9 +196,9 @@ export function MessageBubble({
           >
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
+              rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}
               components={{
-                div: ({node, className, children, ...props}) => {
+                div: ({ node: _node, className, children, ...props }) => {
                   if (className === 'image-grid') {
                      // Utilise la logique de grille existante (à extraire idéalement dans ImageGrid aussi, 
                      // mais pour l'instant inline ici pour compatibilité avec ReactMarkdown components)
@@ -99,8 +206,11 @@ export function MessageBubble({
                   }
                   return <div className={className} {...props}>{children}</div>;
                 },
-                img: ({node, className, style, ...props}) => {
-                  const src = props.src || '';
+                img: ({ node: _node, className, style, ...props }) => {
+                  const rawSrc = String(props.src || '');
+                  // Sécurité: n'autoriser que /assets/* ou http(s)
+                  const src = /^\/assets\//i.test(rawSrc) || /^https?:\/\//i.test(rawSrc) ? rawSrc : '';
+                  if (!src) return null;
                   return (
                     <span 
                       className={`chat-image-wrapper block relative rounded-lg overflow-hidden cursor-zoom-in hover:brightness-90 transition-all border border-white/10 bg-black/20 w-fit ${className || ''}`}
@@ -114,11 +224,13 @@ export function MessageBubble({
                         style={{ height: 'auto', width: 'auto', maxHeight: '500px' }}
                         alt={props.alt || ''} 
                         loading="lazy"
+                        onLoad={() => onImageLoad?.()}
+                        onError={() => onImageLoad?.()}
                       />
                     </span>
                   );
                 },
-                code: ({node, className, children, ...props}) => {
+                code: ({ node: _node, className, children, ...props }) => {
                   const match = /language-(\w+)/.exec(className || '');
                   const isInline = !match;
                   
@@ -130,8 +242,7 @@ export function MessageBubble({
                     );
                   }
                   
-                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  const { ref, ...rest } = props as any;
+                  const { ref: _ref, ...rest } = props as { ref?: unknown } & React.HTMLAttributes<HTMLElement>;
 
                   return (
                     <div className="relative group my-4 rounded-lg overflow-hidden border border-white/10 shadow-lg">
@@ -140,7 +251,7 @@ export function MessageBubble({
                       </div>
                       
                       <SyntaxHighlighter
-                        style={vscDarkPlus as any}
+                        style={vscDarkPlus as unknown as Record<string, React.CSSProperties>}
                         language={match?.[1]}
                         PreTag="div"
                         className="!bg-[#1e1e1e] !p-4 !m-0 !rounded-none text-sm custom-scrollbar"
@@ -151,16 +262,25 @@ export function MessageBubble({
                     </div>
                   );
                 },
-                a: ({node, ...props}) => (
+                a: ({ node: _node, ...props }) => (
                   <a {...props} className="text-blue-300 hover:text-blue-200 underline decoration-blue-300/50 hover:decoration-blue-200" target="_blank" rel="noopener noreferrer" />
                 ),
-                p: ({node, ...props}) => (
+                p: ({ node: _node, ...props }) => (
                   <p {...props} className="break-words whitespace-pre-wrap mb-2 last:mb-0 leading-relaxed" />
                 )
               }}
             >
               {content}
             </ReactMarkdown>
+
+            {/* Fallback: si la réponse ne contient pas d'images "inline" mais a des commandes ShowPicture */}
+            {role === 'assistant' && imagesToRenderFromCommands.length > 0 && (
+              <ImageGrid>
+                {imagesToRenderFromCommands.map((src) =>
+                  renderChatImage(src, 'Image (commande /ShowPicture)'),
+                )}
+              </ImageGrid>
+            )}
           </div>
         </div>
       </div>

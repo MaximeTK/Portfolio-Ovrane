@@ -52,9 +52,12 @@ export const ERROR_MESSAGES = {
   // Erreurs API
   promptRequired: 'Prompt requis',
   promptInvalid: 'Prompt manquant ou invalide',
+  promptTooLong: 'Prompt trop long',
+  invalidUserId: 'Identifiant utilisateur invalide',
   openaiKeyMissing: 'Clé API OpenAI manquante',
   openaiResponseEmpty: 'Réponse OpenAI vide',
   internalServerError: 'Erreur interne du serveur',
+  badRequest: 'Requête invalide',
   
   // Erreurs RAG
   ragRetrievalError: 'Erreur retrieval RAG:',
@@ -75,6 +78,7 @@ export const ERROR_MESSAGES = {
   // Erreurs assets
   assetNotFound: 'Asset non trouvé',
   assetLoadError: 'Erreur lors du chargement des assets',
+  assetFilenameInvalid: 'Nom de fichier asset invalide',
   assetsFileNotFound: 'Fichier assets.txt non trouvé',
   assetsRetrievalError: 'Erreur récupération assets:',
   assetsFromFrontendError: 'Impossible de récupérer depuis le frontend:',
@@ -91,6 +95,27 @@ export const ERROR_MESSAGES = {
   serverError: 'Erreur serveur',
   corsNotAllowed: 'Not allowed by CORS',
   fileMovedError: 'ERREUR : Fichier déplacé',
+
+  // Erreurs admin
+  adminUnauthorized: 'Accès admin non autorisé',
+  adminNotConfigured: 'Accès admin non configuré',
+
+  // Erreurs préférences
+  preferencesMissingParams: 'Paramètres manquants',
+  preferencesUserNotFound: 'Profil utilisateur non trouvé',
+  preferencesSaveError: 'Erreur lors de la sauvegarde',
+  preferencesUserIdMissing: 'userId manquant',
+
+  // Erreurs tracking
+  trackingMissingParams: 'Paramètres manquants (userId, link)',
+  trackingUserNotFound: 'Profil utilisateur non trouvé',
+  trackingInvalidLink: 'Lien invalide',
+
+  // Erreurs historique
+  historyUserIdRequired: 'userId requis',
+  
+  // Limites
+  limitReached: 'Vous avez beaucoup discuté ! J\'espère que la démonstration vous a plu. Pour aller plus loin ou discuter d\'un projet, je vous invite à me contacter directement.',
 };
 
 // ========================================
@@ -113,6 +138,13 @@ export const SUCCESS_MESSAGES = {
   
   // Général
   healthOK: 'OK',
+
+  // Préférences
+  preferencesSaved: 'Préférence sauvegardée',
+
+  // Tracking
+  trackingLinkSaved: 'Lien enregistré',
+  trackingLinkAlreadySaved: 'Lien déjà présent ou erreur mineure',
 };
 
 // ========================================
@@ -186,6 +218,10 @@ export const CONSOLE_LOGS = {
 export const MISC_MESSAGES = {
   // Réponse par défaut
   defaultResponse: 'Voici ce que tu as demandé :',
+
+  // Messages d'accueil standardisés (TTS + UI)
+  welcomeBack: (name) => `Bienvenue ${name}, ravie de vous revoir !`,
+  welcomeNew: (name) => `Bienvenue ${name}, enchantée de faire votre connaissance !`,
   
   // RAG
   ragNoInformation: 'Aucune information pertinente trouvée dans la base de connaissances.',

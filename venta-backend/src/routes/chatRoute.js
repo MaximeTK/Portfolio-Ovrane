@@ -6,12 +6,16 @@ import { generateResponse } from '../lib/chat/responseGenerator.js';
 import { processResponse } from '../lib/chat/responseProcessor.js';
 import { getRawConversationHistory } from '../lib/userMemory.js';
 import { ERROR_MESSAGES, CONSOLE_LOGS, EMOJIS } from '../lib/messages.js';
+import {
+  isNonEmptyString,
+  isValidUserId,
+} from '../lib/validators.js';
 
 /**
  * Valide le prompt de la requête
  */
 function validatePrompt(prompt) {
-  return prompt && typeof prompt === 'string';
+  return isNonEmptyString(prompt);
 }
 
 /**
@@ -33,21 +37,61 @@ export function setupChatRoute(app, openai, ragInitialized) {
         console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} ${ERROR_MESSAGES.promptInvalid}`);
         return res.status(400).json({ error: ERROR_MESSAGES.promptRequired });
       }
+
+      const MAX_PROMPT_LENGTH = 4000;
+      if (String(prompt).length > MAX_PROMPT_LENGTH) {
+        return res.status(413).json({ error: ERROR_MESSAGES.promptTooLong });
+      }
+
+      if (currentUserId !== undefined && currentUserId !== null && !isValidUserId(currentUserId)) {
+        return res.status(400).json({ error: ERROR_MESSAGES.invalidUserId });
+      }
       
       if (!validateAPIKey()) {
         console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} ${ERROR_MESSAGES.openaiKeyMissing}!`);
         return res.status(500).json({ error: ERROR_MESSAGES.openaiKeyMissing });
       }
       
+      const safeEphemeral = typeof isEphemeral === 'boolean' ? isEphemeral : false;
       let { userId, userProfile } = await processUserInfo(req, currentUserId);
+      
+      // Vérification de la limite de messages pour protéger l'API Key
+      const MAX_MESSAGES_PER_PROFILE = 50;
+      if ((userProfile.messageCount || 0) >= MAX_MESSAGES_PER_PROFILE) {
+        console.warn(`${EMOJIS.warning} ${CONSOLE_LOGS.backend} Limite atteinte pour ${userProfile.name || userId}`);
+        return res.json({
+          reply: ERROR_MESSAGES.limitReached,
+          commands: [{ command: 'LockInterface', parameter: 'limit_reached' }],
+          rawResponse: ERROR_MESSAGES.limitReached,
+          userProfile: {
+            name: userProfile.name,
+            visitCount: userProfile.visitCount,
+            isNewUser: userProfile.visitCount === 1,
+            isTemporary: userProfile.isTemporary,
+            messageCount: userProfile.messageCount
+          },
+          activeUserId: userId,
+          rag: { coverage: [], sources: [], enabled: false },
+          tts: { 
+            isStaticFile: true,
+            staticUrl: '/endmessage.mp3'
+          }
+        });
+      }
+
       const response = await generateResponse(openai, prompt, userId, userProfile, ragInitialized);
-      const result = await processResponse(response, userId, userProfile, prompt, isEphemeral);
+      const result = await processResponse(response, userId, userProfile, prompt, safeEphemeral);
       
       res.json(result);
       
     } catch (error) {
-      console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} ERREUR:`, error);
-      res.status(500).json({ error: ERROR_MESSAGES.internalServerError, details: error.message });
+      const isProd = process.env.NODE_ENV === 'production';
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} ${ERROR_MESSAGES.internalServerError}:`, msg);
+      res.status(500).json({
+        error: ERROR_MESSAGES.internalServerError,
+        ...(isProd ? {} : { details: msg }),
+      });
     }
   });
 
@@ -58,17 +102,17 @@ export function setupChatRoute(app, openai, ragInitialized) {
     try {
       const { userId, limit = 50, skip = 0 } = req.query;
       
-      if (!userId) {
-        return res.status(400).json({ error: 'UserId required' });
+      if (!isValidUserId(userId)) {
+        return res.status(400).json({ error: ERROR_MESSAGES.historyUserIdRequired });
       }
 
-      const limitInt = parseInt(limit);
-      const skipInt = parseInt(skip);
+      const limitInt = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 50));
+      const skipInt = Math.max(0, parseInt(String(skip), 10) || 0);
 
       // On récupère TOUT l'historique brut (limit large) pour faire la pagination
       // sur les messages individuels et non sur les objets conversations groupés.
       // Cela évite le décalage quand une conversation contient 2 messages (prompt + response).
-      const history = await getRawConversationHistory(userId, 1000, 0);
+      const history = await getRawConversationHistory(String(userId), 1000, 0);
       
       // Formater pour le frontend (tableau de messages plat)
       const allMessages = [];
@@ -83,7 +127,7 @@ export function setupChatRoute(app, openai, ragInitialized) {
           // si elles n'ont pas été "buit-in" dans le texte lors de la sauvegarde.
           allMessages.push({ 
             role: 'assistant', 
-            content: conv.response, 
+            content: conv.response,
             timestamp: conv.timestamp,
             commands: conv.commands 
           });
@@ -110,8 +154,13 @@ export function setupChatRoute(app, openai, ragInitialized) {
       res.json({ history: pagedMessages });
       
     } catch (error) {
-      console.error('❌ Erreur récupération historique:', error);
-      res.status(500).json({ error: 'Erreur serveur lors de la récupération de l\'historique' });
+      const isProd = process.env.NODE_ENV === 'production';
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} Erreur récupération historique:`, msg);
+      res.status(500).json({
+        error: ERROR_MESSAGES.internalServerError,
+        ...(isProd ? {} : { details: msg }),
+      });
     }
   });
 }

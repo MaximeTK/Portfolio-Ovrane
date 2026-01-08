@@ -15,12 +15,15 @@ interface UIState {
   userName?: string;
   maxZIndex: number;
   textWindows: TextWindow[];
+  isAppLocked: boolean;
+  lockedMessage?: string;
   
   // Actions
   setViewMode: (mode: 'dashboard' | 'messaging') => void;
   setAppState: (state: 'sleeping' | 'processing' | 'awake') => void;
   setUserName: (name: string) => void;
   incrementMaxZIndex: () => number;
+  setAppLocked: (locked: boolean, message?: string) => void;
   
   // Gestion des fenêtres de texte (ex-TextWindow)
   addTextWindow: (content: string, title?: string, position?: { x: number; y: number }) => void;
@@ -38,11 +41,14 @@ export const useUIStore = create<UIState>((set, get) => ({
   
   // États initiaux des composants
   textWindows: [],
+  isAppLocked: false,
+  lockedMessage: undefined,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   
   setAppState: (state) => set({ appState: state }),
   setUserName: (name) => set({ userName: name }),
+  setAppLocked: (locked, message) => set({ isAppLocked: locked, lockedMessage: message }),
   
   incrementMaxZIndex: () => {
     const newZ = get().maxZIndex + 1;

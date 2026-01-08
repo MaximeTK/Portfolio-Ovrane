@@ -1,23 +1,66 @@
 /**
  * Routes d'administration
  */
-import fs from 'fs';
-import path from 'path';
+import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { reindexFolder, getSystemStats, clearCache } from '../lib/rag/ragSystem.js';
 import { getAllUsers } from '../lib/userMemory.js';
 import { loadAssetsFromFrontend } from '../lib/serverHelpers.js';
-import { fileURLToPath } from 'url';
+import { User } from '../models/User.js';
+import { memoryUsers } from '../lib/memoryStore.js';
 import { 
   ERROR_MESSAGES, 
   SUCCESS_MESSAGES, 
   CONSOLE_LOGS, 
   EMOJIS 
 } from '../lib/messages.js';
+import { isValidUserId } from '../lib/validators.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+function extractAdminKey(req) {
+  const headerKey = req.get('x-admin-key') || req.get('x-admin-token');
+  if (headerKey) return headerKey.trim();
+  const auth = req.get('authorization') || '';
+  if (auth.toLowerCase().startsWith('bearer ')) {
+    return auth.slice(7).trim();
+  }
+  return '';
+}
+
+function timingSafeEquals(a, b) {
+  if (!a || !b) return false;
+  const aBuf = Buffer.from(String(a));
+  const bBuf = Buffer.from(String(b));
+  if (aBuf.length !== bBuf.length) return false;
+  try {
+    return crypto.timingSafeEqual(aBuf, bBuf);
+  } catch {
+    return false;
+  }
+}
+
+function requireAdminAuth(req, res, next) {
+  const isProd = process.env.NODE_ENV === 'production';
+  const adminKey = process.env.ADMIN_API_KEY;
+
+  // En prod: on exige une clé. En dev: on laisse passer si non configuré.
+  if (!adminKey) {
+    if (isProd) {
+      return res.status(503).json({ error: ERROR_MESSAGES.adminNotConfigured });
+    }
+    return next();
+  }
+
+  const provided = extractAdminKey(req);
+  if (!timingSafeEquals(provided, adminKey)) {
+    return res.status(401).json({ error: ERROR_MESSAGES.adminUnauthorized });
+  }
+  return next();
+}
 
 export function setupAdminRoutes(app, ragDir, ragInitialized) {
+  // Protéger toutes les routes admin
+  app.use('/api/admin', requireAdminAuth);
+
   // Rechargement du RAG
   app.post('/api/admin/reload-rag', async (req, res) => {
     try {
@@ -47,9 +90,9 @@ export function setupAdminRoutes(app, ragDir, ragInitialized) {
   });
   
   // Liste des utilisateurs
-  app.get('/api/admin/users', (req, res) => {
+  app.get('/api/admin/users', async (req, res) => {
     try {
-      const users = getAllUsers();
+      const users = await getAllUsers();
       res.json({ success: true, count: users.length, users: users });
     } catch (error) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.admin} ${CONSOLE_LOGS.usersListError}`, error);
@@ -58,15 +101,34 @@ export function setupAdminRoutes(app, ragDir, ragInitialized) {
   });
   
   // Détails utilisateur
-  app.get('/api/admin/users/:userId', (req, res) => {
+  app.get('/api/admin/users/:userId', async (req, res) => {
     try {
       const userId = req.params.userId;
-      const userFile = path.join(__dirname, '..', '..', 'data', 'users', `${userId}.json`);
-      if (!fs.existsSync(userFile)) {
+
+      if (!isValidUserId(userId)) {
+        return res.status(400).json({ error: ERROR_MESSAGES.invalidUserId });
+      }
+
+      const includeConversations = String(req.query.includeConversations || 'false') === 'true';
+
+      let user;
+      if (mongoose.connection.readyState !== 1) {
+        user = memoryUsers.get(userId) || null;
+      } else {
+        user = await User.findOne({ id: userId }).lean();
+      }
+
+      if (!user) {
         return res.status(404).json({ error: ERROR_MESSAGES.userNotFound });
       }
-      const userData = JSON.parse(fs.readFileSync(userFile, 'utf8'));
-      res.json({ success: true, user: userData });
+
+      if (!includeConversations && user.conversations) {
+        const { conversations, ...rest } = user;
+        const conversationCount = Array.isArray(conversations) ? conversations.length : 0;
+        return res.json({ success: true, user: { ...rest, conversationCount } });
+      }
+
+      return res.json({ success: true, user });
     } catch (error) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.admin} ${CONSOLE_LOGS.userDetailsError}`, error);
       res.status(500).json({ error: ERROR_MESSAGES.serverError });

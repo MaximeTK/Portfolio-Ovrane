@@ -14,7 +14,7 @@ interface IntroSequenceProps {
 }
 
 export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, currentUserId }: IntroSequenceProps) => {
-  const { appState, setAppState, setUserName, userName, viewMode } = useUIStore();
+  const { appState, setAppState, setUserName, userName, viewMode, isAppLocked, lockedMessage } = useUIStore();
   const loadUserPreference = useBackgroundStore((state) => state.loadUserPreference);
   const [hasTriggeredAwake, setHasTriggeredAwake] = useState(false);
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
@@ -24,6 +24,13 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
 
   // Gestion de la transition vers 'awake' quand l'audio arrive
   useEffect(() => {
+    // Si l'app est verrouillée, on force l'état 'awake' pour afficher le message
+    if (isAppLocked) {
+      setAppState('awake');
+      setIsWelcomeVisible(true);
+      return;
+    }
+
     if (appState === 'processing' && currentTTS && !hasTriggeredAwake) {
       // On a reçu l'audio (TTS) du backend !
       setAppState('awake');
@@ -41,7 +48,7 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
   // Gestion de la disparition du message de bienvenue après 10 secondes
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (appState === 'awake') {
+    if (appState === 'awake' && !isAppLocked) { // Ne pas masquer si verrouillé
       timer = setTimeout(() => {
         setIsWelcomeVisible(false);
       }, 10000); // 10 secondes
@@ -49,14 +56,14 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [appState]);
+  }, [appState, isAppLocked]);
 
   // Disparition immédiate si on passe en mode messagerie
   useEffect(() => {
-    if (viewMode === 'messaging') {
+    if (viewMode === 'messaging' && !isAppLocked) {
       setIsWelcomeVisible(false);
     }
-  }, [viewMode]);
+  }, [viewMode, isAppLocked]);
 
   const handleNameSubmit = (name: string) => {
     // Déclencher une vague visuelle immédiate
@@ -70,6 +77,10 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
   };
 
   const getWelcomeMessage = () => {
+    // Si l'application est verrouillée (limite atteinte)
+    if (isAppLocked && lockedMessage) {
+      return lockedMessage;
+    }
     // Si on a l'info que c'est un nouvel utilisateur
     if (currentUserProfile?.isNewUser) {
       return "ENCHANTÉE DE FAIRE VOTRE CONNAISSANCE !";
@@ -111,7 +122,7 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
           <NameInput onSubmit={handleNameSubmit} />
         </div>
 
-        {/* État 3: Awake (Message de bienvenue STATIQUE) */}
+        {/* État 3: Awake (Message de bienvenue STATIQUE ou Message de Verrouillage) */}
         <div 
           className={`transition-all duration-1000 delay-300 flex flex-col items-center text-center w-full px-6 absolute ${
             appState === 'awake' && isWelcomeVisible
@@ -119,8 +130,8 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
               : 'opacity-0 translate-y-0'
           }`}
         >
-          <h1 className="text-sm md:text-base font-bold text-white tracking-[0.15em] uppercase drop-shadow-lg">
-            BIENVENUE {userName?.toUpperCase()}, {getWelcomeMessage()}
+          <h1 className="text-sm md:text-base font-bold text-white tracking-[0.15em] uppercase drop-shadow-lg max-w-2xl leading-relaxed">
+            {isAppLocked ? getWelcomeMessage() : `BIENVENUE ${userName?.toUpperCase()}, ${getWelcomeMessage()}`}
           </h1>
         </div>
 

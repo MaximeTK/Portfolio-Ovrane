@@ -22,6 +22,7 @@ export async function addConversation(userId, prompt, response, metadata = {}) {
         response: response,
         ...metadata
       });
+      user.messageCount = (user.messageCount || 0) + 1;
       memoryUsers.set(userId, user);
     }
     return;
@@ -49,7 +50,8 @@ export async function addConversation(userId, prompt, response, metadata = {}) {
             $each: [conversation],
             $slice: -500 // Garder les 500 dernières conversations (environ 1000 messages)
           }
-        } 
+        },
+        $inc: { messageCount: 1 }
       }
     );
   } catch (error) {

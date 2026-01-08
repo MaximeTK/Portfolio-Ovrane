@@ -139,12 +139,42 @@ export function useTTS() {
     }
   }, [playAudio]);
 
+  const speakWithUrl = useCallback((
+    url: string,
+    setupVisualization: (audio: HTMLAudioElement, callback: (level: number) => void) => void,
+    onEnd: () => void
+  ) => {
+    try {
+      const audio = new Audio(url);
+      
+      setupVisualization(audio, (level) => {
+        audioLevelRef.current = level;
+      });
+      audio.onplay = () => setIsSpeaking(true);
+      audio.onended = () => {
+        setIsSpeaking(false);
+        audioLevelRef.current = 0;
+        onEnd();
+      };
+      audio.onerror = (e) => {
+        console.error('❌ Erreur lecture audio URL:', e);
+        onEnd();
+      };
+      
+      audio.play();
+    } catch (error) {
+      console.error('❌ Erreur lancement audio URL:', error);
+      onEnd();
+    }
+  }, []);
+
   return {
     isSpeaking,
     getAudioLevel: () => audioLevelRef.current,
     speakWithBrowser,
     speakWithAPI,
-    speakWithBase64
+    speakWithBase64,
+    speakWithUrl
   };
 }
 

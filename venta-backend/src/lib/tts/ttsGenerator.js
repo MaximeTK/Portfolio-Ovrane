@@ -52,7 +52,8 @@ function normalizeText(text) {
 }
 
 function usesClientFallback() {
-  const flag = process.env['TTS-DEFAULT'];
+  // Supporte l'ancien nom (TTS-DEFAULT) et le nouveau standard (TTS_DEFAULT)
+  const flag = process.env.TTS_DEFAULT ?? process.env['TTS-DEFAULT'];
   if (!flag) {
     return false;
   }

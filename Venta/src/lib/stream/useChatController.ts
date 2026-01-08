@@ -7,6 +7,34 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Message, ChatStatus, Command, TTSData, UserProfileData } from '../chat/types';
 import { createMessage, parseResponse, updateStoredUserId } from './chatHelpers';
 import { useBackgroundStore } from '../state/backgroundStore';
+import { useUIStore } from '../state/uiStore';
+import { CHAT_UI } from '../messages';
+import { getOrCreateUserId } from '../userId';
+
+type HistoryItem = {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: string | number;
+  commands?: Command[];
+};
+
+function isHistoryItem(value: unknown): value is HistoryItem {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    (v.role === 'user' || v.role === 'assistant') &&
+    typeof v.content === 'string'
+  );
+}
+
+function toTimestampMs(value: unknown): number | undefined {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const ms = new Date(value).getTime();
+    return Number.isFinite(ms) ? ms : undefined;
+  }
+  return undefined;
+}
 
 interface UseChatControllerReturn {
   messages: Message[];
@@ -35,6 +63,9 @@ export function useChatController(): UseChatControllerReturn {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfileData | null>(null);
   const [currentTTS, setCurrentTTS] = useState<TTSData | null>(null);
+  // Evite de charger la préférence de fond d'un ancien profil au simple reload.
+  // On ne considère le profil "actif" qu'après une réponse backend confirmant l'userId.
+  const [hasConfirmedProfile, setHasConfirmedProfile] = useState(false);
   
   // Pagination
   const [historySkip, setHistorySkip] = useState(0);
@@ -49,17 +80,15 @@ export function useChatController(): UseChatControllerReturn {
 
   const loadUserPreference = useBackgroundStore((state) => state.loadUserPreference);
   const resetBackground = useBackgroundStore((state) => state.resetBackground);
+  const setAppLocked = useUIStore((state) => state.setAppLocked);
+  const setViewMode = useUIStore((state) => state.setViewMode);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedUserId = localStorage.getItem('venta_userId');
-      if (storedUserId) {
-        setCurrentUserId(storedUserId);
-        // NE PAS charger les préférences au premier montage pour éviter le flash
-        // On attend l'interaction explicite (IntroSequence) ou la confirmation d'identité
-      }
+      const storedUserId = getOrCreateUserId();
+      setCurrentUserId(storedUserId);
     }
-  }, [loadUserPreference]);
+  }, []);
 
   // Charger l'historique quand l'utilisateur change
   useEffect(() => {
@@ -89,43 +118,15 @@ export function useChatController(): UseChatControllerReturn {
         if (res.ok) {
           const data = await res.json();
           if (data.history && Array.isArray(data.history)) {
-            const initialMessages = data.history.map((h: any) => {
-              let content = h.content;
-
-              // Logique de récupération rétroactive des images pour l'historique
-              // Si le message a des commandes ShowPicture mais PAS de balise image dans le contenu, on les rajoute.
-              // Cela répare l'affichage pour les anciens messages avant le patch backend.
-              if (h.commands && Array.isArray(h.commands)) {
-                const imageCommands = h.commands.filter((cmd: Command) => {
-                  const name = cmd.command.toLowerCase();
-                  return name === 'showpicture' || name === 'showimage';
-                });
-
-                // Si on a des images et qu'elles ne sont PAS déjà dans le contenu (ni en md ni en html)
-                const hasImagesInContent = content.includes('![Image]') || content.includes('<img');
-                
-                if (imageCommands.length > 0 && !hasImagesInContent) {
-                  let imagesHtml = '\n\n<div class="image-grid">';
-                  imageCommands.forEach((cmd: Command) => {
-                     let imageUrl = cmd.parameter;
-                     if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-                        if (!imageUrl.startsWith('assets/')) {
-                           imageUrl = '/assets/' + imageUrl;
-                        } else {
-                           imageUrl = '/' + imageUrl;
-                        }
-                     }
-                     if (imageUrl.endsWith('.')) imageUrl = imageUrl.slice(0, -1);
-                     const encodedUrl = imageUrl.replace(/\s/g, '%20');
-                     imagesHtml += `<img src="${encodedUrl}" alt="Image" />`;
-                  });
-                  imagesHtml += '</div>';
-                  content += imagesHtml;
-                }
-              }
-
-              return createMessage(h.role, content, h.timestamp ? new Date(h.timestamp).getTime() : undefined, h.commands);
-            });
+            const historyItems = (data.history as unknown[]).filter(isHistoryItem);
+            const initialMessages = historyItems.map((h) =>
+              createMessage(
+                h.role,
+                h.content,
+                toTimestampMs(h.timestamp),
+                Array.isArray(h.commands) ? h.commands : undefined,
+              ),
+            );
             
             // Si on a un message d'accueil en attente (suite à une création de profil), on l'ajoute
             if (pendingWelcomeMessageRef.current) {
@@ -166,37 +167,15 @@ export function useChatController(): UseChatControllerReturn {
       if (res.ok) {
         const data = await res.json();
         if (data.history && Array.isArray(data.history) && data.history.length > 0) {
-          const olderMessages = data.history.map((h: any) => {
-             // Pareil pour le chargement des anciens messages
-             let content = h.content;
-             if (h.commands && Array.isArray(h.commands)) {
-                const imageCommands = h.commands.filter((cmd: Command) => {
-                  const name = cmd.command.toLowerCase();
-                  return name === 'showpicture' || name === 'showimage';
-                });
-                const hasImagesInContent = content.includes('![Image]') || content.includes('<img');
-                
-                if (imageCommands.length > 0 && !hasImagesInContent) {
-                  let imagesHtml = '\n\n<div class="image-grid">';
-                  imageCommands.forEach((cmd: Command) => {
-                     let imageUrl = cmd.parameter;
-                     if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-                        if (!imageUrl.startsWith('assets/')) {
-                           imageUrl = '/assets/' + imageUrl;
-                        } else {
-                           imageUrl = '/' + imageUrl;
-                        }
-                     }
-                     if (imageUrl.endsWith('.')) imageUrl = imageUrl.slice(0, -1);
-                     const encodedUrl = imageUrl.replace(/\s/g, '%20');
-                     imagesHtml += `<img src="${encodedUrl}" alt="Image" />`;
-                  });
-                  imagesHtml += '</div>';
-                  content += imagesHtml;
-                }
-             }
-             return createMessage(h.role, content, h.timestamp ? new Date(h.timestamp).getTime() : undefined, h.commands);
-          });
+          const historyItems = (data.history as unknown[]).filter(isHistoryItem);
+          const olderMessages = historyItems.map((h) =>
+            createMessage(
+              h.role,
+              h.content,
+              toTimestampMs(h.timestamp),
+              Array.isArray(h.commands) ? h.commands : undefined,
+            ),
+          );
           setMessages((prev) => [...olderMessages, ...prev]);
           setHistorySkip((prev) => prev + olderMessages.length);
           
@@ -221,11 +200,17 @@ export function useChatController(): UseChatControllerReturn {
       return;
     }
 
+    // IMPORTANT: au reload, currentUserId est issu du localStorage (ancien profil potentiel).
+    // On attend une confirmation backend (première réponse) avant d'appliquer la préférence.
+    if (!hasConfirmedProfile) {
+      return;
+    }
+
     if (currentUserId) {
       console.log(`🎨 [useChatController] Chargement systématique des préférences pour: ${currentUserId}`);
       loadUserPreference(currentUserId);
     }
-  }, [currentUserId, loadUserPreference, resetBackground]);
+  }, [currentUserId, hasConfirmedProfile, loadUserPreference, resetBackground]);
   
   const appendDelta = useCallback((delta: string) => {
     setMessages((prev) => {
@@ -275,70 +260,14 @@ export function useChatController(): UseChatControllerReturn {
       const data = await parseResponse(response);
       let replyText = (data.reply ?? '');
       if (typeof replyText === 'string' && replyText.trim() === '' && data.commands && data.commands.length > 0) {
-        replyText = 'D\'accord, j\'applique ta demande.';
-      }
-      
-      // Si une commande ShowPicture (ou ShowImage) est présente, on ajoute l'image au message pour l'affichage in-line
-      // Gestion de MULTIPLES images
-      if (data.commands) {
-        // Filtrer les commandes d'image
-        const imageCommands = data.commands.filter((cmd: Command) => {
-          const name = cmd.command.toLowerCase();
-          return name === 'showpicture' || name === 'showimage';
-        });
-
-        if (imageCommands.length > 0) {
-          // Filtrer les images déjà présentes dans le replyText pour éviter les doublons FRONTEND immédiats
-          const imagesToInject = imageCommands.filter((cmd: Command) => {
-            const filename = cmd.parameter.trim();
-            if (!filename) return false;
-            
-            // Même logique de détection que le backend mais côté client
-            const decodedResponse = decodeURIComponent(replyText);
-            const decodedFilename = decodeURIComponent(filename);
-            
-            return !decodedResponse.includes(decodedFilename);
-          });
-
-          if (imagesToInject.length > 0) {
-            // On ajoute un conteneur spécial (syntaxe HTML ou Markdown custom)
-            // Ici on utilise une liste d'images Markdown séparées par un caractère spécial que MessagingView pourra interpréter comme une grille
-            
-            replyText += '\n\n<div class="image-grid">';
-            
-            imagesToInject.forEach((cmd: Command) => {
-               let imageUrl = cmd.parameter;
-               
-               // Si c'est un chemin relatif vers assets, on s'assure qu'il est correct
-               if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-                  // Si l'image est dans public/assets/
-                  if (!imageUrl.startsWith('assets/')) {
-                     imageUrl = '/assets/' + imageUrl;
-                  } else {
-                     imageUrl = '/' + imageUrl;
-                  }
-               }
-               
-               // Nettoyage: retirer le point à la fin de l'extension si présent (ex: .png. -> .png)
-               // OpenAI a tendance à mettre un point final même aux URL dans les arguments de fonction
-               if (imageUrl.endsWith('.')) {
-                  imageUrl = imageUrl.slice(0, -1);
-               }
-               
-               // Encodage des espaces pour le Markdown
-               const encodedUrl = imageUrl.replace(/\s/g, '%20');
-               
-               // On ajoute l'image (format HTML pour être valide dans la div)
-               // Markdown standard ne parse pas le markdown à l'intérieur de blocs HTML
-               replyText += `<img src="${encodedUrl}" alt="Image" />`;
-            });
-            
-            replyText += '</div>';
-          }
-        }
+        replyText = CHAT_UI.applyRequestFallback;
       }
 
       setCurrentTranscript(replyText);
+      // On a une réponse backend -> le profil est désormais confirmé (évite le flash au reload)
+      if (!hasConfirmedProfile) {
+        setHasConfirmedProfile(true);
+      }
       
       // Stocker les données TTS si disponibles (MAIS on ne l'applique pas tout de suite pour éviter le réveil prématuré)
       let pendingTTS = null;
@@ -355,6 +284,14 @@ export function useChatController(): UseChatControllerReturn {
       if (data.commands && data.commands.length > 0) {
         assistantMessage.commands = data.commands;
         setLastCommands(data.commands);
+
+        // Gestion du verrouillage d'interface (Limite atteinte)
+        const lockCommand = data.commands.find(c => c.command === 'LockInterface');
+        if (lockCommand) {
+          console.log('🔒 [FRONTEND] Verrouillage de l\'interface demandé');
+          setAppLocked(true, replyText); // On utilise la réponse comme message de verrouillage
+          setViewMode('dashboard'); // Force le retour au dashboard
+        }
       }
       
       const newUserId = updateStoredUserId(data.activeUserId, currentUserId);
@@ -395,7 +332,7 @@ export function useChatController(): UseChatControllerReturn {
       const errorMessageObj = createMessage('assistant', `❌ ${errorMessage}`);
       setMessages((prev) => [...prev, errorMessageObj]);
     }
-  }, [status, currentUserId, loadUserPreference]);
+  }, [status, currentUserId]);
   
   return {
     messages,
