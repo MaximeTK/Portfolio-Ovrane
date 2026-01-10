@@ -1,8 +1,12 @@
 # Une astuce par ligne. Les lignes vides et celles commençant par # sont ignorées.
 
-Astuce : Cliquez sur OVRANE (au centre) pour basculer entre le dashboard et la messagerie.
-Astuce : Vous pouvez demander des visuels, par exemple « Montre-moi Pico ».
-Astuce : Utilisez Shift + Entrée pour revenir à la ligne.
-Astuce : En dashboard, les images s’ouvrent dans des fenêtres séparées.
+Astuce : Vous pouvez cliquez sur OVRANE (au centre) pour basculer entre le dashboard et la messagerie.
+Astuce : Vous pouvez demander des visuels, par exemple « Montre-moi l'interface de Pico ».
+Astuce : OVRANE est capable de changer de thèmes parmis une multitude de couleur, n'hésitez pas à le lui demander.
 Astuce : Plus votre question est précise, plus la réponse sera pertinente.
-
+Astuce : Vous pouvez écrire jusqu'a 5000 caracteres par message.
+Astuce : OVRANE fonctionne avec chatgpt4o-mini, petit mais robuste !
+Astuce : OVRANE à pour IA chatgpt4o-mini, petit mais robuste !
+Astuce : OVRANE supporte l'affichage de texte, d'image et de code.
+Astuce : OVRANE garde en mémoire vos message, vous pouvez donc revenir à tout moment.
+Astuce : Vous ne pouvez envoyez que 50 messages maximum, la suite sera en entretien !

@@ -9,6 +9,7 @@ import { HexagonalAnimation, HexagonalAnimationHandle } from '@/components/ui/He
 import CommandProcessor from '@/components/Fonction AI/CommandProcessor';
 import { TextWindowsManager } from '@/components/ui/GlassmorphismeWindow';
 import { useUIStore } from '@/lib/state/uiStore';
+import { useBackgroundStore } from '@/lib/state/backgroundStore';
 import { InputArea } from '@/components/ui/InputArea';
 import { IntroSequence } from '@/components/intro/IntroSequence';
 import { MessagingView } from '@/components/chat/MessagingView';
@@ -48,13 +49,15 @@ export default function Home() {
     startThinkingAnimation, 
     startSpeakAnimation 
   } = useAnimations();
-  const { isSpeaking, getAudioLevel, speakWithAPI, speakWithBase64, speakWithBrowser, speakWithUrl } = useTTS();
+  const { isSpeaking, getAudioLevel, speakWithQueue, speakWithUrl, stop: stopTTS } = useTTS();
   const addTextWindow = useUIStore((state) => state.addTextWindow);
   const closeTextWindow = useUIStore((state) => state.closeTextWindow);
   const closeAllWindows = useUIStore((state) => state.closeAllWindows);
   const appState = useUIStore((state) => state.appState);
+  const setAppState = useUIStore((state) => state.setAppState);
   const viewMode = useUIStore((state) => state.viewMode);
   const isAppLocked = useUIStore((state) => state.isAppLocked);
+  const lastAppliedBackgroundCmdRef = useRef<string | null>(null);
 
   // Mémoriser "nouveau compte" dès qu'on le sait (évite que l'API flippe isNewUser ensuite)
   useEffect(() => {
@@ -62,6 +65,25 @@ export default function Home() {
       isNewAccountRef.current = true;
     }
   }, [currentUserProfile?.isNewUser]);
+
+  // Appliquer /SetBackground même en mode messagerie (où CommandProcessor est masqué)
+  useEffect(() => {
+    if (!lastCommands || lastCommands.length === 0) return;
+
+    const bg = lastCommands.filter((c) => String(c?.command || '').toLowerCase() === 'setbackground');
+    if (bg.length === 0) return;
+
+    const signature = `${currentUserId || 'no-user'}::${JSON.stringify(bg)}`;
+    if (signature === lastAppliedBackgroundCmdRef.current) return;
+    lastAppliedBackgroundCmdRef.current = signature;
+
+    // Si plusieurs SetBackground, on applique le dernier (le plus récent)
+    const last = bg[bg.length - 1];
+    const param = String(last?.parameter || '').trim();
+    if (!param) return;
+
+    useBackgroundStore.getState().setBackground(param, true, currentUserId || undefined);
+  }, [lastCommands, currentUserId]);
 
   // Reset onboarding quand on change de profil
   useEffect(() => {
@@ -120,21 +142,26 @@ export default function Home() {
       const isFirst = isFirstResponseRef.current;
       if (isFirst) {
         isFirstResponseRef.current = false;
-      } else if (currentTranscript.trim() !== '') {
-        // Pour les messages suivants, on ajoute une NOUVELLE fenêtre SEULEMENT SI LE TEXTE N'EST PAS VIDE.
-        // Note: même si on est en mode messagerie, on garde la fenêtre en "background" pour que le Dashboard
-        // affiche bien le texte + les images (CommandProcessor) quand on bascule de mode.
-        addTextWindow(currentTranscript);
       }
+      
+      // Pour les messages suivants, on affichera la fenêtre AU DÉBUT DE LA PAROLE (pas à la réception du texte)
+      // afin que le dashboard et le TTS démarrent "en même temps".
+      const shouldCreateTextWindow = !isFirst && currentTranscript.trim() !== '';
+      const shouldDeferTextWindowUntilSpeaking = viewMode !== 'messaging';
+      let didCreateTextWindow = false;
 
-      // Onboarding "messagerie" : afficher après la réponse IA au 1er message utilisateur (InputArea),
-      // uniquement pour un nouveau compte, en dashboard.
-      if (
-        pendingMessagingHintAfterResponseRef.current &&
-        !isAppLocked &&
-        viewMode !== 'messaging' &&
-        currentUserId
-      ) {
+      // Onboarding "messagerie" :
+      // IMPORTANT: on déclenche l'affichage au MOMENT où le TTS commence (onStartSpeaking),
+      // sinon l'overlay arrive pendant le préchargement et paraît "trop tôt".
+      const showMessagingHintIfNeeded = () => {
+        if (!pendingMessagingHintAfterResponseRef.current) return;
+        if (!currentUserId) return;
+
+        // Toujours re-lire l'état courant (évite de marquer "seen" si l'utilisateur est passé en messagerie entre temps)
+        const ui = useUIStore.getState();
+        if (ui.isAppLocked) return;
+        if (ui.viewMode === 'messaging') return;
+
         const storageKey = `vanta:onboarding:messagingHintSeen:${currentUserId}`;
         let alreadySeen = false;
         try {
@@ -165,12 +192,11 @@ export default function Home() {
           }, 20000);
         }
 
+        // On consomme le flag uniquement quand on a effectivement tenté d'afficher au bon timing
         pendingMessagingHintAfterResponseRef.current = false;
-      }
+      };
       
       setLastProcessedTranscript(currentTranscript);
-      setCurrentAnimation('speak');
-      startSpeakAnimation();
       
       const onEnd = () => {
         // On ne ferme plus automatiquement la fenêtre de texte à la fin de la parole
@@ -181,19 +207,52 @@ export default function Home() {
       
       // Pas de TTS en mode messagerie
       if (viewMode === 'messaging') {
+        stopTTS();
+        // En mode messagerie, pas de TTS: on conserve le comportement précédent (fenêtre en "background")
+        if (shouldCreateTextWindow && !didCreateTextWindow) {
+          addTextWindow(currentTranscript);
+          didCreateTextWindow = true;
+        }
         onEnd(); // On termine immédiatement l'animation
       } else if (currentTTS && currentTTS.isStaticFile && currentTTS.staticUrl) {
          // Lecture fichier statique (ex: fin de session)
-         speakWithUrl(currentTTS.staticUrl, setupAudioVisualization, onEnd);
-      } else if (currentTTS && currentTTS.audio && !currentTTS.useClientTTS) {
-        speakWithBase64(currentTTS.audio, currentTTS.format, setupAudioVisualization, onEnd);
-      } else if (currentTTS && currentTTS.useClientTTS) {
-        speakWithBrowser(currentTranscript, onEnd);
+         speakWithUrl(currentTTS.staticUrl, setupAudioVisualization, onEnd, {
+           onStartSpeaking: () => {
+             showMessagingHintIfNeeded();
+             if (shouldCreateTextWindow && !shouldDeferTextWindowUntilSpeaking && !didCreateTextWindow) {
+               addTextWindow(currentTranscript);
+               didCreateTextWindow = true;
+             }
+             if (shouldCreateTextWindow && shouldDeferTextWindowUntilSpeaking && !didCreateTextWindow) {
+               addTextWindow(currentTranscript);
+               didCreateTextWindow = true;
+             }
+             setCurrentAnimation('speak');
+             startSpeakAnimation();
+             if (appState === 'processing') {
+               setAppState('awake');
+             }
+           },
+         });
       } else {
-        speakWithAPI(currentTranscript, setupAudioVisualization, onEnd);
+        speakWithQueue(currentTranscript, setupAudioVisualization, onEnd, {
+          onStartSpeaking: () => {
+            showMessagingHintIfNeeded();
+            if (shouldCreateTextWindow && shouldDeferTextWindowUntilSpeaking && !didCreateTextWindow) {
+              addTextWindow(currentTranscript);
+              didCreateTextWindow = true;
+            }
+            setCurrentAnimation('speak');
+            startSpeakAnimation();
+            // Transition vers "awake" au moment où la voix démarre réellement
+            if (appState === 'processing') {
+              setAppState('awake');
+            }
+          },
+        });
       }
     }
-  }, [chatStatus, currentTranscript, lastProcessedTranscript, currentTTS, startSpeakAnimation, startStandbyAnimation, speakWithAPI, speakWithBase64, speakWithBrowser, setupAudioVisualization, addTextWindow, closeTextWindow, appState, viewMode]);
+  }, [chatStatus, currentTranscript, lastProcessedTranscript, currentTTS, startSpeakAnimation, startStandbyAnimation, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addTextWindow, closeTextWindow, appState, setAppState, viewMode]);
 
   return (
     <>

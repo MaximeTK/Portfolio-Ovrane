@@ -1,18 +1,118 @@
 /**
  * Traitement des réponses générées
  */
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { extractCommands } from '../serverHelpers.js';
-import { addConversation } from '../userMemory.js';
+import { addConversation, saveUserPreference } from '../userMemory.js';
 import { getRequestContext, CreateUserProfile } from '../ragHelpers.js';
 import { CONSOLE_LOGS, EMOJIS, MISC_MESSAGES } from '../messages.js';
-import { generateTTS } from '../tts/ttsGenerator.js';
 import { normalizeAssetParamToFilename } from '../validators.js';
 
-/**
- * Convertit un ArrayBuffer en base64
- */
-function arrayBufferToBase64(buffer) {
-  return Buffer.from(buffer).toString('base64');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function stripDiacritics(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function normalizeTokens(value) {
+  return stripDiacritics(String(value ?? '').toLowerCase())
+    .replace(/[^a-z0-9_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean);
+}
+
+function isPaletteIdLine(line) {
+  const invalidStarts = ['LISTE', '⚠️', 'RÈGLES', 'EXEMPLES', 'Si l', '-', 'PALETTES'];
+  return (
+    line &&
+    !line.includes(':') &&
+    !invalidStarts.some((s) => line.startsWith(s)) &&
+    line.length < 20
+  );
+}
+
+let cachedPaletteIds = null;
+function getKnownPaletteIds() {
+  if (cachedPaletteIds) return cachedPaletteIds;
+  try {
+    const colorsPath = path.join(__dirname, '..', '..', '..', 'rag', 'colors.txt');
+    if (!fs.existsSync(colorsPath)) {
+      cachedPaletteIds = [];
+      return cachedPaletteIds;
+    }
+    const content = fs.readFileSync(colorsPath, 'utf8');
+    const lines = content.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const ids = lines.filter(isPaletteIdLine);
+    cachedPaletteIds = ids;
+    return cachedPaletteIds;
+  } catch {
+    cachedPaletteIds = [];
+    return cachedPaletteIds;
+  }
+}
+
+function extractPaletteIdFromText(text) {
+  const ids = getKnownPaletteIds();
+  if (!ids.length) return null;
+
+  const tokens = normalizeTokens(text);
+  if (!tokens.length) return null;
+
+  // Préparer les candidats (tokens) et privilégier les IDs multi-mots (ex: gris_ciel)
+  const candidates = ids
+    .map((id) => {
+      const parts = normalizeTokens(String(id).replace(/_/g, ' '));
+      return { id, parts };
+    })
+    .filter((c) => c.parts.length > 0)
+    .sort((a, b) => b.parts.length - a.parts.length);
+
+  for (const cand of candidates) {
+    const { parts } = cand;
+    for (let i = 0; i <= tokens.length - parts.length; i += 1) {
+      let ok = true;
+      for (let j = 0; j < parts.length; j += 1) {
+        if (tokens[i + j] !== parts[j]) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) return cand.id;
+    }
+  }
+  return null;
+}
+
+function isBackgroundIntent(text) {
+  const t = stripDiacritics(String(text ?? '').toLowerCase());
+  return (
+    t.includes('/setbackground') ||
+    t.includes('background') ||
+    t.includes('arriere-plan') ||
+    t.includes('arrière-plan') ||
+    t.includes('fond') ||
+    t.includes('theme') ||
+    t.includes('thème')
+  );
+}
+
+function getLastBackgroundCommand(commands) {
+  if (!Array.isArray(commands)) return null;
+  for (let i = commands.length - 1; i >= 0; i -= 1) {
+    const c = commands[i];
+    if (String(c?.command || '').toLowerCase() === 'setbackground') {
+      const param = String(c?.parameter || '').trim();
+      if (param) return param;
+    }
+  }
+  return null;
 }
 
 /**
@@ -147,6 +247,19 @@ export async function processResponse(response, userId, userProfile, prompt, isE
   if ((!finalReply || finalReply.trim() === '') && commands.length > 0) {
     finalReply = MISC_MESSAGES.defaultResponse;
   }
+
+  // Fallback robustesse: si l'utilisateur demande un changement de fond, mais que l'IA a oublié la commande,
+  // on injecte automatiquement /SetBackground <id> quand l'ID est identifiable.
+  const hasBackgroundCommand = Array.isArray(commands)
+    && commands.some((c) => String(c?.command || '').toLowerCase() === 'setbackground');
+  if (!hasBackgroundCommand && isBackgroundIntent(prompt)) {
+    const paletteId = extractPaletteIdFromText(prompt) || extractPaletteIdFromText(finalReply);
+    if (paletteId) {
+      commands = Array.isArray(commands) ? commands : [];
+      commands.push({ command: 'SetBackground', parameter: paletteId });
+      console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Injection commande SetBackground: ${paletteId}`);
+    }
+  }
   
   // Vérification post-commandes
   const updatedContext = getRequestContext();
@@ -180,31 +293,35 @@ export async function processResponse(response, userId, userProfile, prompt, isE
     }
   }
   
-  if (!isEphemeral) {
-    addConversation(userId, prompt, finalReply, { commands });
+  // Persister le fond côté backend pour que l'IA ait un état fiable au prochain prompt (FOND ACTUEL)
+  // (en complément de la sauvegarde côté frontend).
+  const bgId = getLastBackgroundCommand(commands);
+  if (bgId) {
+    try {
+      await saveUserPreference(userId, 'backgroundColor', bgId);
+    } catch (error) {
+      console.warn(`${EMOJIS.warning} ${CONSOLE_LOGS.backend} Impossible de sauvegarder backgroundColor:`, error?.message || error);
+    }
   }
   
-  // Générer le TTS en parallèle (ne bloque pas la réponse)
-  let ttsData = null;
-  if (finalReply && finalReply.trim() !== '') {
-    try {
-      const ttsResult = await generateTTS(finalReply);
-      if (ttsResult && !ttsResult.useClientTTS && ttsResult.buffer) {
-        const mimeType = ttsResult.mimeType || 'audio/mpeg';
-        // Convertir l'audio en base64 pour l'inclure dans la réponse JSON
-        ttsData = {
-          audio: arrayBufferToBase64(ttsResult.buffer),
-          provider: ttsResult.provider || 'unknown',
-          format: mimeType
-        };
-      } else {
-        // Fallback côté client
-        ttsData = { useClientTTS: true };
-      }
-    } catch (error) {
-      console.error(`${EMOJIS.error} ${CONSOLE_LOGS.tts} Erreur génération TTS:`, error.message);
-      ttsData = { useClientTTS: true };
-    }
+  if (!isEphemeral) {
+    const safeCommands = Array.isArray(commands)
+      ? commands
+          .filter((c) => c && c.command)
+          .map((c) => {
+            const cmd = String(c.command || '').trim();
+            const param = String(c.parameter || '').trim();
+            const raw = param ? `/${cmd} ${param}` : `/${cmd}`;
+            return { command: cmd, parameter: param, raw };
+          })
+      : [];
+
+    const commandsFull = safeCommands.map((c) => c.raw).filter(Boolean);
+
+    addConversation(userId, prompt, finalReply, {
+      commands: safeCommands,
+      commandsFull,
+    });
   }
   
   return {
@@ -219,6 +336,5 @@ export async function processResponse(response, userId, userProfile, prompt, isE
     },
     activeUserId: userId,
     rag: { coverage: ragCoverage, sources: ragSources, enabled: true },
-    tts: ttsData
   };
 }

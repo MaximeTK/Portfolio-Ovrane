@@ -2,7 +2,6 @@
  * Construction des prompts pour OpenAI
  */
 import { buildRAGContext } from './rag/ragSystem.js';
-import { getConversationHistory } from './userMemory.js';
 import { 
   SYSTEM_PROMPTS, 
   RAG_HEADERS, 
@@ -118,13 +117,17 @@ export async function buildRAGContextForPrompt(prompt, ragInitialized) {
 /**
  * Construit le prompt système
  */
-export function buildSystemPrompt(userProfile, userId, ragContext, ragCoverage) {
-  const conversationHistory = getConversationHistory(userId, 5);
+export async function buildSystemPrompt(userProfile, userId, ragContext, ragCoverage) {
+  const bgPref =
+    (userProfile && userProfile.preferences && userProfile.preferences.backgroundColor)
+      ? String(userProfile.preferences.backgroundColor)
+      : null;
+  const bgInfo = `\n\nFOND ACTUEL (palette): ${bgPref ? bgPref : 'default'}`;
   const userInfo = `\n\n${formatUserInfo(userProfile.name, userProfile.visitCount)}`;
   
   let ragInstructions = getRagInstructions(ragCoverage);
 
-  return `${ragContext}${conversationHistory}${userInfo}${ragInstructions}${SYSTEM_PROMPTS.mainContext}`;
+  return `${ragContext}${userInfo}${bgInfo}${ragInstructions}${SYSTEM_PROMPTS.mainContext}`;
 }
 
 function getRagInstructions(ragCoverage) {

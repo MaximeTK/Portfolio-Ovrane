@@ -12,6 +12,8 @@ interface InputAreaProps {
   isLoading?: boolean;
   tipsEnabled?: boolean;
   tipsUrl?: string; // ex: "/astuces.txt"
+  suggestionsEnabled?: boolean;
+  suggestionsUrl?: string; // ex: "/propositions.txt"
 }
 
 export function InputArea({ 
@@ -25,10 +27,18 @@ export function InputArea({
   isLoading = false,
   tipsEnabled = true,
   tipsUrl = '/astuces.txt',
+  suggestionsEnabled = true,
+  suggestionsUrl = '/propositions.txt',
 }: InputAreaProps) {
   const [inputValue, setInputValue] = useState('');
   const [isSingleLine, setIsSingleLine] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // ===== Propositions (placeholder dynamique) =====
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [activeSuggestion, setActiveSuggestion] = useState<string>('');
+  const suggestionCursorRef = useRef(0);
+  const suggestionsLoadedRef = useRef(false);
 
   // ===== Astuces =====
   const [tips, setTips] = useState<string[]>([]);
@@ -59,6 +69,45 @@ export function InputArea({
   useEffect(() => {
     adjustTextareaHeight();
   }, [inputValue]);
+
+  // Charger les propositions depuis le fichier .txt (une seule fois)
+  useEffect(() => {
+    if (!suggestionsEnabled) return;
+    if (suggestionsLoadedRef.current) return;
+    suggestionsLoadedRef.current = true;
+
+    const loadSuggestions = async () => {
+      try {
+        const res = await fetch(suggestionsUrl, { cache: 'no-store' });
+        if (!res.ok) return;
+        const text = await res.text();
+
+        const lines = text
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0 && !l.startsWith('#'));
+
+        if (lines.length > 0) {
+          setSuggestions(lines);
+          // Première proposition immédiate
+          setActiveSuggestion(lines[0] || '');
+          suggestionCursorRef.current = 1;
+        }
+      } catch {
+        // Silencieux : les propositions sont optionnelles
+      }
+    };
+
+    loadSuggestions();
+  }, [suggestionsEnabled, suggestionsUrl]);
+
+  const rotateSuggestion = () => {
+    if (!suggestionsEnabled) return;
+    if (!suggestions || suggestions.length === 0) return;
+    const idx = suggestionCursorRef.current % suggestions.length;
+    suggestionCursorRef.current = idx + 1;
+    setActiveSuggestion(suggestions[idx] || '');
+  };
 
   // Charger les astuces depuis le fichier .txt (une seule fois)
   useEffect(() => {
@@ -150,6 +199,8 @@ export function InputArea({
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
+    // Changer la proposition à chaque envoi
+    rotateSuggestion();
 
     // Effets visuels
     triggerWave?.();
@@ -225,7 +276,7 @@ export function InputArea({
                 handleSubmit(e);
               }
             }}
-            placeholder={placeholder}
+            placeholder={suggestionsEnabled && activeSuggestion ? activeSuggestion : placeholder}
             className={`scrollbar-shorter w-full bg-transparent text-white placeholder-gray-300 outline-none focus:outline-none resize-none overflow-y-auto max-h-[200px] pl-4 pr-4 ${
               isSingleLine ? 'py-3' : 'py-3'
             }`}

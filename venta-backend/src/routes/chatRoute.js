@@ -5,7 +5,10 @@ import { processUserInfo } from '../lib/chat/userProcessor.js';
 import { generateResponse } from '../lib/chat/responseGenerator.js';
 import { processResponse } from '../lib/chat/responseProcessor.js';
 import { getRawConversationHistory } from '../lib/userMemory.js';
-import { ERROR_MESSAGES, CONSOLE_LOGS, EMOJIS } from '../lib/messages.js';
+import { ERROR_MESSAGES, CONSOLE_LOGS, EMOJIS, MISC_MESSAGES } from '../lib/messages.js';
+import { User } from '../models/User.js';
+import { generateUserHash } from '../lib/userMemory.js';
+import { convertToPermament, mergeTemporaryIntoPermanent, searchUserByName } from '../lib/user/profileManagement.js';
 import {
   isNonEmptyString,
   isValidUserId,
@@ -23,6 +26,18 @@ function validatePrompt(prompt) {
  */
 function validateAPIKey() {
   return !!process.env.OPENAI_API_KEY;
+}
+
+/**
+ * Détecte l'intention "entrée de pseudo" depuis l'intro (message éphémère)
+ */
+function extractNameFromIntroPrompt(prompt) {
+  const text = String(prompt ?? '').trim();
+  // Supporte: "Je m'appelle X" ou "Je m’appelle X"
+  const match = text.match(/^je\s*m['’]appelle\s+(.+?)\s*$/i);
+  if (!match) return null;
+  const name = String(match[1] ?? '').trim();
+  return name || null;
 }
 
 /**
@@ -46,14 +61,131 @@ export function setupChatRoute(app, openai, ragInitialized) {
       if (currentUserId !== undefined && currentUserId !== null && !isValidUserId(currentUserId)) {
         return res.status(400).json({ error: ERROR_MESSAGES.invalidUserId });
       }
-      
+
+      const safeEphemeral = typeof isEphemeral === 'boolean' ? isEphemeral : false;
+      let { userId, userProfile } = await processUserInfo(req, currentUserId);
+
+      // ============================================================
+      // ONBOARDING (INTRO) : pseudo saisi -> PAS d'appel OpenAI
+      // ============================================================
+      const introName = safeEphemeral ? extractNameFromIntroPrompt(prompt) : null;
+      if (introName) {
+        const desiredName = introName;
+        const existingByName = await searchUserByName(desiredName);
+        const isNewAccount = !existingByName;
+
+        // Résolution du profil actif via le pseudo
+        if (existingByName) {
+          // Si on est sur un profil temporaire, on tente de fusionner vers le permanent existant
+          if (userProfile?.isTemporary) {
+            const merged = await mergeTemporaryIntoPermanent(userId, existingByName.id);
+            if (merged) {
+              userId = merged.id;
+              userProfile = merged;
+            } else {
+              const updatedTarget = await User.findOneAndUpdate(
+                { id: existingByName.id },
+                { $set: { lastVisit: new Date() }, $inc: { visitCount: 1 } },
+                { new: true },
+              ).lean();
+              userId = existingByName.id;
+              userProfile = updatedTarget || existingByName;
+            }
+          } else {
+            // Profil permanent: si ce n'est pas déjà le bon, on switch
+            const currentName = String(userProfile?.name || '').toLowerCase().trim();
+            const desiredNameLower = String(desiredName).toLowerCase().trim();
+            const alreadyCurrent = (userId === existingByName.id) || (currentName && currentName === desiredNameLower);
+            if (!alreadyCurrent) {
+              const updatedTarget = await User.findOneAndUpdate(
+                { id: existingByName.id },
+                { $set: { lastVisit: new Date() }, $inc: { visitCount: 1 } },
+                { new: true },
+              ).lean();
+              userId = existingByName.id;
+              userProfile = updatedTarget || existingByName;
+            }
+          }
+        } else {
+          // Nouveau profil (pseudo inconnu)
+          if (userProfile?.isTemporary) {
+            const converted = await convertToPermament(userId, desiredName);
+            if (converted) {
+              userProfile = converted;
+            } else {
+              userProfile = { ...(userProfile || {}), id: userId, name: desiredName, isTemporary: false };
+            }
+          } else {
+            const ipHashes = Array.isArray(userProfile?.ipHashes) ? userProfile.ipHashes : [];
+            const firstIpHash = ipHashes.length > 0 ? ipHashes[0] : 'unknown';
+            const newUserId = generateUserHash(firstIpHash, desiredName);
+
+            const newProfile = new User({
+              id: newUserId,
+              ipHashes,
+              visitCount: 1,
+              name: desiredName,
+              isTemporary: false,
+              preferences: {},
+              conversations: [],
+            });
+            await newProfile.save();
+
+            userId = newUserId;
+            userProfile = newProfile.toObject();
+          }
+        }
+
+        // Vérification de la limite de messages (protection)
+        const MAX_MESSAGES_PER_PROFILE = 50;
+        if ((userProfile?.messageCount || 0) >= MAX_MESSAGES_PER_PROFILE) {
+          console.warn(`${EMOJIS.warning} ${CONSOLE_LOGS.backend} Limite atteinte pour ${userProfile?.name || userId}`);
+          return res.json({
+            reply: ERROR_MESSAGES.limitReached,
+            commands: [{ command: 'LockInterface', parameter: 'limit_reached' }],
+            rawResponse: ERROR_MESSAGES.limitReached,
+            userProfile: {
+              name: userProfile?.name,
+              visitCount: userProfile?.visitCount,
+              isNewUser: isNewAccount,
+              isTemporary: userProfile?.isTemporary,
+              messageCount: userProfile?.messageCount,
+            },
+            activeUserId: userId,
+            rag: { coverage: [], sources: [], enabled: false },
+            tts: {
+              isStaticFile: true,
+              staticUrl: '/endmessage.mp3',
+            },
+          });
+        }
+
+        const nameForGreeting = userProfile?.name || desiredName;
+        const reply = isNewAccount
+          ? MISC_MESSAGES.welcomeNew(nameForGreeting)
+          : MISC_MESSAGES.welcomeBack(nameForGreeting);
+
+        return res.json({
+          reply,
+          commands: [],
+          rawResponse: reply,
+          userProfile: {
+            name: userProfile?.name || nameForGreeting,
+            visitCount: userProfile?.visitCount,
+            isNewUser: isNewAccount,
+            isTemporary: userProfile?.isTemporary,
+            messageCount: userProfile?.messageCount,
+          },
+          activeUserId: userId,
+          rag: { coverage: [], sources: [], enabled: false },
+        });
+      }
+
+      // Cas normal (chat) : nécessite OpenAI
       if (!validateAPIKey()) {
         console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} ${ERROR_MESSAGES.openaiKeyMissing}!`);
         return res.status(500).json({ error: ERROR_MESSAGES.openaiKeyMissing });
       }
-      
-      const safeEphemeral = typeof isEphemeral === 'boolean' ? isEphemeral : false;
-      let { userId, userProfile } = await processUserInfo(req, currentUserId);
       
       // Vérification de la limite de messages pour protéger l'API Key
       const MAX_MESSAGES_PER_PROFILE = 50;

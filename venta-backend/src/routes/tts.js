@@ -21,6 +21,11 @@ export async function handleTTS(req, res) {
     if (!text || typeof text !== 'string') {
       return res.status(400).json({ error: ERROR_MESSAGES.ttsTextRequired });
     }
+    
+    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.tts} Chunk reçu`, {
+      length: text.length,
+      preview: String(text).slice(0, 220),
+    });
 
     const result = await generateTTS(text);
 

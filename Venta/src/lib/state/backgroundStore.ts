@@ -14,6 +14,74 @@ interface BackgroundState {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:3001';
 
+function stripDiacritics(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function cleanPaletteInput(value: string) {
+  // Nettoyage tolérant: trim + suppression guillemets/ponctuation fréquente
+  let v = String(value ?? '').trim();
+  v = v.replace(/^[\s"'`“”«»]+/, '').replace(/[\s"'`“”«»]+$/, '').trim();
+  // Retirer ponctuation/parenthèses finales (ex: "ocean.", "doré,", "forêt)")
+  v = v.replace(/[.,;:!?]+$/g, '').replace(/[)\]}>]+$/g, '').trim();
+  // Retirer parenthèses ouvrantes accidentelles
+  v = v.replace(/^[([{<]+/g, '').trim();
+  return v;
+}
+
+function normalizeKey(value: string) {
+  const cleaned = cleanPaletteInput(value).toLowerCase();
+  return stripDiacritics(cleaned)
+    .replace(/\s+/g, '_')
+    .replace(/-+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+const PALETTE_LOOKUP = (() => {
+  const map = new Map<string, ColorPalette>();
+  Object.values(COLOR_PALETTES).forEach((palette) => {
+    map.set(normalizeKey(palette.id), palette);
+    map.set(normalizeKey(palette.name), palette);
+  });
+  return map;
+})();
+
+function resolvePalette(paletteId: string) {
+  const cleaned = cleanPaletteInput(paletteId);
+  if (!cleaned) return { palette: null as ColorPalette | null, canonicalId: null as string | null, cleaned };
+
+  // 1) Match exact (IDs sensibles aux accents)
+  const direct = COLOR_PALETTES[cleaned as keyof typeof COLOR_PALETTES] as ColorPalette | undefined;
+  if (direct) return { palette: direct, canonicalId: direct.id, cleaned };
+
+  // 2) Match minuscule exact
+  const lower = COLOR_PALETTES[cleaned.toLowerCase() as keyof typeof COLOR_PALETTES] as ColorPalette | undefined;
+  if (lower) return { palette: lower, canonicalId: lower.id, cleaned };
+
+  // 3) Match tolérant (sans accents/espaces/ponctuation)
+  const normalized = normalizeKey(cleaned);
+  const directNormalized = PALETTE_LOOKUP.get(normalized) || null;
+  if (directNormalized) {
+    return { palette: directNormalized, canonicalId: directNormalized.id, cleaned };
+  }
+
+  // 4) Fallback: si le paramètre contient du texte additionnel (ex: "spectre. Voilà"),
+  // on essaie des préfixes tokenisés (ex: ["spectre"] puis ["spectre","..."]).
+  const parts = normalized.split('_').filter(Boolean);
+  // Les IDs actuels sont courts (souvent 1 ou 2 tokens), on limite pour éviter des matches hasardeux.
+  for (let take = 1; take <= Math.min(3, parts.length); take += 1) {
+    const key = parts.slice(0, take).join('_');
+    const hit = PALETTE_LOOKUP.get(key);
+    if (hit) {
+      return { palette: hit, canonicalId: hit.id, cleaned };
+    }
+  }
+
+  return { palette: null, canonicalId: null, cleaned };
+}
+
 /**
  * Sauvegarde la préférence de couleur sur le backend
  */
@@ -93,7 +161,7 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
   currentPalette: getDefaultPalette(),
   
   setBackground: (paletteId: string, shouldSave = true, userId?: string) => {
-    const palette = COLOR_PALETTES[paletteId];
+    const { palette, canonicalId, cleaned } = resolvePalette(paletteId);
     if (palette) {
       console.log(`🎨 Changement du fond vers: ${palette.name}`, { shouldSave, userId });
       set({ currentPalette: palette });
@@ -101,12 +169,13 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
       // Sauvegarder automatiquement la préférence
       if (shouldSave) {
         console.log('💾 [DEBUG] Appel de savePreferenceToBackend...');
-        savePreferenceToBackend(paletteId, userId);
+        // Toujours sauvegarder l'ID canonique (évite de persister "ocean." ou une variante)
+        savePreferenceToBackend(canonicalId || palette.id, userId);
       } else {
         console.log('⏭️ [DEBUG] Sauvegarde désactivée (shouldSave = false)');
       }
     } else {
-      console.warn(`⚠️ Palette inconnue: ${paletteId}`);
+      console.warn(`⚠️ Palette inconnue: "${paletteId}" (nettoyé: "${cleaned}")`);
     }
   },
   
@@ -117,14 +186,23 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
   loadUserPreference: async (userId: string) => {
     console.log(`🔍 [BACKGROUND STORE] Chargement des préférences pour userId: ${userId}`);
     const savedPaletteId = await loadPreferenceFromBackend(userId);
-    if (savedPaletteId && COLOR_PALETTES[savedPaletteId]) {
-      console.log(`🎨 [BACKGROUND STORE] Palette trouvée: ${savedPaletteId} (${COLOR_PALETTES[savedPaletteId].name})`);
-      set({ currentPalette: COLOR_PALETTES[savedPaletteId] });
-      console.log(`✅ [BACKGROUND STORE] Palette appliquée avec succès`);
+    if (savedPaletteId) {
+      const { palette } = resolvePalette(savedPaletteId);
+      if (palette) {
+        console.log(`🎨 [BACKGROUND STORE] Palette trouvée: ${savedPaletteId} (${palette.name})`);
+        set({ currentPalette: palette });
+        console.log(`✅ [BACKGROUND STORE] Palette appliquée avec succès`);
+        return;
+      }
+      console.warn(`⚠️ [BACKGROUND STORE] Palette sauvegardée inconnue: ${savedPaletteId}`);
+    }
+
+    if (savedPaletteId) {
+      console.log(`⚠️ [BACKGROUND STORE] Préférence invalide (${savedPaletteId}), réinitialisation au défaut (Noir)`);
     } else {
       console.log(`⚠️ [BACKGROUND STORE] Aucune préférence trouvée, réinitialisation au défaut (Noir)`);
-      set({ currentPalette: getDefaultPalette() });
     }
+    set({ currentPalette: getDefaultPalette() });
   },
 }));
 

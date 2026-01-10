@@ -199,7 +199,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
           !shouldScrollToBottom && messages.length > 0 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >
-        <div className="bg-black/50 backdrop-blur-md text-gray-200 px-4 py-2.5 rounded-r-full rounded-l-full shadow-2xl flex items-center gap-4 pointer-events-auto border border-gray-700/50 hover:bg-black/50 transition-colors">
+        <div className="bg-black/50 backdrop-blur-md text-gray-200 px-4 py-2.5 rounded-r-full rounded-l-full shadow-2xl flex items-center gap-4 pointer-events-auto border border-gray-700/50 hover:bg-black/50 transition-colors mx-[25px] max-w-[calc(100vw-50px)]">
           <span className="text-sm font-medium">{CHAT_UI.viewingOldMessages}</span>
           <button 
             onClick={scrollToBottom}

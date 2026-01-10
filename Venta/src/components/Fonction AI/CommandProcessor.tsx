@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import Image from 'next/image';
 import Window from '../ui/GlassmorphismeWindow';
 import { useUIStore } from '@/lib/state/uiStore';
-import { useBackgroundStore } from '@/lib/state/backgroundStore';
 import { Command } from '@/lib/chat/types';
 
 type BaseWindow = {
@@ -176,9 +175,7 @@ function processCommand(
     case 'openwindow':
       return createGenericWindow(parameter, index);
     case 'setbackground':
-      // Commande spéciale : change le background sans créer de fenêtre
-      useBackgroundStore.getState().setBackground(parameter, true, userId || undefined);
-      console.log(`🎨 Background changé vers: ${parameter}${userId ? ` pour l'utilisateur ${userId}` : ''}`);
+      // Commande spéciale : gérée globalement (HomeClient) pour fonctionner aussi en mode messagerie/mobile.
       return null;
     default:
       console.warn(`Commande inconnue: ${command}`);

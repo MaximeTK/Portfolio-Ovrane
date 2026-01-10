@@ -2,6 +2,7 @@
  * Génération de réponses avec OpenAI
  */
 import { buildRAGContextForPrompt, buildSystemPrompt } from '../promptBuilder.js';
+import { getRawConversationHistory } from '../userMemory.js';
 import { callAI } from '../aiModelFactory.js';
 import { tools } from './toolsConfig.js';
 import { CONSOLE_LOGS, EMOJIS, ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
@@ -20,7 +21,7 @@ function isImageIntent(prompt) {
 function isColorIntent(prompt) {
   const p = normalize(prompt);
   if (p.includes('/setbackground')) return true;
-  return /\b(fond|background|arriere-plan|arrière-plan|couleur|palette|theme|thème)\b/i.test(prompt);
+  return /\b(fond|background|arriere-plan|arrière-plan|couleur|palette|themes|thèmes|theme|thème)\b/i.test(prompt);
 }
 
 function filterToolsForPrompt(prompt) {
@@ -41,9 +42,11 @@ function filterToolsForPrompt(prompt) {
     allow.add('getAvailableAssets');
   }
 
+  allow.add('getAvailableColors');
+  /*
   if (isColorIntent(prompt)) {
     allow.add('getAvailableColors');
-  }
+  }*/
 
   const filtered = (tools || []).filter((t) => allow.has(t?.name));
   return filtered.length > 0 ? filtered : null;
@@ -60,15 +63,40 @@ function isValidResponse(rawResponse) {
  * Génère une réponse de repli
  */
 function generateFallbackResponse(prompt) {
-  const lower = (prompt || '').toLowerCase();
-  const asksBackgroundChange = lower.includes('fond') || lower.includes('background') || lower.includes("arrière-plan");
-  const mentionsEcarlate = lower.includes('écarlate') || lower.includes('ecarlate');
-  
-  if (asksBackgroundChange && mentionsEcarlate) {
-    return "Je change le fond en écarlate. /SetBackground ecarlate";
-  }
-  
   return MISC_MESSAGES.defaultResponse;
+}
+
+function toSafeText(value) {
+  if (value === null || value === undefined) return '';
+  return typeof value === 'string' ? value : String(value);
+}
+
+function buildHistoryMessages(rawHistory) {
+  if (!Array.isArray(rawHistory) || rawHistory.length === 0) {
+    return [];
+  }
+
+  const messages = [];
+  for (const conv of rawHistory) {
+    // Format standard (prompt/response)
+    if (conv?.prompt) {
+      const prompt = toSafeText(conv.prompt).trim();
+      if (prompt) messages.push({ role: 'user', content: prompt });
+    }
+    if (conv?.response) {
+      const response = toSafeText(conv.response).trim();
+      if (response) messages.push({ role: 'assistant', content: response });
+    }
+
+    // Fallback (structure role/content)
+    if (!conv?.prompt && !conv?.response && conv?.role && conv?.content) {
+      const role = conv.role === 'assistant' ? 'assistant' : 'user';
+      const content = toSafeText(conv.content).trim();
+      if (content) messages.push({ role, content });
+    }
+  }
+
+  return messages;
 }
 
 /**
@@ -76,7 +104,12 @@ function generateFallbackResponse(prompt) {
  */
 export async function generateResponse(openai, prompt, userId, userProfile, ragInitialized) {
   const { ragContext, ragSources, ragCoverage } = await buildRAGContextForPrompt(prompt, ragInitialized);
-  const systemPrompt = buildSystemPrompt(userProfile, userId, ragContext, ragCoverage);
+  const systemPrompt = await buildSystemPrompt(userProfile, userId, ragContext, ragCoverage);
+  
+  // Injecter l'historique en tant que messages (meilleure compréhension des suivis type "plus simple", "en anglais", etc.)
+  // On garde une fenêtre courte pour éviter d'exploser le contexte.
+  const rawHistory = await getRawConversationHistory(userId, 8, 0);
+  const historyMessages = buildHistoryMessages(rawHistory);
   
   console.log(`\n📤 ${CONSOLE_LOGS.backend} ===== ENVOI À CHATGPT =====`);
   console.log(`🤖 ${CONSOLE_LOGS.openaiModelInfo}`);
@@ -86,6 +119,7 @@ export async function generateResponse(openai, prompt, userId, userProfile, ragI
   
   const messages = [
     { role: 'system', content: systemPrompt },
+    ...historyMessages,
     { role: 'user', content: prompt }
   ];
   

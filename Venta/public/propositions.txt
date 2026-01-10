@@ -1,0 +1,12 @@
+# Une proposition par ligne. Les lignes vides et celles commençant par # sont ignorées.
+
+Explique-moi le projet Pico en 2 phrases.
+Donne-moi 3 fonctionnalités clés de Pico.
+Résume Pico en version très simple (pour un enfant).
+Parle-moi de Pico, mais en anglais.
+Montre-moi l’interface de Pico.
+Qu’est-ce que Pico apporte aux personnes non verbales ?
+Quels sont les points forts et limites de Pico ?
+Propose 3 idées d’améliorations pour Pico.
+Change le fond en océan.
+Explique-moi ce que tu peux faire sur ce portfolio.

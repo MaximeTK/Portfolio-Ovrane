@@ -3,7 +3,6 @@ import { useUIStore } from '@/lib/state/uiStore';
 import { HexagonalAnimation, HexagonalAnimationHandle } from '../ui/HexagonalAnimation';
 import { NameInput } from './NameInput';
 import { TTSData, Message, UserProfileData } from '@/lib/chat/types';
-import { useBackgroundStore } from '@/lib/state/backgroundStore';
 
 interface IntroSequenceProps {
   send: (message: string, options?: { isEphemeral?: boolean }) => void;
@@ -14,37 +13,20 @@ interface IntroSequenceProps {
   overlayOverrideText?: string | null;
 }
 
-export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, currentUserId, overlayOverrideText }: IntroSequenceProps) => {
+export const IntroSequence = ({ send, currentTTS: _currentTTS, messages: _messages, currentUserProfile, currentUserId: _currentUserId, overlayOverrideText }: IntroSequenceProps) => {
   const { appState, setAppState, setUserName, userName, viewMode, isAppLocked, lockedMessage } = useUIStore();
-  const loadUserPreference = useBackgroundStore((state) => state.loadUserPreference);
-  const [hasTriggeredAwake, setHasTriggeredAwake] = useState(false);
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
   
   // Ref vers l'animation pour déclencher des vagues manuelles
   const hexAnimationRef = useRef<HexagonalAnimationHandle>(null);
 
-  // Gestion de la transition vers 'awake' quand l'audio arrive
+  // Si l'app est verrouillée, on force l'état 'awake' pour afficher le message
   useEffect(() => {
-    // Si l'app est verrouillée, on force l'état 'awake' pour afficher le message
     if (isAppLocked) {
       setAppState('awake');
       setIsWelcomeVisible(true);
-      return;
     }
-
-    if (appState === 'processing' && currentTTS && !hasTriggeredAwake) {
-      // On a reçu l'audio (TTS) du backend !
-      setAppState('awake');
-      setHasTriggeredAwake(true);
-      
-      // C'est le bon moment pour appliquer les préférences utilisateur
-      // car l'utilisateur vient d'être identifié par le backend
-      if (currentUserId) {
-        console.log(`🎨 [IntroSequence] Application des préférences pour l'utilisateur: ${currentUserId}`);
-        loadUserPreference(currentUserId);
-      }
-    }
-  }, [appState, currentTTS, messages, setAppState, hasTriggeredAwake, currentUserId, loadUserPreference]);
+  }, [isAppLocked, setAppState]);
 
   // Gestion de la disparition du message de bienvenue après 10 secondes
   useEffect(() => {
@@ -87,12 +69,13 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
     if (isAppLocked && lockedMessage) {
       return lockedMessage;
     }
+    const safeName = String(userName || '').trim();
     // Si on a l'info que c'est un nouvel utilisateur
     if (currentUserProfile?.isNewUser) {
-      return "ENCHANTÉE DE FAIRE VOTRE CONNAISSANCE !";
+      return `Bienvenue ${safeName}, en quoi puis-je vous aidez ?`;
     }
     // Par défaut (ou si utilisateur existant)
-    return "RAVIE DE VOUS REVOIR !";
+    return `Ravie de vous revoir ${safeName}, en quoi puis-je vous aidez ?`;
   };
 
   return (
@@ -108,7 +91,7 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
           ref={hexAnimationRef}
           currentAnimation="standby"
           isSpeaking={false}
-          audioLevel={0}
+          getAudioLevel={() => 0}
           mode="sleep" 
         />
       </div>
@@ -130,7 +113,7 @@ export const IntroSequence = ({ send, currentTTS, messages, currentUserProfile, 
 
         {/* État 3: Awake (Message de bienvenue STATIQUE ou Message de Verrouillage) */}
         <OverlayMessage visible={appState === 'awake' && isWelcomeVisible && !overlayOverrideText}>
-          {isAppLocked ? getWelcomeMessage() : `BIENVENUE ${userName?.toUpperCase()}, ${getWelcomeMessage()}`}
+          {getWelcomeMessage()}
         </OverlayMessage>
 
         {/* Message overlay piloté depuis HomeClient (même design que le welcome) */}

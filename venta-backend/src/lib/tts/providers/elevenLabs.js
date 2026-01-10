@@ -45,25 +45,37 @@ export async function getElevenLabsAudio(text) {
   if (!key || !voice) {
     return null;
   }
-  const url = `${ELEVEN_URL}/${voice}/stream`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: createHeaders(key),
-    body: createPayload(text),
-  });
-  if (!response.ok) {
-    logNoCredits(response.status);
+  try {
+    const url = `${ELEVEN_URL}/${voice}/stream`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: createHeaders(key),
+      body: createPayload(text),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) {
+      logNoCredits(response.status);
+      console.error(
+        `${EMOJIS.error} ${CONSOLE_LOGS.tts} ` +
+          `${ERROR_MESSAGES.ttsElevenLabsError}`,
+      );
+      return null;
+    }
+    const buffer = await response.arrayBuffer();
+    return {
+      buffer,
+      provider: 'elevenlabs',
+      mimeType: MIME_TYPE_MPEG,
+    };
+  } catch (error) {
+    // IMPORTANT: en cas d'erreur réseau (ex: ECONNRESET), on retourne null
+    // pour permettre au ttsGenerator de tenter le provider suivant (OpenAI).
     console.error(
       `${EMOJIS.error} ${CONSOLE_LOGS.tts} ` +
-        `${ERROR_MESSAGES.ttsElevenLabsError}`,
+        `${ERROR_MESSAGES.ttsElevenLabsException}`,
+      error,
     );
     return null;
   }
-  const buffer = await response.arrayBuffer();
-  return {
-    buffer,
-    provider: 'elevenlabs',
-    mimeType: MIME_TYPE_MPEG,
-  };
 }
 
