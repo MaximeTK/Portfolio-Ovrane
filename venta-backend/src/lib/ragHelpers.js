@@ -15,6 +15,14 @@ export { getAvailableAssets, getRulePicture } from './helpers/assetsHelpers.js';
 // Couleurs
 export { getAvailableColors } from './helpers/colorsHelpers.js';
 
+// Commandes UI (tools)
+export {
+  uiShowPicture,
+  uiSetBackground,
+  uiShowCode,
+  uiOpenWindow,
+} from './helpers/uiCommandsHelpers.js';
+
 // Gestion utilisateurs - Wrappers pour passer le contexte automatiquement
 import { checkUser as _checkUser } from './helpers/userCheckHelpers.js';
 import { CreateUserProfile as _CreateUserProfile } from './helpers/userCreateHelpers.js';

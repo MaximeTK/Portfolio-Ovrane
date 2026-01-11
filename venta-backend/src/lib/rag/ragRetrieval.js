@@ -152,7 +152,24 @@ function logChunksDetails(chunks, query, averageScore) {
  * Construit le contexte RAG pour le prompt
  */
 export async function buildRAGContext(query, topK = null) {
-  const chunks = await retrieveRelevantChunks(query, topK);
+  let chunks = await retrieveRelevantChunks(query, topK);
+
+  // Déduplication à la source: on ne doit jamais avoir plusieurs fois le même chunk
+  // (ex: "Pico [1/2]" répété). Clé: source + chunkIndex (fallback lexical / index peuvent dupliquer).
+  if (Array.isArray(chunks) && chunks.length > 1) {
+    const byKey = new Map();
+    for (const c of chunks) {
+      const source = String(c?.source ?? '');
+      const idx = Number.isFinite(c?.chunkIndex) ? c.chunkIndex : String(c?.chunkIndex ?? '');
+      const key = `${source}::${idx}`;
+      const prev = byKey.get(key);
+      // Garder le meilleur score si doublon
+      if (!prev || (c?.score ?? 0) > (prev?.score ?? 0)) {
+        byKey.set(key, c);
+      }
+    }
+    chunks = Array.from(byKey.values());
+  }
   
   if (chunks.length === 0) {
     console.log('📭 [RAG-SYSTEM] Aucun chunk pertinent trouvé');

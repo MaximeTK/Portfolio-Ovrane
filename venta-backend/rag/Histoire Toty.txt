@@ -1,6 +1,6 @@
 Toty, un chien bringé au regard sérieux, avait une seule passion: la balle bleue nommée Pypo. Pypo roulait toujours un peu plus loin que prévu, comme si elle décidait elle-même de l’entraînement. Dans le parc, au lever du soleil, Toty posait la balle entre ses pattes et attendait le signal du vent.
 
-/ShowPicture Pico Logo.png , Un matin, Pypo s’échappa pour de bon. Une pente, puis une grille entrouverte, puis la rue. Toty suivit la trajectoire, truffe basse, oreilles en radar. La balle rebondit sur un trottoir, glissa sous un camion à l’arrêt, ressortit par miracle, et finit sa course dans la cour d’un atelier de réparation de vélos.
+Appelle uiShowPicture({ filename: "Pico Logo.png" }). Un matin, Pypo s’échappa pour de bon. Une pente, puis une grille entrouverte, puis la rue. Toty suivit la trajectoire, truffe basse, oreilles en radar. La balle rebondit sur un trottoir, glissa sous un camion à l’arrêt, ressortit par miracle, et finit sa course dans la cour d’un atelier de réparation de vélos.
 
 Le mécanicien leva la tête. Toty s’assit, poli, comme s’il présentait ses papiers. L’homme rendit la balle. Pypo avait une trace de graisse en anneau, comme une médaille. Toty remua la queue une fois, puis repartit, balle entre les dents.
 

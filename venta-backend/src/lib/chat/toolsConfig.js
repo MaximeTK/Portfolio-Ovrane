@@ -24,6 +24,42 @@ export const tools = [
   createNoParamTool(TOOL_DESCRIPTIONS.getAvailableColors),
   {
     type: "function",
+    name: TOOL_DESCRIPTIONS.uiShowPicture.name,
+    description: TOOL_DESCRIPTIONS.uiShowPicture.description,
+    parameters: {
+      type: "object",
+      properties: {
+        filename: { type: "string", description: "Nom exact du fichier image (asset) à afficher, ex: \"Pico Logo.png\"" }
+      },
+      required: ["filename"]
+    }
+  },
+  {
+    type: "function",
+    name: TOOL_DESCRIPTIONS.uiSetBackground.name,
+    description: TOOL_DESCRIPTIONS.uiSetBackground.description,
+    parameters: {
+      type: "object",
+      properties: {
+        paletteId: { type: "string", description: "ID exact de la palette, ex: \"ocean\", \"purple\", \"default\"" }
+      },
+      required: ["paletteId"]
+    }
+  },
+  {
+    type: "function",
+    name: TOOL_DESCRIPTIONS.uiOpenWindow.name,
+    description: TOOL_DESCRIPTIONS.uiOpenWindow.description,
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Titre de la fenêtre à ouvrir" }
+      },
+      required: ["title"]
+    }
+  },
+  {
+    type: "function",
     name: TOOL_DESCRIPTIONS.searchKnowledgeBase.name,
     description: TOOL_DESCRIPTIONS.searchKnowledgeBase.description,
     parameters: {

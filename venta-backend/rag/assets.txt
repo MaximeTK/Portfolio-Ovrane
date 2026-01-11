@@ -3,16 +3,16 @@ LISTE COMPLÈTE DES ASSETS DISPONIBLES
 ⚠️ IMPORTANT : Cette liste contient TOUS les fichiers visuels que tu peux afficher.
 
 RÈGLES D'UTILISATION
-1. Utilise TOUJOURS la commande /ShowPicture suivie du nom exact du fichier (Ex : /ShowPicture exemple.png)
+1. Déclenche TOUJOURS l'affichage via le tool uiShowPicture({ filename }) avec un nom exact d'asset
 2. Le nom du fichier doit être EXACTEMENT comme indiqué (sensible à la casse)
 3. Ne suggère QUE des fichiers qui existent dans cette liste
 4. Pour les animations Lottie, utilise le fichier .json
 
 EXEMPLES D'USAGE
 Si l'utilisateur demande :
-- "Montre-moi Pico" → /ShowPicture Pico Interface.png
-- "Comment Pico ressemble ?" → /ShowPicture Pico Interface.png
-- "Le logo de Pico" → /ShowPicture Pico Logo.png
+- "Montre-moi Pico" → uiShowPicture({ filename: "Pico Interface.png" })
+- "Comment Pico ressemble ?" → uiShowPicture({ filename: "Pico Interface.png" })
+- "Le logo de Pico" → uiShowPicture({ filename: "Pico Logo.png" })
 
 IMAGES :
 
@@ -20,10 +20,10 @@ Pico Interface.png
 Description : Capture d'écran de l'interface utilisateur de Pico
 Utilisation : Pour montrer à quoi ressemble Pico, son interface, son design
 Mots-clés : interface, UI, design, apparence de Pico, écran
-Commande : /ShowPicture Pico Interface.png
+Tool : uiShowPicture({ filename: "Pico Interface.png" })
 
 Pico Logo.png
 Description : Logo officiel de Pico l'assistant IA
 Utilisation : Pour montrer le logo, l'identité visuelle de Pico
 Mots-clés : logo, marque, identité, branding
-Commande : /ShowPicture Pico Logo.png
+Tool : uiShowPicture({ filename: "Pico Logo.png" })

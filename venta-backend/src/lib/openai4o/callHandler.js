@@ -37,13 +37,13 @@ async function processToolCalls(responseMessage, messages, calledFunctions) {
 
 function generateDefaultResponse(calledFunctions) {
   if (calledFunctions.has('getAvailableColors')) {
-    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut avec SetBackground`);
-    return "Je change le fond en océan ! /SetBackground ocean";
+    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut (UI via tools)`);
+    return "D'accord — je m'en occupe.";
   }
 
   if (calledFunctions.has('getAvailableAssets')) {
-    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut avec ShowPicture`);
-    return "Voici une image d'exemple pour toi ! /ShowPicture exemple.png";
+    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut (UI via tools)`);
+    return "D'accord — je m'en occupe.";
   }
 
   return null;
@@ -56,21 +56,10 @@ export async function callOpenAI(openai, messages, tools) {
   
   while (totalFunctionCallCount < maxFunctionCalls) {
     const chatMessages = convertMessagesToChatFormat(messages);
-    
-    const shouldRemoveTools = totalFunctionCallCount > 0 && (
-      calledFunctions.has('getAvailableColors') ||
-      calledFunctions.has('getAvailableAssets')
-    );
-    
-    const effectiveTools = shouldRemoveTools ? null : tools;
-    const apiParams = buildAPIParams(chatMessages, effectiveTools, totalFunctionCallCount, messages.length);
+    const apiParams = buildAPIParams(chatMessages, tools, totalFunctionCallCount, messages.length);
     
     if (messages.length > 2) {
       console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Messages dans la conversation: ${messages.length} (system + user + ${messages.length - 2} interaction(s))`);
-      
-      if (shouldRemoveTools) {
-        console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Tools désactivés pour forcer une réponse textuelle`);
-      }
       
       if (totalFunctionCallCount > 0) {
         const lastMessages = chatMessages.slice(-3);

@@ -76,8 +76,8 @@ export function getAvailableAssets() {
     const result = {
       success: true,
       assets: assetsList,
-      instructions: "Utilise /ShowPicture suivi du nom exact du fichier (sensible à la casse). Exemples: /ShowPicture exemple.png ou /ShowPicture Pico Interface.png",
-      message: `${assetsList.length} assets disponibles. Pour afficher une image, utilise la commande /ShowPicture suivie du nom du fichier.`
+      instructions: "Déclenche l'affichage via uiShowPicture({ filename }) avec un nom EXACT issu de la liste (sensible à la casse).",
+      message: `${assetsList.length} assets disponibles. Pour afficher une image, appelle uiShowPicture({ filename }) avec le nom exact.`
     };
     console.log(`✅ [FUNCTION END] getAvailableAssets | Retour: success=true, ${assetsList.length} assets\n`);
     return result;
@@ -100,29 +100,21 @@ export function getRulePicture() {
     
     const instructions = `⚠️ RÈGLES D'AFFICHAGE D'IMAGES ⚠️
 
-Tu PEUX afficher des images avec la commande /ShowPicture suivie du nom de l'image.
+Tu PEUX afficher des images via un TOOL: uiShowPicture({ filename }).
 
 PROCESSUS À SUIVRE:
 1. Si tu n'as pas encore appelé getAvailableAssets(), appelle-le MAINTENANT pour obtenir la liste des images disponibles.
-2. Une fois que tu as la liste des assets, génère ta réponse avec la commande /ShowPicture suivie du nom EXACT du fichier.
-3. Si l'image demandée n'existe pas dans la liste, dis-le clairement et ne génère PAS de commande /ShowPicture.
+2. Choisis un filename EXACT depuis la liste (casse, espaces, extensions).
+3. Déclenche l'affichage avec uiShowPicture({ filename }).
+4. Si l'image demandée n'existe pas dans la liste, dis-le clairement et n'appelle PAS uiShowPicture.
 
 RÈGLES IMPORTANTES:
 - N'appelle getAvailableAssets() qu'UNE SEULE FOIS maximum par conversation.
-- Utilise TOUJOURS le nom exact du fichier (sensible à la casse).
-- La commande /ShowPicture doit être dans ta réponse finale à l'utilisateur.
+- N'écris JAMAIS de slash-commandes dans le texte.
 
 MULTIPLE IMAGES:
-- Tu peux afficher plusieurs images dans UN SEUL message en ajoutant plusieurs commandes à la fin de ton texte.
-- NE FAIS PAS UNE PHRASE PAR IMAGE. Fais une phrase d'introduction globale, puis liste les commandes.
-- Exemple CORRECT: "Voici les images que tu as demandées : les interfaces et le logo. /ShowPicture interface.png /ShowPicture logo.png"
-- Exemple INCORRECT: "Voici l'interface. /ShowPicture interface.png. Et voici le logo. /ShowPicture logo.png"
-
-EXEMPLES:
-✅ BON: "Regarde cette image ! /ShowPicture Pico Interface.png"
-✅ BON: "Voici le logo Pico et son interface. /ShowPicture Pico Logo.png /ShowPicture Pico Interface.png"
-❌ MAUVAIS: "Voici le logo. /ShowPicture Pico Logo.png. Et voici l'interface. /ShowPicture Pico Interface.png" (Trop verbeux)
-❌ MAUVAIS: Utiliser /ShowPicture sans avoir vérifié que l'image existe`;
+- Tu peux appeler uiShowPicture plusieurs fois si tu veux afficher plusieurs images.
+- Fais une phrase d'introduction globale, puis déclenche les affichages via tools (pas dans le texte).`;
 
     console.log(`${EMOJIS.success} ${CONSOLE_LOGS.functionCall} Instructions d'affichage d'images fournies`);
     

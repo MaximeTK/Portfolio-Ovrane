@@ -7,8 +7,6 @@ const CommandSchema = new mongoose.Schema({
   // Format actuel (frontend) : { command, parameter }
   command: { type: String },
   parameter: { type: String },
-  // Version "commande complète" (ex: "/SetBackground ocean")
-  raw: { type: String },
   // Compat legacy / outils (si jamais utilisé)
   args: mongoose.Schema.Types.Mixed,
 }, { _id: false, strict: false });
@@ -25,8 +23,6 @@ const ConversationSchema = new mongoose.Schema({
   
   // Commandes utilisées par l'IA (si présentes) - conserver TOUTES les commandes d'un message
   commands: { type: [CommandSchema], default: [] },
-  // Variante pratique: commandes complètes en strings (ex: ["/SetBackground ocean", "/ShowPicture Pico.png"])
-  commandsFull: { type: [String], default: [] },
 }, { _id: false, strict: false });
 
 const UserSchema = new mongoose.Schema({

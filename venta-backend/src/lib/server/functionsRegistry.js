@@ -7,6 +7,10 @@ import {
   getRulePicture, 
   getAvailableAssets, 
   getAvailableColors, 
+  uiShowPicture,
+  uiSetBackground,
+  uiShowCode,
+  uiOpenWindow,
   checkUser, 
   CreateUserProfile, 
   UpdateUserProfile, 
@@ -21,6 +25,10 @@ export function registerAllFunctions() {
   registerFunction('getRulePicture', getRulePicture);
   registerFunction('getAvailableAssets', getAvailableAssets);
   registerFunction('getAvailableColors', getAvailableColors);
+  registerFunction('uiShowPicture', uiShowPicture);
+  registerFunction('uiSetBackground', uiSetBackground);
+  registerFunction('uiShowCode', uiShowCode);
+  registerFunction('uiOpenWindow', uiOpenWindow);
   registerFunction('checkUser', checkUser);
   registerFunction('CreateUserProfile', CreateUserProfile);
   registerFunction('UpdateUserProfile', UpdateUserProfile);

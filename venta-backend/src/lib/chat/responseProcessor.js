@@ -4,7 +4,6 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { extractCommands } from '../serverHelpers.js';
 import { addConversation, saveUserPreference } from '../userMemory.js';
 import { getRequestContext, CreateUserProfile } from '../ragHelpers.js';
 import { CONSOLE_LOGS, EMOJIS, MISC_MESSAGES } from '../messages.js';
@@ -90,17 +89,30 @@ function extractPaletteIdFromText(text) {
   return null;
 }
 
-function isBackgroundIntent(text) {
+function isBackgroundTopic(text) {
   const t = stripDiacritics(String(text ?? '').toLowerCase());
   return (
-    t.includes('/setbackground') ||
     t.includes('background') ||
     t.includes('arriere-plan') ||
     t.includes('arrière-plan') ||
     t.includes('fond') ||
+    t.includes('palette') ||
     t.includes('theme') ||
     t.includes('thème')
   );
+}
+
+function isBackgroundChangeIntent(text) {
+  const t = stripDiacritics(String(text ?? '').toLowerCase());
+  if (!isBackgroundTopic(t)) return false;
+
+  // Demande d'information / liste → ne doit jamais déclencher un changement automatique.
+  if (/\b(quel|quels|quelle|quelles|liste|disponible|disponibles|possible|possibles|montre|affiche|voir)\b/i.test(t)) {
+    return false;
+  }
+
+  // Intention explicite de changement.
+  return /\b(change|changer|passe|passer|mets|met|mettez|mettre|applique|appliquer|active|activer|set|switch)\b/i.test(t);
 }
 
 function getLastBackgroundCommand(commands) {
@@ -170,49 +182,16 @@ async function handleBackendCommands(commands) {
   }
 }
 
-async function handlePendingUserCreationFallback() {
-  const context = getRequestContext();
-  const pending = context?.pendingUserCreation;
-
-  if (!pending || !pending.name) {
-    return;
-  }
-
-  const name = String(pending.name).trim();
-  if (!name) {
-    context.pendingUserCreation = null;
-    return;
-  }
-
-  const currentProfile = context.userProfile;
-  const alreadyMatches = currentProfile?.name
-    ? currentProfile.name.toLowerCase().trim() === name.toLowerCase()
-    : false;
-
-  if (alreadyMatches && !currentProfile?.isTemporary) {
-    context.pendingUserCreation = null;
-    return;
-  }
-
-  const reason = pending.reason || 'création automatique (fallback)';
-
-  try {
-    await CreateUserProfile({ name, reason });
-  } catch (error) {
-    console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} Erreur fallback création profil:`, error.message);
-  } finally {
-    if (context) {
-      context.pendingUserCreation = null;
-    }
-  }
-}
-
 /**
  * Traite la réponse générée et génère le TTS en parallèle
  */
 export async function processResponse(response, userId, userProfile, prompt, isEphemeral = false) {
   const { rawResponse, ragCoverage, ragSources } = response;
-  let { commands, cleanResponse } = extractCommands(rawResponse);
+  const ctx = getRequestContext();
+  const uiCommands = Array.isArray(ctx?.uiCommands) ? ctx.uiCommands : [];
+  let commands = [...uiCommands];
+  // Plus de parsing de commandes dans le texte: on garde la réponse telle quelle.
+  let cleanResponse = String(rawResponse ?? '').trim();
 
   // Nettoyage proactif des images Markdown si une commande ShowPicture est présente
   // Cela évite le double affichage (TextWindow + ImageWindow) dans le Dashboard
@@ -241,24 +220,38 @@ export async function processResponse(response, userId, userProfile, prompt, isE
   const previousUserId = userId;
 
   await handleBackendCommands(commands);
-  await handlePendingUserCreationFallback();
+  // IMPORTANT: on ne crée jamais de profil utilisateur en "fallback" automatique.
+  // La création/switch doit venir d'une intention explicite et d'une commande tool dédiée.
   
   let finalReply = cleanResponse;
   if ((!finalReply || finalReply.trim() === '') && commands.length > 0) {
     finalReply = MISC_MESSAGES.defaultResponse;
   }
 
-  // Fallback robustesse: si l'utilisateur demande un changement de fond, mais que l'IA a oublié la commande,
-  // on injecte automatiquement /SetBackground <id> quand l'ID est identifiable.
+  // Robustesse: si l'utilisateur demande EXPLICITEMENT un changement de fond mais qu'aucun tool UI n'a été appelé,
+  // on injecte une commande SetBackground quand l'ID est identifiable.
   const hasBackgroundCommand = Array.isArray(commands)
     && commands.some((c) => String(c?.command || '').toLowerCase() === 'setbackground');
-  if (!hasBackgroundCommand && isBackgroundIntent(prompt)) {
-    const paletteId = extractPaletteIdFromText(prompt) || extractPaletteIdFromText(finalReply);
+  if (!hasBackgroundCommand && isBackgroundChangeIntent(prompt)) {
+    // IMPORTANT: on n'extrait JAMAIS depuis la réponse IA (finalReply), sinon une simple liste de thèmes
+    // déclenche un changement non demandé.
+    const paletteId = extractPaletteIdFromText(prompt);
     if (paletteId) {
       commands = Array.isArray(commands) ? commands : [];
       commands.push({ command: 'SetBackground', parameter: paletteId });
       console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Injection commande SetBackground: ${paletteId}`);
     }
+  }
+
+  // Nettoyage: éviter les doublons stricts (même command+parameter)
+  if (Array.isArray(commands) && commands.length > 1) {
+    const seen = new Set();
+    commands = commands.filter((c) => {
+      const key = `${String(c?.command || '').toLowerCase().trim()}|${String(c?.parameter || '').trim()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
   
   // Vérification post-commandes
@@ -311,16 +304,12 @@ export async function processResponse(response, userId, userProfile, prompt, isE
           .map((c) => {
             const cmd = String(c.command || '').trim();
             const param = String(c.parameter || '').trim();
-            const raw = param ? `/${cmd} ${param}` : `/${cmd}`;
-            return { command: cmd, parameter: param, raw };
+            return { command: cmd, parameter: param };
           })
       : [];
 
-    const commandsFull = safeCommands.map((c) => c.raw).filter(Boolean);
-
     addConversation(userId, prompt, finalReply, {
       commands: safeCommands,
-      commandsFull,
     });
   }
   

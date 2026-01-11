@@ -1,1 +1,1 @@
-le test 44 est un test visant a ecrire des commandes comme /ShowPicture Pico Logo.png dans les textes
+le test 44 est un test visant à déclencher des actions UI via des tools, ex: uiShowPicture({ filename: "Pico Logo.png" })

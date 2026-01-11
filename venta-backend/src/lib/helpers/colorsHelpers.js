@@ -78,8 +78,8 @@ export function getAvailableColors() {
     const result = {
       success: true,
       colors: colorsList,
-      instructions: "Utilise /SetBackground suivi de l'ID de la palette. Exemples: /SetBackground ocean ou /SetBackground sunset",
-      message: `${colorsList.length} palettes de couleurs disponibles. Pour changer le fond, utilise la commande /SetBackground suivie de l'ID de la palette.`
+      instructions: "Retourne la liste. Ne déclenche un changement de fond via uiSetBackground({ paletteId }) QUE si l'utilisateur le demande explicitement (ex: \"change le fond en ocean\").",
+      message: `${colorsList.length} palettes de couleurs disponibles. Si l'utilisateur souhaite CHANGER le fond, appelle uiSetBackground({ paletteId }) avec l'ID exact. Sinon, ne change rien.`
     };
     console.log(`✅ [FUNCTION END] getAvailableColors | Retour: success=true, ${colorsList.length} palettes\n`);
     return result;

@@ -18,7 +18,9 @@ export async function processUserInfo(req, currentUserId) {
   
   const userProfile = await getUserProfile(userId, ip);
   
-  setRequestContext({ userId: userId, userProfile: userProfile, ip: ip });
+  // IMPORTANT: uiCommands est rempli par les tools ui* pendant l'appel OpenAI.
+  // On l'initialise à chaque requête pour éviter toute fuite inter-requêtes.
+  setRequestContext({ userId: userId, userProfile: userProfile, ip: ip, uiCommands: [] });
   
   return { userId, userProfile };
 }

@@ -43,8 +43,8 @@ async function processToolCalls(responseMessage, messages, calledFunctions) {
  */
 function generateDefaultResponse(calledFunctions) {
   if (calledFunctions.has('getAvailableAssets')) {
-    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut avec ShowPicture`);
-    return "Voici une image d'exemple pour toi ! /ShowPicture exemple.png";
+    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut (UI via tools)`);
+    return "D'accord — je m'en occupe.";
   }
   return null;
 }

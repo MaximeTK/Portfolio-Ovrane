@@ -21,14 +21,6 @@ function normalizeForMatch(text) {
     .trim();
 }
 
-function isCommandsIntent(prompt) {
-  const p = normalizeForMatch(prompt);
-  if (!p) return false;
-  // présence explicite de commandes ou question sur les commandes
-  if (p.includes('/')) return true;
-  return /\b(commande|commandes|showpicture|showimage|setbackground|openwindow|showcode)\b/i.test(prompt);
-}
-
 function isRagLinkedToPrompt(prompt, sources) {
   const p = normalizeForMatch(prompt);
   if (!p) return false;
@@ -64,12 +56,10 @@ export async function buildRAGContextForPrompt(prompt, ragInitialized) {
 
     // Filtrage des sources RAG "méta" (assets/couleurs/instructions) qui ne doivent JAMAIS parasiter
     // une requête générale (ex: "exemple de code en C").
-    const commandsIntent = isCommandsIntent(prompt);
     const filteredChunks = (ragResult.chunks || []).filter((c) => {
       const source = String(c?.source || '');
       const sourceNorm = normalizeForMatch(source);
       if (ALWAYS_EXCLUDED_SOURCES.has(sourceNorm)) return false;
-      if (sourceNorm === 'commandes' && !commandsIntent) return false;
       return true;
     });
 

@@ -16,12 +16,15 @@ function clearPendingCreation(context) {
   }
 }
 
-function setPendingCreation(context, name) {
-  if (!context || !name) return;
-  context.pendingUserCreation = {
-    name,
-    reason: 'création automatique (checkUser)'
-  };
+function looksLikeAssetOrFileName(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return false;
+  // URLs/paths → pas un nom humain
+  if (/^https?:\/\//i.test(raw)) return true;
+  if (/[\\/]/.test(raw)) return true;
+  // Extensions courantes → asset/fichier
+  if (/\.(png|jpe?g|gif|webp|svg|mp3|wav|ogg|mp4|webm|pdf|txt)\b/i.test(raw)) return true;
+  return false;
 }
 
 /**
@@ -35,11 +38,11 @@ function namesMatch(name1, name2) {
  * Génère le message de réponse quand l'utilisateur n'existe pas
  */
 function buildUserNotFoundMessage(name, currentProfile) {
-  const temporaryMessage = currentProfile?.isTemporary 
-    ? 'Le profil temporaire actuel sera converti en permanent.' 
-    : `Un nouveau profil "${name}" sera créé, et le profil "${currentProfile?.name}" restera disponible.`;
-  
-  return `Le nom "${name}" n'existe pas en base de données. Tu dois appeler CreateUserProfile pour créer ce profil. ${temporaryMessage}`;
+  // IMPORTANT: ne jamais pousser à créer automatiquement un profil (risque de confusion assets->user).
+  const hint = currentProfile?.isTemporary
+    ? 'Si (et seulement si) l’utilisateur exprime clairement que c’est son nom, tu peux convertir le profil temporaire.'
+    : 'Si (et seulement si) l’utilisateur exprime clairement que c’est son nom, tu peux créer un nouveau profil.';
+  return `Le nom "${name}" n'existe pas en base de données. ${hint}`;
 }
 
 /**
@@ -57,6 +60,22 @@ export async function checkUser({ name }, currentRequestContext) {
     }
 
     console.log(`${EMOJIS.search} ${CONSOLE_LOGS.functionCall} Vérification du nom: "${name}"`);
+    // Source du bug: l'IA passait des noms d'assets ("Pico Logo.png") à checkUser → création de profils.
+    // Correctif: on refuse ces valeurs et on n'arme JAMAIS une création de profil pour ça.
+    if (looksLikeAssetOrFileName(name)) {
+      clearPendingCreation(currentRequestContext);
+      return {
+        success: true,
+        exists: null,
+        isCurrentUser: false,
+        currentUserName: currentRequestContext.userProfile?.name || null,
+        isTemporaryProfile: currentRequestContext.userProfile?.isTemporary || false,
+        ignored: true,
+        message:
+          `Paramètre ignoré: "${name}" ressemble à un nom de fichier/asset. ` +
+          `Ne pas appeler CreateUserProfile. Pour afficher une image, utilise uiShowPicture({ filename }).`,
+      };
+    }
     
     const { searchUserByName } = await import('../user/profileManagement.js');
     const existingUser = await searchUserByName(name);
@@ -67,14 +86,15 @@ export async function checkUser({ name }, currentRequestContext) {
     
     if (!existingUser) {
       console.log(`   ${EMOJIS.info} Nom "${name}" non trouvé en base de données`);
-      setPendingCreation(currentRequestContext, name);
       return {
         success: true,
         exists: false,
         isCurrentUser: false,
         currentUserName: currentProfile?.name || null,
         isTemporaryProfile: currentProfile?.isTemporary || false,
-        message: buildUserNotFoundMessage(name, currentProfile)
+        // IMPORTANT: checkUser ne déclenche jamais de création automatique.
+        // La création doit être faite uniquement quand l'utilisateur exprime clairement un intent "profil".
+        message: `Le nom "${name}" n'existe pas en base de données. Si (et seulement si) l'utilisateur exprime clairement que c'est son nom/profil, alors appelle CreateUserProfile({ name, reason }).`
       };
     }
     

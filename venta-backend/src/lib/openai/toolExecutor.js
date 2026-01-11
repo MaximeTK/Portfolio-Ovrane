@@ -70,11 +70,10 @@ function formatFunctionResponse(functionName, functionResponse) {
 ${functionResponse.assets.join('\n')}
 
 🎯 INSTRUCTIONS IMPORTANTES:
-- Tu dois MAINTENANT générer ta réponse finale à l'utilisateur
-- Utilise la commande /ShowPicture suivie du nom EXACT du fichier
-- Exemple: "Voici une image d'exemple ! /ShowPicture exemple.png"
-- N'APPELLE PLUS getAvailableAssets() - tu as déjà toutes les informations nécessaires
-- GÉNÈRE TA RÉPONSE MAINTENANT avec /ShowPicture`;
+- Tu dois déclencher l'affichage d'image via un TOOL: uiShowPicture({ filename })
+- filename doit être un NOM EXACT issu de la liste ci-dessus (casse/espaces/extensions)
+- N'écris PAS de slash-commandes dans le texte
+- N'APPELLE PLUS getAvailableAssets() - tu as déjà toutes les informations nécessaires`;
   }
   
   if (functionName === 'getAvailableColors' && functionResponse.success) {
@@ -82,11 +81,10 @@ ${functionResponse.assets.join('\n')}
 ${functionResponse.colors.join('\n')}
 
 🎯 INSTRUCTIONS IMPORTANTES:
-- Tu dois MAINTENANT générer ta réponse finale à l'utilisateur
-- Utilise la commande /SetBackground suivie de l'ID EXACT de la palette
-- Exemple: "Je change le fond en océan ! /SetBackground ocean"
-- N'APPELLE PLUS getAvailableColors() - tu as déjà toutes les informations nécessaires
-- GÉNÈRE TA RÉPONSE MAINTENANT avec /SetBackground`;
+- Ne déclenche un changement de fond via un TOOL (uiSetBackground({ paletteId })) QUE si l'utilisateur le demande explicitement
+- paletteId doit être un ID EXACT issu de la liste ci-dessus
+- N'écris PAS de slash-commandes dans le texte
+- N'APPELLE PLUS getAvailableColors() - tu as déjà toutes les informations nécessaires`;
   }
   
   if (functionName === 'searchKnowledgeBase' && functionResponse.success) {

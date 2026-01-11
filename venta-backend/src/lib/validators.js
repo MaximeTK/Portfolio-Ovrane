@@ -67,7 +67,7 @@ export function escapeHtmlAttribute(value) {
 }
 
 /**
- * Normalise un paramètre /ShowPicture en nom de fichier (basename) et retire le point final.
+ * Normalise un paramètre d'asset image en nom de fichier (basename) et retire le point final.
  * @param {unknown} param
  * @returns {string}
  */
