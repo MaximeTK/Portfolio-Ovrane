@@ -233,8 +233,8 @@ export const MISC_MESSAGES = {
   defaultResponse: 'Voici ce que tu as demandé :',
 
   // Messages d'accueil standardisés (TTS + UI)
-  welcomeNew: (name) => `Bienvenue ${name}, enchantée de faire votre connaissance !`,
-  welcomeBack: (name) => `Ravie de vous revoir ${name}, en quoi puis-je vous aidez ?`,
+  welcomeNew: (name) => `Bienvenue ${name}, enchantée de faire votre connaissance. En quoi puis-je vous aider ?`,
+  welcomeBack: (name) => `Ravie de vous revoir ${name}, en quoi puis-je vous aider ?`,
   
   // RAG
   ragNoInformation: 'Aucune information pertinente trouvée dans la base de connaissances.',

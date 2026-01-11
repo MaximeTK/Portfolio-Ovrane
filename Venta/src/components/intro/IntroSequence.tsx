@@ -13,7 +13,7 @@ interface IntroSequenceProps {
   overlayOverrideText?: string | null;
 }
 
-export const IntroSequence = ({ send, currentTTS: _currentTTS, messages: _messages, currentUserProfile, currentUserId: _currentUserId, overlayOverrideText }: IntroSequenceProps) => {
+export const IntroSequence = ({ send, currentTTS: _currentTTS, messages, currentUserProfile: _currentUserProfile, currentUserId: _currentUserId, overlayOverrideText }: IntroSequenceProps) => {
   const { appState, setAppState, setUserName, userName, viewMode, isAppLocked, lockedMessage } = useUIStore();
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
   
@@ -69,13 +69,20 @@ export const IntroSequence = ({ send, currentTTS: _currentTTS, messages: _messag
     if (isAppLocked && lockedMessage) {
       return lockedMessage;
     }
-    const safeName = String(userName || '').trim();
-    // Si on a l'info que c'est un nouvel utilisateur
-    if (currentUserProfile?.isNewUser) {
-      return `Bienvenue ${safeName}, en quoi puis-je vous aidez ?`;
+
+    // IMPORTANT: le message de bienvenue est généré côté backend (source unique),
+    // et injecté dans le flux frontend via `useChatController`.
+    // Ici, on se contente de ré-afficher le dernier message assistant reçu.
+    const lastAssistantMessage = [...(messages || [])]
+      .reverse()
+      .find((m) => m.role === 'assistant' && String(m.content || '').trim().length > 0);
+
+    if (lastAssistantMessage) {
+      return lastAssistantMessage.content;
     }
-    // Par défaut (ou si utilisateur existant)
-    return `Ravie de vous revoir ${safeName}, en quoi puis-je vous aidez ?`;
+
+    // Pas de fallback texte ici : le backend est la source unique des messages d'accueil.
+    return '';
   };
 
   return (

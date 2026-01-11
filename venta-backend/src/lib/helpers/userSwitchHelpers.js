@@ -1,7 +1,7 @@
 /**
  * Changement de profil utilisateur - Version MongoDB
  */
-import { CONSOLE_LOGS, EMOJIS } from '../messages.js';
+import { CONSOLE_LOGS, EMOJIS, MISC_MESSAGES } from '../messages.js';
 import { User } from '../../models/User.js';
 import { searchUserByName } from '../user/profileManagement.js';
 
@@ -78,10 +78,11 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
     console.log(`   ${EMOJIS.info} Profil précédent: ${previousUserName}`);
 
     // Message d'instruction stricte pour l'IA
+    const exactWelcome = MISC_MESSAGES.welcomeBack(name);
     const systemInstruction = targetProfile.visitCount > 1 
       ? `✅ Changement effectué. L'utilisateur est un habitué (${targetProfile.visitCount} visites).
 IMPORTANT : Ne dis RIEN sur le changement de profil.
-Ta réponse doit être EXACTEMENT et UNIQUEMENT : "Bienvenue ${name}, ravie de vous revoir !"`
+Ta réponse doit être EXACTEMENT et UNIQUEMENT : "${exactWelcome}"`
       : `✅ Création du profil effectuée. C'est un nouveau profil nommé "${name}". Accueille-le chaleureusement, présente toi et ne parle JAMAIS de la création du profil.`;
 
     return {
