@@ -94,7 +94,7 @@ export async function checkUser({ name }, currentRequestContext) {
         isTemporaryProfile: currentProfile?.isTemporary || false,
         // IMPORTANT: checkUser ne déclenche jamais de création automatique.
         // La création doit être faite uniquement quand l'utilisateur exprime clairement un intent "profil".
-        message: `Le nom "${name}" n'existe pas en base de données. Si (et seulement si) l'utilisateur exprime clairement que c'est son nom/profil, alors appelle CreateUserProfile({ name, reason }).`
+        message: `Le nom "${name}" n'existe pas. ATTENTION: Si l'utilisateur parlait d'une COULEUR, d'un THÈME ou d'une APPARENCE (ex: "en rose", "mode sombre"), N'APPELLE PAS CreateUserProfile mais utilise getAvailableColors() ou répond simplement. Si (et seulement si) c'est explicitement un nouveau NOM de profil (ex: "Je m'appelle ${name}"), appelle CreateUserProfile.`
       };
     }
     

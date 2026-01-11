@@ -71,7 +71,7 @@ export const SYSTEM_PROMPTS = {
   // Instructions quand aucun contexte RAG n'est trouvé
   ragNoCoverage: `NOTE: Aucun contexte pertinent trouvé pour cette requête.
       - Si la question demande un visuel (image/logo/photo/interface), utilise getRulePicture puis getAvailableAssets, puis déclenche l'affichage avec uiShowPicture().
-      - Si la question concerne le portfolio/projets/histoires, utilise searchKnowledgeBase pour trouver les détails.
+      - Si la question concerne le portfolio/projets/histoires, réponds avec les informations disponibles (le RAG est déjà injecté côté backend si pertinent).
       - Sinon, répond normalement sans appeler d'outil inutile.`,
 };
 
@@ -300,9 +300,9 @@ export const TOOL_DESCRIPTIONS = {
   
   getAvailableColors: {
     name: 'getAvailableColors',
-    description: 'Liste les palettes de couleurs pour changer le fond/couleur/thème. Ensuite, déclenche le changement via uiSetBackground({ paletteId }).',
+    description: 'Liste les palettes de couleurs. PRIORITAIRE sur la gestion utilisateur si l\'utilisateur mentionne une couleur (ex: "en rouge", "rose"), un thème ou demande de changer l\'apparence. Ensuite, déclenche uiSetBackground.',
   },
-  
+
   setAvailableColors: {
     name: 'setAvailableColors',
     description: 'DEPRECATED: ancien tool. Ne pas utiliser.',
@@ -328,20 +328,16 @@ export const TOOL_DESCRIPTIONS = {
     description: 'Ouvre une fenêtre générique dans l\'interface avec un titre. Ne pas écrire de slash-commandes dans le texte.',
   },
   
-  searchKnowledgeBase: {
-    name: 'searchKnowledgeBase',
-    description: 'Recherche dans la base de connaissances RAG (projets, histoires, commandes, etc.). Ne pas utiliser pour les images (utilise getAvailableAssets).',
-    parameterDescription: 'Requête de recherche (ex: "projet Pico", "histoire de Toty")',
-  },
+  // searchKnowledgeBase retiré
   
   checkUser: {
     name: 'checkUser',
-    description: 'CRITIQUE: Appelle CETTE fonction quand l\'utilisateur parle de son NOM/PROFIL (identité). Vérifie si le nom existe en base. NE PAS utiliser pour des noms de fichiers/assets (ex: "*.png"). Retourne: exists, isCurrentUser, isTemporaryProfile. Attends le résultat avant de décider de créer/corriger/changer.',
+    description: 'CRITIQUE: Appelle CETTE fonction quand l\'utilisateur parle de son NOM/PROFIL (identité). Vérifie si le nom existe en base. INTERDIT d\'utiliser pour des couleurs (ex: "en rouge", "rose"), thèmes, ou noms de fichiers/assets. Retourne: exists, isCurrentUser. Attends le résultat avant de décider.',
   },
   
   CreateUserProfile: {
     name: 'CreateUserProfile',
-    description: 'Crée un profil utilisateur. INTERDIT si checkUser n\'a pas été appelé juste avant. Appelle UNIQUEMENT si checkUser retourne exists:false ET si l\'utilisateur exprime clairement que c\'est son nom/profil (jamais pour des assets/fichiers).',
+    description: 'Crée un profil utilisateur. INTERDIT si checkUser n\'a pas été appelé juste avant. Appelle UNIQUEMENT si checkUser retourne exists:false ET si l\'utilisateur exprime CLAIREMENT que c\'est son NOM (pas une couleur/thème/asset).',
   },
   
   UpdateUserProfile: {

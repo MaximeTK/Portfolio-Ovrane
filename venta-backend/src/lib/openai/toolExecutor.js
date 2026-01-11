@@ -18,15 +18,10 @@ export function registerFunction(name, handler) {
  */
 function callFunction(functionName, functionToCall, functionArgs) {
   const noParamFunctions = ['getRulePicture', 'getAvailableAssets', 'getAvailableColors'];
-  const singleParamFunctions = ['searchKnowledgeBase'];
   const userFunctions = ['checkUser', 'CreateUserProfile', 'UpdateUserProfile', 'SwitchUserProfile'];
   
   if (noParamFunctions.includes(functionName)) {
     return functionToCall();
-  }
-  
-  if (singleParamFunctions.includes(functionName)) {
-    return functionToCall(functionArgs.query);
   }
   
   if (userFunctions.includes(functionName)) {
@@ -85,10 +80,6 @@ ${functionResponse.colors.join('\n')}
 - paletteId doit être un ID EXACT issu de la liste ci-dessus
 - N'écris PAS de slash-commandes dans le texte
 - N'APPELLE PLUS getAvailableColors() - tu as déjà toutes les informations nécessaires`;
-  }
-  
-  if (functionName === 'searchKnowledgeBase' && functionResponse.success) {
-    return functionResponse.results || functionResponse.message;
   }
   
   const userFunctions = ['checkUser', 'CreateUserProfile', 'UpdateUserProfile', 'SwitchUserProfile'];

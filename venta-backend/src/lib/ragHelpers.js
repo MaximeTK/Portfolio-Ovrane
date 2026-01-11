@@ -7,7 +7,7 @@
 export { setRequestContext, getRequestContext } from './helpers/contextHelpers.js';
 
 // Recherche
-export { searchKnowledgeBase } from './helpers/searchHelpers.js';
+// searchKnowledgeBase retiré (RAG injecté côté backend, tool supprimé)
 
 // Assets et visuels
 export { getAvailableAssets, getRulePicture } from './helpers/assetsHelpers.js';

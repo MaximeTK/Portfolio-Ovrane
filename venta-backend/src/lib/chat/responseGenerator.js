@@ -15,47 +15,33 @@ function isImageIntent(prompt) {
   const p = normalize(prompt);
   // On évite "affiche" seul (ex: "affiche-moi un exemple de code")
   // Inclut aussi les demandes autour des projets/portfolio (souvent liées à des visuels)
-  return /\b(image|photo|logo|visuel|illustration|screenshot|capture|interface|pico|portfolio|projet|projets)\b/i.test(prompt);
+  return /\b(image|photo|logo|visuels|visuel|illustration|screenshot|capture|interface)\b/i.test(prompt);
 }
 
 function isColorIntent(prompt) {
   const p = normalize(prompt);
-  return /\b(fond|background|arriere-plan|arrière-plan|couleur|palette|themes|thèmes|theme|thème)\b/i.test(prompt);
+  // Inclut les mots clés génériques et toutes les palettes spécifiques (ex: cyberpunk, ocean, rouge...)
+  return /\b(fond|background|arriere-plan|arrière-plan|couleur|palette|themes|thèmes|theme|thème|argenté|gris|noir|doré|jaune|orange|rouge|ecarlate|vert clair|vert_clair|forêt|marée|feuille|aqua|ocean|hopa|gris ciel|gris_ciel|spectre|mauve|rose|cyberpunk|melon|goyavier|marron|vin)\b/i.test(prompt);
 }
 
-function isColorListIntent(prompt) {
+function isUserIntent(prompt) {
   const p = normalize(prompt);
-  // Demande d'énumération / d'information: ne doit PAS déclencher un changement.
-  return /\b(quels?|quelle?s?|liste|listes|disponible?s?|possible?s?|tous|toutes|montre|affiche|voir)\b/i.test(p);
-}
-
-function isColorChangeIntent(prompt) {
-  const p = normalize(prompt);
-  // Intention explicite de changement: déclenchement autorisé.
-  return /\b(change|changer|passe|passer|mets|met|mettez|mettre|applique|appliquer|active|activer|set|switch)\b/i.test(p);
-}
-
-function isCodeIntent(prompt) {
-  const p = normalize(prompt);
-  return /\b(code|snippet|exemple\s+de\s+code|montre\s+du\s+code|montre-moi\s+du\s+code|impl[eé]mentation)\b/i.test(p);
-}
-
-function isWindowIntent(prompt) {
-  const p = normalize(prompt);
-  return /\b(fenetre|fenêtre|window|ouvre\s+une\s+fen[eê]tre|openwindow)\b/i.test(p);
+  return /\b(nom|prénom|prenom|pseudo|profil|user|utilisateur|identit|appelle|m'appelle|suis|moi)\b/i.test(p);
 }
 
 function filterToolsForPrompt(prompt) {
   const allow = new Set();
 
-  // Tools "utilisateur" : toujours (ils sont nécessaires au système de profils)
-  allow.add('checkUser');
-  allow.add('CreateUserProfile');
-  allow.add('UpdateUserProfile');
-  allow.add('SwitchUserProfile');
+  if (isUserIntent(prompt)) {
+    allow.add('checkUser');
+    allow.add('CreateUserProfile');
+    allow.add('UpdateUserProfile');
+    allow.add('SwitchUserProfile');
+  }
 
-  // RAG tool : utile si l'utilisateur demande un projet/histoire, mais safe à garder
-  allow.add('searchKnowledgeBase');
+  // IMPORTANT: Pas de tool searchKnowledgeBase.
+  // Le RAG est déjà géré côté backend via buildRAGContextForPrompt() (injection de contexte avant l'appel modèle).
+  // Exposer searchKnowledgeBase au modèle provoque des boucles de tool-calls et des réponses vides.
 
   // Tools UI uniquement si l'intention est claire (sinon l'IA peut spammer des actions)
   if (isImageIntent(prompt)) {
@@ -66,19 +52,13 @@ function filterToolsForPrompt(prompt) {
 
   if (isColorIntent(prompt)) {
     allow.add('getAvailableColors');
-    // IMPORTANT: Si l'utilisateur demande la LISTE des thèmes/palettes, on ne change rien.
-    // On n'autorise le changement que sur intention explicite de "changer/mettre/appliquer".
-    if (isColorChangeIntent(prompt) && !isColorListIntent(prompt)) {
-      allow.add('uiSetBackground');
-    }
+    allow.add('uiSetBackground');
   }
 
   // IMPORTANT: La messagerie n'affiche que des bulles. Le code doit être renvoyé dans le texte (Markdown ```lang),
   // pas via une commande UI (fenêtre dashboard).
 
-  if (isWindowIntent(prompt)) {
-    allow.add('uiOpenWindow');
-  }
+  // Pas de logique "fenêtre" ici.
 
   const filtered = (tools || []).filter((t) => allow.has(t?.name));
   return filtered.length > 0 ? filtered : null;

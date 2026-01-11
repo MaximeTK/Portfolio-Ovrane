@@ -9,10 +9,35 @@ import { executeToolCall } from './toolExecutor.js';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+function stableStringify(value) {
+  if (value === null || value === undefined) return String(value);
+  if (typeof value !== 'object') {
+    return typeof value === 'string' ? value.toLowerCase().trim() : String(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  const keys = Object.keys(value).sort();
+  const parts = keys.map((k) => `${k}:${stableStringify(value[k])}`);
+  return `{${parts.join(',')}}`;
+}
+
+function toolCallKey(toolCall) {
+  const name = String(toolCall?.function?.name ?? '').trim();
+  const argsRaw = String(toolCall?.function?.arguments ?? '');
+  let args = {};
+  try {
+    args = argsRaw ? JSON.parse(argsRaw) : {};
+  } catch {
+    args = { _raw: argsRaw };
+  }
+  return `${name}::${stableStringify(args)}`;
+}
+
 /**
  * Traite les tool calls de la réponse
  */
-async function processToolCalls(responseMessage, messages, calledFunctions) {
+async function processToolCalls(responseMessage, messages, calledFunctions, seenToolCalls) {
   console.log(`${EMOJIS.tool} ${CONSOLE_LOGS.backend} ${CONSOLE_LOGS.openaiWantsToCall} ${responseMessage.tool_calls.length} fonction(s)`);
   
   messages.push({
@@ -23,13 +48,29 @@ async function processToolCalls(responseMessage, messages, calledFunctions) {
   
   let functionCallCount = 0;
   for (const toolCall of responseMessage.tool_calls) {
-    const result = await executeToolCall(toolCall);
-    messages.push(result);
+    const key = toolCallKey(toolCall);
+    if (seenToolCalls.has(key)) {
+      // Anti-boucle: répondre au tool call sans le ré-exécuter.
+      // Cela empêche les répétitions "Pico Logo" / "Pico logo" etc. de consommer tout le budget.
+      messages.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        name: toolCall.function.name,
+        content:
+          `Résultat déjà fourni pour cet appel (${toolCall.function.name}). ` +
+          `N'appelle pas à nouveau ce tool avec les mêmes arguments. Passe à l'étape suivante.`,
+      });
+    } else {
+      seenToolCalls.add(key);
+      const result = await executeToolCall(toolCall);
+      messages.push(result);
+      // On ne compte que les appels réellement exécutés (sinon on recrée la limite artificiellement).
+      functionCallCount++;
+    }
     
     const functionName = toolCall.function.name;
     const callCount = calledFunctions.get(functionName) || 0;
     calledFunctions.set(functionName, callCount + 1);
-    functionCallCount++;
   }
   
   console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Fonction(s) exécutée(s), rappel de l'API pour obtenir la réponse finale...`);
@@ -56,6 +97,7 @@ export async function callOpenAI(openai, messages, tools) {
   let totalFunctionCallCount = 0;
   const maxFunctionCalls = OPENAI_CONFIG.maxFunctionCalls;
   const calledFunctions = new Map();
+  const seenToolCalls = new Set();
   
   while (totalFunctionCallCount < maxFunctionCalls) {
     const formattedInput = convertMessagesToInput(messages);
@@ -69,7 +111,7 @@ export async function callOpenAI(openai, messages, tools) {
     const responseMessage = parseOpenAIResponse(response);
     
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-      const callCount = await processToolCalls(responseMessage, messages, calledFunctions);
+      const callCount = await processToolCalls(responseMessage, messages, calledFunctions, seenToolCalls);
       totalFunctionCallCount += callCount;
       continue;
     }

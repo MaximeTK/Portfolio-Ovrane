@@ -60,18 +60,6 @@ export const tools = [
   },
   {
     type: "function",
-    name: TOOL_DESCRIPTIONS.searchKnowledgeBase.name,
-    description: TOOL_DESCRIPTIONS.searchKnowledgeBase.description,
-    parameters: {
-      type: "object",
-      properties: {
-        query: { type: "string", description: TOOL_DESCRIPTIONS.searchKnowledgeBase.parameterDescription }
-      },
-      required: ["query"]
-    }
-  },
-  {
-    type: "function",
     name: TOOL_DESCRIPTIONS.checkUser.name,
     description: TOOL_DESCRIPTIONS.checkUser.description,
     parameters: {

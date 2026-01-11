@@ -3,7 +3,6 @@
  */
 import { registerFunction } from '../openaiHandler.js';
 import { 
-  searchKnowledgeBase, 
   getRulePicture, 
   getAvailableAssets, 
   getAvailableColors, 
@@ -21,7 +20,6 @@ import {
  * Enregistre toutes les fonctions disponibles
  */
 export function registerAllFunctions() {
-  registerFunction('searchKnowledgeBase', searchKnowledgeBase);
   registerFunction('getRulePicture', getRulePicture);
   registerFunction('getAvailableAssets', getAvailableAssets);
   registerFunction('getAvailableColors', getAvailableColors);
