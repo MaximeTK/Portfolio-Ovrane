@@ -73,8 +73,8 @@ export function useChatController(): UseChatControllerReturn {
   const HISTORY_LIMIT = 20;
 
   const clientRef = useRef<WebSocket | null>(null);
-  // Ref pour stocker temporairement le message d'accueil lors d'un switch user (pour éviter qu'il soit écrasé par le fetchHistory vide)
-  const pendingWelcomeMessageRef = useRef<Message | null>(null);
+  // Ref pour stocker temporairement le message d'accueil avec l'ID cible
+  const pendingWelcomeMessageRef = useRef<{ userId: string; message: Message } | null>(null);
   // Ref pour signaler qu'on est dans le flux de création d'un nouvel utilisateur
   const isNewUserFlowRef = useRef(false);
 
@@ -97,9 +97,9 @@ export function useChatController(): UseChatControllerReturn {
       // On se contente d'afficher le message d'accueil temporaire
       if (isNewUserFlowRef.current) {
         console.log(`🆕 [useChatController] Nouvel utilisateur détecté, skip du chargement d'historique`);
-        if (pendingWelcomeMessageRef.current) {
-          setMessages([pendingWelcomeMessageRef.current]);
-          pendingWelcomeMessageRef.current = null;
+        if (pendingWelcomeMessageRef.current?.userId === currentUserId) {
+          setMessages([pendingWelcomeMessageRef.current.message]);
+          // On ne vide pas la ref tout de suite par sécurité, ou on la laisse pour le cas où le useEffect serait réexécuté
         } else {
           setMessages([]);
         }
@@ -128,20 +128,23 @@ export function useChatController(): UseChatControllerReturn {
               ),
             );
             
-            // Si on a un message d'accueil en attente (suite à une création de profil), on l'ajoute
-            if (pendingWelcomeMessageRef.current) {
-              const pending = pendingWelcomeMessageRef.current;
+            // Si on a un message d'accueil en attente pour CET utilisateur, on l'ajoute
+            if (pendingWelcomeMessageRef.current && pendingWelcomeMessageRef.current.userId === currentUserId) {
+              const pending = pendingWelcomeMessageRef.current.message;
               const normalize = (value: string) => String(value ?? '').replace(/\s+/g, ' ').trim();
               const pendingContent = normalize(pending.content);
 
+              // On vérifie s'il est déjà là (doublon)
               const alreadyPresent = initialMessages.some((m) => (
                 m.role === pending.role && normalize(m.content) === pendingContent
               ));
 
               if (!alreadyPresent) {
+                // On l'ajoute à la FIN de l'historique pour qu'il soit le dernier message
                 initialMessages.push(pending);
               }
-              pendingWelcomeMessageRef.current = null;
+              // On ne vide PAS la ref ici pour éviter les race conditions (double execution useEffect).
+              // Elle sera écrasée au prochain switch user ou perdue au reload.
             }
 
             setMessages(initialMessages);
@@ -152,10 +155,9 @@ export function useChatController(): UseChatControllerReturn {
               setHasMoreMessages(true);
             }
           } else {
-            // Pas d'historique, mais peut-être un message d'accueil en attente
-            if (pendingWelcomeMessageRef.current) {
-              setMessages([pendingWelcomeMessageRef.current]);
-              pendingWelcomeMessageRef.current = null;
+            // Pas d'historique, mais peut-être un message d'accueil
+            if (pendingWelcomeMessageRef.current && pendingWelcomeMessageRef.current.userId === currentUserId) {
+              setMessages([pendingWelcomeMessageRef.current.message]);
             } else {
               setMessages([]);
             }
@@ -318,7 +320,9 @@ export function useChatController(): UseChatControllerReturn {
         // (ex: message éphémère d'intro / flux nouveau profil). Sinon, cela peut provoquer un doublon
         // car l'historique contient déjà la réponse de bienvenue.
         const shouldCarryWelcomeMessage = !!options?.isEphemeral || !!data.userProfile?.isNewUser;
-        pendingWelcomeMessageRef.current = shouldCarryWelcomeMessage ? assistantMessage : null;
+        pendingWelcomeMessageRef.current = shouldCarryWelcomeMessage 
+          ? { userId: newUserId, message: assistantMessage } 
+          : null;
 
         // Mettre à jour l'userId - cela déclenchera automatiquement le chargement de l'historique et des préférences via les useEffects
         setCurrentUserId(newUserId);
@@ -330,6 +334,10 @@ export function useChatController(): UseChatControllerReturn {
         setCurrentTTS(pendingTTS);
       }
       
+      // Si on n'a PAS changé d'utilisateur (donc pas de fetchHistory déclenché), on doit ajouter le message manuellement ici.
+      // Si on A changé d'utilisateur, le fetchHistory va se lancer, mais il inclura le pendingWelcomeMessageRef qu'on vient de set.
+      // Donc, pour éviter un doublon VISUEL immédiat avant que le fetchHistory ne remplace tout, on l'ajoute quand même.
+      // Le fetchHistory finira par "stabiliser" l'état en remplaçant tout (avec le pending message réinjecté).
       setMessages((prev) => [...prev, assistantMessage]);
       
       if (!options?.isEphemeral) {
