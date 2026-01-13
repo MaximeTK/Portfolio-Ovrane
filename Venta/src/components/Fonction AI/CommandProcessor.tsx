@@ -50,9 +50,9 @@ type CommandProcessorProps = {
 };
 
 // === STYLES ===
-const CODE_WRAPPER_STYLE = { padding: '18px' };
-const CODE_INFO_STYLE = { marginBottom: '8px', fontSize: '14px' };
-const CODE_BLOCK_STYLE = {
+const CODE_WRAPPER_STYLE: React.CSSProperties = { padding: '18px' };
+const CODE_INFO_STYLE: React.CSSProperties = { marginBottom: '8px', fontSize: '14px' };
+const CODE_BLOCK_STYLE: React.CSSProperties = {
   background: '#000',
   padding: '12px',
   borderRadius: '4px',

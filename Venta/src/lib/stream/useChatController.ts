@@ -298,7 +298,7 @@ export function useChatController(): UseChatControllerReturn {
         setLastCommands(data.commands);
 
         // Gestion du verrouillage d'interface (Limite atteinte)
-        const lockCommand = data.commands.find(c => c.command === 'LockInterface');
+        const lockCommand = data.commands.find((c: Command) => c.command === 'LockInterface');
         if (lockCommand) {
           console.log('🔒 [FRONTEND] Verrouillage de l\'interface demandé');
           setAppLocked(true, replyText); // On utilise la réponse comme message de verrouillage

@@ -12,7 +12,6 @@ export function extractUserInfo(request: NextRequest) {
   const userIp =
     forwarded?.split(',')[0].trim() ??
     headers.get('x-real-ip') ??
-    request.ip ??
     'unknown';
   const userAgent = headers.get('user-agent') ?? '';
   return { userIp, userAgent };

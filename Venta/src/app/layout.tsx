@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Background } from "@/components/Fonction AI/Background";
@@ -32,7 +33,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <UrlTracker />
+        <Suspense fallback={null}>
+          <UrlTracker />
+        </Suspense>
         <Background>
           {children}
         </Background>

@@ -18,6 +18,17 @@ const sanitizeSchema = {
   },
 };
 
+type PrismTheme = { [key: string]: React.CSSProperties };
+
+function isPrismTheme(value: unknown): value is PrismTheme {
+  if (!value || typeof value !== 'object') return false;
+  const obj = value as Record<string, unknown>;
+  // Clés typiques des thèmes prism (peu de chances qu’un CSSProperties “classique” contienne ça)
+  return 'pre[class*="language-"]' in obj || 'code[class*="language-"]' in obj;
+}
+
+const PRISM_THEME: PrismTheme = isPrismTheme(vscDarkPlus) ? vscDarkPlus : {};
+
 interface MessageBubbleProps {
   content: string;
   role: 'user' | 'assistant';
@@ -242,7 +253,11 @@ export function MessageBubble({
                     );
                   }
                   
-                  const { ref: _ref, ...rest } = props as { ref?: unknown } & React.HTMLAttributes<HTMLElement>;
+                  // `props` vient de ReactMarkdown (HTMLAttributes) et peut contenir un `style` de type CSSProperties,
+                  // ce qui entre en conflit avec la prop `style` de SyntaxHighlighter (thème prism).
+                  // On l’exclut donc explicitement du spread.
+                  const { ref: _ref, style: _style, ...rest } =
+                    props as { ref?: unknown } & React.HTMLAttributes<HTMLElement>;
 
                   return (
                     <div className="relative group my-4 rounded-lg overflow-hidden border border-white/10 shadow-lg">
@@ -251,7 +266,7 @@ export function MessageBubble({
                       </div>
                       
                       <SyntaxHighlighter
-                        style={vscDarkPlus as unknown as Record<string, React.CSSProperties>}
+                        style={PRISM_THEME}
                         language={match?.[1]}
                         PreTag="div"
                         className="!bg-[#1e1e1e] !p-4 !m-0 !rounded-none text-sm custom-scrollbar"
