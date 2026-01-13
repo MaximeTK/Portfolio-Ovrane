@@ -1,11 +1,148 @@
 # Une proposition par ligne. Les lignes vides et celles commençant par # sont ignorées.
 
-Explique-moi le projet Pico.
-Résume Pico en version très simple.
-Parle-moi de Pico, mais en anglais.
-Montre-moi l’interface de Pico.
-Qu’est-ce que Pico apporte aux personnes non verbales ?
-Quels sont les points forts et limites de Pico ?
-Propose 3 idées d’améliorations pour Pico.
-Change le fond en océan.
-Explique-moi ce que tu peux faire sur ce portfolio.
+Qui es-tu ?
+Quelle sont tes capacités
+Présente moi le profil de Maxime.
+Quelles sont les compétences phares de Maxime ?
+Explique moi Pico.
+Montre-moi les interfaces de Pico.
+Qu'est ce que Hikup ?
+Montre-moi l'évolution de Hikup et de ses interfaces.
+Montre-moi les affiches de Hikup.
+Montre-moi la refonte des interfaces de Hikup
+
+Peux-tu me présenter Ovrane ?
+Peux-tu résumer Ovrane en une phrase ?
+Peux-tu me dire ce qui rend Ovrane original ?
+Peux-tu m’expliquer le concept de portfolio interactif ?
+Peux-tu m’expliquer l’œil central d’Ovrane ?
+Peux-tu me dire pourquoi le design est minimaliste ?
+Peux-tu m’expliquer le fonctionnement du dashboard ?
+Peux-tu m’expliquer le mode messagerie ?
+Peux-tu me dire pourquoi il y a deux modes ?
+Peux-tu me dire quel modèle d’IA est utilisé ?
+Peux-tu me dire pourquoi GPT-4o-mini a été choisi ?
+Peux-tu m’expliquer le streaming audio ?
+Peux-tu me dire comment la latence est réduite ?
+Peux-tu me dire ce que fait le RAG ?
+Peux-tu m’expliquer comment le RAG est structuré ?
+Peux-tu me dire comment tu évites les hallucinations ?
+Peux-tu me dire comment l’IA interagit avec l’interface ?
+Peux-tu me dire comment tu gères l’historique ?
+Peux-tu me dire ce que tu sais sur les projets ?
+Peux-tu me dire quelles actions UI tu peux faire ?
+
+Peux-tu me présenter Pico ?
+Peux-tu résumer Pico en une phrase ?
+Peux-tu me dire à qui s’adresse Pico ?
+Peux-tu me dire quel problème Pico résout ?
+Peux-tu me dire pourquoi Pico existe ?
+Peux-tu me comparer Pico et Proloquo2Go ?
+Peux-tu me comparer Pico et TD Snap ?
+Peux-tu me comparer Pico et LetMeTalk ?
+Peux-tu me montrer l’interface de Pico ?
+Peux-tu me montrer le logo de Pico ?
+Peux-tu me montrer la page de login de Pico ?
+Peux-tu me montrer l’interface de Proloquo2Go ?
+Peux-tu m’expliquer la zone de syntaxe de Pico ?
+Peux-tu m’expliquer le noyau lexical de Pico ?
+Peux-tu m’expliquer la barre de fonctions de Pico ?
+Peux-tu m’expliquer le panneau de temporalité de Pico ?
+Peux-tu m’expliquer la logique “toucher court” ?
+Peux-tu m’expliquer la logique “toucher long” ?
+Peux-tu me dire pourquoi l’interface est statique ?
+Peux-tu me dire si Pico prédit le prochain mot ?
+Peux-tu me dire ce que signifie “modèle hybride” ?
+Peux-tu me dire comment fonctionne le cache local ?
+Peux-tu me dire si Pico respecte le RGPD ?
+Peux-tu me dire quelles données Pico stocke ?
+Peux-tu me dire où sont stockées les données ?
+Peux-tu me dire comment Pico gère la motricité fine ?
+Peux-tu me dire si le drag & drop est obligatoire ?
+Peux-tu me dire si un mode nuit est prévu ?
+Peux-tu me dire si un mode haut contraste est prévu ?
+Peux-tu me décrire les comptes de Pico ?
+Peux-tu m’expliquer le compte Standard de Pico ?
+Peux-tu m’expliquer le compte Praticien de Pico ?
+Peux-tu m’expliquer le compte Admin de Pico ?
+Peux-tu me dire où en est Pico aujourd’hui ?
+Peux-tu me dire si Pico est déjà un prototype ?
+Peux-tu me dire quelles sont les prochaines étapes ?
+
+Peux-tu me présenter Hikup ?
+Peux-tu résumer Hikup en une phrase ?
+Peux-tu me dire l’objectif de Hikup ?
+Peux-tu me dire à qui s’adresse Hikup ?
+Peux-tu me dire ce que tu as fait sur Hikup ?
+Peux-tu me dire ton rôle exact sur Hikup ?
+Peux-tu me dire pourquoi la refonte était urgente ?
+Peux-tu m’expliquer ce qu’est le “Barrage Bêta” ?
+Peux-tu me dire pourquoi le projet risquait l’arrêt ?
+Peux-tu m’expliquer l’audit UX de Hikup ?
+Peux-tu m’expliquer la direction artistique de Hikup ?
+Peux-tu me dire ce qui a été optimisé côté UI ?
+Peux-tu me dire ce qui a été stabilisé avant le rendu ?
+Peux-tu m’expliquer la gamification de Hikup ?
+Peux-tu m’expliquer le système de skins ?
+Peux-tu m’expliquer la collecte de ressources ?
+Peux-tu me dire si Hikup utilise le GPS ?
+Peux-tu me dire si Hikup fait du tracking ?
+Peux-tu me dire comment Hikup gère les itinéraires ?
+Peux-tu me dire quelle techno mobile est utilisée ?
+
+Peux-tu me montrer l’architecture de Hikup ?
+Peux-tu me montrer l’évolution du design de Hikup ?
+Peux-tu me montrer l’évolution du parcours de Hikup ?
+Peux-tu me montrer l’affiche Hikup 1 ?
+Peux-tu me montrer l’affiche Hikup 2 ?
+Peux-tu me montrer l’affiche Hikup 3 ?
+Peux-tu me dire combien d’affiches Hikup existent ?
+Peux-tu me montrer le logo de Hikup ?
+Peux-tu me montrer l’interface des commentaires ?
+Peux-tu me montrer l’interface “liste rando” ?
+Peux-tu me montrer la map bleue de Hikup ?
+Peux-tu me montrer la map jaune de Hikup ?
+Peux-tu me montrer la map finale de Hikup ?
+Peux-tu me montrer le menu final de Hikup ?
+Peux-tu me montrer le profil final de Hikup ?
+Peux-tu me montrer la refonte map nuit ?
+Peux-tu me montrer la refonte map jour ?
+Peux-tu me montrer la refonte map rando ?
+Peux-tu me montrer la refonte du menu ?
+Peux-tu me montrer la refonte des quêtes ?
+Peux-tu me montrer la refonte messagerie ?
+Peux-tu me montrer la refonte tchat ?
+Peux-tu me montrer la refonte visuelle de Hikup ?
+
+Peux-tu me présenter Maxime ?
+Peux-tu résumer le profil de Maxime ?
+Peux-tu me dire les compétences phares de Maxime ?
+Peux-tu me dire si Maxime est plutôt UX ou dev ?
+Peux-tu me dire pourquoi son profil est hybride ?
+Peux-tu me dire ce que Maxime a appris à Epitech ?
+Peux-tu me dire ce que Maxime a fait à TU Dublin ?
+Peux-tu me dire ce qu’est son rôle d’assistant pédagogique ?
+Peux-tu me dire quels outils UX il maîtrise ?
+Peux-tu me dire si Maxime utilise Figma ?
+Peux-tu me dire ce qu’est l’Atomic Design ?
+Peux-tu me dire comment il fait des tests utilisateurs ?
+Peux-tu me dire quelle est sa stack web ?
+Peux-tu me dire s’il utilise MongoDB ?
+Peux-tu me dire s’il utilise NextJS ?
+Peux-tu me dire s’il maîtrise le C et le C++ ?
+Peux-tu me donner le contact de Maxime ?
+
+Peux-tu changer le fond en océan ?
+Peux-tu changer le fond en noir ?
+Peux-tu changer le fond en rose ?
+Peux-tu changer le fond en mauve ?
+Peux-tu changer le fond en doré ?
+Peux-tu changer le fond en argenté ?
+Peux-tu remettre le fond par défaut ?
+Peux-tu me lister les palettes disponibles ?
+Peux-tu me proposer un fond sombre ?
+Peux-tu me proposer un fond coloré ?
+
+Peux-tu me montrer le CV de Maxime ?
+Peux-tu me montrer le CV Business ?
+Peux-tu me montrer le CV Imprimable ?
