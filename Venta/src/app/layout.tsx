@@ -16,8 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Portfolio — Lottie ultra léger",
-  description: "Portfolio interactif avec animations Lottie et chat IA",
+  title: {
+    default: "Ovrane",
+    template: "%s — Ovrane",
+  },
+  description: "Portfolio de Maxime Thiong-kay",
 };
 
 export default function RootLayout({
