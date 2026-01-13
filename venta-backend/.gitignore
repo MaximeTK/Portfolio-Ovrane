@@ -10,8 +10,6 @@ tmp/
 .env.*
 *.env.local
 
-data/vector-index/
-
 logs/
 *.log
 npm-debug.log*
