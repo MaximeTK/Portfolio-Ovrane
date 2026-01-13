@@ -23,7 +23,7 @@ function looksLikeAssetOrFileName(value) {
   if (/^https?:\/\//i.test(raw)) return true;
   if (/[\\/]/.test(raw)) return true;
   // Extensions courantes → asset/fichier
-  if (/\.(png|jpe?g|gif|webp|svg|mp3|wav|ogg|mp4|webm|pdf|txt)\b/i.test(raw)) return true;
+  if (/\.(png|jpe?g|txt)\b/i.test(raw)) return true;
   return false;
 }
 

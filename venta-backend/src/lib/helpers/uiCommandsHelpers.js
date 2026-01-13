@@ -3,8 +3,39 @@
  * IMPORTANT: Ces outils ne doivent pas modifier le texte de réponse, ils ajoutent uniquement des commandes
  * dans le contexte de requête afin que le frontend exécute l'action.
  */
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getRequestContext } from './contextHelpers.js';
-import { normalizeAssetParamToFilename } from '../validators.js';
+import { isValidAssetFilename, normalizeAssetParamToFilename } from '../validators.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ASSETS_TXT_PATH = path.join(__dirname, '..', '..', '..', 'rag', 'assets.txt');
+
+let cachedKnownAssets = null;
+function getKnownAssetFilenames() {
+  if (cachedKnownAssets) return cachedKnownAssets;
+  try {
+    if (!fs.existsSync(ASSETS_TXT_PATH)) {
+      cachedKnownAssets = new Set();
+      return cachedKnownAssets;
+    }
+    const content = fs.readFileSync(ASSETS_TXT_PATH, 'utf8');
+    const lines = content.split(/\r?\n/);
+    const set = new Set();
+    for (const line of lines) {
+      const trimmed = String(line || '').trim();
+      // On ne prend que les noms de fichiers image valides (pas de PDF, pas de chemins, etc.)
+      if (isValidAssetFilename(trimmed)) set.add(trimmed);
+    }
+    cachedKnownAssets = set;
+    return cachedKnownAssets;
+  } catch {
+    cachedKnownAssets = new Set();
+    return cachedKnownAssets;
+  }
+}
 
 function ensureUiCommandsArray(ctx) {
   if (!ctx) return null;
@@ -29,8 +60,24 @@ function pushUiCommand(command, parameter) {
 
 export async function uiShowPicture({ filename }) {
   const normalized = normalizeAssetParamToFilename(filename);
-  if (!normalized) {
-    return { success: false, message: 'filename invalide (doit être un nom de fichier image)' };
+  if (!normalized || !isValidAssetFilename(normalized)) {
+    return {
+      success: false,
+      message:
+        'filename invalide (doit être un nom exact de fichier image existant, ex: "CV.png"). ' +
+        'N’utilise jamais de PDF. Si tu n’es pas sûr, appelle getAvailableAssets().',
+    };
+  }
+
+  const known = getKnownAssetFilenames();
+  // Si on a une liste d'assets, on force l'appartenance (anti-hallucination)
+  if (known.size > 0 && !known.has(normalized)) {
+    return {
+      success: false,
+      message:
+        `Asset inconnu: "${normalized}". ` +
+        `Ne l'invente pas. Appelle getAvailableAssets() et utilise un filename EXACT de la liste.`,
+    };
   }
   const r = pushUiCommand('ShowPicture', normalized);
   return r.success

@@ -288,11 +288,11 @@ export function MessageBubble({
               {content}
             </ReactMarkdown>
 
-            {/* Fallback: si la réponse ne contient pas d'images "inline" mais a des commandes ShowPicture */}
+            {/* Fallback: si la réponse ne contient pas d'images "inline" mais contient des commandes d'affichage d'image (uiShowPicture côté IA) */}
             {role === 'assistant' && imagesToRenderFromCommands.length > 0 && (
               <ImageGrid>
                 {imagesToRenderFromCommands.map((src) =>
-                  renderChatImage(src, 'Image (commande /ShowPicture)'),
+                  renderChatImage(src, 'Image (via commande uiShowPicture)'),
                 )}
               </ImageGrid>
             )}

@@ -218,24 +218,28 @@ Mots-clés : hikup, hik'up, Rando, Randonnée, Tchat, Design, refonte
 Tool : uiShowPicture({ filename: "Refonte Visuel Hikup.png" })
 
 CV.png
+Format : PNG uniquement (pas de PDF)
 Description : Montre le CV de Maxime Thiong-kay, Version Noir
 Utilisation : Pour montrer le CV de Maxime Thiong-kay, Version Noir
 Mots-clés : CV, Maxime
 Tool : uiShowPicture({ filename: "CV.png" })
 
 CV Business.png
+Format : PNG uniquement (pas de PDF)
 Description : Montre le CV Business de Maxime Thiong-kay, Version Business
 Utilisation : Pour montrer le CV Business de Maxime Thiong-kay, Version Business
 Mots-clés : CV Business, Maxime
 Tool : uiShowPicture({ filename: "CV Business.png" })
 
 CV Imprimable.png
+Format : PNG uniquement (pas de PDF)
 Description : Montre le CV Imprimable de Maxime Thiong-kay, Version Imprimable
 Utilisation : Pour montrer le CV Imprimable de Maxime Thiong-kay, Version Imprimable
 Mots-clés : CV Imprimable, Maxime
 Tool : uiShowPicture({ filename: "CV Imprimable.png" })
 
 CV Noir Eclairer.png
+Format : PNG uniquement (pas de PDF)
 Description : Montre le CV Noir Eclairer de Maxime Thiong-kay, Version Noir Eclairer
 Utilisation : Pour montrer le CV Noir Eclairer de Maxime Thiong-kay, Version Noir Eclairer
 Mots-clés : CV Noir Eclairer, Maxime
