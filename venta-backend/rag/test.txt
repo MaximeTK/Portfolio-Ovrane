@@ -1,1 +1,0 @@
-le test 44 est un test visant à déclencher des actions UI via des tools, ex: uiShowPicture({ filename: "Pico Logo.png" })

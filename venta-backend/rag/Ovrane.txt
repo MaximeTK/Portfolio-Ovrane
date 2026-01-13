@@ -1,0 +1,161 @@
+OVRANE : L'Architecture d'un Portfolio Intelligent
+Fusion de l'UX Design et de l'IA Générative
+
+Ovrane est un site web (portfolio) doté d'une intelligence artificiel intégré
+
+🏛️ Genèse et Vision Stratégique
+OVRANE est né d'un constat simple : à l'ère de l'intelligence artificielle, le portfolio statique est devenu un format obsolète. L'objectif était de concevoir un support de présentation qui ne se contente pas d'afficher des projets, mais qui en devienne un lui-même.
+
+Ce projet est une vitrine de ma double identité :
+
+L'UX Designer : Qui cherche à créer une interface disruptive, mémorable et centrée sur l'utilisateur.
+
+Le Développeur : Qui explore les nouvelles frontières du Web en intégrant des technologies de pointe (LLM, RAG, Automation).
+
+Plutôt que de forcer le visiteur à parcourir des pages de texte, l'assistant IA devient un point d'entrée unique capable de synthétiser mon parcours de manière personnalisée et interactive.
+
+🎨 Design et Expérience Utilisateur (UX)
+Le design d'OVRANE s'éloigne des conventions du Web actuel pour adopter une esthétique plus douce et très minimaliste.
+
+L'Oeil Central (Hexagone) : Véritable cœur de l'interface, ce polygone n'est pas qu'un élément décoratif. Il symbolise une présence constante, une entité qui observe et réagit aux actions de l'utilisateur. C'est le point d'ancrage visuel de l'IA.
+
+Interactions Dynamiques : L'interface a été conçue pour être pilotable par le langage naturel. L'IA possède un accès direct au système (DOM), lui permettant de modifier le thème visuel, de naviguer entre les profils ou d'afficher des médias spécifiques (image/code/texte) sur demande simple de l'utilisateur.
+
+La Voix de l'IA (TTS) : Pour parfaire l'immersion, j'ai réfléchis a une identité sonore spécifique. Le choix s'est porté pour l'instant vers une synthèse vocale issue des TTS de openAI, ceux d'elevenLabs étant beaucoup trop cher et beaucoup trop "humaine".
+
+⚙️ Ingénierie logicielle et Optimisation de l'IA
+Le défi technique majeur résidait dans l'équilibre entre la puissance de calcul et la fluidité de l'expérience web.
+
+Ovrane tourne sur GPT-4o-mini pour les réponses écrite et tourne sur gpt-4o-mini-realtime-preview-2024-12-17 avec la voix de alloy
+
+Stratégie LLM : Après plusieurs itérations, j'ai sélectionné GPT-4o mini. Ce modèle offre une fenêtre de contexte suffisante et une pertinence de réponse optimale pour les requêtes, tout en garantissant des coûts d'API réduits et une vitesse de réponse idéal. J'ai également exploré l'intégration de Gemini 3 Flash, notant son immense potentiel, malgré une complexité de configuration accrue sur la Google Cloud Console qui demande beaucoup trop d'investissement pour le temps a ma disposition.
+
+Architecture RAG (Retrieval-Augmented Generation) : Pour éviter les hallucinations et réduire la consommation de tokens, j'ai développé un RAG dynamique. Au lieu d'injecter tout mon CV / informations dans chaque requête, le système identifie les blocs d'informations pertinents (projets, diplômes, expériences) et ne les transmet à l'IA que si la question le nécessite en plus d'y ajouter une seconde barrière de protection en cas de faux-positif.
+
+Optimisation de la Latence (Audio Streaming) : La génération de voix via IA est traditionnellement lente. J'ai contourné cet obstacle en implémentant une génération "en continu" (chunk-based generation). Le système découpe la réponse écrite en morceaux et commence à diffuser les premiers morceaux du message dès qu'elles sont prêtes, tandis que la suite est générée en arrière-plan pendant la diffusion des blocs précedent. Résultat : le délai de réponse à était réduite de manière considérable pour les longs messages.
+
+🛠️ Méthodologie :
+Le projet a été mené sur une période de 3 mois, exclusivement sur mon temps libre. Cette contrainte m'a poussé à adopter une approche de développement ultra-moderne :
+
+Levier de l'IA Générative : J'ai utilisé l'IA (Gemini 3 Pro, GPT) comme outils de programmation pour la majorité du code. Mon rôle a évolué vers celui d'un superviseur technique. Grâce à ma connaissance approfondie de l'architecture logicielle, j'ai pu guider l'IA, déboguer ses sorties et m'assurer que le code produit était propre, optimisé et sécurisé malgré mon niveau "inexistant" sur NextJS et les technologies employé, ne passant plus la majorité du temps à coder j'ai pu me focalisé beaucoup plus sur des thématiques que je n'ai jamais pu développer auparavant comme MongoDB.
+
+Vigilance Critique : Utiliser l'IA demande une vigilance constante. J'ai dû filtrer les solutions "pansements" parfois proposées par les modèles pour maintenir une structure de code cohérente, modulaire et sans nœuds inutiles, garantissant ainsi la pérennité du projet. L'utilisation de l'IA est toujours très débattus mais il faut parfois accepter de coder différemment quand les contraintes y obligent
+
+🔮 Roadmap : Vers un Dashboard de Vie Omniscient
+La version actuelle (V1) d'OVRANE n'est que la fondation d'un écosystème plus vaste. Mon objectif est de transformer ce portfolio en un dashboard personnel global :
+
+Souveraineté et Confidentialité : Le passage à un modèle de langage local est prioritaire afin de garantir une totale confidentialité des données et une indépendance vis-à-vis des coûts d'API.
+
+Hyper-Connectivité (n8n) : L'IA sera reliée à mes flux professionnels via n8n. Elle pourra ainsi croiser mes mails de recrutement, mon calendrier et mes candidatures envoyées pour devenir un véritable agent de gestion de carrière.
+
+Centralisation de Services : OVRANE intégrera à terme des flux API sociaux (Instagram, YouTube), des outils de productivité (To-do lists, agendas) et des utilitaires de création (génération d'images, téléchargement de ressources), me permettant de quitter les plateformes centralisées pour un outil unique, sur mesure et intelligent.
+
+
+C'est un projet impressionnant qui se situe à la confluence de l'ingénierie prompt, de l'architecture logicielle et du design d'expérience. Pour un recruteur, ce projet démontre non seulement vos compétences techniques, mais aussi votre capacité à anticiper le futur des interfaces (le passage du GUI au LUI - Language User Interface).
+
+Voici 50 questions réparties par thématiques pour engager la conversation et valoriser vos choix stratégiques :
+
+Question relatives possibles venant d'un recruteur :
+Pourquoi avoir choisi le RAG (Retrieval-Augmented Generation) plutôt qu'un "fine-tuning" de modèle sur vos données personnelles ?
+Le rag a pour réputation d'étre un outils pour fournir des données et d'être utilisable très facilement par les modèles ce qui est bien plus avantageux pour un portfolio que de devoir entrainer une IA de 0, de plus le manque de donnée sur certains projet aurait pu rendre la tache plus complexe, le manque de temps et de moyens également n'aide pas
+
+Comment avez-vous structuré votre base de connaissances pour que le RAG soit le plus précis possible ?
+Le rag n'est pas idealement structurer par manque de temps ce ne sont que des .txt (un par projet) qui concentre le maximum d'informations possible mais devant écrire les données à la main elle sont loin d'être parfaite, cependant j'essaie d'avoir une presentation global comme si je devais le présenter devant une foule pour essayer de couvrir un maximum d'informations en plus d'y rajouter une section question/réponse directement sur le rag
+
+Pouvez-vous m'expliquer le fonctionnement de votre "seconde barrière de protection" contre les faux-positifs du RAG ?
+Avec les nombreux test effectué j'ai pu voir les limites du systeme de tools lié au models d'IA, cela causé des boucles d'appels de fonctions, des rags absent a des moments idéal ou au contraire trop présent en permanence, il a donc fallu créer un rag dynamique qui parfois force certains chunk de rag. Un exemple simple c'est le changement de fond, lorsque l'on demande a l'IA de le faire il n'y a pas de bug, mais si on suit avec une réponse trop courte (Ex: Maintenant en ecarlate), l'IA ne savait pas quoi faire, donc le system de faux positif est une liste de mots dédié a certains fonctions pour faire apparaitre les commandes au bon moment
+
+Comment gérez-vous les hallucinations de l'IA lorsqu'elle parle de vos projets ?
+Il n'y a pas d'hallucination, l'avantage de gpt4o mini est qu'il est trop petit pour halluciné mais du coup pas assez grand pour être plus "créatif" dans ses phrases
+
+Pourquoi avoir privilégié GPT-4o-mini par rapport à un modèle plus large comme GPT-4o ? la vitesse de réponse, c'était trop important d'avoir des réponses rapides car les recruteurs ne vont pas rester 8 heures a attendre des réponses sur un portfolio
+
+Quelle est la taille de la fenêtre de contexte que vous laissez à l'IA pour se souvenir du début de la conversation ? l'IA a accès au 3 dernier message de l'utilisateur ce qui est largement suffisant pour l'usage que je veux offrir, il ne faut pas oublié que ça ne doit pas remplacer chatgpt
+
+Comment avez-vous implémenté le Streaming Audio techniquement pour réduire la latence ? La latence du TTS à était reduide grace a un decoupage en chunk du message ecrit, sur une grande réponse il peux y avoir 3-4 parties découper et elle sont toute envoyer une par une, au bout de 2 chunk de prêt l'IA va commencer a parler mais en parallèle le TTS va générer les chunks restants. Ainsi le temps de génération est masqué par le TTS des chunks précedent et l'attente de l'utilisateur ne ce fait que pour les 2 premiers chunk
+
+Avez-vous rencontré des problèmes de synchronisation entre le texte généré et la voix (TTS) ? Aucune
+
+Pourquoi avoir choisi MongoDB pour ce projet plutôt qu'une base de données vectorielle spécialisée (comme Pinecone ou Weaviate) ?
+Il est prévu d'utiliser une base de donnée vectoriel pour le rag une fois le circuit N8N terminé mais MongoDB sert surtout a sauvegarder/charger les profils et conversations des utilisateurs et ainsi avoir des données sur les visiteurs
+
+Comment l'IA interagit-elle concrètement avec le DOM pour changer le thème ou naviguer ? Elle utilise des commandes intégré dans ses tools d'api quelle declenche, ses tools ajoute un objet commande à ça réponse qui sont ainsi traité par le front
+Exemple :
+{
+  "reply": "Voici l'image demandée.",
+  "commands": [
+    {
+      "command": "ShowPicture",
+      "parameter": "Pico Logo.png"
+    }
+  ],
+  "activeUserId": "user-123..."
+}
+
+
+🎨 UX & Design d'Interface
+Pourquoi avoir choisi la forme de l'hexagone pour l'œil central ? A la base je voulais une sphere 3D avec des anneaux qui réagissez avec les interactions utilisateurs mais c'était beaucoup trop lourd par animation calculé parle le front et je n'ai pas les compétences pour faire une animation si complexe en plusieurs version. L'hexagone à était trouver totalement par hasard et j'ai trouvé que ça ressemblait a un œil, donc je suis allé la dessus
+
+Le minimalisme d'Ovrane ne risque-t-il pas de perdre un utilisateur habitué aux sites standards ? Comment avez-vous pallié cela ?
+C'est le prix de l'originalité, mais tout le monde utilise chatgpt ce n'est plus une interface inconnue pour le grand public
+
+Pourquoi avoir jugé la voix d'ElevenLabs "trop humaine" ? Quel est l'impact psychologique recherché avec une voix plus "synthétique" ? Je voulais avoir une esthéthique futuriste, avoir la voix d'un Jarvis ou d'un assistant comme dans les films de science fiction. C'est toujours en court mais je trouve que une voix humaine rendaitle portfolio moins intéressant à écouter
+
+Avez-vous prévu un mode "silencieux" pour les utilisateurs qui ne peuvent pas utiliser l'audio ? Le mode messagerie est déjà un mode silencieux
+
+Comment l'IA adapte-t-elle son ton en fonction des questions du recruteur ? L'IA est forcé sur du vouvoiement dans son prompt systeme
+
+Quel a été le plus grand défi d'UX dans l'intégration d'un agent conversationnel ? Le plus grand défi à était de rendre le clique du milieu compréhensible pour passer du Dashboard a la messagerie, écrire un message intrusif ou rajouter un bouton aurait ruiner l'interface, il a donc était décider de mettre un message sur le Dashboard après le premier message reçu d'un utilisateur ce qui le force a voir ce qu'est le Dashboard avant de découvrir la messagerie. Mettre ce message ailleurs comme par exemple sur le chargement du début aurait ruiner cette aspect "IA qui se lance" et les gens ne sont pas rivé sur leurs ecrans pendant un chargement en général
+
+Comment avez-vous testé la navigation naturelle pour éviter que l'utilisateur ne se sente "bloqué" ? J'ai testé via mon entourage a qui je n'ai jamais expliqué ce que c'était, ainsi j'ai pu avoir leurs retour très facilement
+
+🛠️ Méthodologie & Développement avec l'IA
+Vous parlez de votre rôle de "superviseur technique". Quelle est, selon vous, la compétence clé pour diriger une IA dans le code ?
+Savoir codé, l'IA a tendance a vouloir satisfaire notre demande et elle peux parfois mettre des pansements sur du code "tant que ça marche" ce qui est contre la volonté d'un bon développeur qui ce doit d'avoir un code structurer, optimiser et scalable
+
+Quel a été le bug le plus complexe généré par l'IA que vous avez dû corriger manuellement ? Un jour j'ai demandé a l'IA de supprimer tout les fichiers n'ayant pas une certaines sequences dans leurs noms, elle l'a appliqué a tout mon PC et j'ai du tout réinstaller.
+
+Pourquoi avoir choisi NextJS alors que vous ne maîtrisiez pas cette technologie au départ ? Il n'y a jamais besoin de maitrisez une technologie pour pouvoir intervenir dessus, nextjs demande une logique particulière qui m'est actuellement inconnus mais cela reste du javascript et du web, donc lire le code ne pose aucun problème. Ce que je ne sais pas faire sur NextJS ce sont les interractions complexe, comment sont géré les boucles d'actualisations, en clair : comment fonctionne le langage en profondeur. Mais nextjs est très facile a lire.
+
+Comment avez-vous structuré vos prompts pour que l'IA respecte une architecture modulaire et propre ?
+
+Quelle méthode utilisez-vous pour "filtrer" les solutions de type "pansements" proposées par l'IA ? Lire le code fournit et lui imposé de priorisez la suppression plutôt que le rajout
+
+Si vous deviez recommencer le projet sans IA, combien de temps cela vous aurait-il pris par rapport aux 3 mois actuels ? Probablement le double, ou alors il n'y aurait pas toute les fonctionnalités présentes. Non pas par incompétence mais par manque de temps.
+
+Quelle est votre vision de l'évolution du métier de développeur face à ces outils ? Un bon développeur ne code pas sauf si nécessaire.
+
+🔮 Vision & Roadmap (Futur)
+Quels sont les défis techniques pour passer d'une API cloud à un modèle de langage local (LLM On-device) ? Aucune idée je compte utilisez Ollama mais je ne me suis pas renseigné et je n'ai surtout pas le PC pour ça, donc ça sera pour une prochaine fois
+
+Comment comptez-vous garantir la confidentialité des données si vous connectez n8n à vos mails ? C'est toujours en réflexion
+
+L'intégration de n8n permettrait-elle à l'IA de prendre des rendez-vous directement pour vous ? Techniquement oui
+
+Pourquoi vouloir quitter les plateformes centralisées (Instagram/YouTube) pour les intégrer à Ovrane ? Les pubs, la liberté de filtrer ce qui m'intéresse réellement
+
+Envisagez-vous d'ouvrir le code d'Ovrane en Open Source ? Non
+
+💼 Questions "Business" & Soft Skills
+Quel est le coût de revient mensuel (API OpenAI) pour maintenir ce portfolio en ligne ? Pour l'instant avec tout les tests effectué en 3 mois : 0.20 centimes
+
+Si 100 recruteurs se connectent en même temps, comment votre infrastructure scale-t-elle ?
+
+Qu'est-ce que ce projet vous a appris sur la gestion du temps et des priorités ?
+
+Comment expliqueriez-vous le fonctionnement technique d'Ovrane à un client non-technique ? C'est un chatgpt mais pour mon portfolio
+
+Quel aspect du projet vous rend le plus fier aujourd'hui ? Avoir la totalité de ce que j'avais prévu d'intégré et n'avoir jamais changé de route à cause d'une incapacité X ou Y
+
+Quelle a été votre plus grande déception ou échec durant ces 3 mois de développement ? je n'ai pas de voix robotique magnifique je suis triste de ça
+
+Avez-vous pensé à une version mobile d'Ovrane ? Quelles seraient les contraintes ? Le site est déjà responsive mais oui à terme c'est envisageable pour la prise de donne etc
+
+Comment gérez-vous les mises à jour des modèles (ex: passer de GPT-4o-mini à une version plus récente) sans tout casser ? Je ne change pas de models, mais le code est scalable donc ça ne sera pas compliqué
+
+Si un investisseur vous donnait les moyens de transformer Ovrane en produit SaaS, par quoi commenceriez-vous ?
+Par une vrai inscription utilisateurs
+
+
+
+

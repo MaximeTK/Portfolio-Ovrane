@@ -15,7 +15,7 @@ function isImageIntent(prompt) {
   const p = normalize(prompt);
   // On évite "affiche" seul (ex: "affiche-moi un exemple de code")
   // Inclut aussi les demandes autour des projets/portfolio (souvent liées à des visuels)
-  return /\b(image|photo|logo|visuels|visuel|illustration|screenshot|capture|interface)\b/i.test(prompt);
+  return /\b(montre|montrer|display|affiche|voir|voirs|afficher|image|photo|logo|visuels|visuel|illustration|screenshot|capture|interface)\b/i.test(prompt);
 }
 
 function isColorIntent(prompt) {

@@ -26,7 +26,7 @@ function isRagLinkedToPrompt(prompt, sources) {
   if (!p) return false;
 
   // Si l'utilisateur parle explicitement du portfolio / projets, on considère le RAG pertinent
-  if (/\b(hopa|ovrane|portfolio|projet|projets|pico)\b/i.test(prompt)) return true;
+  if (/\b(maxime|hikup|ovrane|portfolio|projet|projets|pico)\b/i.test(prompt)) return true;
 
   const keywords = new Set(p.split(' ').filter((t) => t.length >= 3));
   if (keywords.size === 0) return false;
@@ -59,7 +59,15 @@ export async function buildRAGContextForPrompt(prompt, ragInitialized) {
     const filteredChunks = (ragResult.chunks || []).filter((c) => {
       const source = String(c?.source || '');
       const sourceNorm = normalizeForMatch(source);
-      if (ALWAYS_EXCLUDED_SOURCES.has(sourceNorm)) return false;
+/*
+      // Exception pour 'assets' : on l'autorise si le prompt parle de projets ou de visuels
+      if (sourceNorm === 'assets') {
+        if (/\b(hikup|ovrane|pico|portfolio|projet|projets|affiche|afficher|montre|montrer|voir|image|visuel|logo|interface|maquette|screen|photo)\b/i.test(prompt)) {
+          return true;
+        }
+      }
+
+      if (ALWAYS_EXCLUDED_SOURCES.has(sourceNorm)) return false;*/
       return true;
     });
 
