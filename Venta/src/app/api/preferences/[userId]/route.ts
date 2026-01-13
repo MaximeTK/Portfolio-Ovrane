@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
-export async function GET(_request: NextRequest, context: { params: { userId: string } }) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
   try {
-    const userId = context.params.userId;
+    const { userId } = await params;
     const response = await fetch(`${BACKEND_URL}/api/preferences/${encodeURIComponent(userId)}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
