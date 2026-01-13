@@ -12,7 +12,9 @@ interface BackgroundState {
   loadUserPreference: (userId: string) => Promise<void>;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:3001';
+// IMPORTANT (prod): on passe par l'API Next (same-origin) pour éviter les erreurs CORS
+// quand le backend est sur un autre domaine (Render).
+const PREFERENCES_API_BASE = '/api/preferences';
 
 function stripDiacritics(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -90,12 +92,7 @@ async function savePreferenceToBackend(paletteId: string, userId?: string) {
     // Utiliser l'userId fourni ou récupérer depuis localStorage
     const userIdToUse = userId || (typeof window !== 'undefined' ? getOrCreateUserId() : null);
     
-    console.log('🔍 [DEBUG] savePreferenceToBackend appelée', {
-      paletteId,
-      userId,
-      userIdToUse,
-      BACKEND_URL
-    });
+    console.log('🔍 [DEBUG] savePreferenceToBackend appelée', { paletteId, userId, userIdToUse });
     
     if (!userIdToUse) {
       console.warn('⚠️ Aucun userId trouvé, impossible de sauvegarder la préférence');
@@ -108,9 +105,9 @@ async function savePreferenceToBackend(paletteId: string, userId?: string) {
       value: paletteId 
     };
     
-    console.log('📤 [DEBUG] Envoi requête POST vers:', `${BACKEND_URL}/api/preferences`, payload);
+    console.log('📤 [DEBUG] Envoi requête POST vers:', PREFERENCES_API_BASE, payload);
 
-    const response = await fetch(`${BACKEND_URL}/api/preferences`, {
+    const response = await fetch(PREFERENCES_API_BASE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -136,8 +133,8 @@ async function savePreferenceToBackend(paletteId: string, userId?: string) {
  */
 async function loadPreferenceFromBackend(userId: string): Promise<string | null> {
   try {
-    console.log(`📡 [BACKEND API] GET /api/preferences/${userId}`);
-    const response = await fetch(`${BACKEND_URL}/api/preferences/${userId}`, {
+    console.log(`📡 [BACKEND API] GET ${PREFERENCES_API_BASE}/${userId}`);
+    const response = await fetch(`${PREFERENCES_API_BASE}/${userId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(5000) // Timeout de 5 secondes

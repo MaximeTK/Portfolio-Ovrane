@@ -162,8 +162,9 @@ export function useTTS() {
   ) => {
     try {
       stop();
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-      const response = await fetch(`${backendUrl}/api/tts`, {
+      // IMPORTANT (prod): passer par l'API Next (same-origin) pour éviter les erreurs CORS
+      // quand le backend est sur un autre domaine (Render).
+      const response = await fetch(`/api/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
@@ -344,8 +345,8 @@ export function useTTS() {
       length: text.length,
       preview: text.slice(0, 220),
     });
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-    const response = await fetch(`${backendUrl}/api/tts`, {
+    // IMPORTANT (prod): passer par l'API Next (same-origin) pour éviter CORS.
+    const response = await fetch(`/api/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
