@@ -76,8 +76,8 @@ export function getAvailableAssets() {
     const result = {
       success: true,
       assets: assetsList,
-      instructions: "Déclenche l'affichage via uiShowPicture({ filename }) avec un nom EXACT issu de la liste (sensible à la casse).",
-      message: `${assetsList.length} assets disponibles. Pour afficher une image, appelle uiShowPicture({ filename }) avec le nom exact.`
+      instructions: "Déclenche l'affichage via uiShowPicture({ filenames: [...] }) avec des noms EXACTS issus de la liste (sensible à la casse). Pour plusieurs images, UTILISE un seul appel avec filenames.",
+      message: `${assetsList.length} assets disponibles. Pour afficher une ou plusieurs images, appelle uiShowPicture({ filenames: ["..."] }) avec des noms exacts.`
     };
     console.log(`✅ [FUNCTION END] getAvailableAssets | Retour: success=true, ${assetsList.length} assets\n`);
     return result;
@@ -100,21 +100,22 @@ export function getRulePicture() {
     
     const instructions = `⚠️ RÈGLES D'AFFICHAGE D'IMAGES ⚠️
 
-Tu PEUX afficher des images via un TOOL: uiShowPicture({ filename }).
+Tu PEUX afficher des images via un TOOL: uiShowPicture({ filenames: [...] }).
 
 PROCESSUS À SUIVRE:
 1. Si tu n'as pas encore appelé getAvailableAssets(), appelle-le MAINTENANT pour obtenir la liste des images disponibles.
 2. Choisis un filename EXACT depuis la liste (casse, espaces, extensions).
-3. Déclenche l'affichage avec uiShowPicture({ filename }).
+3. Déclenche l'affichage avec uiShowPicture({ filenames: ["..."] }).
 4. Si l'image demandée n'existe pas dans la liste, dis-le clairement et n'appelle PAS uiShowPicture.
 
 RÈGLES IMPORTANTES:
 - N'appelle getAvailableAssets() qu'UNE SEULE FOIS maximum par conversation.
 - N'écris JAMAIS de slash-commandes dans le texte.
 
-MULTIPLE IMAGES:
-- Tu peux appeler uiShowPicture plusieurs fois si tu veux afficher plusieurs images.
-- Fais une phrase d'introduction globale, puis déclenche les affichages via tools (pas dans le texte).`;
+MULTIPLE IMAGES (IMPORTANT - évite les limites):
+- N'appelle PAS uiShowPicture plusieurs fois.
+- Fais UN SEUL appel: uiShowPicture({ filenames: ["img1.png","img2.png", ...] }).
+- Fais une phrase d'introduction globale, puis déclenche l'affichage via ce seul tool call (pas dans le texte).`;
 
     console.log(`${EMOJIS.success} ${CONSOLE_LOGS.functionCall} Instructions d'affichage d'images fournies`);
     

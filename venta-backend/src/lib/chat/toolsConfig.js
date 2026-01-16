@@ -29,9 +29,14 @@ export const tools = [
     parameters: {
       type: "object",
       properties: {
-        filename: { type: "string", description: "Nom exact du fichier image (asset) à afficher, ex: \"Pico Logo.png\"" }
+        filenames: {
+          type: "array",
+          description: "Liste de noms exacts de fichiers image (assets) à afficher en un SEUL appel. Ex: [\"Interface Menu Hikup Refonte.png\", \"Logo Hikup.png\"]",
+          items: { type: "string" },
+          minItems: 1
+        }
       },
-      required: ["filename"]
+      required: ["filenames"]
     }
   },
   {

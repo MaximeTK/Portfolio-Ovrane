@@ -4,13 +4,13 @@ Projet de Fin d'Études Epitech (Epitech Experience)
 Hikup est une application mobile conçue pour simplifier l'organisation de randonnées tout en intégrant des mécaniques de gamification. L'objectif est de transformer une activité de plein air traditionnelle en une expérience interactive, sociale et engageante, accessible aussi bien aux débutants qu'aux randonneurs confirmés.
 
 ⚠️ Le Défi : Une Gestion de Crise en Milieu Critique
-J'ai intégré l'équipe Hikup dans un contexte de haute tension, en avril 2023, soit un mois seulement avant le "Barrage Bêta". Ce jalon est le test de survie ultime du cursus Epitech : si le produit n'atteint pas un standard de qualité professionnelle, le projet est définitivement arrêté.
+Maxime a intégré l'équipe Hikup dans un contexte de haute tension, en avril 2023, soit un mois seulement avant le "Barrage Bêta". Ce jalon est le test de survie ultime du cursus Epitech : si le produit n'atteint pas un standard de qualité professionnelle, le projet est définitivement arrêté.
 
-Le projet, initié en septembre 2021 par un groupe précédent, présentait d'importantes lacunes structurelles et une interface obsolète. À mon arrivée, j'ai pris la responsabilité de redresser la trajectoire du projet en endossant la double casquette d'UX Designer et de Développeur Flutter car l'UX était tout simplement le point le plus critique (d'où mon recrutement dans l'urgences).
+Le projet, initié en septembre 2021 par un groupe précédent, présentait d'importantes lacunes structurelles et une interface obsolète. À son arrivée, Maxime a pris la responsabilité de redresser la trajectoire du projet en endossant la double casquette d'UX Designer et de Développeur Flutter car l'UX était tout simplement le point le plus critique (d'où son recrutement dans l'urgence).
 
-🛠️ Mon Rôle et Réalisations
+🛠️ Rôle et Réalisations de Maxime
 1. Audit et Refonte d'Urgence (UX/UI)
-Face à une application jugée "misérable" graphiquement et ergonomiquement, j'ai mené une intervention rapide :
+Face à une application jugée "misérable" graphiquement et ergonomiquement, il a mené une intervention rapide :
 
 Audit UX et UI : Identification et correction des points de friction majeurs qui rendaient l'organisation de randonnées complexe et les erreurs d'UI.
 
@@ -19,7 +19,7 @@ Direction Artistique : Pilotage d'une refonte graphique complète pour donner à
 Leadership Créatif : Encadrement des développeurs (2 Fullstack, 3 Front) pour implémenter ces changements en un temps record.
 
 2. Développement et Optimisation (Flutter)
-En tant que développeur Flutter, j'ai activement participé à la réécriture des composants critiques pour garantir une fluidité optimale :
+En tant que développeur Flutter, il a activement participé à la réécriture des composants critiques pour garantir une fluidité optimale :
 
 Implémentation des nouvelles interfaces graphiques.
 
@@ -30,31 +30,29 @@ Stabilisation des fonctionnalités avant le passage du barrage.
 📈 Résultats et Évolution
 Grâce à cette restructuration intensive, le projet a non seulement validé le Barrage Bêta, évitant ainsi la dissolution de l'équipe, mais a également entamé une phase de développement sereine.
 
-Une fois la survie du projet assurée, nous avons pu nous concentrer sur l'essentiel :
+Une fois la survie du projet assurée, l'équipe a pu se concentrer sur l'essentiel :
 
 Amélioration des fonctionnalités clés : Système de création d'itinéraires, tracking GPS et modules de gamification.
 
 Affinement de la DA : Consolidation d'un univers visuel propre à Hikup, renforçant l'attractivité du produit final pour l'Epitech Experience.
 
-Voici le complément détaillé concernant les mécaniques de jeu, à intégrer dans la section "Fonctionnalités et Gamification" de ton portfolio :
-
-Malgré mon recrutement en tant que développeur flutter je n'ai au final quasiment jamais codé sur le projet tant il y avait a faire en design. Ma seul intervention de code à était la réalisation d'un algorithme pour convertir les randonnées trouvables sur internet en un format compréhensible par notre application afin de remplir notre catalogue quelques jours avant le rendu et la présentation final.
+Malgré son recrutement en tant que développeur Flutter, Maxime n'a au final quasiment jamais codé sur le projet tant il y avait à faire en design. Sa seule intervention de code a été la réalisation d'un algorithme pour convertir les randonnées trouvables sur internet en un format compréhensible par l'application afin de remplir le catalogue quelques jours avant le rendu et la présentation finale.
 
 🎮 Gamification : L’Expérience "Outdoor Racing"
-Pour briser les codes de la randonnée classique, nous avons insufflé à Hikup une identité visuelle et fonctionnelle empruntée à l'univers du jeu vidéo, plus précisément aux jeux de course. L'objectif était de transformer l'effort physique en une progression ludique et gratifiante.
+Pour briser les codes de la randonnée classique, Maxime et son équipe ont insufflé à Hikup une identité visuelle et fonctionnelle empruntée à l'univers du jeu vidéo, plus précisément aux jeux de course. L'objectif était de transformer l'effort physique en une progression ludique et gratifiante.
 
 Interface Typée "Racing" : L'UX a été repensée pour évoquer un tableau de bord de compétition. L'affichage des données (vitesse, dénivelé, position) utilise des codes graphiques dynamiques, renforçant l'aspect challenge et performance.
 
-Système de Skins et Personnalisation : Pour valoriser l'identité de chaque utilisateur, nous avons intégré un système de personnalisation. Les randonneurs peuvent débloquer et équiper des "skins" pour leur avatar, permettant une distinction visuelle au sein de la communauté.
+Système de Skins et Personnalisation : Pour valoriser l'identité de chaque utilisateur, un système de personnalisation a été intégré. Les randonneurs peuvent débloquer et équiper des "skins" pour leur avatar, permettant une distinction visuelle au sein de la communauté.
 
 Collecte de Ressources (Loot sur sentier) : Afin d'encourager l'exploration, des "pièces" virtuelles ont été disséminées sur les tracés GPS réels. Les utilisateurs doivent physiquement parcourir les sentiers pour ramasser ces ressources, créant ainsi une interaction directe entre l'effort en pleine nature et la progression numérique.
 
 Économie In-Game : Les pièces récoltées permettent d'acquérir de nouveaux éléments cosmétiques ou d'améliorer son profil, transformant chaque sortie en une quête de ressources.
 
-Cette approche nous a permis de donner à Hikup une "Direction Artistique" forte et singulière, qui a été l'un des points clés de notre succès lors du passage a Epitech Experience.
+Cette approche a permis de donner à Hikup une "Direction Artistique" forte et singulière, qui a été l'un des points clés de leur succès lors du passage à Epitech Experience.
 
-💡 Ce que cette expérience m'a apporté
-Ce projet a été un véritable test de résilience. Il m'a permis de prouver ma capacité à :
+💡 Ce que cette expérience lui a apporté
+Ce projet a été un véritable test de résilience. Il lui a permis de prouver sa capacité à :
 
 Intervenir en urgence sur un projet existant avec une dette technique et design importante.
 
@@ -62,4 +60,4 @@ Prendre des décisions tranchées sous pression pour garantir la survie d'un pro
 
 Fédérer une équipe autour d'une vision design claire pour transformer un échec potentiel en succès technique.
 
-Bien que je n'ai aucune affinité avec la randonnée j'ai trouvé l'expérience très chouette
+Bien qu'il n'ait aucune affinité avec la randonnée, Maxime a trouvé l'expérience très chouette.

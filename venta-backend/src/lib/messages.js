@@ -47,11 +47,11 @@ export const SYSTEM_PROMPTS = {
     - Si l'utilisateur demande du code (snippet/exemple), réponds DIRECTEMENT dans le message avec un bloc Markdown (ex: \`\`\`c ... \`\`\`).
     - N'utilise PAS de tool UI pour afficher du code.
   - Actions UI disponibles (via tools):
-    - Afficher une image: uiShowPicture({ filename })
+    - Afficher une ou plusieurs images: uiShowPicture({ filenames: ["..."] })
     - Changer le fond: uiSetBackground({ paletteId })
     - Ouvrir une fenêtre: uiOpenWindow({ title })
   - INTERDIT d'écrire des slash-commandes dans le texte. Le frontend n'exécute plus ces commandes textuelles.
-  - INTERDIT de dire "voici une image / je t'affiche / je montre" si tu n'as pas déclenché uiShowPicture({ filename }). Même règle pour le fond sans uiSetBackground({ paletteId }).
+  - INTERDIT de dire "voici une image / je t'affiche / je montre" si tu n'as pas déclenché uiShowPicture({ filenames: [...] }). Même règle pour le fond sans uiSetBackground({ paletteId }).
   - Si l'utilisateur demande une image PRÉCISE (ex: "affiche l'interface", "montre le logo"), tu dois déclencher UNIQUEMENT l'image demandée (ne rajoute pas d'autres images "bonus").
   - Si le RAG fournit des filenames exacts, tu peux appeler uiShowPicture directement (pas besoin de getAvailableAssets).
   - Ne prétends JAMAIS que tu ne peux pas afficher des images ou changer le fond.
@@ -299,7 +299,7 @@ export const TOOL_DESCRIPTIONS = {
   
   getAvailableAssets: {
     name: 'getAvailableAssets',
-    description: 'Liste toutes les images disponibles (assets). Appelle uniquement si tu ne connais pas le filename exact ou si tu dois valider qu\'il existe. Si le RAG donne déjà un filename exact, appelle directement uiShowPicture({ filename }).',
+    description: 'Liste toutes les images disponibles (assets). Appelle uniquement si tu ne connais pas le filename exact ou si tu dois valider qu\'il existe. Si le RAG donne déjà des filenames exacts, appelle directement uiShowPicture({ filenames: [...] }).',
   },
   
   getAvailableColors: {
@@ -314,7 +314,7 @@ export const TOOL_DESCRIPTIONS = {
 
   uiShowPicture: {
     name: 'uiShowPicture',
-    description: 'Déclenche l\'affichage d\'une image (asset) dans l\'interface. À appeler après avoir validé le filename via getAvailableAssets(). Ne pas écrire de slash-commandes dans le texte.',
+    description: 'Déclenche l\'affichage d\'une ou plusieurs images (assets) dans l\'interface. Utilise TOUJOURS uiShowPicture({ filenames: ["A.png","B.png"] }) pour éviter les limites. À appeler après validation via getAvailableAssets() si nécessaire. Ne pas écrire de slash-commandes dans le texte.',
   },
 
   uiSetBackground: {

@@ -34,6 +34,42 @@ function toolCallKey(toolCall) {
   return `${name}::${stableStringify(args)}`;
 }
 
+function safeParseArgs(toolCall) {
+  const raw = toolCall?.function?.arguments;
+  if (!raw) return {};
+  try {
+    return typeof raw === 'string' ? JSON.parse(raw) : (raw || {});
+  } catch {
+    return {};
+  }
+}
+
+function shouldShortCircuitAfterTools(responseMessage) {
+  const calls = responseMessage?.tool_calls;
+  if (!Array.isArray(calls) || calls.length === 0) return false;
+  return calls.every((c) => c?.function?.name === 'uiShowPicture');
+}
+
+async function executeMergedUiShowPictureCalls(toolCalls) {
+  const filenames = [];
+  for (const tc of toolCalls) {
+    const args = safeParseArgs(tc);
+    if (Array.isArray(args.filenames)) {
+      filenames.push(...args.filenames);
+    } else if (typeof args.filename === 'string' && args.filename.trim()) {
+      filenames.push(args.filename);
+    }
+  }
+  const merged = {
+    id: toolCalls?.[0]?.id || 'merged-uiShowPicture',
+    function: {
+      name: 'uiShowPicture',
+      arguments: JSON.stringify({ filenames: Array.from(new Set(filenames)).filter(Boolean) })
+    }
+  };
+  return await executeToolCall(merged);
+}
+
 /**
  * Traite les tool calls de la réponse
  */
@@ -47,7 +83,24 @@ async function processToolCalls(responseMessage, messages, calledFunctions, seen
   });
   
   let functionCallCount = 0;
-  for (const toolCall of responseMessage.tool_calls) {
+  // Fusion anti-spam: plusieurs uiShowPicture -> un seul call exécuté
+  if (responseMessage.tool_calls.every((c) => c?.function?.name === 'uiShowPicture') && responseMessage.tool_calls.length > 1) {
+    const mergedResult = await executeMergedUiShowPictureCalls(responseMessage.tool_calls);
+    messages.push(mergedResult);
+    for (let i = 1; i < responseMessage.tool_calls.length; i += 1) {
+      const tc = responseMessage.tool_calls[i];
+      messages.push({
+        role: 'tool',
+        tool_call_id: tc.id,
+        name: 'uiShowPicture',
+        content: 'Fusionné: affichage géré par un seul appel uiShowPicture({ filenames: [...] }).',
+      });
+    }
+    const functionName = 'uiShowPicture';
+    const callCount = calledFunctions.get(functionName) || 0;
+    calledFunctions.set(functionName, callCount + 1);
+    functionCallCount += 1;
+  } else for (const toolCall of responseMessage.tool_calls) {
     const key = toolCallKey(toolCall);
     if (seenToolCalls.has(key)) {
       // Anti-boucle: répondre au tool call sans le ré-exécuter.
@@ -111,6 +164,14 @@ export async function callOpenAI(openai, messages, tools) {
     const responseMessage = parseOpenAIResponse(response);
     
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+      // Zéro surcoût: si c'est uniquement des uiShowPicture, on exécute et on renvoie une réponse locale,
+      // sans rappeler l'API.
+      if (shouldShortCircuitAfterTools(responseMessage)) {
+        await processToolCalls(responseMessage, messages, calledFunctions, seenToolCalls);
+        return (responseMessage.content && typeof responseMessage.content === 'string' && responseMessage.content.trim() !== '')
+          ? responseMessage.content.trim()
+          : "D'accord — j'affiche les visuels.";
+      }
       const callCount = await processToolCalls(responseMessage, messages, calledFunctions, seenToolCalls);
       totalFunctionCallCount += callCount;
       continue;

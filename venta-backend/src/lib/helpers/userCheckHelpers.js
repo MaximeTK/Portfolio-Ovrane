@@ -73,7 +73,7 @@ export async function checkUser({ name }, currentRequestContext) {
         ignored: true,
         message:
           `Paramètre ignoré: "${name}" ressemble à un nom de fichier/asset. ` +
-          `Ne pas appeler CreateUserProfile. Pour afficher une image, utilise uiShowPicture({ filename }).`,
+          `Ne pas appeler CreateUserProfile. Pour afficher une image, utilise uiShowPicture({ filenames: ["..."] }) (préféré) ou uiShowPicture({ filename }) (compat).`,
       };
     }
     

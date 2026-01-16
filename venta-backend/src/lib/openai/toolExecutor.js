@@ -65,8 +65,9 @@ function formatFunctionResponse(functionName, functionResponse) {
 ${functionResponse.assets.join('\n')}
 
 🎯 INSTRUCTIONS IMPORTANTES:
-- Tu dois déclencher l'affichage d'image via un TOOL: uiShowPicture({ filename })
-- filename doit être un NOM EXACT issu de la liste ci-dessus (casse/espaces/extensions)
+- Tu dois déclencher l'affichage d'image via un TOOL: uiShowPicture({ filenames: [...] })
+- filenames doit être un NOM EXACT issu de la liste ci-dessus (casse/espaces/extensions)
+- Si tu dois afficher plusieurs images, fais UN SEUL appel uiShowPicture({ filenames: ["...","..."] })
 - N'écris PAS de slash-commandes dans le texte
 - N'APPELLE PLUS getAvailableAssets() - tu as déjà toutes les informations nécessaires`;
   }

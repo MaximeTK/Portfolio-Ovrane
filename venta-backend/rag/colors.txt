@@ -2,19 +2,19 @@ LISTE COMPLÈTE DES COULEURS DE FOND DISPONIBLES
 
 ⚠️ IMPORTANT : Cette liste contient TOUTES les combinaisons de couleurs disponibles pour le fond du site.
 
-RÈGLES D'UTILISATION
-1. Déclenche TOUJOURS le changement via le tool uiSetBackground({ paletteId }) avec un ID exact
-2. L'ID doit être EXACTEMENT comme indiqué
-3. Ne suggère QUE des couleurs qui existent dans cette liste
-4. La première couleur sera en haut, la seconde en bas (dégradé vertical)
+RÈGLES D'UTILISATION CRITIQUES
+1. UTILISE UNIQUEMENT les IDs listés ci-dessous (en minuscules).
+2. NE TRADUIS JAMAIS l'ID (ex: "spectre" ne doit PAS devenir "spectrum").
+3. Si l'utilisateur utilise un terme anglais (ex: "gold"), utilise l'ID correspondant français (ex: "doré").
+4. La première couleur sera en haut, la seconde en bas (dégradé vertical).
 
-EXEMPLES D'USAGE
-Si l'utilisateur demande :
-- "Change le fond en bleu" → uiSetBackground({ paletteId: "ocean" })
-- "Mets un fond sombre" → uiSetBackground({ paletteId: "noir" })
-- "Un fond rose" → uiSetBackground({ paletteId: "rose" })
-- "Fond violet" → uiSetBackground({ paletteId: "mauve" })
-- "Remet le fond par défaut" → uiSetBackground({ paletteId: "default" })
+MAPPING DES ERREURS COURANTES (Si l'utilisateur demande X, utilise l'ID Y) :
+- "Spectrum" -> id: "spectre"
+- "Silver" -> id: "argenté"
+- "Gold" -> id: "doré"
+- "Forest" -> id: "forêt"
+- "Sea/Ocean" -> id: "ocean"
+- "Dark" -> id: "noir" ou "default"
 
 PALETTES DISPONIBLES :
 
@@ -23,7 +23,7 @@ Nom : Défaut (Sombre)
 Couleur Haute : #121219
 Couleur Basse : #0a0a0d
 Description : Le fond sombre par défaut du site
-Mots-clés : défaut, sombre, noir, original
+Mots-clés : défaut, sombre, noir, original, default, dark
 Tool : uiSetBackground({ paletteId: "default" })
 
 argenté
@@ -31,7 +31,7 @@ Nom : Argenté
 Couleur Haute : #8A8A8A
 Couleur Basse : #495656
 Description : Dégradé argenté
-Mots-clés : argenté, gris clair, métal, argent
+Mots-clés : argenté, gris clair, métal, argent, silver, metal
 Tool : uiSetBackground({ paletteId: "argenté" })
 
 gris
@@ -39,7 +39,7 @@ Nom : Gris
 Couleur Haute : #667B97
 Couleur Basse : #636C71
 Description : Dégradé gris légèrement bleuté
-Mots-clés : gris, neutre, bleuté
+Mots-clés : gris, neutre, bleuté, gray, grey
 Tool : uiSetBackground({ paletteId: "gris" })
 
 noir
@@ -47,7 +47,7 @@ Nom : Noir
 Couleur Haute : #000000
 Couleur Basse : #353535
 Description : Dégradé noir luxueux
-Mots-clés : noir, sombre, élégant, luxe
+Mots-clés : noir, sombre, élégant, luxe, black, dark
 Tool : uiSetBackground({ paletteId: "noir" })
 
 doré
@@ -55,7 +55,7 @@ Nom : Doré
 Couleur Haute : #251E12
 Couleur Basse : #847144
 Description : Dégradé doré luxueux
-Mots-clés : doré, or, luxe, élégant, chic
+Mots-clés : doré, or, luxe, élégant, chic, gold, golden
 Tool : uiSetBackground({ paletteId: "doré" })
 
 jaune
@@ -63,7 +63,7 @@ Nom : Jaune
 Couleur Haute : #F7C551
 Couleur Basse : #754E00
 Description : Dégradé jaune
-Mots-clés : jaune, lumineux, soleil, chaleureux
+Mots-clés : jaune, lumineux, soleil, chaleureux, yellow, sun
 Tool : uiSetBackground({ paletteId: "jaune" })
 
 orange
@@ -79,7 +79,7 @@ Nom : Rouge
 Couleur Haute : #BB4848
 Couleur Basse : #3D0000
 Description : Dégradé rouge
-Mots-clés : rouge, passion, intense, feu
+Mots-clés : rouge, passion, intense, feu, red, fire
 Tool : uiSetBackground({ paletteId: "rouge" })
 
 ecarlate
@@ -87,7 +87,7 @@ Nom : Écarlate
 Couleur Haute : #24000A
 Couleur Basse : #780022
 Description : Dégradé écarlate
-Mots-clés : écarlate, rouge profond, bordeaux, intense
+Mots-clés : écarlate, rouge profond, bordeaux, intense, scarlet, crimson
 Tool : uiSetBackground({ paletteId: "ecarlate" })
 
 vert_clair
@@ -95,7 +95,7 @@ Nom : Vert Clair
 Couleur Haute : #27524C
 Couleur Basse : #58B460
 Description : Dégradé vert clair
-Mots-clés : vert clair, frais, nature, printemps
+Mots-clés : vert clair, frais, nature, printemps, light green
 Tool : uiSetBackground({ paletteId: "vert_clair" })
 
 forêt
@@ -103,7 +103,7 @@ Nom : Forêt
 Couleur Haute : #001315
 Couleur Basse : #244925
 Description : Dégradé vert forêt
-Mots-clés : forêt, vert foncé, nature, sombre
+Mots-clés : forêt, vert foncé, nature, sombre, forest, dark green
 Tool : uiSetBackground({ paletteId: "forêt" })
 
 marée
@@ -111,7 +111,7 @@ Nom : Marée
 Couleur Haute : #001315
 Couleur Basse : #244049
 Description : Dégradé vert marée
-Mots-clés : marée, vert bleu, océan, profond
+Mots-clés : marée, vert bleu, océan, profond, tide, teal
 Tool : uiSetBackground({ paletteId: "marée" })
 
 feuille
@@ -119,7 +119,7 @@ Nom : Feuille
 Couleur Haute : #798B43
 Couleur Basse : #174100
 Description : Dégradé vert feuille
-Mots-clés : feuille, vert naturel, végétal
+Mots-clés : feuille, vert naturel, végétal, leaf, nature
 Tool : uiSetBackground({ paletteId: "feuille" })
 
 aqua
@@ -127,7 +127,7 @@ Nom : Aqua
 Couleur Haute : #17A0AE
 Couleur Basse : #002A38
 Description : Dégradé aqua
-Mots-clés : aqua, turquoise, cyan, eau
+Mots-clés : aqua, turquoise, cyan, eau, water
 Tool : uiSetBackground({ paletteId: "aqua" })
 
 ocean
@@ -135,7 +135,7 @@ Nom : Ocean
 Couleur Haute : #1758AE
 Couleur Basse : #000638
 Description : Dégradé ocean
-Mots-clés : océan, bleu, mer, profond
+Mots-clés : océan, bleu, mer, profond, ocean, sea, blue
 Tool : uiSetBackground({ paletteId: "ocean" })
 
 hopa
@@ -151,7 +151,7 @@ Nom : Gris Ciel
 Couleur Haute : #485176
 Couleur Basse : #8592C4
 Description : Dégradé gris ciel
-Mots-clés : gris ciel, bleu gris, doux
+Mots-clés : gris ciel, bleu gris, doux, sky grey
 Tool : uiSetBackground({ paletteId: "gris_ciel" })
 
 spectre
@@ -159,7 +159,7 @@ Nom : Spectre
 Couleur Haute : #241E47
 Couleur Basse : #5948AD
 Description : Dégradé spectre
-Mots-clés : spectre, violet bleu, mystique
+Mots-clés : spectre, violet bleu, mystique, spectrum
 Tool : uiSetBackground({ paletteId: "spectre" })
 
 mauve
@@ -167,7 +167,7 @@ Nom : Mauve
 Couleur Haute : #12002B
 Couleur Basse : #40005B
 Description : Dégradé mauve
-Mots-clés : mauve, violet foncé, profond
+Mots-clés : mauve, violet foncé, profond, purple
 Tool : uiSetBackground({ paletteId: "mauve" })
 
 rose
@@ -175,7 +175,7 @@ Nom : Rose
 Couleur Haute : #832B77
 Couleur Basse : #9367A6
 Description : Dégradé rose
-Mots-clés : rose, violet rose, doux
+Mots-clés : rose, violet rose, doux, pink
 Tool : uiSetBackground({ paletteId: "rose" })
 
 cyberpunk
@@ -183,7 +183,7 @@ Nom : Cyberpunk
 Couleur Haute : #5117AE
 Couleur Basse : #000638
 Description : Dégradé cyberpunk
-Mots-clés : cyberpunk, violet bleu, futuriste, tech
+Mots-clés : cyberpunk, violet bleu, futuriste, tech, neon
 Tool : uiSetBackground({ paletteId: "cyberpunk" })
 
 melon
@@ -199,7 +199,7 @@ Nom : Goyavier
 Couleur Haute : #783434
 Couleur Basse : #451919
 Description : Dégradé goyavier
-Mots-clés : goyavier, rouge brun, terre
+Mots-clés : goyavier, rouge brun, terre, guava
 Tool : uiSetBackground({ paletteId: "goyavier" })
 
 marron
@@ -207,7 +207,7 @@ Nom : Marron
 Couleur Haute : #241F16
 Couleur Basse : #311E00
 Description : Dégradé marron
-Mots-clés : marron, brun, chocolat, terre
+Mots-clés : marron, brun, chocolat, terre, brown, chocolate
 Tool : uiSetBackground({ paletteId: "marron" })
 
 vin
@@ -215,5 +215,5 @@ Nom : Vin
 Couleur Haute : #110105
 Couleur Basse : #20000A
 Description : Dégradé vin
-Mots-clés : vin, bordeaux, rouge profond, sombre
+Mots-clés : vin, bordeaux, rouge profond, sombre, wine, burgundy
 Tool : uiSetBackground({ paletteId: "vin" })

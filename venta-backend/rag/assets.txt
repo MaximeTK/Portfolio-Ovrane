@@ -3,16 +3,18 @@ LISTE COMPLÈTE DES ASSETS DISPONIBLES
 ⚠️ IMPORTANT : Cette liste contient TOUS les fichiers visuels que tu peux Afficher.
 
 RÈGLES D'UTILISATION
-1. Déclenche TOUJOURS l'affichage via le tool uiShowPicture({ filename }) avec un nom exact d'asset
+1. Déclenche TOUJOURS l'affichage via le tool uiShowPicture({ filenames: ["..."] }) avec un nom exact d'asset
 2. Le nom du fichier doit être EXACTEMENT comme indiqué (sensible à la casse)
 3. Ne suggère QUE des fichiers qui existent dans cette liste
 4. Pour les animations Lottie, utilise le fichier .json
+5. IMPORTANT: Si tu dois afficher plusieurs images, fais UN SEUL appel uiShowPicture({ filenames: ["img1.png","img2.png"] }) (évite les limites de tools)
 
 EXEMPLES D'USAGE
 Si l'utilisateur demande :
-- "Montre-moi Pico" → uiShowPicture({ filename: "Pico Interface.png" })
-- "Comment Pico ressemble ?" → uiShowPicture({ filename: "Pico Interface.png" })
-- "Le logo de Pico" → uiShowPicture({ filename: "Pico Logo.png" })
+- "Montre-moi Pico" → uiShowPicture({ filenames: ["Pico Interface.png"] })
+- "Comment Pico ressemble ?" → uiShowPicture({ filenames: ["Pico Interface.png"] })
+- "Le logo de Pico" → uiShowPicture({ filenames: ["Pico Logo.png"] })
+- "Montre le menu + la map Hikup" → uiShowPicture({ filenames: ["Interface Menu Hikup Refonte.png","Interface Map Jour Hikup Refonte.png"] })
 
 IMAGES :
 
@@ -20,25 +22,25 @@ Pico Interface.png
 Description : Capture d'écran de l'interface utilisateur de Pico
 Utilisation : Pour montrer à quoi ressemble Pico, son interface, son design
 Mots-clés : interface, UI, design, apparence de Pico, écran
-Tool : uiShowPicture({ filename: "Pico Interface.png" })
+Tool : uiShowPicture({ filenames: ["Pico Interface.png"] })
 
 Pico Interface Login.png
 Description : Montre la page de login de Pico
 Utilisation : Pour montrer la page de login de Pico
 Mots-clés : Pico, Page, interface, login, connexion, inscription
-Tool : uiShowPicture({ filename: "Pico Interface Login.png" })
+Tool : uiShowPicture({ filenames: ["Pico Interface Login.png"] })
 
 Proloquo2Go.png
 Description : interface de Proloquo2Go
 Utilisation : Pour montrer l'interface de Proloquo2Go
 Mots-clés : Pico, Proloquo2Go, Interface
-Tool : uiShowPicture({ filename: "Proloquo2Go.png" })
+Tool : uiShowPicture({ filenames: ["Proloquo2Go.png"] })
 
 Pico Logo.png
 Description : Logo officiel de Pico l'assistant IA
 Utilisation : Pour montrer le logo, l'identité visuelle de Pico
 Mots-clés : logo, marque, identité, branding
-Tool : uiShowPicture({ filename: "Pico Logo.png" })
+Tool : uiShowPicture({ filenames: ["Pico Logo.png"] })
 
 === HIKUP — AFFICHES (posters) ===
 Note : “Affiche” (nom) = poster. Les visuels “Evolution/Architecture/Interface” sont d'autres supports (à ne pas compter comme des affiches).
@@ -50,7 +52,7 @@ Série : Affiches Hikup (1/3)
 Description : Affiche du projet Hikup Numero 1
 Utilisation : Pour montrer l'Affiche utilisé lors de Epitech Expérience
 Mots-clés : Affiche, affiches, poster, hikup, hik'up, identité, branding
-Tool : uiShowPicture({ filename: "Affiche Hikup 1.png" })
+Tool : uiShowPicture({ filenames: ["Affiche Hikup 1.png"] })
 
 Affiche Hikup 2.png
 Type : Affiche (poster)
@@ -58,7 +60,7 @@ Série : Affiches Hikup (2/3)
 Description : Affiche du projet Hikup Numero 2
 Utilisation : Pour montrer l'Affiche utilisé lors de Epitech Expérience
 Mots-clés : Affiche, affiches, poster, hikup, hik'up, identité, branding
-Tool : uiShowPicture({ filename: "Affiche Hikup 2.png" })
+Tool : uiShowPicture({ filenames: ["Affiche Hikup 2.png"] })
 
 Affiche Hikup 3.png
 Type : Affiche (poster)
@@ -66,7 +68,7 @@ Série : Affiches Hikup (3/3)
 Description : Affiche du projet Hikup Numero 3
 Utilisation : Pour montrer l'Affiche utilisé lors de Epitech Expérience
 Mots-clés : Affiche, affiches, poster, hikup, hik'up, identité, branding
-Tool : uiShowPicture({ filename: "Affiche Hikup 3.png" })
+Tool : uiShowPicture({ filenames: ["Affiche Hikup 3.png"] })
 
 === HIKUP — ÉVOLUTIONS / ARCHITECTURE (pas des affiches) ===
 
@@ -75,174 +77,178 @@ Type : Evolution (visuel d'évolution, pas une affiche)
 Description : Visuel d'évolution du design de Hikup entre le début et la fin du projet (ce n'est pas une affiche)
 Utilisation : Pour montrer l'évolution du design de Hikup entre le début et la fin du projet
 Mots-clés : Evolution, évolution, maquette, hikup, hik'up, design, identité, branding
-Tool : uiShowPicture({ filename: "Evolution Design Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Evolution Design Hikup.png"] })
 
 Evolution Parcours Hikup.png
 Type : Evolution (visuel d'évolution, pas une affiche)
 Description : Visuel d'évolution du Parcours de Hikup entre le début et la fin du projet (ce n'est pas une affiche)
 Utilisation : Pour montrer l'évolution du Parcours de Hikup entre le début et la fin du projet
 Mots-clés : Evolution, évolution, maquette, hikup, hik'up, Parcours, identité, branding
-Tool : uiShowPicture({ filename: "Evolution Parcours Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Evolution Parcours Hikup.png"] })
 
 Architecture Hikup.png
 Type : Architecture (schéma, pas une affiche)
 Description : architecture global du projet Hikup
 Utilisation : Pour montrer l'architecture global du projet Hikup
 Mots-clés : Architecture, hikup, hik'up, Parcours, back-end, backend
-Tool : uiShowPicture({ filename: "Architecture Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Architecture Hikup.png"] })
 
 Interface Commentaire Hikup.png
 Description : interface des commentaire d'une randonnée sur Hikup
 Utilisation : Pour montrer l'interface des commentaire d'une randonnée sur Hikup
 Mots-clés : Interface, hikup, hik'up, commentaire, design
-Tool : uiShowPicture({ filename: "Interface Commentaire Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Interface Commentaire Hikup.png"] })
 
 Logo Hikup.png
 Description : Montre le logo de l'application Hikup
 Utilisation : Pour montrer le logo de l'application Hikup
 Mots-clés : Logo, hikup, hik'up
-Tool : uiShowPicture({ filename: "Logo Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Logo Hikup.png"] })
 
 Interface Rando Yellow Hikup.png
 Description : interface du menu d'une randonnée jaune sur hikup
 Utilisation : Pour montrer le menu d'une randonnée jaune sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, jaune
-Tool : uiShowPicture({ filename: "Interface Rando Yellow Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Interface Rando Yellow Hikup.png"] })
 
 Interface Rando Purple Hikup.png
 Description : interface du menu d'une randonnée Purple sur hikup
 Utilisation : Pour montrer le menu d'une randonnée Purple sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, Purple
-Tool : uiShowPicture({ filename: "Interface Rando Purple Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Interface Rando Purple Hikup.png"] })
 
 Interface Liste Rando Hikup.png
 Description : interface des listes d'invitation pour une randonnée sur hikup
 Utilisation : Pour montrer l'interface des listes d'invitation pour une randonnée sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, Liste
-Tool : uiShowPicture({ filename: "Interface Liste Rando Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Interface Liste Rando Hikup.png"] })
 
 Interface Map Blue Hikup.png
 Description : interface de la carte avec une randonnée bleu sur hikup
 Utilisation : Pour montrer l'interface de la carte avec une randonnée bleu sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, Blue, Map
-Tool : uiShowPicture({ filename: "Interface Map Blue Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Interface Map Blue Hikup.png"] })
 
 Interface Map Yellow Hikup.png
 Description : interface de la carte avec une randonnée Jaune sur hikup
 Utilisation : Pour montrer l'interface de la carte avec une randonnée Jaune sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, Yellow, Map
-Tool : uiShowPicture({ filename: "Interface Map Yellow Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Interface Map Yellow Hikup.png"] })
 
 Evolution Beta Hikup Inscription.png
 Description : evolution de l'interface de la page d'inscription sur hikup
 Utilisation : Pour montrer l'evolution de l'interface de la page d'inscription sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, Inscription, Evolution, Beta
-Tool : uiShowPicture({ filename: "Evolution Beta Hikup Inscription.png" })
+Tool : uiShowPicture({ filenames: ["Evolution Beta Hikup Inscription.png"] })
 
 Evolution Beta Hikup Menu.png
 Description : evolution de l'interface de la page du Menu sur hikup
 Utilisation : Pour montrer l'evolution de l'interface de la page d'Menu sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, Menu, Evolution, Beta
-Tool : uiShowPicture({ filename: "Evolution Beta Hikup Menu.png" })
+Tool : uiShowPicture({ filenames: ["Evolution Beta Hikup Menu.png"] })
 
 Evolution Beta Hikup Map.png
 Description : evolution de l'interface de la page Map sur hikup
 Utilisation : Pour montrer l'evolution de l'interface de la page Map sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, Yellow, Map, Evolution, Beta
-Tool : uiShowPicture({ filename: "Evolution Beta Hikup Map.png" })
+Tool : uiShowPicture({ filenames: ["Evolution Beta Hikup Map.png"] })
 
 Interface Map Hikup Final.png
 Description : Montre le design final de l'interface de la page Map sur hikup
 Utilisation : Pour montrer le design final de l'interface de la page Map sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, Interface, Map, Design, final, résultat
-Tool : uiShowPicture({ filename: "Interface Map Hikup Final.png" })
+Tool : uiShowPicture({ filenames: ["Interface Map Hikup Final.png"] })
 
 Interface Menu Hikup Final.png
 Description : Montre le design final de l'interface de la page Menu sur hikup
 Utilisation : Pour montrer le design final de l'interface de la page Menu sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, Interface, Menu, Design, final, résultat
-Tool : uiShowPicture({ filename: "Interface Menu Hikup Final.png" })
+Tool : uiShowPicture({ filenames: ["Interface Menu Hikup Final.png"] })
 
 Interface Profil Hikup Final.png
 Description : Montre le design final de l'interface de la page Profil sur hikup
 Utilisation : Pour montrer le design final de l'interface de la page Profil sur hikup
 Mots-clés : hikup, hik'up, Rando, Randonnée, interface, Profil, Design, final, résultat
-Tool : uiShowPicture({ filename: "Interface Profil Hikup Final.png" })
+Tool : uiShowPicture({ filenames: ["Interface Profil Hikup Final.png"] })
 
 Interface Map Nuit Hikup Refonte.png
 Description : Montre une refonte du design de l'interface de la map sur hikup fait en 2025 (version nuit)
 Utilisation : Pour montrer une refonte du design de l'interface de la map sur hikup fait en 2025 version nuit
 Mots-clés : hikup, hik'up, Rando, Randonnée, map, Profil, Design, refonte, nuit
-Tool : uiShowPicture({ filename: "Interface Map Nuit Hikup Refonte.png" })
+Tool : uiShowPicture({ filenames: ["Interface Map Nuit Hikup Refonte.png"] })
 
 Interface Map Jour Hikup Refonte.png
 Description : Montre une refonte du design de l'interface de la map sur hikup fait en 2025 (version jour)
 Utilisation : Pour montrer une refonte du design de l'interface de la map sur hikup fait en 2025 version jour
 Mots-clés : hikup, hik'up, Rando, Randonnée, map, Profil, Design, refonte, jour
-Tool : uiShowPicture({ filename: "Interface Map Jour Hikup Refonte.png" })
+Tool : uiShowPicture({ filenames: ["Interface Map Jour Hikup Refonte.png"] })
 
 Interface Map Rando Hikup Refonte.png
 Description : Montre une refonte du design de l'interface de la map sur hikup fait en 2025 (version nuit, avec rando)
 Utilisation : Pour montrer une refonte du design de l'interface de la map sur hikup fait en 2025 version nuit avec rando
 Mots-clés : hikup, hik'up, Rando, Randonnée, map, Profil, Design, refonte, nuit
-Tool : uiShowPicture({ filename: "Interface Map Rando Hikup Refonte.png" })
+Tool : uiShowPicture({ filenames: ["Interface Map Rando Hikup Refonte.png"] })
 
 Interface Menu Hikup Refonte.png
 Description : Montre une refonte du design de l'interface du Menu sur hikup fait en 2025
 Utilisation : Pour montrer une refonte du design de l'interface du Menu sur hikup fait en 2025
 Mots-clés : hikup, hik'up, Rando, Randonnée, Menu, Design, refonte
-Tool : uiShowPicture({ filename: "Interface Menu Hikup Refonte.png" })
+Tool : uiShowPicture({ filenames: ["Interface Menu Hikup Refonte.png"] })
 
 Interface Quete Hikup Refonte.png
 Description : Montre une refonte du design de l'interface du Quete sur hikup fait en 2025
 Utilisation : Pour montrer une refonte du design de l'interface du Quete sur hikup fait en 2025
 Mots-clés : hikup, hik'up, Rando, Randonnée, Quete, Design, refonte
-Tool : uiShowPicture({ filename: "Interface Quete Hikup Refonte.png" })
+Tool : uiShowPicture({ filenames: ["Interface Quete Hikup Refonte.png"] })
 
 Interface Messagerie Hikup Refonte.png
 Description : Montre une refonte du design de l'interface du Messagerie sur hikup fait en 2025
 Utilisation : Pour montrer une refonte du design de l'interface du Messagerie sur hikup fait en 2025
 Mots-clés : hikup, hik'up, Rando, Randonnée, Messagerie, Design, refonte
-Tool : uiShowPicture({ filename: "Interface Messagerie Hikup Refonte.png" })
+Tool : uiShowPicture({ filenames: ["Interface Messagerie Hikup Refonte.png"] })
 
 Interface Tchat Hikup Refonte.png
 Description : Montre une refonte du design de l'interface du Tchat sur hikup fait en 2025
 Utilisation : Pour montrer une refonte du design de l'interface du Tchat sur hikup fait en 2025
 Mots-clés : hikup, hik'up, Rando, Randonnée, Tchat, Design, refonte
-Tool : uiShowPicture({ filename: "Interface Tchat Hikup Refonte.png" })
+Tool : uiShowPicture({ filenames: ["Interface Tchat Hikup Refonte.png"] })
 
 Refonte Visuel Hikup.png
 Description : Montre une refonte du design de hikup fait en 2025
 Utilisation : Pour montrer une refonte du design de hikup fait en 2025
 Mots-clés : hikup, hik'up, Rando, Randonnée, Tchat, Design, refonte
-Tool : uiShowPicture({ filename: "Refonte Visuel Hikup.png" })
+Tool : uiShowPicture({ filenames: ["Refonte Visuel Hikup.png"] })
 
 CV.png
 Format : PNG uniquement (pas de PDF)
 Description : Montre le CV de Maxime Thiong-kay, Version Noir
 Utilisation : Pour montrer le CV de Maxime Thiong-kay, Version Noir
 Mots-clés : CV, Maxime
-Tool : uiShowPicture({ filename: "CV.png" })
+Tool : uiShowPicture({ filenames: ["CV.png"] })
 
 CV Business.png
 Format : PNG uniquement (pas de PDF)
 Description : Montre le CV Business de Maxime Thiong-kay, Version Business
 Utilisation : Pour montrer le CV Business de Maxime Thiong-kay, Version Business
 Mots-clés : CV Business, Maxime
-Tool : uiShowPicture({ filename: "CV Business.png" })
+Tool : uiShowPicture({ filenames: ["CV Business.png"] })
 
 CV Imprimable.png
 Format : PNG uniquement (pas de PDF)
 Description : Montre le CV Imprimable de Maxime Thiong-kay, Version Imprimable
 Utilisation : Pour montrer le CV Imprimable de Maxime Thiong-kay, Version Imprimable
 Mots-clés : CV Imprimable, Maxime
-Tool : uiShowPicture({ filename: "CV Imprimable.png" })
+Tool : uiShowPicture({ filenames: ["CV Imprimable.png"] })
 
 CV Noir Eclairer.png
 Format : PNG uniquement (pas de PDF)
 Description : Montre le CV Noir Eclairer de Maxime Thiong-kay, Version Noir Eclairer
 Utilisation : Pour montrer le CV Noir Eclairer de Maxime Thiong-kay, Version Noir Eclairer
 Mots-clés : CV Noir Eclairer, Maxime
-Tool : uiShowPicture({ filename: "CV Noir Eclairer.png" })
+Tool : uiShowPicture({ filenames: ["CV Noir Eclairer.png"] })
+
+
+
+
 
 

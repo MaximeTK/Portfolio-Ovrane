@@ -58,31 +58,63 @@ function pushUiCommand(command, parameter) {
   return { success: true };
 }
 
-export async function uiShowPicture({ filename }) {
-  const normalized = normalizeAssetParamToFilename(filename);
-  if (!normalized || !isValidAssetFilename(normalized)) {
+export async function uiShowPicture({ filename, filenames }) {
+  // Support multi-images: { filenames: [...] } (préféré) + compat { filename: "..." }
+  const requested = Array.isArray(filenames) && filenames.length > 0
+    ? filenames
+    : (typeof filename === 'string' && filename.trim() ? [filename] : []);
+
+  if (requested.length === 0) {
     return {
       success: false,
       message:
-        'filename invalide (doit être un nom exact de fichier image existant, ex: "CV.png"). ' +
-        'N’utilise jamais de PDF. Si tu n’es pas sûr, appelle getAvailableAssets().',
+        'Paramètres invalides. Utilise uiShowPicture({ filenames: ["A.png", "B.png"] }) ' +
+        'ou (compat) uiShowPicture({ filename: "A.png" }).',
     };
   }
 
   const known = getKnownAssetFilenames();
-  // Si on a une liste d'assets, on force l'appartenance (anti-hallucination)
-  if (known.size > 0 && !known.has(normalized)) {
-    return {
-      success: false,
-      message:
-        `Asset inconnu: "${normalized}". ` +
-        `Ne l'invente pas. Appelle getAvailableAssets() et utilise un filename EXACT de la liste.`,
-    };
+  let pushed = 0;
+  const normalizedList = [];
+
+  for (const raw of requested) {
+    const normalized = normalizeAssetParamToFilename(raw);
+    if (!normalized || !isValidAssetFilename(normalized)) {
+      return {
+        success: false,
+        message:
+          `filename invalide: "${String(raw)}" (doit être un nom exact de fichier image existant, ex: "CV.png"). ` +
+          'N’utilise jamais de PDF. Si tu n’es pas sûr, appelle getAvailableAssets().',
+      };
+    }
+
+    // Si on a une liste d'assets, on force l'appartenance (anti-hallucination)
+    if (known.size > 0 && !known.has(normalized)) {
+      return {
+        success: false,
+        message:
+          `Asset inconnu: "${normalized}". ` +
+          `Ne l'invente pas. Appelle getAvailableAssets() et utilise un filename EXACT de la liste.`,
+      };
+    }
+
+    normalizedList.push(normalized);
   }
-  const r = pushUiCommand('ShowPicture', normalized);
-  return r.success
-    ? { success: true, message: `Image demandée: ${normalized}` }
-    : r;
+
+  // Éviter doublons (ex: même image demandée deux fois)
+  const deduped = Array.from(new Set(normalizedList));
+  for (const normalized of deduped) {
+    const r = pushUiCommand('ShowPicture', normalized);
+    if (!r.success) return r;
+    pushed += 1;
+  }
+
+  return {
+    success: true,
+    message: pushed === 1
+      ? `Image demandée: ${deduped[0]}`
+      : `Images demandées (${pushed}): ${deduped.join(', ')}`
+  };
 }
 
 export async function uiSetBackground({ paletteId }) {

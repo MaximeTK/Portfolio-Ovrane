@@ -1,7 +1,7 @@
 Aide visuelle (à utiliser selon le contexte et/ou la pertinence) :
-- Si l'utilisateur demande l'INTERFACE / à quoi ressemble Pico : appeler uiShowPicture({ filename: "Pico Interface.png" })
-- Si l'utilisateur demande le LOGO / identité visuelle : appeler uiShowPicture({ filename: "Pico Logo.png" })
-- Si l'utilisateur demande d'AFFICHER TOUTES les images liées à Pico : appeler uiShowPicture({ filename: "Pico Interface.png" }) puis uiShowPicture({ filename: "Pico Logo.png" })
+- Si l'utilisateur demande l'INTERFACE / à quoi ressemble Pico : appeler uiShowPicture({ filenames: ["Pico Interface.png"] })
+- Si l'utilisateur demande le LOGO / identité visuelle : appeler uiShowPicture({ filenames: ["Pico Logo.png"] })
+- Si l'utilisateur demande d'AFFICHER TOUTES les images liées à Pico : appeler uiShowPicture({ filenames: ["Pico Interface.png","Pico Logo.png"] }) (UN SEUL appel)
 - Si l'utilisateur demande une PRÉSENTATION GÉNÉRALE de Pico : tu peux afficher l'interface en priorité, et le logo uniquement si ça apporte vraiment quelque chose.
 
 🏛️ Analyse Comparative et Genèse du Projet
