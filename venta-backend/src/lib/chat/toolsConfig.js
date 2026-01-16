@@ -94,6 +94,7 @@ export const tools = [
       required: ["name"]
     }
   },
+/*
   {
     type: "function",
     name: TOOL_DESCRIPTIONS.SwitchUserProfile.name,
@@ -107,5 +108,6 @@ export const tools = [
       required: ["name"]
     }
   }
+*/
 ];
 

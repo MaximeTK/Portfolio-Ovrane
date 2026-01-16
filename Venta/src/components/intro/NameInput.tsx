@@ -63,9 +63,13 @@ export const NameInput = ({ onSubmit }: NameInputProps) => {
   }, [appState]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVal = e.target.value.toUpperCase();
-    if (newVal.length <= 25) {
-      setValue(newVal);
+    const rawVal = e.target.value;
+    // Uniquement lettres, chiffres, espaces, tiret (-) et underscore (_)
+    if (/^[a-zA-Z0-9\s\-_]*$/.test(rawVal)) {
+      const newVal = rawVal.toUpperCase();
+      if (newVal.length <= 25) {
+        setValue(newVal);
+      }
     }
   };
 
