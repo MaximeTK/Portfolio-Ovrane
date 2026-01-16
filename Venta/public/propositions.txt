@@ -1,9 +1,10 @@
 # Une proposition par ligne. Les lignes vides et celles commençant par # sont ignorées.
 
-Qui es-tu ?
-Quelle sont tes capacités
 Présente moi le profil de Maxime.
+Qui es-tu ?
+Quelle sont tes capacités ?
 Quelles sont les compétences phares de Maxime ?
+Quelles sont les projets de Maxime ?
 Explique moi Pico.
 Montre-moi les interfaces de Pico.
 Qu'est ce que Hikup ?

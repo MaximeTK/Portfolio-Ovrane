@@ -154,6 +154,18 @@ Sélectivité et Sens : Il privilégie les projets qui demandent une réflexion 
 
 Le Respect du Client et de l'Utilisateur : Sa vision d'indépendance repose sur une promesse de fiabilité totale. Réussir seul implique une responsabilité immense, qu'il assume par son organisation méthodique et son exigence chirurgicale sur chaque livrable.
 
+VI. Compétences & Intérêts
+
+Hard Skills / Hard Skill
+Développement : HTML, CSS, PHP, Python, C / C++, Javascript, Typescript, Nodejs, ReactJS, VueJS, MySQL, MongoDB, Symphony, Git, Bootstrap, Tailwind, Docker, Kubernetes, Postman
+UX / UI Design : Figma, Illustrator, Midjourney, Stable Diffusion, Audit, Prototypage, Wireframing, Atomic Design, User Testing
+
+Soft Skills / Soft Skill
+Rigueur Analytique, Polyvalence, Autonomie, Pédagogie, Intelligence Émotionnelle, Vision Stratégique.
+
+Centres d'Intérêt Personnels
+Informatique, Vidéo Youtube (montage/script), Design, Psychologie et social engineering, IA et Nouvelles Technologies.
+
 Conclusion : L'Avenir du Profil Hybride
 À la croisée des chemins entre La Réunion et l'international, entre le code système et le design psychologique, Maxime Thiong-kay se positionne comme un profil rare. Il est celui qui peut auditer une infrastructure, designer une expérience émotionnelle, coder un algorithme complexe et définir la stratégie marketing d'un produit.
 

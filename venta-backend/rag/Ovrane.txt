@@ -53,6 +53,21 @@ Centralisation de Services : OVRANE intégrera à terme des flux API sociaux (In
 
 C'est un projet impressionnant qui se situe à la confluence de l'ingénierie prompt, de l'architecture logicielle et du design d'expérience. Pour un recruteur, ce projet démontre non seulement vos compétences techniques, mais aussi votre capacité à anticiper le futur des interfaces (le passage du GUI au LUI - Language User Interface).
 
+⚙️ Fonctionnement Technique & Règles du Portfolio
+
+Concept et Interaction API
+Ovrane est le cerveau du portfolio. Il ne s'agit pas d'un simple widget ajouté sur une page, mais d'une architecture intégrée où le Frontend et l'IA dialoguent en permanence.
+Chaque action de l'utilisateur (message, clic, commande vocale) transite par l'API Backend. Celle-ci orchestre la réponse en combinant :
+- La compréhension du langage naturel (via GPT-4o-mini).
+- La récupération de contexte (RAG) pour fournir des réponses précises sur mon parcours.
+- L'envoi de commandes UI (JSON) pour piloter l'interface (changer de page, modifier le thème).
+
+Stack Technique (Détail)
+- Frontend : Next.js, TypeScript, Tailwind CSS, Framer Motion.
+- Backend : Node.js, Express.
+- Base de Données : MongoDB (Persistance des conversations et utilisateurs).
+- IA & RAG : OpenAI GPT-4o-mini, OpenAI TTS (Audio), Système RAG sur mesure avec indexation vectorielle.
+
 Voici 50 questions réparties par thématiques pour engager la conversation et valoriser vos choix stratégiques :
 
 Question relatives possibles venant d'un recruteur :
@@ -156,6 +171,6 @@ Comment gérez-vous les mises à jour des modèles (ex: passer de GPT-4o-mini à
 Si un investisseur vous donnait les moyens de transformer Ovrane en produit SaaS, par quoi commenceriez-vous ?
 Par une vrai inscription utilisateurs
 
-
-
+Accès au application / Tester les applications
+Il n'y a aucune application de disponible, Pico est un prototype en cours de construction et Hik'up n'existe plus.
 
