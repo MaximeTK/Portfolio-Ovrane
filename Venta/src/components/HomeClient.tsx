@@ -252,7 +252,7 @@ export default function Home() {
         });
       }
     }
-  }, [chatStatus, currentTranscript, lastProcessedTranscript, currentTTS, startSpeakAnimation, startStandbyAnimation, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addTextWindow, closeTextWindow, appState, setAppState, viewMode]);
+  }, [chatStatus, currentTranscript, lastProcessedTranscript, currentTTS, startSpeakAnimation, startStandbyAnimation, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addTextWindow, closeTextWindow, appState, setAppState, viewMode, currentUserId]);
 
   return (
     <>

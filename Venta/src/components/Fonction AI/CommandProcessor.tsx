@@ -188,7 +188,7 @@ function processCommand(
 export default function CommandProcessor({
   commands,
   onCommandsProcessed,
-  currentUserId,
+  currentUserId: _currentUserId,
 }: CommandProcessorProps) {
   const [windows, setWindows] = useState<WindowData[]>([]);
   const incrementMaxZIndex = useUIStore((state) => state.incrementMaxZIndex);
@@ -201,11 +201,11 @@ export default function CommandProcessor({
 
   // Fermer toutes les fenêtres quand l'utilisateur change
   useEffect(() => {
-    if (currentUserId) {
-      console.log(`🧹 [CommandProcessor] Changement utilisateur (${currentUserId}), fermeture des fenêtres.`);
+    if (_currentUserId) {
+      console.log(`🧹 [CommandProcessor] Changement utilisateur (${_currentUserId}), fermeture des fenêtres.`);
       setWindows([]);
     }
-  }, [currentUserId]);
+  }, [_currentUserId]);
 
   const trimHistory = useCallback(() => {
     const entries = Array.from(processedCommandsRef.current);
@@ -225,7 +225,7 @@ export default function CommandProcessor({
             cmd.command,
             cmd.parameter,
             index,
-            currentUserId,
+            _currentUserId,
           );
           if (win) {
             // Assigner le z-index global de manière safe
@@ -239,7 +239,7 @@ export default function CommandProcessor({
         onCommandsProcessed();
       }, 0);
     },
-    [currentUserId, onCommandsProcessed, incrementMaxZIndex],
+    [_currentUserId, onCommandsProcessed, incrementMaxZIndex],
   );
 
   useEffect(() => {
