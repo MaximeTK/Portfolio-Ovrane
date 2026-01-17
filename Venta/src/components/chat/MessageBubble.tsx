@@ -153,6 +153,7 @@ export function MessageBubble({
       onClick={() => onImageClick?.(String(src), messageImages)}
       style={{ maxHeight: '500px', width: 'auto', maxWidth: '100%' }}
     >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         className="h-auto w-auto max-w-full object-contain"
@@ -228,6 +229,7 @@ export function MessageBubble({
                       onClick={() => onImageClick?.(String(src), messageImages)}
                       style={{ ...style, maxHeight: '500px', width: 'auto', maxWidth: '100%' }}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         {...props} 
                         src={src}

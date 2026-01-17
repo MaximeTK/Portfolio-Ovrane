@@ -353,7 +353,7 @@ export function useChatController(): UseChatControllerReturn {
       const errorMessageObj = createMessage('assistant', `❌ ${errorMessage}`);
       setMessages((prev) => [...prev, errorMessageObj]);
     }
-  }, [status, currentUserId]);
+  }, [status, currentUserId, hasConfirmedProfile, setAppLocked, setViewMode]);
   
   return {
     messages,

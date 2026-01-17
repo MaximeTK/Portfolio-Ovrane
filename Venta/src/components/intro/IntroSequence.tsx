@@ -14,7 +14,7 @@ interface IntroSequenceProps {
 }
 
 export const IntroSequence = ({ send, currentTTS: _currentTTS, messages, currentUserProfile: _currentUserProfile, currentUserId: _currentUserId, overlayOverrideText }: IntroSequenceProps) => {
-  const { appState, setAppState, setUserName, userName, viewMode, isAppLocked, lockedMessage } = useUIStore();
+  const { appState, setAppState, setUserName, viewMode, isAppLocked, lockedMessage } = useUIStore();
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
   
   // Ref vers l'animation pour déclencher des vagues manuelles

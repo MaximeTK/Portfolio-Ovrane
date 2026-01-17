@@ -123,6 +123,7 @@ export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProp
         className="group px-2 md:px-0"
       >
          <div className="relative max-w-full max-h-full flex items-center justify-center w-full h-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={imgUrl} 
               alt={`Image ${normalizedIndex + 1}`} 
@@ -254,6 +255,7 @@ export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProp
                   : 'opacity-40 hover:opacity-100 scale-100 ring-1 ring-white/10'
               }`}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={img} alt={`Miniature ${idx + 1}`} className="w-full h-full object-cover" />
             </button>
           ))}
