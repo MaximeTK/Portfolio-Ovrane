@@ -339,16 +339,6 @@ export const TOOL_DESCRIPTIONS = {
     description: 'CRITIQUE: Appelle CETTE fonction quand l\'utilisateur parle de son NOM/PROFIL (identité). Vérifie si le nom existe en base. INTERDIT d\'utiliser pour des couleurs (ex: "en rouge", "rose"), thèmes, ou noms de fichiers/assets. Retourne: exists, isCurrentUser. Attends le résultat avant de décider.',
   },
   
-  CreateUserProfile: {
-    name: 'CreateUserProfile',
-    description: 'Crée un profil utilisateur. INTERDIT si checkUser n\'a pas été appelé juste avant. Appelle UNIQUEMENT si checkUser retourne exists:false ET si l\'utilisateur exprime CLAIREMENT que c\'est son NOM (pas une couleur/thème/asset).',
-  },
-  
-  UpdateUserProfile: {
-    name: 'UpdateUserProfile',
-    description: 'Corrige le nom du profil actuel. STRICTEMENT RÉSERVÉ aux corrections d\'erreurs explicites. INTERDIT si l\'utilisateur se présente juste avec un nouveau nom (dans ce cas, utilise checkUser puis potentiellement CreateUserProfile).',
-  },
-  
   SwitchUserProfile: {
     name: 'SwitchUserProfile',
     description: 'Bascule vers un profil existant. Appelle quand checkUser confirme que le profil existe et n\'est pas l\'actuel.',
@@ -463,10 +453,9 @@ export const EMOJIS = {
 // NOTES: PATTERNS REGEX SUPPRIMÉS
 // ========================================
 // Les patterns EXCLUDED_WORDS et NAME_PATTERNS ont été supprimés.
-// La détection des noms est maintenant 100% gérée par l'IA via les fonctions:
+// La gestion des profils par tools IA est limitée à:
 // 1. checkUser (vérifie l'existence)
-// 2. CreateUserProfile (crée un profil)
-// 3. UpdateUserProfile (corrige un nom)
+// 2. SwitchUserProfile (bascule vers un profil existant)
 // ========================================
 // FONCTIONS UTILITAIRES POUR LES MESSAGES
 // ========================================

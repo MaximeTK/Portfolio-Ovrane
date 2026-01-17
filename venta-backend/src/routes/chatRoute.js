@@ -8,8 +8,6 @@ import { processResponse } from '../lib/chat/responseProcessor.js';
 import { getRawConversationHistory } from '../lib/userMemory.js';
 import { ERROR_MESSAGES, CONSOLE_LOGS, EMOJIS, MISC_MESSAGES } from '../lib/messages.js';
 import { User } from '../models/User.js';
-import { generateUserHash } from '../lib/userMemory.js';
-import { convertToPermament, mergeTemporaryIntoPermanent, searchUserByName } from '../lib/user/profileManagement.js';
 import {
   isNonEmptyString,
   isValidUserId,
@@ -41,13 +39,28 @@ function extractNameFromIntroPrompt(prompt) {
   return name || null;
 }
 
+function normalizeUserName(name) {
+  return String(name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function generateUserIdFromName(nameNormalized) {
+  // ID stable basé uniquement sur le pseudo (pas sur l'IP) pour éviter les doublons
+  return crypto.createHash('sha256').update(`name:${nameNormalized}`).digest('hex').substring(0, 16);
+}
+
+// Champs legacy qu'on ne veut jamais conserver
+const LEGACY_STRIP_KEYS = ['isTemporary', 'firstVisit', '__extras', '__v'];
+
 /**
  * Configuration de la route chat
  */
 export function setupChatRoute(app, openai, ragInitialized) {
   app.post('/api/chat', async (req, res) => {
     try {
-      const { prompt, currentUserId, isEphemeral } = req.body;
+      const { prompt, currentUserId, isEphemeral, currentUrl } = req.body;
       
       if (!validatePrompt(prompt)) {
         console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} ${ERROR_MESSAGES.promptInvalid}`);
@@ -71,53 +84,117 @@ export function setupChatRoute(app, openai, ragInitialized) {
       // ============================================================
       const introName = safeEphemeral ? extractNameFromIntroPrompt(prompt) : null;
       if (introName) {
-        const desiredName = introName;
-        const existingByName = await searchUserByName(desiredName);
-        const isNewAccount = !existingByName;
+        // LOGIN: UNE SEULE REQUÊTE MONGO
+        // - calculer un userId stable basé sur le pseudo
+        // - upsert le profil
+        // - ajouter l'ipHash et le lien courant
+        const desiredName = String(introName).trim();
+        const nameNormalized = normalizeUserName(desiredName);
+        const stableUserId = generateUserIdFromName(nameNormalized);
 
-        // Résolution du profil actif via le pseudo
-        if (existingByName) {
-          // Profil permanent: si ce n'est pas déjà le bon, on switch
-          // (On ignore désormais complètement la notion de profil temporaire)
-          const currentName = String(userProfile?.name || '').toLowerCase().trim();
-          const desiredNameLower = String(desiredName).toLowerCase().trim();
-          
-            // Cas simple : Si userId correspond, c'est bon. Sinon on switch.
-            const alreadyCurrent = userId === existingByName.id;
-            
-            if (!alreadyCurrent) {
-              const updatedTarget = await User.findOneAndUpdate(
-                { id: existingByName.id },
-                { 
-                  $set: { lastVisit: new Date() }, 
-                  // On n'incrémente PAS visitCount ici pour un simple switch
-                  // L'incrément se fait via getUserProfile -> updateVisitStats avec délai 1h
+        const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+        const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
+
+        const link = (typeof currentUrl === 'string' && currentUrl.trim().length > 0 && currentUrl.length <= 2048)
+          ? currentUrl.trim()
+          : null;
+
+        const now = new Date();
+
+        // Update "pipeline" pour:
+        // - garantir 1 seule requête DB
+        // - garantir l'ordre des champs dans le document (Compass/Mongo shell)
+        // - conserver les champs non listés en les ajoutant à la fin
+        const excludeFromExtras = [
+          '_id',
+          'name',
+          'nameNormalized',
+          'id',
+          'ipHashes',
+          'createdAt',
+          'updatedAt',
+          'lastVisit',
+          'visitCount',
+          'visitedLinks',
+          'preferences',
+          'messageCount',
+          'conversations',
+          ...LEGACY_STRIP_KEYS,
+        ];
+
+        const updatePipeline = [
+          {
+            $set: {
+              name: desiredName,
+              nameNormalized,
+              id: { $literal: stableUserId },
+              ipHashes: { $setUnion: [{ $ifNull: ['$ipHashes', []] }, [ipHash]] },
+              visitedLinks: link
+                ? { $setUnion: [{ $ifNull: ['$visitedLinks', []] }, [link]] }
+                : { $ifNull: ['$visitedLinks', []] },
+              // timestamps: garder createdAt existant, forcer updatedAt
+              createdAt: { $ifNull: ['$createdAt', now] },
+              updatedAt: now,
+              lastVisit: now,
+              visitCount: { $add: [{ $ifNull: ['$visitCount', 0] }, 1] },
+              conversations: { $ifNull: ['$conversations', []] },
+              preferences: { $ifNull: ['$preferences', {}] },
+              messageCount: { $ifNull: ['$messageCount', 0] },
+            },
+          },
+          {
+            $set: {
+              __extras: {
+                $arrayToObject: {
+                  $filter: {
+                    input: { $objectToArray: '$$ROOT' },
+                    cond: { $not: { $in: ['$$this.k', excludeFromExtras] } },
+                  },
                 },
-                { new: true },
-              ).lean();
-              userId = existingByName.id;
-              userProfile = updatedTarget || existingByName;
-            }
-          } else {
-          // Nouveau profil (pseudo inconnu) -> Création immédiate
-          const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-          const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
-          const newUserId = generateUserHash(ipHash, desiredName);
+              },
+            },
+          },
+          {
+            $replaceRoot: {
+              newRoot: {
+                $mergeObjects: [
+                  {
+                    _id: '$_id',
+                    name: '$name',
+                    nameNormalized: '$nameNormalized',
+                    id: '$id',
+                    ipHashes: '$ipHashes',
+                    createdAt: '$createdAt',
+                    updatedAt: '$updatedAt',
+                    lastVisit: '$lastVisit',
+                    visitCount: '$visitCount',
+                    visitedLinks: '$visitedLinks',
+                    preferences: '$preferences',
+                    messageCount: '$messageCount',
+                    conversations: '$conversations',
+                  },
+                  '$__extras',
+                ],
+              },
+            },
+          },
+        ];
 
-          const newProfile = new User({
-            id: newUserId,
-            ipHashes: [ipHash],
-            visitCount: 1,
-            name: desiredName,
-            isTemporary: false,
-            preferences: {},
-            conversations: [],
-          });
-          await newProfile.save();
+        // 1 seule requête DB: upsert + retour direct du document (pipeline update)
+        // NOTE: rawResult n'est pas fiable ici avec Mongoose+pipeline (value peut être absent).
+        const updated = await User.findOneAndUpdate(
+          { id: stableUserId },
+          updatePipeline,
+          { new: true, upsert: true, updatePipeline: true },
+        ).lean();
 
-          userId = newUserId;
-          userProfile = newProfile.toObject();
-        }
+        // Nouveau compte: visitCount vaut 1 juste après la création (pipeline: +1 depuis 0/null).
+        // C'est le critère le plus robuste ici, car `timestamps: true` peut modifier updatedAt
+        // et casser une comparaison createdAt===updatedAt.
+        const isNewAccount = typeof updated?.visitCount === 'number' && updated.visitCount === 1;
+
+        userId = stableUserId;
+        userProfile = updated;
 
         // Vérification de la limite de messages (protection)
         const MAX_MESSAGES_PER_PROFILE = 50;
@@ -131,7 +208,6 @@ export function setupChatRoute(app, openai, ragInitialized) {
               name: userProfile?.name,
               visitCount: userProfile?.visitCount,
               isNewUser: isNewAccount,
-              isTemporary: userProfile?.isTemporary,
               messageCount: userProfile?.messageCount,
             },
             activeUserId: userId,
@@ -156,7 +232,6 @@ export function setupChatRoute(app, openai, ragInitialized) {
             name: userProfile?.name || nameForGreeting,
             visitCount: userProfile?.visitCount,
             isNewUser: isNewAccount,
-            isTemporary: userProfile?.isTemporary,
             messageCount: userProfile?.messageCount,
           },
           activeUserId: userId,
@@ -182,7 +257,6 @@ export function setupChatRoute(app, openai, ragInitialized) {
             name: userProfile.name,
             visitCount: userProfile.visitCount,
             isNewUser: userProfile.visitCount === 1,
-            isTemporary: userProfile.isTemporary,
             messageCount: userProfile.messageCount
           },
           activeUserId: userId,

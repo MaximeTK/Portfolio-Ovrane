@@ -33,13 +33,14 @@ export async function callBackend(
   userAgent: string,
   currentUserId: string | undefined,
   isEphemeral?: boolean,
+  currentUrl?: string,
 ) {
   const BACKEND_URL = getBackendUrl();
   try {
     const response = await fetch(`${BACKEND_URL}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, userIp, userAgent, currentUserId, isEphemeral }),
+      body: JSON.stringify({ prompt, userIp, userAgent, currentUserId, isEphemeral, currentUrl }),
       signal: AbortSignal.timeout(60000),
     });
     return { response, BACKEND_URL };

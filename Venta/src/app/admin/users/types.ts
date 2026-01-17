@@ -2,7 +2,6 @@ export type UserProfile = {
   id: string;
   name: string | null;
   visitCount: number;
-  firstVisit: string;
   lastVisit: string;
   conversationCount: number;
 };

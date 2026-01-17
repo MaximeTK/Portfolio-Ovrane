@@ -25,21 +25,11 @@ export {
 
 // Gestion utilisateurs - Wrappers pour passer le contexte automatiquement
 import { checkUser as _checkUser } from './helpers/userCheckHelpers.js';
-import { CreateUserProfile as _CreateUserProfile } from './helpers/userCreateHelpers.js';
-import { UpdateUserProfile as _UpdateUserProfile } from './helpers/userUpdateHelpers.js';
 import { SwitchUserProfile as _SwitchUserProfile } from './helpers/userSwitchHelpers.js';
 import { getRequestContext } from './helpers/contextHelpers.js';
 
 export async function checkUser(params) {
   return await _checkUser(params, getRequestContext());
-}
-
-export async function CreateUserProfile(params) {
-  return await _CreateUserProfile(params, getRequestContext());
-}
-
-export async function UpdateUserProfile(params) {
-  return await _UpdateUserProfile(params, getRequestContext());
 }
 
 export async function SwitchUserProfile(params) {

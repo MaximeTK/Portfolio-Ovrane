@@ -195,7 +195,7 @@ function formatHistory(allConversations, profile, limit) {
   
   if (profile.name) history += `Nom de l'utilisateur: ${profile.name}\n`;
   history += `Nombre de visites: ${profile.visitCount}\n`;
-  history += `Première visite: ${new Date(profile.firstVisit).toLocaleDateString('fr-FR')}\n\n`;
+  history += `Dernière visite: ${new Date(profile.lastVisit).toLocaleDateString('fr-FR')}\n\n`;
   
   recentConversations.forEach((conv) => {
     const date = new Date(conv.timestamp).toLocaleString('fr-FR');

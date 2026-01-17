@@ -29,7 +29,6 @@ export interface UserProfileData {
   name?: string;
   visitCount?: number;
   isNewUser?: boolean;
-  isTemporary?: boolean;
 }
 
 export type ChatStatus = 'idle' | 'streaming' | 'error';

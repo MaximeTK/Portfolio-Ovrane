@@ -11,8 +11,6 @@ import {
   uiShowCode,
   uiOpenWindow,
   checkUser, 
-  CreateUserProfile, 
-  UpdateUserProfile, 
   SwitchUserProfile 
 } from '../ragHelpers.js';
 
@@ -28,8 +26,6 @@ export function registerAllFunctions() {
   registerFunction('uiShowCode', uiShowCode);
   registerFunction('uiOpenWindow', uiOpenWindow);
   registerFunction('checkUser', checkUser);
-  registerFunction('CreateUserProfile', CreateUserProfile);
-  registerFunction('UpdateUserProfile', UpdateUserProfile);
   registerFunction('SwitchUserProfile', SwitchUserProfile);
 }
 

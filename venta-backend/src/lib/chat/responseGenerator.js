@@ -34,8 +34,6 @@ function filterToolsForPrompt(prompt) {
 
   if (isUserIntent(prompt)) {
     allow.add('checkUser');
-    allow.add('CreateUserProfile');
-    allow.add('UpdateUserProfile');
     allow.add('SwitchUserProfile');
   }
 

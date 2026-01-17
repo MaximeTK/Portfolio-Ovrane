@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { addConversation, saveUserPreference } from '../userMemory.js';
-import { getRequestContext, CreateUserProfile } from '../ragHelpers.js';
+import { getRequestContext } from '../ragHelpers.js';
 import { CONSOLE_LOGS, EMOJIS, MISC_MESSAGES } from '../messages.js';
 import { normalizeAssetParamToFilename } from '../validators.js';
 
@@ -128,61 +128,6 @@ function getLastBackgroundCommand(commands) {
 }
 
 /**
- * Applique les commandes backend (CreateUserProfile, ...)
- */
-async function handleBackendCommands(commands) {
-  if (!Array.isArray(commands) || commands.length === 0) {
-    return;
-  }
-
-  for (const command of commands) {
-    if (!command || !command.command) {
-      continue;
-    }
-
-    if (command.command !== 'CreateUserProfile') {
-      continue;
-    }
-
-    let payload = {};
-    if (command.parameter) {
-      try {
-        payload = typeof command.parameter === 'string'
-          ? JSON.parse(command.parameter)
-          : command.parameter;
-      } catch (error) {
-        payload = { name: String(command.parameter).trim() };
-      }
-    }
-
-    const name = payload?.name ? String(payload.name).trim() : null;
-    if (!name) {
-      console.warn(`${EMOJIS.warning} ${CONSOLE_LOGS.backend} Commande CreateUserProfile ignorée: nom manquant`);
-      continue;
-    }
-
-    const currentContext = getRequestContext();
-    const currentProfile = currentContext?.userProfile;
-
-    const alreadyMatches = currentProfile?.name
-      ? currentProfile.name.toLowerCase().trim() === name.toLowerCase()
-      : false;
-
-    if (alreadyMatches && !currentProfile?.isTemporary) {
-      continue;
-    }
-
-    const reason = payload?.reason || 'création automatique après commande IA';
-
-    try {
-      await CreateUserProfile({ name, reason });
-    } catch (error) {
-      console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} Erreur lors de la création automatique du profil:`, error.message);
-    }
-  }
-}
-
-/**
  * Traite la réponse générée et génère le TTS en parallèle
  */
 export async function processResponse(response, userId, userProfile, prompt, isEphemeral = false) {
@@ -216,10 +161,10 @@ export async function processResponse(response, userId, userProfile, prompt, isE
   }
 
   // Sauvegarde de l'état avant les commandes
-  const wasTemporary = userProfile.isTemporary;
   const previousUserId = userId;
 
-  await handleBackendCommands(commands);
+  // Plus de commandes backend de création/modification de profil:
+  // les profils sont créés uniquement via l'intro (saisie du pseudo).
   // IMPORTANT: on ne crée jamais de profil utilisateur en "fallback" automatique.
   // La création/switch doit venir d'une intention explicite et d'une commande tool dédiée.
   
@@ -266,9 +211,8 @@ export async function processResponse(response, userId, userProfile, prompt, isE
       console.log(`${EMOJIS.success} ${CONSOLE_LOGS.backend} Profil actif: ${userProfile.name}`);
     }
     
-    // Détection du switch : Si on était temporaire et qu'on ne l'est plus
-    // OU si l'ID a changé
-    if ((wasTemporary && !userProfile.isTemporary) || (previousUserId !== userId)) {
+    // Détection du switch : si l'ID a changé
+    if (previousUserId !== userId) {
       hasSwitchedUser = true;
     }
   }
@@ -321,7 +265,7 @@ export async function processResponse(response, userId, userProfile, prompt, isE
       name: userProfile.name,
       visitCount: userProfile.visitCount,
       isNewUser: userProfile.visitCount === 1,
-      isTemporary: userProfile.isTemporary
+      messageCount: userProfile.messageCount,
     },
     activeUserId: userId,
     rag: { coverage: ragCoverage, sources: ragSources, enabled: true },

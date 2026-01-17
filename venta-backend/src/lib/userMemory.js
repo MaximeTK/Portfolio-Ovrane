@@ -11,16 +11,12 @@ export { addConversation, updateUserProfile, getConversationHistory, getRawConve
 
 // Réexporter depuis profileManagement.js
 export { 
-  cleanInactiveTemporaryProfiles,
   searchUserByName,
   getAllUsers 
 } from './user/profileManagement.js';
 
 // Réexporter depuis userProfileLoader.js
 export { getUserProfile } from './user/userProfileLoader.js';
-
-// Réexporter depuis nameDetection.js
-export { handleNameDetection } from './user/nameDetection.js';
 
 // Réexporter depuis userMerge.js
 export { mergeUserProfiles } from './user/userMerge.js';

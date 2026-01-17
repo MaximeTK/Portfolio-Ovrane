@@ -43,7 +43,6 @@ export async function findPermanentUserByIpHash(ipHash) {
   try {
     const user = await User.findOne({ 
       ipHashes: ipHash,
-      isTemporary: false,
       name: { $ne: null } // name n'est pas null
     }).lean();
     

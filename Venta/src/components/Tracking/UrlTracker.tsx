@@ -1,13 +1,30 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { sendTrackingLink } from '@/lib/tracking';
-import { getOrCreateUserId, getStoredUserId } from '@/lib/userId';
+import { getUserIdChangedEventName, isValidUserId } from '@/lib/userId';
 
 export function UrlTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const userIdRef = useRef<string | null>(null);
+
+  // Écouter la confirmation/changement de userId (après saisie du pseudo, etc.)
+  useEffect(() => {
+    // Ne pas lire le localStorage au chargement: on ne fait rien avant le pseudo.
+    userIdRef.current = null;
+
+    const eventName = getUserIdChangedEventName();
+    const handler = (evt: Event) => {
+      const e = evt as CustomEvent<{ userId?: string }>;
+      const next = e?.detail?.userId;
+      userIdRef.current = isValidUserId(next) ? next : null;
+    };
+
+    window.addEventListener(eventName, handler as EventListener);
+    return () => window.removeEventListener(eventName, handler as EventListener);
+  }, []);
 
   useEffect(() => {
     // On veut tracker à chaque changement d'URL, pas seulement au montage
@@ -25,11 +42,16 @@ export function UrlTracker() {
 
     console.log('📍 [TRACKING] Détection URL:', fullUrl);
 
-    // S'assurer qu'on a un userId stable (créé si absent)
-    const storedUserId = getStoredUserId() || getOrCreateUserId();
+    // IMPORTANT: On ne track PAS tant que l'utilisateur n'a pas un profil confirmé
+    // (plus de profils temporaires / userId implicite).
+    const userId = userIdRef.current;
+    if (!userId) {
+      console.log('⏸️ [TRACKING] Aucun userId confirmé, tracking ignoré.');
+      return;
+    }
 
-    console.log('👤 [TRACKING] userId:', storedUserId, '-> Envoi');
-    sendTrackingLink(storedUserId, fullUrl);
+    console.log('👤 [TRACKING] userId:', userId, '-> Envoi');
+    sendTrackingLink(userId, fullUrl);
   }, [pathname, searchParams]);
 
   return null;

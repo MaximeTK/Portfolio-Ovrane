@@ -75,33 +75,6 @@ export const tools = [
   },
   {
     type: "function",
-    name: TOOL_DESCRIPTIONS.CreateUserProfile.name,
-    description: TOOL_DESCRIPTIONS.CreateUserProfile.description,
-    parameters: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Le nom à attribuer au profil temporaire" },
-        reason: { type: "string", description: "Explication courte de pourquoi tu crées ce profil" }
-      },
-      required: ["name"]
-    }
-  },
-  {
-    type: "function",
-    name: TOOL_DESCRIPTIONS.UpdateUserProfile.name,
-    description: TOOL_DESCRIPTIONS.UpdateUserProfile.description,
-    parameters: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Le nouveau nom correct à attribuer au profil" },
-        reason: { type: "string", description: "Explication courte de pourquoi c'est une correction de nom" }
-      },
-      required: ["name"]
-    }
-  },
-/*
-  {
-    type: "function",
     name: TOOL_DESCRIPTIONS.SwitchUserProfile.name,
     description: TOOL_DESCRIPTIONS.SwitchUserProfile.description,
     parameters: {
@@ -113,6 +86,5 @@ export const tools = [
       required: ["name"]
     }
   }
-*/
 ];
 

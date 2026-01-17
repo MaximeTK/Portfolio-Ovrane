@@ -37,10 +37,6 @@ function DetailsSummary({ user }: DetailsSummaryProps) {
       <SummaryLine label="ID" value={user.id} />
       <SummaryLine label="IP Hash" value={user.ipHash} mono />
       <SummaryLine
-        label="Première visite"
-        value={formatDate(user.firstVisit)}
-      />
-      <SummaryLine
         label="Dernière visite"
         value={formatDate(user.lastVisit)}
       />

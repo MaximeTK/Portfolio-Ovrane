@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   const isProd = process.env.NODE_ENV === 'production';
   try {
     const body = await request.json();
-    const { prompt, currentUserId, isEphemeral } = body;
+    const { prompt, currentUserId, isEphemeral, currentUrl } = body;
     
     if (!prompt || typeof prompt !== 'string') {
       console.error('❌ [NEXT API] Prompt manquant ou invalide');
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     
     let response;
     try {
-      const result = await callBackend(prompt, userIp, userAgent, currentUserId, isEphemeral);
+      const result = await callBackend(prompt, userIp, userAgent, currentUserId, isEphemeral, currentUrl);
       response = result.response;
     } catch (error) {
       return NextResponse.json(

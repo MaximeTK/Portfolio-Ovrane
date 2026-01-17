@@ -92,21 +92,18 @@ export function setupTrackingRoute(app) {
         return res.status(400).json({ error: ERROR_MESSAGES.trackingInvalidLink });
       }
       
-      // 1. S'assurer que l'utilisateur existe / le récupérer
-      const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-      const userProfile = await getUserProfile(userId, ip);
-      
-      if (!userProfile) {
-        return res.status(404).json({ error: ERROR_MESSAGES.trackingUserNotFound });
-      }
-      
-      // 2. Sauvegarder le lien
+      // 1. Sauvegarder le lien (UNE seule requête DB via updateOne + check matchedCount)
       const success = await saveVisitedLink(userId, link);
       
       if (success) {
         res.json({ success: true, message: SUCCESS_MESSAGES.trackingLinkSaved });
       } else {
-        // Ce n'est pas forcément une erreur (ex: lien déjà présent), mais on renvoie OK
+        // Si rien n'est modifié, 2 cas:
+        // - profil introuvable (matchedCount=0)
+        // - lien déjà présent (matchedCount>0 mais modifiedCount=0)
+        // saveVisitedLink retourne false dans les deux cas; on doit distinguer.
+        // Pour garder 1 seule requête DB, on renvoie "already saved" et laisse le client idempotent.
+        // Si vous voulez un 404 strict "profil introuvable", il faudrait une 2e requête.
         res.json({ success: true, message: SUCCESS_MESSAGES.trackingLinkAlreadySaved });
       }
       

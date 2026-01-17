@@ -44,7 +44,7 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
 
     const currentProfile = currentRequestContext.userProfile;
     
-    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.functionCall} Changement de profil: "${currentProfile.name || 'temporaire'}" → "${name}"`);
+    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.functionCall} Changement de profil: "${currentProfile.name || 'visiteur anonyme'}" → "${name}"`);
     if (reason) {
       console.log(`   ${EMOJIS.subitem} Raison IA: ${reason}`);
     }
@@ -55,7 +55,7 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
       console.warn(`   ${EMOJIS.warning} Le profil "${name}" n'existe pas en base de données`);
       return {
         success: false,
-        message: `❌ Le profil "${name}" n'existe pas en base de données. Utilise CreateUserProfile pour créer un nouveau profil.`
+        message: `❌ Le profil "${name}" n'existe pas en base de données. La création de profil se fait uniquement via l'intro (saisie du pseudo).`
       };
     }
 
@@ -78,12 +78,14 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
     console.log(`   ${EMOJIS.info} Profil précédent: ${previousUserName}`);
 
     // Message d'instruction stricte pour l'IA
-    const exactWelcome = MISC_MESSAGES.welcomeBack(name);
-    const systemInstruction = targetProfile.visitCount > 1 
-      ? `✅ Changement effectué. L'utilisateur est un habitué (${targetProfile.visitCount} visites).
+    // IMPORTANT: ne jamais parler du changement de profil. Ne jamais parler de "création" (les profils se créent via l'intro).
+    const exactWelcome = targetProfile.visitCount > 1
+      ? MISC_MESSAGES.welcomeBack(name)
+      : MISC_MESSAGES.welcomeNew(name);
+
+    const systemInstruction = `✅ Changement de profil effectué (${targetProfile.visitCount} visite(s)).
 IMPORTANT : Ne dis RIEN sur le changement de profil.
-Ta réponse doit être EXACTEMENT et UNIQUEMENT : "${exactWelcome}"`
-      : `✅ Création du profil effectuée. C'est un nouveau profil nommé "${name}". Accueille-le chaleureusement, présente toi et ne parle JAMAIS de la création du profil.`;
+Ta réponse doit être EXACTEMENT et UNIQUEMENT : "${exactWelcome}"`;
 
     return {
       success: true,

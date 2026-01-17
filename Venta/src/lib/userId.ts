@@ -4,6 +4,7 @@
  */
 
 const STORAGE_KEY = 'venta_userId';
+const USER_ID_CHANGED_EVENT = 'venta:userIdChanged';
 
 export function isValidUserId(userId: unknown): userId is string {
   if (typeof userId !== 'string') return false;
@@ -29,7 +30,14 @@ export function getStoredUserId(): string | null {
 export function setStoredUserId(userId: string): void {
   if (typeof window === 'undefined') return;
   if (!isValidUserId(userId)) return;
-  localStorage.setItem(STORAGE_KEY, userId.trim());
+  const trimmed = userId.trim();
+  localStorage.setItem(STORAGE_KEY, trimmed);
+  // Notifier le reste de l'app (ex: UrlTracker) qu'un userId a été confirmé/changé
+  try {
+    window.dispatchEvent(new CustomEvent(USER_ID_CHANGED_EVENT, { detail: { userId: trimmed } }));
+  } catch {
+    // ignore
+  }
 }
 
 export function getOrCreateUserId(): string {
@@ -38,6 +46,10 @@ export function getOrCreateUserId(): string {
   const created = generateUserId();
   setStoredUserId(created);
   return created;
+}
+
+export function getUserIdChangedEventName() {
+  return USER_ID_CHANGED_EVENT;
 }
 
 

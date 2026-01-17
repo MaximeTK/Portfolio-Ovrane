@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { cleanInactiveTemporaryProfiles } from './lib/userMemory.js';
 import { setOpenAI } from './lib/openaiHandler.js';
 import { configureServer } from './lib/server/serverConfig.js';
 import { initializeRAGSystem } from './lib/server/ragInitializer.js';
@@ -42,8 +41,7 @@ async function initializeServer() {
   ragInitialized = await initializeRAGSystem(ragDir, process.env.OPENAI_API_KEY);
   watchRAGFolder(ragDir, ragInitialized);
   
-  cleanInactiveTemporaryProfiles();
-  setInterval(() => cleanInactiveTemporaryProfiles(), 60 * 60 * 1000);
+  // Nettoyage des profils temporaires supprimé (plus de profils temporaires)
   
   setupRoutes(app, openai, ragDir, ragInitialized, __dirname);
   

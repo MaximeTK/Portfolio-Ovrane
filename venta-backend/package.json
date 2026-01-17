@@ -11,7 +11,8 @@
     "test:memory": "node test/test-memory.js",
     "test:rag": "node test/test-rag-system.js",
     "check:rag": "node test/check-rag-setup.js",
-    "update-rag": "node scripts/update-rag.js"
+    "update-rag": "node scripts/update-rag.js",
+    "migrate:users:clean-order": "node scripts/migrate-users-clean-order.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

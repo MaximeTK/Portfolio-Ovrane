@@ -49,17 +49,10 @@ export async function saveVisitedLink(userId, link) {
     if (!link || typeof link !== 'string') return false;
     if (link.length > 2048) return false;
 
-    // Mode mémoire
+    // Suppression du mode mémoire : on veut persister en BDD ou rien
     if (mongoose.connection.readyState !== 1) {
-      const user = memoryUsers.get(userId);
-      if (!user) return false;
-      if (!user.visitedLinks) user.visitedLinks = [];
-      if (!user.visitedLinks.includes(link)) {
-        user.visitedLinks.push(link);
-        memoryUsers.set(userId, user);
-        return true;
-      }
-      return false;
+       console.warn('⚠️ Sauvegarde lien impossible: MongoDB déconnecté');
+       return false;
     }
     
     const result = await User.updateOne(

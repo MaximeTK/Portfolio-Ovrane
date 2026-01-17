@@ -39,9 +39,7 @@ function namesMatch(name1, name2) {
  */
 function buildUserNotFoundMessage(name, currentProfile) {
   // IMPORTANT: ne jamais pousser à créer automatiquement un profil (risque de confusion assets->user).
-  const hint = currentProfile?.isTemporary
-    ? 'Si (et seulement si) l’utilisateur exprime clairement que c’est son nom, tu peux convertir le profil temporaire.'
-    : 'Si (et seulement si) l’utilisateur exprime clairement que c’est son nom, tu peux créer un nouveau profil.';
+  const hint = 'Si (et seulement si) l’utilisateur exprime clairement que c’est son nom ("Je m\'appelle X"), tu peux créer un nouveau profil.';
   return `Le nom "${name}" n'existe pas en base de données. ${hint}`;
 }
 
@@ -69,11 +67,11 @@ export async function checkUser({ name }, currentRequestContext) {
         exists: null,
         isCurrentUser: false,
         currentUserName: currentRequestContext.userProfile?.name || null,
-        isTemporaryProfile: currentRequestContext.userProfile?.isTemporary || false,
+        isTemporaryProfile: false,
         ignored: true,
         message:
           `Paramètre ignoré: "${name}" ressemble à un nom de fichier/asset. ` +
-          `Ne pas appeler CreateUserProfile. Pour afficher une image, utilise uiShowPicture({ filenames: ["..."] }) (préféré) ou uiShowPicture({ filename }) (compat).`,
+          `Ne pas tenter de créer un profil. Pour afficher une image, utilise uiShowPicture({ filenames: ["..."] }) (préféré) ou uiShowPicture({ filename }) (compat).`,
       };
     }
     
@@ -91,10 +89,10 @@ export async function checkUser({ name }, currentRequestContext) {
         exists: false,
         isCurrentUser: false,
         currentUserName: currentProfile?.name || null,
-        isTemporaryProfile: currentProfile?.isTemporary || false,
+        isTemporaryProfile: false,
         // IMPORTANT: checkUser ne déclenche jamais de création automatique.
         // La création doit être faite uniquement quand l'utilisateur exprime clairement un intent "profil".
-        message: `Le nom "${name}" n'existe pas. ATTENTION: Si l'utilisateur parlait d'une COULEUR, d'un THÈME ou d'une APPARENCE (ex: "en rose", "mode sombre"), N'APPELLE PAS CreateUserProfile mais utilise getAvailableColors() ou répond simplement. Si (et seulement si) c'est explicitement un nouveau NOM de profil (ex: "Je m'appelle ${name}"), appelle CreateUserProfile.`
+        message: `Le nom "${name}" n'existe pas. ATTENTION: Si l'utilisateur parlait d'une COULEUR, d'un THÈME ou d'une APPARENCE (ex: "en rose", "mode sombre"), n'interprète pas ça comme un profil. Pour un changement de profil, utilise SwitchUserProfile. La création de profil se fait uniquement via l'intro (saisie du pseudo).`
       };
     }
     
@@ -118,9 +116,9 @@ export async function checkUser({ name }, currentRequestContext) {
       exists: true,
       isCurrentUser: false,
       currentUserName: currentProfile?.name || null,
-      isTemporaryProfile: currentProfile?.isTemporary || false,
+      isTemporaryProfile: false,
       existingUserInfo: { id: existingUser.id, name: existingUser.name, visitCount: existingUser.visitCount },
-      message: `Le nom "${name}" existe en base mais appartient à un autre utilisateur. L'IA doit déterminer selon le contexte si c'est une correction de nom (appeler UpdateUserProfile) ou bien le nom de l'utilisateur actuel (appeler SwitchUserProfile si c'est le cas et que le profil actuel n'est pas le bon ET que ça ne semble pas etre une correction de nom) ou bien juste un contexte ("je vais chez ${name}"), tu n'as pas le droit de demander des précisions sur le nom de l'utilisateur.`
+      message: `Le nom "${name}" existe en base mais appartient à un autre utilisateur. L'IA doit déterminer selon le contexte si l'utilisateur veut réellement basculer de profil (appeler SwitchUserProfile) ou si c'est juste un contexte ("je vais chez ${name}"). Tu n'as pas le droit de demander des précisions sur le nom de l'utilisateur.`
     };
 
   } catch (error) {

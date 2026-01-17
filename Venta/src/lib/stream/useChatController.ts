@@ -9,7 +9,7 @@ import { createMessage, parseResponse, updateStoredUserId } from './chatHelpers'
 import { useBackgroundStore } from '../state/backgroundStore';
 import { useUIStore } from '../state/uiStore';
 import { CHAT_UI } from '../messages';
-import { getOrCreateUserId } from '../userId';
+// userId n'est plus initialisé au chargement
 
 type HistoryItem = {
   role: 'user' | 'assistant';
@@ -85,8 +85,8 @@ export function useChatController(): UseChatControllerReturn {
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedUserId = getOrCreateUserId();
-      setCurrentUserId(storedUserId);
+      // IMPORTANT: aucun userId au chargement. Le userId est défini uniquement après le "login" (pseudo).
+      setCurrentUserId(null);
     }
   }, []);
 
@@ -265,7 +265,9 @@ export function useChatController(): UseChatControllerReturn {
         body: JSON.stringify({ 
             prompt: message, 
             currentUserId: currentUserId,
-            isEphemeral: options?.isEphemeral 
+            isEphemeral: options?.isEphemeral,
+            // Pour le login pseudo: permettre au backend de sauvegarder le lien courant
+            currentUrl: options?.isEphemeral ? (typeof window !== 'undefined' ? window.location.href : undefined) : undefined,
         })
       });
       

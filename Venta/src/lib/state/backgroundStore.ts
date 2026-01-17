@@ -3,7 +3,6 @@
  */
 import { create } from 'zustand';
 import { COLOR_PALETTES, getDefaultPalette, type ColorPalette } from '../colorPalettes';
-import { getOrCreateUserId } from '../userId';
 
 interface BackgroundState {
   currentPalette: ColorPalette;
@@ -89,13 +88,10 @@ function resolvePalette(paletteId: string) {
  */
 async function savePreferenceToBackend(paletteId: string, userId?: string) {
   try {
-    // Utiliser l'userId fourni ou récupérer depuis localStorage
-    const userIdToUse = userId || (typeof window !== 'undefined' ? getOrCreateUserId() : null);
-    
-    console.log('🔍 [DEBUG] savePreferenceToBackend appelée', { paletteId, userId, userIdToUse });
+    // IMPORTANT: ne jamais créer d'userId implicitement.
+    const userIdToUse = userId || null;
     
     if (!userIdToUse) {
-      console.warn('⚠️ Aucun userId trouvé, impossible de sauvegarder la préférence');
       return;
     }
 
@@ -105,8 +101,6 @@ async function savePreferenceToBackend(paletteId: string, userId?: string) {
       value: paletteId 
     };
     
-    console.log('📤 [DEBUG] Envoi requête POST vers:', PREFERENCES_API_BASE, payload);
-
     const response = await fetch(PREFERENCES_API_BASE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -114,14 +108,11 @@ async function savePreferenceToBackend(paletteId: string, userId?: string) {
       signal: AbortSignal.timeout(5000) // Timeout de 5 secondes
     });
 
-    console.log('📥 [DEBUG] Réponse reçue:', { status: response.status, ok: response.ok });
-
     if (response.ok) {
-      const data = await response.json();
-      console.log(`✅ Préférence de couleur sauvegardée pour ${userIdToUse}: ${paletteId}`, data);
+      await response.json().catch(() => null);
     } else {
       const errorText = await response.text();
-      console.error('⚠️ Erreur lors de la sauvegarde de la préférence:', response.status, errorText);
+      console.error('⚠️ Erreur sauvegarde préférence:', response.status, errorText);
     }
   } catch (error) {
     console.error('❌ Erreur sauvegarde préférence:', error);
@@ -165,11 +156,9 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
       
       // Sauvegarder automatiquement la préférence
       if (shouldSave) {
-        console.log('💾 [DEBUG] Appel de savePreferenceToBackend...');
         // Toujours sauvegarder l'ID canonique (évite de persister "ocean." ou une variante)
         savePreferenceToBackend(canonicalId || palette.id, userId);
       } else {
-        console.log('⏭️ [DEBUG] Sauvegarde désactivée (shouldSave = false)');
       }
     } else {
       console.warn(`⚠️ Palette inconnue: "${paletteId}" (nettoyé: "${cleaned}")`);

@@ -18,34 +18,13 @@ export function registerFunction(name, handler) {
  */
 function callFunction(functionName, functionToCall, functionArgs) {
   const noParamFunctions = ['getRulePicture', 'getAvailableAssets', 'getAvailableColors'];
-  const userFunctions = ['checkUser', 'CreateUserProfile', 'UpdateUserProfile', 'SwitchUserProfile'];
+  const userFunctions = ['checkUser', 'SwitchUserProfile'];
   
   if (noParamFunctions.includes(functionName)) {
     return functionToCall();
   }
   
   if (userFunctions.includes(functionName)) {
-    
-    // Validation spécifique pour UpdateUserProfile
-    if (functionName === 'UpdateUserProfile') {
-      const reason = functionArgs.reason ? functionArgs.reason.toLowerCase() : '';
-      const validKeywords = ['erreur', 'trompé', 'faute', 'correction', 'désolé', 'pardon', 'mauvais', 'change', 'corrige', 'modifier', 'fausse'];
-      
-      // Si la raison ne contient pas de mot clé de correction explicite, on bloque
-      const isValidReason = validKeywords.some(keyword => reason.includes(keyword));
-      
-      if (!isValidReason) {
-        console.warn(`⚠️ Tentative UpdateUserProfile bloquée. Raison invalide: "${functionArgs.reason}"`);
-        return {
-          success: false,
-          message: `❌ ACTION REFUSÉE. Tu essaies de corriger un nom sans raison valable.
-          - Si l'utilisateur est une NOUVELLE personne qui se présente ("Je m'appelle X"), utilise checkUser puis CreateUserProfile.
-          - Si l'utilisateur veut se connecter à un autre compte, utilise SwitchUserProfile.
-          - UpdateUserProfile est STRICTEMENT réservé aux corrections d'erreurs ("je me suis trompé", "faute de frappe").`
-        };
-      }
-    }
-
     return functionToCall(functionArgs);
   }
   
@@ -83,7 +62,7 @@ ${functionResponse.colors.join('\n')}
 - N'APPELLE PLUS getAvailableColors() - tu as déjà toutes les informations nécessaires`;
   }
   
-  const userFunctions = ['checkUser', 'CreateUserProfile', 'UpdateUserProfile', 'SwitchUserProfile'];
+  const userFunctions = ['checkUser', 'SwitchUserProfile'];
   if (userFunctions.includes(functionName)) {
     return functionResponse.message || JSON.stringify(functionResponse);
   }
@@ -102,6 +81,17 @@ export async function executeToolCall(toolCall) {
   console.log(`   ${EMOJIS.subitem} ${CONSOLE_LOGS.openaiArguments} ${JSON.stringify(functionArgs)}`);
   
   const functionToCall = availableFunctions[functionName];
+  if (!functionToCall) {
+    return {
+      role: 'tool',
+      tool_call_id: toolCall.id,
+      name: functionName,
+      content: JSON.stringify({
+        success: false,
+        message: `Tool indisponible: ${functionName}. Tools autorisés pour profils: checkUser, SwitchUserProfile.`,
+      }),
+    };
+  }
   const functionResponse = await callFunction(functionName, functionToCall, functionArgs);
   const content = formatFunctionResponse(functionName, functionResponse);
   
