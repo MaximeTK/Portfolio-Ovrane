@@ -3,23 +3,39 @@
  */
 import crypto from 'crypto';
 import { User } from '../../models/User.js';
-import { findPermanentUserByIpHash, findUserByIpHash, createNewUser, addIpToProfile, saveUserProfile } from './userProfiles.js';
+import { findPermanentUserByIpHash, findUserByIpHash, addIpToProfile, saveUserProfile } from './userProfiles.js';
 import { EMOJIS, ERROR_MESSAGES } from '../messages.js';
 import { isValidUserId } from '../validators.js';
 
 /**
  * Met à jour les statistiques de visite d'un profil en base
+ * N'incrémente visitCount que si la dernière visite date de plus de 1 heure
  */
 async function updateVisitStats(userId) {
   try {
+    // Récupérer d'abord l'utilisateur pour vérifier lastVisit
+    const currentUser = await User.findOne({ id: userId }).lean();
+    if (!currentUser) return null;
+
+    const now = new Date();
+    const lastVisit = currentUser.lastVisit ? new Date(currentUser.lastVisit) : new Date(0);
+    const timeDiff = now.getTime() - lastVisit.getTime();
+    const shouldIncrement = timeDiff > (60 * 60 * 1000); // 1 heure
+
+    const update = {
+      $set: { lastVisit: now }
+    };
+
+    if (shouldIncrement) {
+      update.$inc = { visitCount: 1 };
+    }
+
     const user = await User.findOneAndUpdate(
       { id: userId },
-      { 
-        $set: { lastVisit: new Date() },
-        $inc: { visitCount: 1 }
-      },
+      update,
       { new: true }
     ).lean();
+    
     return user;
   } catch (error) {
     console.error('❌ Erreur updateVisitStats:', error);
@@ -70,27 +86,10 @@ export async function getUserProfile(userId, ip) {
       // On recharge pour être sûr d'avoir la version à jour avec l'IP
       return await loadExistingProfile(userId); 
     }
-
-    // userId fourni mais inexistant => on crée un nouveau profil associé à cet ID.
-    // (Plus robuste en environnement proxy et évite les confusions inter-utilisateurs via IP partagée)
-    return await createNewUser(userId, ip);
   }
 
-  // 2. Si aucun userId valide n'est fourni, on cherche si l'IP correspond à un profil PERMANENT existant
-  const permanentProfile = await loadPermanentProfile(ipHash);
-  if (permanentProfile) {
-    // Ajouter la nouvelle IP si elle n'existe pas déjà
-    await addIpToProfile(permanentProfile.id, ipHash);
-    return permanentProfile;
-  }
-  
-  // 3. Chercher si l'IP est liée à un profil TEMPORAIRE existant
-  const existingByIp = await findUserByIpHash(ipHash);
-  if (existingByIp) {
-    await updateVisitStats(existingByIp.id);
-    return existingByIp;
-  }
-  
-  // 4. Sinon, créer un nouveau profil
-  return await createNewUser(userId, ip);
+  // PLUS DE RECHERCHE AUTOMATIQUE PAR IP
+  // Si on n'a pas d'ID valide fourni par le client, on considère qu'il n'y a pas de profil.
+  // L'utilisateur doit d'abord entrer un pseudo pour créer un compte.
+  return null;
 }

@@ -1,7 +1,7 @@
 # Une proposition par ligne. Les lignes vides et celles commençant par # sont ignorées.
 
 Présente moi le profil de Maxime.
-Qui es-tu ?
+Présente moi ce que tu es.
 Quelle sont tes capacités ?
 Quelles sont les compétences phares de Maxime ?
 Quelles sont les projets de Maxime ?

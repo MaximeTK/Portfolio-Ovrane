@@ -42,6 +42,43 @@ export function setupTrackingRoute(app) {
     }
   });
 
+  // Pixel de tracking (remplace track.php)
+  app.get('/api/tracking/pixel', async (req, res) => {
+    try {
+      const id = req.query.id || 'anonyme';
+      const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+
+      // Enregistrer le passage (dans RedirectLog ou une autre collection PixelLog si besoin)
+      // On utilise RedirectLog pour centraliser, avec target="PIXEL"
+      await RedirectLog.create({
+        path: `/pixel/${id}`,
+        target: 'PIXEL_VIEW',
+        ip,
+        userAgent
+      });
+
+      console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} 👁️ Pixel vu par: ${id} (IP: ${ip})`);
+
+      // Renvoyer une image GIF transparente 1x1
+      // Header pour dire que c'est une image
+      res.writeHead(200, {
+        'Content-Type': 'image/gif',
+        'Content-Length': '43',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      });
+      
+      // Buffer du GIF 1x1 transparent
+      const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+      res.end(pixel);
+
+    } catch (error) {
+      console.error('Erreur pixel tracking:', error);
+      // Même en cas d'erreur, on essaie de renvoyer le pixel pour ne pas casser l'affichage client
+      res.status(200).end(); 
+    }
+  });
+
   // Sauvegarder un lien d'arrivée (User Profile)
   app.post('/api/tracking/visit', async (req, res) => {
     try {

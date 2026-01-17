@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Tracking Pixel</title>
+</head>
+<body>
+    <h1>Test du Pixel de Tracking</h1>
+    <p>Cette page contient une image invisible qui déclenche le tracking.</p>
+    <p>Regardez les logs de votre terminal Backend (Port 3001) : vous devriez voir "Pixel vu par : test_user".</p>
+
+    <!-- Pixel de tracking -->
+    <!-- En local, le backend tourne sur le port 3001. -->
+    <!-- En production, remplacez par l'URL réelle de votre backend (ex: https://api.ovrane.net/api/tracking/pixel...) -->
+    <img src="http://localhost:3001/api/tracking/pixel?id=test_user_local" width="1" height="1" alt="" style="display:block; border: 1px solid red;">
+    <p><small>(J'ai mis une bordure rouge et display block pour que vous voyiez où elle est, mais elle est transparente)</small></p>
+</body>
+</html>
+
+
+

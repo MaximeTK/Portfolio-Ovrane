@@ -1,6 +1,7 @@
 /**
  * Route principale du chat
  */
+import crypto from 'crypto';
 import { processUserInfo } from '../lib/chat/userProcessor.js';
 import { generateResponse } from '../lib/chat/responseGenerator.js';
 import { processResponse } from '../lib/chat/responseProcessor.js';
@@ -76,64 +77,46 @@ export function setupChatRoute(app, openai, ragInitialized) {
 
         // Résolution du profil actif via le pseudo
         if (existingByName) {
-          // Si on est sur un profil temporaire, on tente de fusionner vers le permanent existant
-          if (userProfile?.isTemporary) {
-            const merged = await mergeTemporaryIntoPermanent(userId, existingByName.id);
-            if (merged) {
-              userId = merged.id;
-              userProfile = merged;
-            } else {
-              const updatedTarget = await User.findOneAndUpdate(
-                { id: existingByName.id },
-                { $set: { lastVisit: new Date() }, $inc: { visitCount: 1 } },
-                { new: true },
-              ).lean();
-              userId = existingByName.id;
-              userProfile = updatedTarget || existingByName;
-            }
-          } else {
-            // Profil permanent: si ce n'est pas déjà le bon, on switch
-            const currentName = String(userProfile?.name || '').toLowerCase().trim();
-            const desiredNameLower = String(desiredName).toLowerCase().trim();
-            const alreadyCurrent = (userId === existingByName.id) || (currentName && currentName === desiredNameLower);
+          // Profil permanent: si ce n'est pas déjà le bon, on switch
+          // (On ignore désormais complètement la notion de profil temporaire)
+          const currentName = String(userProfile?.name || '').toLowerCase().trim();
+          const desiredNameLower = String(desiredName).toLowerCase().trim();
+          
+            // Cas simple : Si userId correspond, c'est bon. Sinon on switch.
+            const alreadyCurrent = userId === existingByName.id;
+            
             if (!alreadyCurrent) {
               const updatedTarget = await User.findOneAndUpdate(
                 { id: existingByName.id },
-                { $set: { lastVisit: new Date() }, $inc: { visitCount: 1 } },
+                { 
+                  $set: { lastVisit: new Date() }, 
+                  // On n'incrémente PAS visitCount ici pour un simple switch
+                  // L'incrément se fait via getUserProfile -> updateVisitStats avec délai 1h
+                },
                 { new: true },
               ).lean();
               userId = existingByName.id;
               userProfile = updatedTarget || existingByName;
             }
-          }
-        } else {
-          // Nouveau profil (pseudo inconnu)
-          if (userProfile?.isTemporary) {
-            const converted = await convertToPermament(userId, desiredName);
-            if (converted) {
-              userProfile = converted;
-            } else {
-              userProfile = { ...(userProfile || {}), id: userId, name: desiredName, isTemporary: false };
-            }
           } else {
-            const ipHashes = Array.isArray(userProfile?.ipHashes) ? userProfile.ipHashes : [];
-            const firstIpHash = ipHashes.length > 0 ? ipHashes[0] : 'unknown';
-            const newUserId = generateUserHash(firstIpHash, desiredName);
+          // Nouveau profil (pseudo inconnu) -> Création immédiate
+          const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+          const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
+          const newUserId = generateUserHash(ipHash, desiredName);
 
-            const newProfile = new User({
-              id: newUserId,
-              ipHashes,
-              visitCount: 1,
-              name: desiredName,
-              isTemporary: false,
-              preferences: {},
-              conversations: [],
-            });
-            await newProfile.save();
+          const newProfile = new User({
+            id: newUserId,
+            ipHashes: [ipHash],
+            visitCount: 1,
+            name: desiredName,
+            isTemporary: false,
+            preferences: {},
+            conversations: [],
+          });
+          await newProfile.save();
 
-            userId = newUserId;
-            userProfile = newProfile.toObject();
-          }
+          userId = newUserId;
+          userProfile = newProfile.toObject();
         }
 
         // Vérification de la limite de messages (protection)
