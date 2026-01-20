@@ -240,13 +240,6 @@ Utilisation : Pour montrer le CV Imprimable de Maxime Thiong-kay, Version Imprim
 Mots-clés : CV Imprimable, Maxime
 Tool : uiShowPicture({ filenames: ["CV Imprimable.png"] })
 
-CV Noir Eclairer.png
-Format : PNG uniquement (pas de PDF)
-Description : Montre le CV Noir Eclairer de Maxime Thiong-kay, Version Noir Eclairer
-Utilisation : Pour montrer le CV Noir Eclairer de Maxime Thiong-kay, Version Noir Eclairer
-Mots-clés : CV Noir Eclairer, Maxime
-Tool : uiShowPicture({ filenames: ["CV Noir Eclairer.png"] })
-
 
 
 

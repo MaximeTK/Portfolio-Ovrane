@@ -94,5 +94,3 @@ main().catch((err) => {
   console.error('❌ Migration échouée:', err);
   process.exit(1);
 });
-
-
