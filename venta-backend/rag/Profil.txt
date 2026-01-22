@@ -36,11 +36,12 @@ SOFT SKILLS GLOBAUX
 Gestion du temps, Gestion d'équipe, oralité, 
 
 QUALITE
-Autodidacte, Créatif, Déterminé, Ambitieux, Analytique, N'a aucun mal à ce remettre en question de lui même, Cherche constamment à s'améliorer, N'a d'égo que sur ses propres performance, Stratégique, Polyvalent
+Autodidacte, Créatif, Déterminé, Ambitieux, Analytique, N'a aucun mal à ce remettre en question de lui même, Cherche constamment à s'améliorer, N'a d'égo que sur ses propres performance, Stratégique, Polyvalent, A une excellente gestion du stress, n'est pas impulsif dans la prise de décision
 
 DEFAUT
-A du mal à délégué et préfère tout faire soi-même, trop analytique, trop ambitieux, a une vision trop large alors que ce n'est pas toujours nécessaire
+A du mal à délégué et préfère tout faire soi-même, trop analytique, trop ambitieux, a une vision trop large alors que ce n'est pas toujours nécessaire.
 
+Gestion du stress : Dans des environnements à haute pression, il peut ressentir du stress, ce qui peut affecter sa productivité.
 STAGE
 BBN Solution (Italie) (Stage) - avril 2022, Durée : 4 mois : Dans un contexte international, il a conçu l’UX/UI d’une application de laverie connectée et repensé intégralement le design de la documentation technique interne de l’entreprise. Ici, son rôle a été de simplifier l’accès à l’information complexe, un défi majeur pour l'efficacité organisationnelle. Création et développement d’une refonte du site interne de l’entreprise. Création de l’expérience utilisateur et du design d’une application mobile de laverie
 Refonte de l’expérience utilisateur et du design de la documentation technique interne
@@ -49,15 +50,6 @@ Résolution de bugs sur l’environnement de développement intégré (IDE) inte
 ===================================
 Département de la réunion (stage) - Septembre 2020, Durée : 4 mois : Création et Développement du site de formations interne de l’entreprise
 
-PROJET
-Hik’up (France) : Il y a mené une refonte stratégique totale de l’expérience utilisateur. En créant une charte graphique cohérente et en optimisant le flux de navigation d'une application de randonnée, il a prouvé que le design pouvait rendre la technologie plus humaine et accessible. Création d'une application de randonnée. Conduite d'une refonte stratégique de l'expérience utilisateur (UX)
-Conception et mise en œuvre d'une charte graphique cohérente (UI)
-Réalisation d'audits UX et organisation de tests utilisateurs
-Conception d'un algorithme avancé en Node.js, dédié à la génération d'itinéraires de randonnée
-==========
-Pico (Projet AAC) : Dans ce projet ambitieux dédié à la communication alternative (AAC), il vise à transformer les vielles application rudimentaire pour autiste non verbaux en véritable outils dédié à les aiders. Avec une refonte totale de l'UX il compte bien intervenir sur la totalité des problématiques de ce genre d'application et s'imposé sur le marché.
-=========
-Ovrane (le portfolio) : Un portfolio parce qu'il fallait un portfolio, donc il a un fait portfolio avec de l'IA pour expliter son profil parce que c'est bien plus original qu'un site lambda
 CONTACT : 
 maxime.thiong-kay@epitech.eu | https://www.linkedin.com/in/maxime-thiong-kay
 France | +262 693 05 75 70 (possible par WhatsApp)
