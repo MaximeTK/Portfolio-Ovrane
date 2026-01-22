@@ -4,83 +4,44 @@ de la conception stratégique à la réflexion business en passant par le design
 Software Engineer alliant expertise informatique et design intelligent.
 Entre technique avancée et sens du design, je cherche à donner forme à des produits numériques qui unissent performance, beauté fonctionnelle et vision stratégique.
 
-I. Un Profil Rare à la Croisée de l'Ingénierie, de l'Esthétique et de l'Autonomie
-À 24 ans, Maxime Thiong-kay ne se contente pas de suivre des trajectoires préétablies. Là où le marché distingue souvent les techniciens des créatifs, il incarne une synthèse rare et nécessaire : celle de l'ingénieur-esthète. Son profil est le produit d'une double culture : la rigueur implacable de l'informatique de haut niveau et une quête perpétuelle de savoirs multidisciplinaires acquis en autodidacte.
+PRESENTATION
+Maxime Thiong-kay est un diplomé d'Epitech (Programme grande école) de la promo 2024 issue du campus de la réunion.
+C'est un product engineer capable d'intervenir sur le développement informatique et le design UX/UI.
+Il recherche actuellement un CDI dans une entreprise ambitieuse qui a besoin d'un développeur, un UX/UI designer ou bien les deux à la fois
+Maxime Thiong-kay n'a aucune restriction géographique, 
+Maxime à pour profil un INTP (basé sur les personnalité de 16Personnality)
+Maxime n'a que 2 motivation : Le challenge ou L'amusement, il ne travaillera jamais avec vous si vous cherchez un gentil petit développeur derriere son bureau, c'est 120% sur un projet ou passez votre chemin
 
-L’Ingénierie comme Socle, l'Epitech comme Forge
-Issu du Programme Grande École d’Epitech (titre RNCP 7), Maxime a forgé ses armes dans l'un des environnements les plus exigeants de la tech. Sa maîtrise des langages fondamentaux tels que le C et le C++ n'est pas qu'une simple compétence technique ; c'est le socle d'une pensée structurée, capable de comprendre l'architecture intime des systèmes. Cette capacité à descendre "proche du métal" lui donne une longueur d'avance pour optimiser des solutions là où d'autres se limitent à la surface.
+PARCOURS
+Parcours étudiants : 3 ans à Epitech réunion, 1 an a Dublin en IT Management, 1 an sur le campus epitech Paris
+Maxime Thiong-kay a appris au cours de son parcours la programmation informatique avec Epitech, école très réputé dans le domaine et en parallèle un apprentissage en autodidacte de l'UX/UI design;
+L'apprentissage du design UX et UI n'est pas fait au hasard, avoir un développeur capable de designer les interfaces puis de les développer lui même c'est extrement puissant surtout quand on rajoute les connaissances en marketing et en business.
+Cela permet de couvrir énormément de secteur pour pouvoir intervenir dans n'importe quelle configuration de projet.
+Maxime thiong-kay vise donc une polyvalence à tout épreuve, couplet au parcours Epitech qui lui permet de monter en compétence très rapidement.
 
-Cette base technique a été consolidée par une vision stratégique internationale à la TU Dublin, où il a appris à aligner les impératifs technologiques sur les visions business globales via l'IT Management.
+INFORMATIQUE
+Maxime Thiong-kay a eu plusieurs projets durant son parcours Epitech lui ayant appris les bases de la programmation informatique jusqu'au titre d'expert,
+Il n'a aucune spécialité il aime bien tout les langages et n'a aucune difficulté à apprendre en cours de route de nouvelle technologie étant donné que c'est la base de la pédagogie Epitech.
 
-L’UX Design : L’Ingénierie de la Psychologie Humaine
-Pour Maxime, l'UX (User Experience) n'est pas un simple processus de création d'interfaces, c'est une ingénierie du ressenti. Expert sur Figma, il ne dessine pas des écrans : il conçoit des parcours basés sur une compréhension profonde de la psychologie humaine.
+HARD SKILLS INFORMATIQUE
+C, C++, HTML, CSS, PHP, Python, Flutter, Javascript, Typescript, MongoDB, Git, Docker, NextJS, VueJS, Symphony
 
-Le Design comme Science : À travers ses expériences (notamment chez Hik’up ou en Italie), il a appris à utiliser l'audit, le prototypage et l'Atomic Design non pas comme des contraintes, mais comme des outils pour résoudre des problèmes complexes.
+UX DESIGN 
+Maxime Thiong-kay a intégré l'aspect design dans toute ses expériences notamment dans tout ses stages, l'UX Deisgn n'est n'y un loisir n'y un passe-temps c'est une compétence pour être plus compétitifs et surtout plus autonome.
 
-Le Refus de la Superficialité : Fidèle à son tempérament analytique, il rejette l'esthétique pure si elle n'est pas soutenue par une utilité réelle. Son "jugement sur la qualité" l'amène à traquer la moindre friction, cherchant toujours l'équilibre parfait entre la performance technique et la beauté fonctionnelle.
+UX DESIGN HARD SKILLS 
+Figma, Illustrator, Stable Diffusion, ComfyUI,
 
-L’Autodidacte Perpétuel : La Stratégie de l'Indépendance
-Ce qui définit véritablement Maxime, au-delà de ses diplômes, c'est sa capacité à s'approprier des domaines complexes en totale autonomie. Poussé par une ambition de réussir seul et de maîtriser chaque levier d'un projet, il a développé une expertise transverse en autodidacte :
+SOFT SKILLS GLOBAUX
+Gestion du temps, Gestion d'équipe, oralité, 
 
-L'Expansion des Compétences : Du marketing digital à l'ingénierie sociale, en passant par la psychologie comportementale, il déconstruit chaque discipline pour l'intégrer à son arsenal de créateur.
+QUALITE
+Autodidacte, Créatif, Déterminé, Ambitieux, Analytique, N'a aucun mal à ce remettre en question de lui même, Cherche constamment à s'améliorer, N'a d'égo que sur ses propres performance, Stratégique, Polyvalent
 
-L'IA comme Levier de Puissance : Sa maîtrise de Stable Diffusion et ComfyUI illustre cette soif d'apprendre : il s'est emparé des outils de pointe pour fusionner l'algorithmique et la création visuelle, là où les frontières technologiques sont encore en train de se dessiner.
+DEFAUT
+A du mal à délégué et préfère tout faire soi-même, trop analytique, trop ambitieux, a une vision trop large alors que ce n'est pas toujours nécessaire
 
-La Vision Holistique : Cet apprentissage continu n'est pas une simple curiosité, c'est une stratégie de maîtrise totale. En comprenant les mécanismes du business, du design et du code, il est capable de piloter un produit de A à Z avec une cohérence que peu de profils peuvent garantir.
-
-La Quête de la "Profondeur Intellectuelle"
-Doté d'un tempérament réservé mais d'une exigence extrême, Maxime agit comme un filtre d'excellence. Il ne conçoit pas un produit qui fonctionne sans être élégant, ni une stratégie marketing qui séduit sans être éthique et robuste. C'est cette dualité — cette capacité à naviguer entre l'abstraction du code, l'émotion du design et la logique du business — qui constitue sa signature professionnelle unique.
-
-
-II. Fondations Techniques et Rigueur Académique
-Le parcours de Maxime Thiong-kay est marqué par une immersion totale dans les environnements informatiques les plus exigeants. Sa formation n'est pas seulement un empilement de diplômes, mais une véritable éducation à la résolution de problèmes complexes, où la théorie académique est immédiatement mise à l'épreuve par la pratique intensive.
-
-L'École de la Résilience : Le Cursus Epitech
-Diplômé du Programme Grande École d'Epitech (Expert en Technologies de l'Information, Master 2), Maxime a évolué au sein d'une pédagogie par projets qui ne laisse aucune place à l'approximation.
-
-La Maîtrise du "Bas Niveau" : En se spécialisant sur les langages C et C++, il a acquis une compréhension atomique de la gestion mémoire et de l'optimisation système. Cette rigueur technique lui permet aujourd'hui d'appréhender n'importe quelle nouvelle technologie avec une aisance rare, car il en comprend les fondations logiques profondes.
-
-Développement : HTML, CSS, PHP, Python, C / C++, Javascript, Typescript, Nodejs, ReactJS, VueJS, MySQL, MongoDB, Symphony, Git, Bootstrap, Tailwind, Docker, Kubernetes, Postman
-
-UX / UI Design : Figma, Illustrator, Midjourney, Stable Diffusion, Audit, Prototypage, Wireframing, Atomic Design, User Testing
-
-La Transmission du Savoir : Preuve de sa maîtrise et de sa fiabilité, il a occupé le poste d'Assistant Pédagogique au sein d'Epitech. Dans ce rôle, il ne s'est pas contenté de coder ; il a dû auditer, évaluer et guider des étudiants (MSC-Pro, Web@academie), affinant ainsi sa capacité à analyser la qualité d'un code et à vulgariser des concepts complexes.
-
-L'Expansion Stratégique : IT Management à Dublin
-Pour compléter son profil technique, Maxime a choisi l'internationalisation et la prise de hauteur stratégique à la Technological University Dublin (TU Dublin).
-
-Gestion de l'Information : Avec l'obtention de son diplôme en IT Management, il a intégré les leviers décisionnels de l'entreprise : gouvernance des systèmes d'information, gestion d'infrastructure et alignement technologique sur les objectifs business.
-
-Vision Globale : Cette double casquette fait de lui un profil hybride, capable de parler le langage du développeur système comme celui du manager de projet, garantissant une cohérence totale entre les ressources techniques et la valeur finale du produit.
-
-Une Polyvalence FullStack au Service de la Performance
-Son arsenal technique s'étend bien au-delà du système pur. Maxime déploie des solutions modernes avec une exigence de "propreté" (Clean Code) constante :
-
-Web & Mobile : Il maîtrise les architectures robustes que sont NextJS, VueJS, et Flutter, couplées à des environnements de backend puissants en NodeJS ou PHP (Symfony).
-
-Algorithmique Avancée : Son expérience chez Hik'up illustre parfaitement cette alliance entre technique et utilité : il y a conçu un algorithme complexe en Node.js dédié à la génération d'itinéraires de randonnée, mêlant logique mathématique et performance de traitement de données.
-
-Le Jugement sur la Qualité comme Standard
-Ce qui distingue Maxime dans ses fondations techniques, c’est son tempérament analytique. Très organisé, il applique un "biais de jugement sur la qualité" qui l'amène à ne jamais livrer un travail "juste fonctionnel". Chaque ligne de code, chaque base de données (MySQL, MongoDB) et chaque conteneur (Docker, Kubernetes) qu'il déploie est soumis à un audit personnel rigoureux. Pour lui, la robustesse technique est une question de respect envers l'utilisateur final et envers l'intégrité du produit.
-
-III. L’Expertise UX/UI : Le Design au Service du Sens
-Pour Maxime Thiong-kay, le design n’est jamais une finalité esthétique isolée, mais une ingénierie du ressenti. Son approche de l’UX (User Experience) et de l’UI (User Interface) est celle d'un traducteur : il transforme des architectures techniques complexes en expériences fluides, intuitives et porteuses de sens.
-
-Le Design comme Science Comportementale
-Maxime aborde le design avec la même rigueur que le code. Expert de l'outil Figma, il ne se contente pas de dessiner des interfaces ; il modélise des parcours utilisateurs basés sur une analyse fine de la psychologie et des besoins réels.
-
-Méthodologies Robustes : Sa pratique s'appuie sur des piliers solides : l'Atomic Design pour la cohérence des systèmes, le Wireframing pour la structure, et les Audits UX pour la validation.
-
-Le Test comme Vérité : Fidèle à son tempérament analytique, il place le feedback utilisateur au centre. Que ce soit pour la refonte de documentation technique ou la création d'applications mobiles, il organise des tests rigoureux pour traquer la moindre friction cognitive.
-
-Des Réalisations à Fort Impact
-Son portfolio témoigne de sa capacité à intervenir sur des projets aux enjeux variés, où le design doit servir une vision stratégique :
-==================================
-Hik’up (France) : Il y a mené une refonte stratégique totale de l’expérience utilisateur. En créant une charte graphique cohérente et en optimisant le flux de navigation d'une application de randonnée, il a prouvé que le design pouvait rendre la technologie plus humaine et accessible. Création d'une application de randonnée. Conduite d'une refonte stratégique de l'expérience utilisateur (UX)
-Conception et mise en œuvre d'une charte graphique cohérente (UI)
-Réalisation d'audits UX et organisation de tests utilisateurs
-Conception d'un algorithme avancé en Node.js, dédié à la génération d'itinéraires de randonnée
-==================================
+STAGE
 BBN Solution (Italie) (Stage) - avril 2022, Durée : 4 mois : Dans un contexte international, il a conçu l’UX/UI d’une application de laverie connectée et repensé intégralement le design de la documentation technique interne de l’entreprise. Ici, son rôle a été de simplifier l’accès à l’information complexe, un défi majeur pour l'efficacité organisationnelle. Création et développement d’une refonte du site interne de l’entreprise. Création de l’expérience utilisateur et du design d’une application mobile de laverie
 Refonte de l’expérience utilisateur et du design de la documentation technique interne
 Développement et mise en œuvre de la refonte de la documentation technique interne
@@ -88,100 +49,16 @@ Résolution de bugs sur l’environnement de développement intégré (IDE) inte
 ===================================
 Département de la réunion (stage) - Septembre 2020, Durée : 4 mois : Création et Développement du site de formations interne de l’entreprise
 
-Modération de la communauté avec une bonne gestion des conflits
-Création & Gestion d’équipe pluridisciplinaire pour la mise en œuvre d’évènement originaux pour augmenter la participation active des membres. Réalisation de design et graphisme pour créer une direction artistique propre pour les différents évènements
-Rédaction de magazine hebdomadaire pour alimenter la communauté en contenues et générer de l’interaction entre les membres 
-
-
-Pico (Projet AAC) : Dans ce projet ambitieux dédié à la communication alternative (AAC), il utilise l'UX pour améliorer la vitesse de création de phrases pour des personnes non-verbales. C'est ici que son talent prend tout son sens : utiliser l'interface pour redonner une voix et une autonomie.
-
-L’Innovation par l’IA Générative
-Maxime se distingue par l'intégration précoce de l'intelligence artificielle dans son processus créatif. Maîtrisant des outils comme Stable Diffusion (Forge/ComfyUI) et Midjourney, il ne voit pas l'IA comme un remplaçant, mais comme un outil surpuissant. Il utilise ces technologies pour explorer des directions artistiques inédites, générer des ressources visuelles sur mesure et repousser les limites du prototypage. Cette fusion entre algorithmique et esthétique lui permet de proposer une identité visuelle unique et une "narration graphique" (storytelling) puissante pour chaque projet.
-
-La "Beauté Fonctionnelle" comme Standard
-Son "biais de jugement sur la qualité" trouve ici son expression la plus visible. Maxime rejette le design superficiel. Pour lui, une interface est belle si elle est efficace ; elle est réussie si elle disparaît au profit de l'action de l'utilisateur. Cette exigence de profondeur intellectuelle garantit des produits numériques non seulement élégants, mais aussi éthiques et durables, respectant sa valeur fondamentale : réussir en apportant une réelle valeur ajoutée, sans jamais nuire à l'expérience de l'autre.
-
-Voici la quatrième partie de votre présentation, centrée sur l'alchimie entre votre tempérament, vos valeurs et votre quête d'excellence.
-
-IV. Un Profil Psychologique au Service de l’Excellence
-Derrière l'expertise technique et le talent créatif de Maxime Thiong-kay se cache une structure psychologique singulière, où l'exigence analytique rencontre une sensibilité profonde. Ce n'est pas seulement son savoir-faire qui définit la valeur de son travail, mais le "pourquoi" et le "comment" il l'exécute.
-
-Le Filtre de la Qualité : Une Rigueur Analytique
-Maxime se définit par un tempérament extrêmement organisé et analytique. Ce qu’il perçoit parfois comme un défaut — un jugement constant sur la qualité — est en réalité son plus grand atout professionnel :
-
-L'Exigence comme Standard : Il n'accepte pas les solutions de facilité ou le "travail à moitié fait". Chaque projet est passé au crible de sa critique interne, garantissant une livraison finale où chaque détail a été pensé, testé et validé.
-
-Le Rejet du Superficiel : Que ce soit dans le code, le design ou les relations humaines, Maxime cherche la profondeur. Cette sélectivité sociale et intellectuelle se traduit par un investissement total dans les projets qui font sens, délaissant le superflu pour se concentrer sur l'impact réel.
-
-Résilience et Vision : L’Audace du Bâtisseur
-L’un des traits les plus marquants de Maxime est son absence de peur face à l’échec ou au ridicule, dès lors que sa vision est respectée.
-
-La Créativité Émotionnelle : Il possède la capacité rare de transformer des phases de haute intensité émotionnelle en élans créatifs. Là où d'autres pourraient reculer, il utilise ces moments pour innover et proposer des concepts forts.
-
-L’Échec Instructif : Son expérience de gestion de communauté sur Discord, bien qu’il l’analyse comme un échec, a été le laboratoire de son apprentissage de l’ingénierie sociale. Il en a tiré des leçons fondamentales sur la psychologie des groupes, la gestion des conflits et le leadership, des compétences qu'il réinvestit aujourd'hui dans la conduite de projets complexes.
-
-Un Paradoxe Humain : Façade Exigeante et Valeurs Douces
-Le profil de Maxime est celui d'un "exigeant au cœur tendre". S'il affiche une façade de rigueur et d'analyse froide, il est animé par des valeurs humaines puissantes :
-
-L’Éthique de Réussite : Sa volonté de réussir est indissociable du respect d'autrui. Il refuse catégoriquement l'ascension sociale ou professionnelle qui se ferait au détriment des autres. Pour lui, la réussite doit être un cercle vertueux.
-
-Fiabilité et Loyauté : Réservé mais profondément fiable, il construit des relations professionnelles basées sur l'honnêteté et la confiance mutuelle. Sa nature affectueuse et douce se révèle dans l'accompagnement et la protection des intérêts de ses partenaires et de ses équipes.
-
-L’Aspiration à la Maîtrise Totale
-Maxime ne cherche pas seulement à être un rouage dans une machine, il aspire à maîtriser les domaines clés de la vie pour bâtir son propre succès : de l'UX à la psychologie, du marketing à l'ingénierie sociale. Cette soif de connaissance n'est pas de la simple curiosité, c'est une quête de souveraineté. En combinant sa puissance analytique avec sa vision esthétique, il se prépare à relever des défis où l'intelligence émotionnelle compte autant que la puissance de calcul.
-
-V. Une Vision d’Indépendance et de Maîtrise Totale
-Pour Maxime Thiong-kay, la réussite n'est pas une destination, mais un état de maîtrise. Son parcours, bien que solide académiquement, est avant tout le récit d'une conquête d'autonomie. Son aspiration profonde est de devenir un architecte souverain, capable de porter une idée du concept abstrait à la réalité économique, sans jamais dépendre d'un tiers pour la qualité de l'exécution.
-
-La Stratégie de l'Indépendance
-Maxime a compris que pour réussir seul, ou pour diriger avec une légitimité incontestable, il faut maîtriser les quatre piliers fondamentaux de la création moderne. Il a donc structuré son apprentissage autodidacte autour de cette synergie :
-
-L'Ingénierie & l'Informatique : Pour la robustesse et la puissance de l'outil.
-
-L'UX & le Design : Pour l'ergonomie, l'esthétique et l'émotion utilisateur.
-
-Le Marketing & le Business : Pour la viabilité et la rencontre avec le marché.
-
-La Psychologie & l'Ingénierie Sociale : Pour la compréhension des besoins profonds et la navigation dans les structures humaines.
-
-L'IA comme Multiplicateur de Force
-L'intérêt de Maxime pour les technologies génératives (Stable Diffusion, Forge, ComfyUI) n'est pas une simple curiosité technique. C'est un choix stratégique. Il voit en l'IA un "collaborateur virtuel" capable de démultiplier sa productivité individuelle. En automatisant les tâches répétitives et en explorant des itérations créatives ultra-rapides, il se dote des moyens d'une agence entière concentrée dans un seul esprit analytique.
-
-Vers une Réussite Éthique et Profonde
-L'ambition de Maxime est teintée d'une éthique de travail rigoureuse. Il ne cherche pas la réussite rapide ou superficielle, mais une réussite de substance.
-
-Sélectivité et Sens : Il privilégie les projets qui demandent une réflexion intellectuelle réelle, refusant de mettre son talent au service de solutions médiocres ou nuisibles.
-
-Le Respect du Client et de l'Utilisateur : Sa vision d'indépendance repose sur une promesse de fiabilité totale. Réussir seul implique une responsabilité immense, qu'il assume par son organisation méthodique et son exigence chirurgicale sur chaque livrable.
-
-VI. Compétences & Intérêts
-
-Hard Skills / Hard Skill
-Développement : HTML, CSS, PHP, Python, C / C++, Javascript, Typescript, Nodejs, ReactJS, VueJS, MySQL, MongoDB, Symphony, Git, Bootstrap, Tailwind, Docker, Kubernetes, Postman
-UX / UI Design : Figma, Illustrator, Midjourney, Stable Diffusion, Audit, Prototypage, Wireframing, Atomic Design, User Testing
-
-Soft Skills / Soft Skill
-Rigueur Analytique, Polyvalence, Autonomie, Pédagogie, Intelligence Émotionnelle, Vision Stratégique.
-
-Centres d'Intérêt Personnels
-Informatique, Vidéo Youtube (montage/script), Design, Psychologie et social engineering, IA et Nouvelles Technologies.
-
-Conclusion : L'Avenir du Profil Hybride
-À la croisée des chemins entre La Réunion et l'international, entre le code système et le design psychologique, Maxime Thiong-kay se positionne comme un profil rare. Il est celui qui peut auditer une infrastructure, designer une expérience émotionnelle, coder un algorithme complexe et définir la stratégie marketing d'un produit.
-
-C’est un bâtisseur de demain : techniquement armé, esthétiquement éveillé et psychologiquement prêt à transformer la complexité en simplicité élégante.
-
-Parcours en Bref
-Expériences Clés : Assistant Pédagogique (Epitech), Développeur & UX Designer (Italie, France, La Réunion).
-
-Domaines d’Intervention : Développement FullStack, Audit UX, Prototypage, Gestion d'équipe pluridisciplinaire, Intégration d'IA.
-
-Localisation : Disponible pour des projets d'envergure, ancré à La Réunion mais tourné vers l'international.
-
-Maxime Thiong-kay est le partenaire idéal pour les projets qui exigent une vision holistique, où l'on ne se contente pas de "faire fonctionner", mais où l'on cherche à marquer les esprits par la perfection technique et visuelle.
-
-Contact : 
-
+PROJET
+Hik’up (France) : Il y a mené une refonte stratégique totale de l’expérience utilisateur. En créant une charte graphique cohérente et en optimisant le flux de navigation d'une application de randonnée, il a prouvé que le design pouvait rendre la technologie plus humaine et accessible. Création d'une application de randonnée. Conduite d'une refonte stratégique de l'expérience utilisateur (UX)
+Conception et mise en œuvre d'une charte graphique cohérente (UI)
+Réalisation d'audits UX et organisation de tests utilisateurs
+Conception d'un algorithme avancé en Node.js, dédié à la génération d'itinéraires de randonnée
+==========
+Pico (Projet AAC) : Dans ce projet ambitieux dédié à la communication alternative (AAC), il vise à transformer les vielles application rudimentaire pour autiste non verbaux en véritable outils dédié à les aiders. Avec une refonte totale de l'UX il compte bien intervenir sur la totalité des problématiques de ce genre d'application et s'imposé sur le marché.
+=========
+Ovrane (le portfolio) : Un portfolio parce qu'il fallait un portfolio, donc il a un fait portfolio avec de l'IA pour expliter son profil parce que c'est bien plus original qu'un site lambda
+CONTACT : 
 maxime.thiong-kay@epitech.eu | https://www.linkedin.com/in/maxime-thiong-kay
 France | +262 693 05 75 70 (possible par WhatsApp)
 
