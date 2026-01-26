@@ -1,4 +1,4 @@
-Software Engineer avec de forte compétences UX/UI. Polyvalent, Analytique et Créatif. 
+Product Engineer avec de forte compétences UX/UI. Polyvalent, Analytique et Créatif. 
 Mon objectif est d’être capable d'intervenir sur l'ensemble des aspects d'un projet : 
 de la conception stratégique à la réflexion business en passant par le design et à la mise en œuvre technique. 
 Software Engineer alliant expertise informatique et design intelligent.
@@ -10,7 +10,7 @@ C'est un product engineer capable d'intervenir sur le développement informatiqu
 Il recherche actuellement un CDI dans une entreprise ambitieuse qui a besoin d'un développeur, un UX/UI designer ou bien les deux à la fois
 Maxime Thiong-kay n'a aucune restriction géographique, 
 Maxime à pour profil un INTP (basé sur les personnalité de 16Personnality)
-Maxime n'a que 2 motivation : Le challenge ou L'amusement, il ne travaillera jamais avec vous si vous cherchez un gentil petit développeur derriere son bureau, c'est 120% sur un projet ou passez votre chemin
+Maxime n'a que 2 motivation : Le challenge ou L'amusement, il ne travaillera jamais avec vous si vous cherchez un gentil petit développeur derrière son bureau, c'est 120% sur un projet ou passez votre chemin
 
 PARCOURS
 Parcours étudiants : 3 ans à Epitech réunion, 1 an a Dublin en IT Management, 1 an sur le campus epitech Paris
@@ -49,6 +49,15 @@ Développement et mise en œuvre de la refonte de la documentation technique int
 Résolution de bugs sur l’environnement de développement intégré (IDE) interne de l’entreprise
 ===================================
 Département de la réunion (stage) - Septembre 2020, Durée : 4 mois : Création et Développement du site de formations interne de l’entreprise
+
+OBJECTIF : 
+Maxime thiong-kay a une vision très clair de ses objectifs et la totalité de ses compétences sont tourner vers cette vision, depuis le collège il analyse le marché et les opportunités atteignables et ce forme sur le panel de compétences idéal pour pouvoir entreprendre quelle que soit les conditions et le type de projets. Cela explique les compétences en design, en développement informatique, en marketing et en business, pour Maxime Thiong-kay "Dans un monde qui est impossible à prévoir être un couteau suisse est le plus grand avantage"
+
+VISION :
+Maxime a un lien purement froid avec le travail il ne cherche pas a ce faire apprecier ou a jouer des relations, il veut progresser parce qu'il est simplement plus compétent que ses adversairs, un environment de travail agréable est important mais jamais une obligation. C'est professionnel et à ce titre : Sans aucune valeur relationnel
+
+VALEUR :
+Maxime malgré son temperament sérieux, maxime à les meilleurs valeurs qui soit, aucune jalousie, aucun mensonge et une remise en question permanentes. Il n'écrasera jamais ses adversaires pour passer devant eux : "Soit on est meilleur soit on ne l'est pas, c'est tout"
 
 CONTACT : 
 maxime.thiong-kay@epitech.eu | https://www.linkedin.com/in/maxime-thiong-kay
