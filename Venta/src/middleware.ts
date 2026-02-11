@@ -9,16 +9,17 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   // console.log(`Middleware checking path: ${path}`);
 
   // 1. Redirection CV (mot clé: redirectcv)
-  if (path.includes('redirectcv')) {
-    // Redirection vers le fichier PDF (doit être dans public/assets/)
-    const target = '/assets/CV_Maxime_Thiong-kay_Imprimable.pdf';
-    trackAndRedirect(request, event, path, target);
-    return NextResponse.redirect(new URL(target, request.url));
-  }
 
   if (path.includes('redirectcvdesign')) {
     // Redirection vers le fichier PDF (doit être dans public/assets/)
     const target = '/assets/CV_Maxime_Thiong-kay.pdf';
+    trackAndRedirect(request, event, path, target);
+    return NextResponse.redirect(new URL(target, request.url));
+  }
+
+  if (path.includes('redirectcv')) {
+    // Redirection vers le fichier PDF (doit être dans public/assets/)
+    const target = '/assets/CV_Maxime_Thiong-kay_Imprimable.pdf';
     trackAndRedirect(request, event, path, target);
     return NextResponse.redirect(new URL(target, request.url));
   }
