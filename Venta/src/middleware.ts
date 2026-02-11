@@ -16,6 +16,13 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
     return NextResponse.redirect(new URL(target, request.url));
   }
 
+  if (path.includes('redirectcvdesign')) {
+    // Redirection vers le fichier PDF (doit être dans public/assets/)
+    const target = '/assets/CV_Maxime_Thiong-kay.pdf';
+    trackAndRedirect(request, event, path, target);
+    return NextResponse.redirect(new URL(target, request.url));
+  }
+
   // 2. Redirection LinkedIn (mot clé: redirectlinkedin)
   if (path.includes('redirectlinkedin')) {
     const target = 'https://www.linkedin.com/in/maxime-thiong-kay/';
