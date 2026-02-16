@@ -10,7 +10,7 @@ function buildBaseParams(formattedInput) {
   return {
     model: OPENAI_CONFIG.model,
     input: formattedInput,
-    reasoning: { effort: OPENAI_CONFIG.reasoningEffort || 'low' },
+    reasoning: { effort: OPENAI_CONFIG.reasoningEffort || 'medium' },
     text: { verbosity: OPENAI_CONFIG.textVerbosity || 'medium' }
   };
 }
