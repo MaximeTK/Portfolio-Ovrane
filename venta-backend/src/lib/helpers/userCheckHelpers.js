@@ -2,6 +2,7 @@
  * Vérification des utilisateurs
  */
 import { CONSOLE_LOGS, EMOJIS } from '../messages.js';
+import { debug } from '../log.js';
 
 /**
  * Vérifie si le contexte est valide
@@ -47,17 +48,17 @@ function buildUserNotFoundMessage(name, currentProfile) {
  * Vérifie si un nom existe en base de données
  */
 export async function checkUser({ name }, currentRequestContext) {
-  console.log(`\n🔵 [FUNCTION START] checkUser | Paramètres: name="${name}"`);
+  debug(`\n🔵 [FUNCTION START] checkUser | Paramètres: name="${name}"`);
   
   try {
     if (!validateContext(currentRequestContext)) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.functionCall} checkUser: contexte manquant`);
       const result = { success: false, message: 'Erreur: contexte utilisateur non disponible' };
-      console.log(`❌ [FUNCTION END] checkUser | Retour: contexte manquant\n`);
+      debug(`❌ [FUNCTION END] checkUser | Retour: contexte manquant\n`);
       return result;
     }
 
-    console.log(`${EMOJIS.search} ${CONSOLE_LOGS.functionCall} Vérification du nom: "${name}"`);
+    debug(`${EMOJIS.search} ${CONSOLE_LOGS.functionCall} Vérification du nom: "${name}"`);
     // Source du bug: l'IA passait des noms d'assets ("Pico Logo.png") à checkUser → création de profils.
     // Correctif: on refuse ces valeurs et on n'arme JAMAIS une création de profil pour ça.
     if (looksLikeAssetOrFileName(name)) {
@@ -83,7 +84,7 @@ export async function checkUser({ name }, currentRequestContext) {
     const isCurrentUser = namesMatch(currentProfile?.name, name);
     
     if (!existingUser) {
-      console.log(`   ${EMOJIS.info} Nom "${name}" non trouvé en base de données`);
+      debug(`   ${EMOJIS.info} Nom "${name}" non trouvé en base de données`);
       return {
         success: true,
         exists: false,
@@ -97,7 +98,7 @@ export async function checkUser({ name }, currentRequestContext) {
     }
     
     if (isCurrentUser) {
-      console.log(`   ${EMOJIS.info} "${name}" est le nom du profil actuel`);
+      debug(`   ${EMOJIS.info} "${name}" est le nom du profil actuel`);
       clearPendingCreation(currentRequestContext);
       return {
         success: true,
@@ -109,7 +110,7 @@ export async function checkUser({ name }, currentRequestContext) {
       };
     }
     
-    console.log(`   ${EMOJIS.warning} "${name}" existe en base mais n'est PAS le profil actuel`);
+    debug(`   ${EMOJIS.warning} "${name}" existe en base mais n'est PAS le profil actuel`);
     clearPendingCreation(currentRequestContext);
     return {
       success: true,

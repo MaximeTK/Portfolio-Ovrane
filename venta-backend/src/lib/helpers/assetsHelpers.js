@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { CONSOLE_LOGS, EMOJIS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../messages.js';
+import { debug } from '../log.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,17 +50,17 @@ function extractAssetsSimple(lines) {
  * Retourne la liste des assets disponibles
  */
 export function getAvailableAssets() {
-  console.log(`\n🔵 [FUNCTION START] getAvailableAssets | Aucun paramètre`);
+  debug(`\n🔵 [FUNCTION START] getAvailableAssets | Aucun paramètre`);
   
   try {
-    console.log(`${EMOJIS.picture} ${CONSOLE_LOGS.functionCall} ${CONSOLE_LOGS.assetsRetrieving}`);
+    debug(`${EMOJIS.picture} ${CONSOLE_LOGS.functionCall} ${CONSOLE_LOGS.assetsRetrieving}`);
     
     const assetsPath = path.join(__dirname, '..', '..', '..', 'rag', 'assets.txt');
     
     if (!fs.existsSync(assetsPath)) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.functionCall} ${ERROR_MESSAGES.assetsFileNotFound}`);
       const result = { success: false, message: ERROR_MESSAGES.assetsFileNotFound };
-      console.log(`❌ [FUNCTION END] getAvailableAssets | Retour: fichier non trouvé\n`);
+      debug(`❌ [FUNCTION END] getAvailableAssets | Retour: fichier non trouvé\n`);
       return result;
     }
     
@@ -71,7 +72,7 @@ export function getAvailableAssets() {
       assetsList.push(...extractAssetsSimple(lines));
     }
     
-    console.log(`${EMOJIS.success} ${CONSOLE_LOGS.functionCall} ${SUCCESS_MESSAGES.assetsListRetrieved} (${assetsList.length} fichiers)`);
+    debug(`${EMOJIS.success} ${CONSOLE_LOGS.functionCall} ${SUCCESS_MESSAGES.assetsListRetrieved} (${assetsList.length} fichiers)`);
     
     const result = {
       success: true,
@@ -79,12 +80,12 @@ export function getAvailableAssets() {
       instructions: "Déclenche l'affichage via uiShowPicture({ filenames: [...] }) avec des noms EXACTS issus de la liste (sensible à la casse). Pour plusieurs images, UTILISE un seul appel avec filenames.",
       message: `${assetsList.length} assets disponibles. Pour afficher une ou plusieurs images, appelle uiShowPicture({ filenames: ["..."] }) avec des noms exacts.`
     };
-    console.log(`✅ [FUNCTION END] getAvailableAssets | Retour: success=true, ${assetsList.length} assets\n`);
+    debug(`✅ [FUNCTION END] getAvailableAssets | Retour: success=true, ${assetsList.length} assets\n`);
     return result;
   } catch (error) {
     console.error(`${EMOJIS.error} ${CONSOLE_LOGS.functionCall} ${ERROR_MESSAGES.assetsRetrievalError}`, error.message);
     const result = { success: false, message: `Erreur: ${error.message}` };
-    console.log(`❌ [FUNCTION END] getAvailableAssets | Retour: error="${error.message}"\n`);
+    debug(`❌ [FUNCTION END] getAvailableAssets | Retour: error="${error.message}"\n`);
     return result;
   }
 }
@@ -93,10 +94,10 @@ export function getAvailableAssets() {
  * Retourne les règles d'affichage d'images
  */
 export function getRulePicture() {
-  console.log(`\n🔵 [FUNCTION START] getRulePicture | Aucun paramètre`);
+  debug(`\n🔵 [FUNCTION START] getRulePicture | Aucun paramètre`);
   
   try {
-    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.functionCall} Récupération des règles d'affichage d'images`);
+    debug(`${EMOJIS.info} ${CONSOLE_LOGS.functionCall} Récupération des règles d'affichage d'images`);
     
     const instructions = `⚠️ RÈGLES D'AFFICHAGE D'IMAGES ⚠️
 
@@ -117,15 +118,15 @@ MULTIPLE IMAGES (IMPORTANT - évite les limites):
 - Fais UN SEUL appel: uiShowPicture({ filenames: ["img1.png","img2.png", ...] }).
 - Fais une phrase d'introduction globale, puis déclenche l'affichage via ce seul tool call (pas dans le texte).`;
 
-    console.log(`${EMOJIS.success} ${CONSOLE_LOGS.functionCall} Instructions d'affichage d'images fournies`);
+    debug(`${EMOJIS.success} ${CONSOLE_LOGS.functionCall} Instructions d'affichage d'images fournies`);
     
     const result = { success: true, instructions: instructions, message: instructions };
-    console.log(`✅ [FUNCTION END] getRulePicture | Retour: success=true, instructions fournies\n`);
+    debug(`✅ [FUNCTION END] getRulePicture | Retour: success=true, instructions fournies\n`);
     return result;
   } catch (error) {
     console.error(`${EMOJIS.error} ${CONSOLE_LOGS.functionCall} Erreur getRulePicture:`, error.message);
     const result = { success: false, message: `Erreur: ${error.message}` };
-    console.log(`❌ [FUNCTION END] getRulePicture | Retour: error="${error.message}"\n`);
+    debug(`❌ [FUNCTION END] getRulePicture | Retour: error="${error.message}"\n`);
     return result;
   }
 }

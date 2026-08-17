@@ -118,14 +118,11 @@ export const ERROR_MESSAGES = {
   ragRetrievalError: 'Erreur retrieval RAG:',
   ragSystemNotInitialized: 'Système RAG non initialisé',
   ragReindexError: 'Erreur lors de la réindexation du RAG',
-  ragNoDocuments: 'Aucun document trouvé',
-  ragFileNotFound: 'Fichier non trouvé:',
   ragStatsError: 'Erreur lors de la récupération des stats',
   ragCacheClearError: 'Erreur lors du vidage du cache',
   
   // Erreurs utilisateur
   userProfileReadError: 'Erreur lecture profil utilisateur:',
-  userProfileNotFound: 'Profil non trouvé',
   userNotFound: 'Utilisateur non trouvé',
   userMergeError: 'Erreur fusion profils:',
   userProfileDoesNotExist: 'Un des profils n\'existe pas',
@@ -149,7 +146,6 @@ export const ERROR_MESSAGES = {
   // Erreurs générales
   serverError: 'Erreur serveur',
   corsNotAllowed: 'Not allowed by CORS',
-  fileMovedError: 'ERREUR : Fichier déplacé',
 
   // Erreurs admin
   adminUnauthorized: 'Accès admin non autorisé',
@@ -162,8 +158,6 @@ export const ERROR_MESSAGES = {
   preferencesUserIdMissing: 'userId manquant',
 
   // Erreurs tracking
-  trackingMissingParams: 'Paramètres manquants (userId, link)',
-  trackingUserNotFound: 'Profil utilisateur non trouvé',
   trackingInvalidLink: 'Lien invalide',
 
   // Erreurs historique
@@ -211,7 +205,6 @@ export const CONSOLE_LOGS = {
   backend: '[BACKEND]',
   admin: '[ADMIN]',
   rag: '[RAG]',
-  ragSystem: '[RAG-SYSTEM]',
   assets: '[ASSETS]',
   functionCall: '[FUNCTION-CALL]',
   tts: '[TTS]',
@@ -219,12 +212,9 @@ export const CONSOLE_LOGS = {
   
   // Messages généraux
   ragInitializing: 'Initialisation du système RAG...',
-  ragReady: 'Système RAG prêt',
   ragReindexRequest: 'Demande de réindexation du RAG',
   ragFileModified: 'Fichier modifié:',
   ragReindexInProgress: 'Réindexation déjà en cours, ignorée',
-  ragReindexingFolder: 'Réindexation du dossier:',
-  ragUpdatingDocument: 'Mise à jour du document:',
   
   // OpenAI
   openaiCallInProgress: 'Appel OpenAI API en cours...',
@@ -234,14 +224,11 @@ export const CONSOLE_LOGS = {
   openaiFunction: 'Fonction:',
   openaiArguments: 'Arguments:',
   openaiFunctionCallLimitReached: 'Limite d\'appels de fonctions atteinte',
-  openaiResponseStructure: 'Structure de réponse OpenAI:',
   
   // Assets
   assetsRetrieving: 'Récupération de la liste des assets',
   
   // Recherche
-  searchRAG: 'Recherche RAG:',
-  searchFound: 'chunk(s) trouvé(s)',
   
   // Serveur
   serverStarted: 'Serveur Venta démarré !',
@@ -278,8 +265,6 @@ export const MISC_MESSAGES = {
   welcomeBack: (name) => `Ravie de vous revoir ${name}, en quoi puis-je vous aider ?`,
   
   // RAG
-  ragNoInformation: 'Aucune information pertinente trouvée dans la base de connaissances.',
-  ragAssetsListMessage: 'Liste complète des assets disponibles',
   
   // Headers HTTP
   httpContentType: 'Content-Type',
@@ -289,7 +274,6 @@ export const MISC_MESSAGES = {
   httpTTSProvider: 'X-TTS-Provider',
   
   // Types de contenu
-  contentTypeJSON: 'application/json',
   contentTypeAudioMPEG: 'audio/mpeg',
 };
 
@@ -337,27 +321,6 @@ export const TOOL_DESCRIPTIONS = {
     name: 'SwitchUserProfile',
     description: 'Bascule vers un profil existant. Appelle quand checkUser confirme que le profil existe et n\'est pas l\'actuel.',
   },
-};
-
-// ========================================
-// MESSAGES DE REDIRECTION
-// ========================================
-
-export const REDIRECT_MESSAGES = {
-  fileMovedTitle: '⚠️  FICHIER DE REDIRECTION',
-  fileMovedMessage: 'Le serveur a été déplacé vers src/server.js',
-  fileMovedInstructions: `Pour démarrer le serveur, utilisez :
-  npm start       (mode production)
-  npm run dev     (mode développement)
-
-Si vous devez vraiment lancer directement avec node :
-  node src/server.js`,
-  fileMovedError: '❌ ERREUR : Fichier déplacé',
-  fileMovedErrorDetail: 'Le fichier server.js a été déplacé vers src/server.js',
-  fileMovedSolutionsTitle: '✅ Solutions :',
-  fileMovedSolution1: '1. Utilisez npm start ou npm run dev (recommandé)',
-  fileMovedSolution2: '2. Lancez directement : node src/server.js',
-  fileMovedDocumentation: '📚 Documentation : voir STRUCTURE.md',
 };
 
 // ========================================
@@ -412,11 +375,7 @@ export const EMOJIS = {
   
   // Objets
   rocket: '🚀',
-  book: '📚',
   picture: '🎨',
-  robot: '🤖',
-  check: '✓',
-  cross: '✗',
   
   // Autres
   separator: '═',
@@ -467,7 +426,6 @@ export default {
   CONSOLE_LOGS,
   MISC_MESSAGES,
   TOOL_DESCRIPTIONS,
-  REDIRECT_MESSAGES,
   TTS_CONFIG,
   OPENAI_CONFIG,
   EMOJIS,

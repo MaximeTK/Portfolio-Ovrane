@@ -4,6 +4,7 @@
 import { CONSOLE_LOGS, EMOJIS, MISC_MESSAGES } from '../messages.js';
 import { User } from '../../models/User.js';
 import { searchUserByName } from '../user/profileManagement.js';
+import { debug } from '../log.js';
 
 /**
  * Vérifie si le nom correspond au profil actuel
@@ -44,9 +45,9 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
 
     const currentProfile = currentRequestContext.userProfile;
     
-    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.functionCall} Changement de profil: "${currentProfile.name || 'visiteur anonyme'}" → "${name}"`);
+    debug(`${EMOJIS.info} ${CONSOLE_LOGS.functionCall} Changement de profil: "${currentProfile.name || 'visiteur anonyme'}" → "${name}"`);
     if (reason) {
-      console.log(`   ${EMOJIS.subitem} Raison IA: ${reason}`);
+      debug(`   ${EMOJIS.subitem} Raison IA: ${reason}`);
     }
 
     const targetProfile = await searchUserByName(name);
@@ -60,7 +61,7 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
     }
 
     if (isCurrentProfile(currentProfile, name)) {
-      console.log(`   ${EMOJIS.info} "${name}" est déjà le profil actuel`);
+      debug(`   ${EMOJIS.info} "${name}" est déjà le profil actuel`);
       return {
         success: true,
         userName: name,
@@ -74,8 +75,8 @@ export async function SwitchUserProfile({ name, reason }, currentRequestContext)
     currentRequestContext.userProfile = targetProfile;
     currentRequestContext.userId = targetProfile.id;
     
-    console.log(`   ${EMOJIS.success} Changement de profil réussi vers "${name}" (ID: ${targetProfile.id})`);
-    console.log(`   ${EMOJIS.info} Profil précédent: ${previousUserName}`);
+    debug(`   ${EMOJIS.success} Changement de profil réussi vers "${name}" (ID: ${targetProfile.id})`);
+    debug(`   ${EMOJIS.info} Profil précédent: ${previousUserName}`);
 
     // Message d'instruction stricte pour l'IA
     // IMPORTANT: ne jamais parler du changement de profil. Ne jamais parler de "création" (les profils se créent via l'intro).

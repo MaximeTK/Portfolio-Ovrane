@@ -5,6 +5,7 @@ import { generateEmbedding } from './embeddings.js';
 import { searchSimilarChunks } from './vectorStore.js';
 import { getConfig, getInitializedStatus } from './ragInit.js';
 import { getVectorIndex } from './vectorStoreCore.js';
+import { debug } from '../log.js';
 
 const queryCache = new Map();
 const CACHE_MAX_SIZE = 100;
@@ -102,7 +103,7 @@ export async function retrieveRelevantChunks(query, topK = null, minScore = null
   try {
     const cacheKey = `${query}:${k}:${threshold}`;
     if (queryCache.has(cacheKey)) {
-      console.log('⚡ [RAG-SYSTEM] Résultat récupéré du cache');
+      debug('⚡ [RAG-SYSTEM] Résultat récupéré du cache');
       return queryCache.get(cacheKey);
     }
 
@@ -115,7 +116,7 @@ export async function retrieveRelevantChunks(query, topK = null, minScore = null
     if (!results || results.length === 0) {
       const lexical = await lexicalFallback(query, k);
       if (lexical.length > 0) {
-        console.log('🔎 [RAG-SYSTEM] Fallback lexical activé (aucun résultat vectoriel)');
+        debug('🔎 [RAG-SYSTEM] Fallback lexical activé (aucun résultat vectoriel)');
         results = lexical;
       }
     }
@@ -140,12 +141,12 @@ function cacheResults(cacheKey, results) {
  * Log détaillé des chunks utilisés
  */
 function logChunksDetails(chunks, query, averageScore) {
-  console.log(`\n📊 [RAG] ${chunks.length} chunks utilisés | Score: ${(averageScore * 100).toFixed(1)}% | Requête: "${query.substring(0, 50)}${query.length > 50 ? '...' : ''}"`);
+  debug(`\n📊 [RAG] ${chunks.length} chunks utilisés | Score: ${(averageScore * 100).toFixed(1)}% | Requête: "${query.substring(0, 50)}${query.length > 50 ? '...' : ''}"`);
   
   chunks.forEach((chunk, index) => {
-    console.log(`   ${index + 1}. ${chunk.source} [${chunk.chunkIndex + 1}/${chunk.totalChunks}] ${(chunk.score * 100).toFixed(1)}% - ${chunk.text.substring(0, 100)}...`);
+    debug(`   ${index + 1}. ${chunk.source} [${chunk.chunkIndex + 1}/${chunk.totalChunks}] ${(chunk.score * 100).toFixed(1)}% - ${chunk.text.substring(0, 100)}...`);
   });
-  console.log('');
+  debug('');
 }
 
 /**
@@ -172,7 +173,7 @@ export async function buildRAGContext(query, topK = null) {
   }
   
   if (chunks.length === 0) {
-    console.log('📭 [RAG-SYSTEM] Aucun chunk pertinent trouvé');
+    debug('📭 [RAG-SYSTEM] Aucun chunk pertinent trouvé');
     return { contextText: '', chunks: [], hasSources: false, averageScore: 0 };
   }
   
@@ -199,6 +200,6 @@ export async function buildRAGContext(query, topK = null) {
  */
 export function clearCache() {
   queryCache.clear();
-  console.log('🗑️ [RAG-SYSTEM] Cache vidé');
+  debug('🗑️ [RAG-SYSTEM] Cache vidé');
 }
 

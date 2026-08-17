@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAudioVisualization } from '@/hooks/setupAudioVisualization';
 import { useChatController } from '@/lib/stream/useChatController';
 import { useAnimations } from '@/hooks/useAnimations';
@@ -15,7 +15,6 @@ import { IntroSequence } from '@/components/intro/IntroSequence';
 import { MessagingView } from '@/components/chat/MessagingView';
 
 export default function Home() {
-  const [_inputValue, setInputValue] = useState('');
   const [scrollTrigger, setScrollTrigger] = useState(0); // Trigger pour le scroll
   const [currentAnimation, setCurrentAnimation] = useState<'standby' | 'thinking' | 'speak'>('standby');
   const [lastProcessedTranscript, setLastProcessedTranscript] = useState<string>('');
@@ -52,7 +51,6 @@ export default function Home() {
   } = useAnimations();
   const { isSpeaking, getAudioLevel, speakWithQueue, speakWithUrl, stop: stopTTS } = useTTS();
   const addTextWindow = useUIStore((state) => state.addTextWindow);
-  const closeTextWindow = useUIStore((state) => state.closeTextWindow);
   const closeAllWindows = useUIStore((state) => state.closeAllWindows);
   const appState = useUIStore((state) => state.appState);
   const setAppState = useUIStore((state) => state.setAppState);
@@ -108,11 +106,6 @@ export default function Home() {
     }
   }, [viewMode]);
 
-  // Callback stable pour CommandProcessor
-  const handleCommandsProcessed = useCallback(() => {
-    // Optionnel : Logique post-traitement si nécessaire
-  }, []);
-
   // Fermer toutes les fenêtres (TextWindows) quand l'utilisateur change
   useEffect(() => {
     if (currentUserId) {
@@ -148,7 +141,6 @@ export default function Home() {
       // Pour les messages suivants, on affichera la fenêtre AU DÉBUT DE LA PAROLE (pas à la réception du texte)
       // afin que le dashboard et le TTS démarrent "en même temps".
       const shouldCreateTextWindow = !isFirst && currentTranscript.trim() !== '';
-      const shouldDeferTextWindowUntilSpeaking = viewMode !== 'messaging';
       let didCreateTextWindow = false;
 
       // Onboarding "messagerie" :
@@ -220,11 +212,9 @@ export default function Home() {
          speakWithUrl(currentTTS.staticUrl, setupAudioVisualization, onEnd, {
            onStartSpeaking: () => {
              showMessagingHintIfNeeded();
-             if (shouldCreateTextWindow && !shouldDeferTextWindowUntilSpeaking && !didCreateTextWindow) {
-               addTextWindow(currentTranscript);
-               didCreateTextWindow = true;
-             }
-             if (shouldCreateTextWindow && shouldDeferTextWindowUntilSpeaking && !didCreateTextWindow) {
+             // Les deux conditions d'origine étaient complémentaires et exécutaient
+             // le même corps : la fenêtre est créée quoi qu'il arrive.
+             if (shouldCreateTextWindow && !didCreateTextWindow) {
                addTextWindow(currentTranscript);
                didCreateTextWindow = true;
              }
@@ -239,7 +229,7 @@ export default function Home() {
         speakWithQueue(currentTranscript, setupAudioVisualization, onEnd, {
           onStartSpeaking: () => {
             showMessagingHintIfNeeded();
-            if (shouldCreateTextWindow && shouldDeferTextWindowUntilSpeaking && !didCreateTextWindow) {
+            if (shouldCreateTextWindow && !didCreateTextWindow) {
               addTextWindow(currentTranscript);
               didCreateTextWindow = true;
             }
@@ -253,7 +243,7 @@ export default function Home() {
         });
       }
     }
-  }, [chatStatus, currentTranscript, lastProcessedTranscript, currentTTS, startSpeakAnimation, startStandbyAnimation, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addTextWindow, closeTextWindow, appState, setAppState, viewMode, currentUserId]);
+  }, [chatStatus, currentTranscript, lastProcessedTranscript, currentTTS, startSpeakAnimation, startStandbyAnimation, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addTextWindow, appState, setAppState, viewMode, currentUserId]);
 
   return (
     <>
@@ -262,12 +252,8 @@ export default function Home() {
         
         {/* INTRO SEQUENCE - Contient le logo en mode Sleep et l'input */}
         <IntroSequence
-          send={sendChatMessage}
           sendAuth={sendAuth}
-          currentTTS={currentTTS}
           messages={messages}
-          currentUserProfile={currentUserProfile}
-          currentUserId={currentUserId}
           overlayOverrideText={overlayOverrideText}
         />
 
@@ -302,7 +288,6 @@ export default function Home() {
         <div className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[min(600px,90vw)] z-30 transition-all duration-1000 delay-1000 ${appState === 'awake' && !isAppLocked ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
           <InputArea
             onSubmit={(text) => {
-              setInputValue('');
               setLastProcessedTranscript('');
               setScrollTrigger(prev => prev + 1);
               setCurrentAnimation('thinking');
@@ -334,32 +319,19 @@ export default function Home() {
               sendChatMessage(text);
             }}
             triggerWave={() => hexAnimationRef.current?.triggerWave()}
-            onInputChange={setInputValue}
             isLoading={currentAnimation === 'thinking'}
             tipsEnabled={appState === 'awake' && !isAppLocked}
           />
         </div>
 
-        {/* Sections IDs pour navigation */}
-        <div id="profil" className="absolute top-0 left-0 w-full h-0 pointer-events-none"></div>
-        <div id="portfolio" className="absolute top-0 left-0 w-full h-0 pointer-events-none"></div>
-        <div id="accueil" className="absolute top-0 left-0 w-full h-0 pointer-events-none"></div>
-        <div id="contact" className="absolute top-0 left-0 w-full h-0 pointer-events-none"></div>
-        <div id="reseaux" className="absolute top-0 left-0 w-full h-0 pointer-events-none"></div>
       </div>
 
       {/* Overlays - Toujours présents mais gérés par le store et masqués sur mobile via CSS/Logique */}
-      {appState === 'awake' && (
-        <div className={viewMode === 'messaging' ? 'hidden' : 'block md:block hidden:max-md'}>
-          {/* hidden:max-md -> masqué sur mobile (taille < md) même en mode dashboard */}
-          <div className="hidden md:block">
-            <TextWindowsManager />
-            <CommandProcessor 
-              commands={lastCommands || []} 
-              onCommandsProcessed={handleCommandsProcessed}
-              currentUserId={currentUserId}
-            />
-          </div>
+      {/* Fenêtres flottantes : jamais en messagerie, jamais sous md. */}
+      {appState === 'awake' && viewMode !== 'messaging' && (
+        <div className="hidden md:block">
+          <TextWindowsManager />
+          <CommandProcessor commands={lastCommands || []} currentUserId={currentUserId} />
         </div>
       )}
     </>

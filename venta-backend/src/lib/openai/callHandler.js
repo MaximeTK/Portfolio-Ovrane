@@ -6,6 +6,7 @@ import { convertMessagesToInput } from './messageConverter.js';
 import { buildAPIParams } from './apiParams.js';
 import { parseOpenAIResponse } from './responseParser.js';
 import { executeToolCall } from './toolExecutor.js';
+import { debug } from '../log.js';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -74,7 +75,7 @@ async function executeMergedUiShowPictureCalls(toolCalls) {
  * Traite les tool calls de la réponse
  */
 async function processToolCalls(responseMessage, messages, calledFunctions, seenToolCalls) {
-  console.log(`${EMOJIS.tool} ${CONSOLE_LOGS.backend} ${CONSOLE_LOGS.openaiWantsToCall} ${responseMessage.tool_calls.length} fonction(s)`);
+  debug(`${EMOJIS.tool} ${CONSOLE_LOGS.backend} ${CONSOLE_LOGS.openaiWantsToCall} ${responseMessage.tool_calls.length} fonction(s)`);
   
   messages.push({
     role: 'assistant',
@@ -126,7 +127,7 @@ async function processToolCalls(responseMessage, messages, calledFunctions, seen
     calledFunctions.set(functionName, callCount + 1);
   }
   
-  console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Fonction(s) exécutée(s), rappel de l'API pour obtenir la réponse finale...`);
+  debug(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Fonction(s) exécutée(s), rappel de l'API pour obtenir la réponse finale...`);
   await delay(100);
   
   return functionCallCount;
@@ -137,7 +138,7 @@ async function processToolCalls(responseMessage, messages, calledFunctions, seen
  */
 function generateDefaultResponse(calledFunctions) {
   if (calledFunctions.has('getAvailableAssets')) {
-    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut (UI via tools)`);
+    debug(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Génération d'une réponse par défaut (UI via tools)`);
     return "D'accord — je m'en occupe.";
   }
   return null;
@@ -157,7 +158,7 @@ export async function callOpenAI(openai, messages, tools) {
     const apiParams = buildAPIParams(formattedInput, tools, totalFunctionCallCount, messages.length);
     
     if (messages.length > 2) {
-      console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Messages dans la conversation: ${messages.length} (system + user + ${messages.length - 2} interaction(s))`);
+      debug(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Messages dans la conversation: ${messages.length} (system + user + ${messages.length - 2} interaction(s))`);
     }
     
     const response = await openai.responses.create(apiParams);
@@ -178,7 +179,7 @@ export async function callOpenAI(openai, messages, tools) {
     }
     
     if (responseMessage.content && typeof responseMessage.content === 'string' && responseMessage.content.trim() !== '') {
-      console.log(`${EMOJIS.success} ${CONSOLE_LOGS.backend} ${CONSOLE_LOGS.openaiResponseReceived}`);
+      debug(`${EMOJIS.success} ${CONSOLE_LOGS.backend} ${CONSOLE_LOGS.openaiResponseReceived}`);
       return responseMessage.content;
     }
     

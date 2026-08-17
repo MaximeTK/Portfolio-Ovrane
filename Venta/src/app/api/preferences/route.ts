@@ -1,29 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+import { NextRequest } from 'next/server';
+import { proxyJson } from '@/lib/api/proxy';
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const response = await fetch(`${BACKEND_URL}/api/preferences`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10000),
-    });
-
-    // Forward status + JSON payload (or text fallback)
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      const data = await response.json();
-      return NextResponse.json(data, { status: response.status });
-    }
-    const text = await response.text();
-    return NextResponse.json({ error: text }, { status: response.status });
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: 'preferences proxy error', details: msg }, { status: 500 });
-  }
+  return proxyJson('/api/preferences', { method: 'POST', body: await request.json() });
 }
-
-

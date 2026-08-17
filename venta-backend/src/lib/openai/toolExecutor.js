@@ -2,6 +2,7 @@
  * Exécution des outils (function calling)
  */
 import { CONSOLE_LOGS, EMOJIS } from '../messages.js';
+import { debug } from '../log.js';
 
 // Variable globale pour les fonctions disponibles
 const availableFunctions = {};
@@ -79,8 +80,8 @@ export async function executeToolCall(toolCall) {
   const functionName = toolCall.function.name;
   const functionArgs = JSON.parse(toolCall.function.arguments);
   
-  console.log(`   ${EMOJIS.subitem} ${CONSOLE_LOGS.openaiFunction} ${functionName}`);
-  console.log(`   ${EMOJIS.subitem} ${CONSOLE_LOGS.openaiArguments} ${JSON.stringify(functionArgs)}`);
+  debug(`   ${EMOJIS.subitem} ${CONSOLE_LOGS.openaiFunction} ${functionName}`);
+  debug(`   ${EMOJIS.subitem} ${CONSOLE_LOGS.openaiArguments} ${JSON.stringify(functionArgs)}`);
   
   const functionToCall = availableFunctions[functionName];
   if (!functionToCall) {

@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { CONSOLE_LOGS, EMOJIS, SUCCESS_MESSAGES } from '../messages.js';
+import { debug } from '../log.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,13 +29,19 @@ function parseColorsFile(colorsPath) {
   const colorsList = [];
   let currentPalette = {};
   
+  // Un seul point de sortie : les deux push d'origine avaient déjà divergé,
+  // la dernière palette sortait dans un format différent des 24 autres.
+  const flush = () => {
+    if (!currentPalette.id) return;
+    const label = currentPalette.description || currentPalette.name || '';
+    colorsList.push(`${currentPalette.id} — ${label}`);
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    
+
     if (isPaletteId(line)) {
-      if (currentPalette.id) {
-        colorsList.push(`${currentPalette.id} — ${currentPalette.description || currentPalette.name || ''}`);
-      }
+      flush();
       currentPalette = { id: line };
     }
     
@@ -46,10 +53,8 @@ function parseColorsFile(colorsPath) {
     }
   }
   
-  if (currentPalette.id) {
-    colorsList.push(`${currentPalette.id} - ${currentPalette.name || ''} - ${currentPalette.description || ''}`);
-  }
-  
+  flush();
+
   return colorsList;
 }
 
@@ -57,35 +62,35 @@ function parseColorsFile(colorsPath) {
  * Retourne la liste des couleurs disponibles
  */
 export function getAvailableColors() {
-  console.log(`\n🔵 [FUNCTION START] getAvailableColors | Aucun paramètre`);
+  debug(`\n🔵 [FUNCTION START] getAvailableColors | Aucun paramètre`);
   
   try {
-    console.log(`${EMOJIS.picture} ${CONSOLE_LOGS.functionCall} Récupération des couleurs disponibles`);
+    debug(`${EMOJIS.picture} ${CONSOLE_LOGS.functionCall} Récupération des couleurs disponibles`);
     
     const colorsPath = path.join(__dirname, '..', '..', '..', 'rag', 'colors.txt');
     
     if (!fs.existsSync(colorsPath)) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.functionCall} Fichier colors.txt non trouvé`);
       const result = { success: false, message: "Fichier colors.txt non trouvé" };
-      console.log(`❌ [FUNCTION END] getAvailableColors | Retour: fichier non trouvé\n`);
+      debug(`❌ [FUNCTION END] getAvailableColors | Retour: fichier non trouvé\n`);
       return result;
     }
     
     const colorsList = parseColorsFile(colorsPath);
     
-    console.log(`${EMOJIS.success} ${CONSOLE_LOGS.functionCall} Liste des couleurs récupérée (${colorsList.length} palettes)`);
+    debug(`${EMOJIS.success} ${CONSOLE_LOGS.functionCall} Liste des couleurs récupérée (${colorsList.length} palettes)`);
     
     const result = {
       success: true,
       colors: colorsList,
       message: `${colorsList.length} palettes de couleurs disponibles. Si l'utilisateur souhaite CHANGER le fond, appelle uiSetBackground({ paletteId }) avec l'ID exact. Sinon, ne change rien.`
     };
-    console.log(`✅ [FUNCTION END] getAvailableColors | Retour: success=true, ${colorsList.length} palettes\n`);
+    debug(`✅ [FUNCTION END] getAvailableColors | Retour: success=true, ${colorsList.length} palettes\n`);
     return result;
   } catch (error) {
     console.error(`${EMOJIS.error} ${CONSOLE_LOGS.functionCall} Erreur récupération couleurs:`, error.message);
     const result = { success: false, message: `Erreur: ${error.message}` };
-    console.log(`❌ [FUNCTION END] getAvailableColors | Retour: error="${error.message}"\n`);
+    debug(`❌ [FUNCTION END] getAvailableColors | Retour: error="${error.message}"\n`);
     return result;
   }
 }

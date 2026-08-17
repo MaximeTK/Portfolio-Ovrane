@@ -8,6 +8,7 @@ import { addConversation, saveUserPreference } from '../userMemory.js';
 import { getRequestContext } from '../ragHelpers.js';
 import { CONSOLE_LOGS, EMOJIS, MISC_MESSAGES } from '../messages.js';
 import { normalizeAssetParamToFilename } from '../validators.js';
+import { debug } from '../log.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -184,7 +185,7 @@ export async function processResponse(response, userId, userProfile, prompt, isE
     if (paletteId) {
       commands = Array.isArray(commands) ? commands : [];
       commands.push({ command: 'SetBackground', parameter: paletteId });
-      console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Injection commande SetBackground: ${paletteId}`);
+      debug(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Injection commande SetBackground: ${paletteId}`);
     }
   }
 
@@ -208,7 +209,7 @@ export async function processResponse(response, userId, userProfile, prompt, isE
     userProfile = updatedContext.userProfile;
     
     if (userProfile.name) {
-      console.log(`${EMOJIS.success} ${CONSOLE_LOGS.backend} Profil actif: ${userProfile.name}`);
+      debug(`${EMOJIS.success} ${CONSOLE_LOGS.backend} Profil actif: ${userProfile.name}`);
     }
     
     // Détection du switch : si l'ID a changé
@@ -222,10 +223,10 @@ export async function processResponse(response, userId, userProfile, prompt, isE
   // pour que le TTS corresponde exactement à l'affichage frontend (IntroSequence.tsx)
   if (hasSwitchedUser && userProfile.name) {
     if (userProfile.visitCount > 1) {
-      console.log(`✨ [AUTO-REPLY] Utilisateur récurrent détecté (${userProfile.name}), remplacement de la réponse.`);
+      debug(`✨ [AUTO-REPLY] Utilisateur récurrent détecté (${userProfile.name}), remplacement de la réponse.`);
       finalReply = MISC_MESSAGES.welcomeBack(userProfile.name);
     } else {
-      console.log(`✨ [AUTO-REPLY] Nouvel utilisateur détecté (${userProfile.name}), remplacement de la réponse.`);
+      debug(`✨ [AUTO-REPLY] Nouvel utilisateur détecté (${userProfile.name}), remplacement de la réponse.`);
       finalReply = MISC_MESSAGES.welcomeNew(userProfile.name);
     }
   }

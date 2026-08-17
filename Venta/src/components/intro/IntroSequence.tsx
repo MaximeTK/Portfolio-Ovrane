@@ -2,19 +2,15 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useUIStore } from '@/lib/state/uiStore';
 import { HexagonalAnimation, HexagonalAnimationHandle } from '../ui/HexagonalAnimation';
 import { AuthForm } from './AuthForm';
-import { TTSData, Message, UserProfileData } from '@/lib/chat/types';
+import { Message } from '@/lib/chat/types';
 
 interface IntroSequenceProps {
-  send: (message: string, options?: { isEphemeral?: boolean }) => void;
   sendAuth: (mode: 'register' | 'login', data: Record<string, string>) => Promise<void>;
-  currentTTS: TTSData | null;
   messages: Message[];
-  currentUserProfile: UserProfileData | null;
-  currentUserId: string | null;
   overlayOverrideText?: string | null;
 }
 
-export const IntroSequence = ({ send: _send, sendAuth, currentTTS: _currentTTS, messages, currentUserProfile: _currentUserProfile, currentUserId: _currentUserId, overlayOverrideText }: IntroSequenceProps) => {
+export const IntroSequence = ({ sendAuth, messages, overlayOverrideText }: IntroSequenceProps) => {
   const { appState, setAppState, setUserName, viewMode, isAppLocked, lockedMessage } = useUIStore();
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
   
@@ -48,11 +44,6 @@ export const IntroSequence = ({ send: _send, sendAuth, currentTTS: _currentTTS, 
       setIsWelcomeVisible(false);
     }
   }, [viewMode, isAppLocked]);
-
-  // Disparition auto de l'astuce après 20 secondes
-  useEffect(() => {
-    // Le timing est géré côté HomeClient, ici on ne fait rien.
-  }, []);
 
   const handleAuthSubmit = async (mode: 'register' | 'login', data: Record<string, string>) => {
     hexAnimationRef.current?.triggerWave();

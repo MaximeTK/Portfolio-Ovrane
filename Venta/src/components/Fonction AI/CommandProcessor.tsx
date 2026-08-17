@@ -25,14 +25,6 @@ type ImageWindow = BaseWindow & {
   };
 };
 
-type CodeWindow = BaseWindow & {
-  type: 'code';
-  content: {
-    language: string;
-    code: string;
-  };
-};
-
 type GenericWindow = BaseWindow & {
   type: 'generic';
   content: {
@@ -41,23 +33,11 @@ type GenericWindow = BaseWindow & {
   };
 };
 
-type WindowData = ImageWindow | CodeWindow | GenericWindow;
+type WindowData = ImageWindow | GenericWindow;
 
 type CommandProcessorProps = {
   commands: Command[];
-  onCommandsProcessed: () => void;
   currentUserId?: string | null;
-};
-
-// === STYLES ===
-const CODE_WRAPPER_STYLE: React.CSSProperties = { padding: '18px' };
-const CODE_INFO_STYLE: React.CSSProperties = { marginBottom: '8px', fontSize: '14px' };
-const CODE_BLOCK_STYLE: React.CSSProperties = {
-  background: '#000',
-  padding: '12px',
-  borderRadius: '4px',
-  overflowX: 'auto',
-  fontSize: '14px',
 };
 
 // === CONSTANTS & HELPERS ===
@@ -123,22 +103,6 @@ function createImageWindow(imageName: string, index: number): WindowData {
   };
 }
 
-function createCodeWindow(language: string, index: number): WindowData {
-  const id = buildId('code', index);
-  const code = [
-    `// Exemple de code ${language}`,
-    `console.log('Hello from ${language}!');`,
-  ].join('\n');
-  return {
-    id,
-    type: 'code',
-    content: { language, code },
-    title: `Code: ${language}`,
-    x: 200 + index * OFFSET,
-    y: 150 + index * OFFSET,
-  };
-}
-
 function createGenericWindow(title: string, index: number): WindowData {
   const id = buildId('window', index);
   return {
@@ -169,8 +133,6 @@ function processCommand(
       }
       return createImageWindow(filename, index);
     }
-    case 'showcode':
-      return createCodeWindow(parameter, index);
     case 'openwindow':
       return createGenericWindow(parameter, index);
     case 'setbackground':
@@ -186,7 +148,6 @@ function processCommand(
 
 export default function CommandProcessor({
   commands,
-  onCommandsProcessed,
   currentUserId: _currentUserId,
 }: CommandProcessorProps) {
   const [windows, setWindows] = useState<WindowData[]>([]);
@@ -230,10 +191,9 @@ export default function CommandProcessor({
         if (newWindows.length) {
           setWindows((prev) => [...prev, ...newWindows]);
         }
-        onCommandsProcessed();
       }, 0);
     },
-    [onCommandsProcessed, incrementMaxZIndex],
+    [incrementMaxZIndex],
   );
 
   useEffect(() => {
@@ -332,16 +292,6 @@ function renderWindowContent(window: WindowData) {
         onError={onError}
         className="h-auto w-full object-contain"
       />
-    );
-  }
-  if (window.type === 'code') {
-    return (
-      <div style={CODE_WRAPPER_STYLE}>
-        <p style={CODE_INFO_STYLE}>Langage: {window.content.language}</p>
-        <pre style={CODE_BLOCK_STYLE}>
-          <code>{window.content.code}</code>
-        </pre>
-      </div>
     );
   }
   return <p>{window.content.text}</p>;
