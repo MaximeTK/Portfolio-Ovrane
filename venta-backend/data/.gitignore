@@ -4,3 +4,8 @@ users/*.json
 # Garder la structure
 !users/.gitkeep
 
+# Index vectoriel : donnée dérivée, reconstruite au démarrage.
+# Versionné, il pesait 3 Mo recommités à chaque réindexation (27 Mo dans
+# l'historique) et se partageait entre dev et prod par merge.
+vector-index/
+

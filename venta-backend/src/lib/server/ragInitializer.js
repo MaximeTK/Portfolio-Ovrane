@@ -17,10 +17,12 @@ export async function initializeRAGSystem(ragDir, apiKey) {
       minScore: 0.5
     });
     
-    // En PROD : On ne force pas la réindexation (false)
-    // On ne réindexe que si l'index est vide ou corrompu
-    // Pour mettre à jour les textes, utiliser : npm run update-rag
-    await reindexFolder(ragDir, false);
+    // true = on vide l'index avant d'ingérer. Sans ça, insertItem() empile une
+    // copie complète des chunks à chaque démarrage : mesuré à 141 items pour
+    // 47 chunks réels, soit 3 copies. Le retrieval remontait alors plusieurs
+    // fois le même passage dans son topK.
+    // Coût d'un démarrage : 47 embeddings text-embedding-3-small, négligeable.
+    await reindexFolder(ragDir, true);
     
     console.log(`${EMOJIS.success} ${CONSOLE_LOGS.rag} ${SUCCESS_MESSAGES.ragInitialized}\n`);
     return true;
