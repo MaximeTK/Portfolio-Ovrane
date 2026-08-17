@@ -314,11 +314,6 @@ export const TOOL_DESCRIPTIONS = {
     description: 'Liste les palettes de couleurs. PRIORITAIRE sur la gestion utilisateur si l\'utilisateur mentionne une couleur (ex: "en rouge", "rose"), un thème ou demande de changer l\'apparence. Ensuite, déclenche uiSetBackground.',
   },
 
-  setAvailableColors: {
-    name: 'setAvailableColors',
-    description: 'DEPRECATED: ancien tool. Ne pas utiliser.',
-  },
-
   uiShowPicture: {
     name: 'uiShowPicture',
     description: 'Déclenche l\'affichage d\'une ou plusieurs images (assets) dans l\'interface. Utilise TOUJOURS uiShowPicture({ filenames: ["A.png","B.png"] }) pour éviter les limites. À appeler après validation via getAvailableAssets() si nécessaire. Ne pas écrire de slash-commandes dans le texte.',
@@ -329,18 +324,11 @@ export const TOOL_DESCRIPTIONS = {
     description: 'Déclenche le changement de fond (palette). À appeler après avoir validé paletteId via getAvailableColors(). Ne pas écrire de slash-commandes dans le texte.',
   },
 
-  uiShowCode: {
-    name: 'uiShowCode',
-    description: 'DEPRECATED: Ne pas utiliser. Le code doit être renvoyé dans le message (bloc Markdown) et non affiché via une fenêtre UI.',
-  },
-
   uiOpenWindow: {
     name: 'uiOpenWindow',
     description: 'Ouvre une fenêtre générique dans l\'interface avec un titre. Ne pas écrire de slash-commandes dans le texte.',
   },
-  
-  // searchKnowledgeBase retiré
-  
+
   checkUser: {
     name: 'checkUser',
     description: 'CRITIQUE: Appelle CETTE fonction quand l\'utilisateur parle de son NOM/PROFIL (identité). Vérifie si le nom existe en base. INTERDIT d\'utiliser pour des couleurs (ex: "en rouge", "rose"), thèmes, ou noms de fichiers/assets. Retourne: exists, isCurrentUser. Attends le résultat avant de décider.',
@@ -392,13 +380,6 @@ export const TTS_CONFIG = {
   openaiVoice: 'nova',
   openaiSpeed: 1.0,
 
-  // OpenAI Realtime
-  openaiRealtimeModel: 'gpt-4o-mini-realtime-preview-2024-12-17',
-  openaiRealtimeVoice: 'alloy',
-  openaiRealtimeSampleRate: 24000,
-  openaiRealtimeTemperature: 0.6,
-  openaiRealtimeTimeoutMs: 15000,
-  openaiRealtimeInstructions: 'Tu es un moteur TTS. Prononce uniquement le texte fourni, en français, avec un ton naturel et chaleureux, sans rien ajouter ni reformuler.',
 };
 
 // ========================================
@@ -410,18 +391,6 @@ export const OPENAI_CONFIG = {
   toolChoice: 'auto',
   reasoningEffort: 'medium',      // Effort de raisonnement: low, medium, high
   textVerbosity: 'medium',      // Verbosité du texte: low, medium, high
-  maxFunctionCalls: 5,
-};
-
-// ========================================
-// CONFIGURATION OPENAI 4O-MINI (Chat Completions API)
-// ========================================
-
-export const OPENAI_4O_CONFIG = {
-  model: 'gpt-4o-mini',
-  toolChoice: 'auto',
-  temperature: 0.7,
-  maxTokens: 2000,
   maxFunctionCalls: 5,
 };
 

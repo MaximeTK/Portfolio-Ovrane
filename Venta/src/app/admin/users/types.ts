@@ -19,11 +19,4 @@ export type UserDetails = UserProfile & {
   conversations: Conversation[];
 };
 
-export type UsersResponse = {
-  users: UserProfile[];
-};
-
-export type UserResponse = {
-  user: UserDetails;
-};
 

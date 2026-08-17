@@ -8,7 +8,6 @@ import {
   getAvailableColors, 
   uiShowPicture,
   uiSetBackground,
-  uiShowCode,
   uiOpenWindow,
   checkUser, 
   SwitchUserProfile 
@@ -23,7 +22,6 @@ export function registerAllFunctions() {
   registerFunction('getAvailableColors', getAvailableColors);
   registerFunction('uiShowPicture', uiShowPicture);
   registerFunction('uiSetBackground', uiSetBackground);
-  registerFunction('uiShowCode', uiShowCode);
   registerFunction('uiOpenWindow', uiOpenWindow);
   registerFunction('checkUser', checkUser);
   registerFunction('SwitchUserProfile', SwitchUserProfile);

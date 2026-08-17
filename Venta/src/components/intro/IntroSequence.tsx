@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useUIStore } from '@/lib/state/uiStore';
 import { HexagonalAnimation, HexagonalAnimationHandle } from '../ui/HexagonalAnimation';
-import { NameInput } from './NameInput';
+import { AuthForm } from './AuthForm';
 import { TTSData, Message, UserProfileData } from '@/lib/chat/types';
 
 interface IntroSequenceProps {
   send: (message: string, options?: { isEphemeral?: boolean }) => void;
+  sendAuth: (mode: 'register' | 'login', data: Record<string, string>) => Promise<void>;
   currentTTS: TTSData | null;
   messages: Message[];
   currentUserProfile: UserProfileData | null;
@@ -13,7 +14,7 @@ interface IntroSequenceProps {
   overlayOverrideText?: string | null;
 }
 
-export const IntroSequence = ({ send, currentTTS: _currentTTS, messages, currentUserProfile: _currentUserProfile, currentUserId: _currentUserId, overlayOverrideText }: IntroSequenceProps) => {
+export const IntroSequence = ({ send: _send, sendAuth, currentTTS: _currentTTS, messages, currentUserProfile: _currentUserProfile, currentUserId: _currentUserId, overlayOverrideText }: IntroSequenceProps) => {
   const { appState, setAppState, setUserName, viewMode, isAppLocked, lockedMessage } = useUIStore();
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
   
@@ -53,15 +54,17 @@ export const IntroSequence = ({ send, currentTTS: _currentTTS, messages, current
     // Le timing est géré côté HomeClient, ici on ne fait rien.
   }, []);
 
-  const handleNameSubmit = (name: string) => {
-    // Déclencher une vague visuelle immédiate
+  const handleAuthSubmit = async (mode: 'register' | 'login', data: Record<string, string>) => {
     hexAnimationRef.current?.triggerWave();
-    
     setAppState('processing');
-    setUserName(name); // On sauvegarde le nom pour l'affichage
-    // On envoie le nom avec une intention claire
-    // isEphemeral: true pour ne pas sauvegarder ce message en base de données
-    send(`Je m'appelle ${name}`, { isEphemeral: true });
+    const identifier = data.pseudo || data.identifier || '';
+    if (identifier) setUserName(identifier);
+    try {
+      await sendAuth(mode, data);
+    } catch (err) {
+      setAppState('sleeping');
+      throw err;
+    }
   };
 
   const getWelcomeMessage = () => {
@@ -115,7 +118,7 @@ export const IntroSequence = ({ send, currentTTS: _currentTTS, messages, current
             : 'opacity-0 translate-y-0 pointer-events-none'
           }`}
         >
-          <NameInput onSubmit={handleNameSubmit} />
+          <AuthForm onSubmit={handleAuthSubmit} />
         </div>
 
         {/* État 3: Awake (Message de bienvenue STATIQUE ou Message de Verrouillage) */}

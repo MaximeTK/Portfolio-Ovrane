@@ -13,13 +13,6 @@ export function setOpenAI(openai) {
   openaiInstance = openai;
 }
 
-/**
- * Récupère l'instance OpenAI
- */
-export function getOpenAI() {
-  return openaiInstance;
-}
-
 // Réexporter les fonctions principales
 export { callOpenAI } from './openai/callHandler.js';
 export { registerFunction } from './openai/toolExecutor.js';

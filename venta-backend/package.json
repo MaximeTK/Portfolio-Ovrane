@@ -11,10 +11,11 @@
     "test:memory": "node test/test-memory.js",
     "test:rag": "node test/test-rag-system.js",
     "check:rag": "node test/check-rag-setup.js",
-    "update-rag": "node scripts/update-rag.js",
-    "migrate:users:clean-order": "node scripts/migrate-users-clean-order.js"
+    "update-rag": "node scripts/update-rag.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -22,8 +23,7 @@
     "helmet": "^7.2.0",
     "mongoose": "^9.1.1",
     "openai": "^4.67.3",
-    "vectra": "^0.11.1",
-    "ws": "^8.18.3"
+    "vectra": "^0.11.1"
   },
   "keywords": [
     "ai",

@@ -9,8 +9,6 @@ import {
   formatUserInfo 
 } from './messages.js';
 
-const ALWAYS_EXCLUDED_SOURCES = new Set(['assets', 'colors', 'instructions']);
-
 function normalizeForMatch(text) {
   return String(text ?? '')
     .toLowerCase()
@@ -54,22 +52,7 @@ export async function buildRAGContextForPrompt(prompt, ragInitialized) {
   try {
     const ragResult = await buildRAGContext(prompt, 5);
 
-    // Filtrage des sources RAG "méta" (assets/couleurs/instructions) qui ne doivent JAMAIS parasiter
-    // une requête générale (ex: "exemple de code en C").
-    const filteredChunks = (ragResult.chunks || []).filter((c) => {
-      const source = String(c?.source || '');
-      const sourceNorm = normalizeForMatch(source);
-/*
-      // Exception pour 'assets' : on l'autorise si le prompt parle de projets ou de visuels
-      if (sourceNorm === 'assets') {
-        if (/\b(hikup|ovrane|pico|portfolio|projet|projets|affiche|afficher|montre|montrer|voir|image|visuel|logo|interface|maquette|screen|photo)\b/i.test(prompt)) {
-          return true;
-        }
-      }
-
-      if (ALWAYS_EXCLUDED_SOURCES.has(sourceNorm)) return false;*/
-      return true;
-    });
+    const filteredChunks = ragResult.chunks || [];
 
     const filteredSources = [...new Set(filteredChunks.map((c) => c.source))];
     if (filteredChunks.length === 0) {

@@ -128,17 +128,6 @@ export async function uiSetBackground({ paletteId }) {
     : r;
 }
 
-export async function uiShowCode({ language }) {
-  const lang = String(language || '').trim();
-  if (!lang) {
-    return { success: false, message: 'language manquant' };
-  }
-  const r = pushUiCommand('ShowCode', lang);
-  return r.success
-    ? { success: true, message: `Fenêtre code demandée: ${lang}` }
-    : r;
-}
-
 export async function uiOpenWindow({ title }) {
   const t = String(title || '').trim();
   if (!t) {

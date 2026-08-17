@@ -3,7 +3,7 @@
  */
 import { buildRAGContextForPrompt, buildSystemPrompt } from '../promptBuilder.js';
 import { getRawConversationHistory } from '../userMemory.js';
-import { callAI } from '../aiModelFactory.js';
+import { callOpenAI } from '../openai/callHandler.js';
 import { tools } from './toolsConfig.js';
 import { CONSOLE_LOGS, EMOJIS, ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
 
@@ -12,14 +12,12 @@ function normalize(text) {
 }
 
 function isImageIntent(prompt) {
-  const p = normalize(prompt);
   // On évite "affiche" seul (ex: "affiche-moi un exemple de code")
   // Inclut aussi les demandes autour des projets/portfolio (souvent liées à des visuels)
   return /\b(montre|montrer|display|affiche|affiches|voir|voirs|afficher|images|image|photo|photos|logos|logo|visuels|visuel|illustration|screenshots|screenshot|captures|capture|interfaces|interface)\b/i.test(prompt);
 }
 
 function isColorIntent(prompt) {
-  const p = normalize(prompt);
   // Inclut les mots clés génériques et toutes les palettes spécifiques (ex: cyberpunk, ocean, rouge...)
   return /\b(fond|background|arriere-plan|arrière-plan|couleur|palette|themes|thèmes|theme|thème|argenté|gris|noir|doré|jaune|orange|rouge|ecarlate|vert clair|vert_clair|forêt|marée|feuille|aqua|ocean|hopa|gris ciel|gris_ciel|spectre|mauve|rose|cyberpunk|melon|goyavier|marron|vin)\b/i.test(prompt);
 }
@@ -67,13 +65,6 @@ function filterToolsForPrompt(prompt) {
  */
 function isValidResponse(rawResponse) {
   return rawResponse && typeof rawResponse === 'string' && rawResponse.trim() !== '';
-}
-
-/**
- * Génère une réponse de repli
- */
-function generateFallbackResponse(prompt) {
-  return MISC_MESSAGES.defaultResponse;
 }
 
 function toSafeText(value) {
@@ -134,12 +125,11 @@ export async function generateResponse(openai, prompt, userId, userProfile, ragI
   ];
   
   const effectiveTools = filterToolsForPrompt(prompt);
-  const rawResponse = await callAI(openai, messages, effectiveTools);
+  const rawResponse = await callOpenAI(openai, messages, effectiveTools);
   
   if (!isValidResponse(rawResponse)) {
     console.warn(`${EMOJIS.warning} ${CONSOLE_LOGS.backend} ${ERROR_MESSAGES.openaiResponseEmpty} (type: ${typeof rawResponse}) → application d'un repli`);
-    const fallback = generateFallbackResponse(prompt);
-    return { rawResponse: fallback, ragCoverage, ragSources };
+    return { rawResponse: MISC_MESSAGES.defaultResponse, ragCoverage, ragSources };
   }
   
   return { rawResponse, ragCoverage, ragSources };

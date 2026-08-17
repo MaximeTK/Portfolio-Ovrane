@@ -1,13 +1,11 @@
 /**
  * Route principale du chat
  */
-import crypto from 'crypto';
 import { processUserInfo } from '../lib/chat/userProcessor.js';
 import { generateResponse } from '../lib/chat/responseGenerator.js';
 import { processResponse } from '../lib/chat/responseProcessor.js';
 import { getRawConversationHistory } from '../lib/userMemory.js';
-import { ERROR_MESSAGES, CONSOLE_LOGS, EMOJIS, MISC_MESSAGES } from '../lib/messages.js';
-import { User } from '../models/User.js';
+import { ERROR_MESSAGES, CONSOLE_LOGS, EMOJIS } from '../lib/messages.js';
 import {
   isNonEmptyString,
   isValidUserId,
@@ -28,39 +26,12 @@ function validateAPIKey() {
 }
 
 /**
- * Détecte l'intention "entrée de pseudo" depuis l'intro (message éphémère)
- */
-function extractNameFromIntroPrompt(prompt) {
-  const text = String(prompt ?? '').trim();
-  // Supporte: "Je m'appelle X" ou "Je m’appelle X"
-  const match = text.match(/^je\s*m['’]appelle\s+(.+?)\s*$/i);
-  if (!match) return null;
-  const name = String(match[1] ?? '').trim();
-  return name || null;
-}
-
-function normalizeUserName(name) {
-  return String(name || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
-}
-
-function generateUserIdFromName(nameNormalized) {
-  // ID stable basé uniquement sur le pseudo (pas sur l'IP) pour éviter les doublons
-  return crypto.createHash('sha256').update(`name:${nameNormalized}`).digest('hex').substring(0, 16);
-}
-
-// Champs legacy qu'on ne veut jamais conserver
-const LEGACY_STRIP_KEYS = ['isTemporary', 'firstVisit', '__extras', '__v'];
-
-/**
  * Configuration de la route chat
  */
 export function setupChatRoute(app, openai, ragInitialized) {
   app.post('/api/chat', async (req, res) => {
     try {
-      const { prompt, currentUserId, isEphemeral, currentUrl } = req.body;
+      const { prompt, currentUserId, isEphemeral } = req.body;
       
       if (!validatePrompt(prompt)) {
         console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} ${ERROR_MESSAGES.promptInvalid}`);
@@ -77,167 +48,7 @@ export function setupChatRoute(app, openai, ragInitialized) {
       }
 
       const safeEphemeral = typeof isEphemeral === 'boolean' ? isEphemeral : false;
-      let { userId, userProfile } = await processUserInfo(req, currentUserId);
-
-      // ============================================================
-      // ONBOARDING (INTRO) : pseudo saisi -> PAS d'appel OpenAI
-      // ============================================================
-      const introName = safeEphemeral ? extractNameFromIntroPrompt(prompt) : null;
-      if (introName) {
-        // LOGIN: UNE SEULE REQUÊTE MONGO
-        // - calculer un userId stable basé sur le pseudo
-        // - upsert le profil
-        // - ajouter l'ipHash et le lien courant
-        const desiredName = String(introName).trim();
-        const nameNormalized = normalizeUserName(desiredName);
-        const stableUserId = generateUserIdFromName(nameNormalized);
-
-        const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-        const ipHash = crypto.createHash('sha256').update(ip).digest('hex').substring(0, 16);
-
-        const link = (typeof currentUrl === 'string' && currentUrl.trim().length > 0 && currentUrl.length <= 2048)
-          ? currentUrl.trim()
-          : null;
-
-        const now = new Date();
-
-        // Update "pipeline" pour:
-        // - garantir 1 seule requête DB
-        // - garantir l'ordre des champs dans le document (Compass/Mongo shell)
-        // - conserver les champs non listés en les ajoutant à la fin
-        const excludeFromExtras = [
-          '_id',
-          'name',
-          'nameNormalized',
-          'id',
-          'ipHashes',
-          'createdAt',
-          'updatedAt',
-          'lastVisit',
-          'visitCount',
-          'visitedLinks',
-          'preferences',
-          'messageCount',
-          'conversations',
-          ...LEGACY_STRIP_KEYS,
-        ];
-
-        const updatePipeline = [
-          {
-            $set: {
-              name: desiredName,
-              nameNormalized,
-              id: { $literal: stableUserId },
-              ipHashes: { $setUnion: [{ $ifNull: ['$ipHashes', []] }, [ipHash]] },
-              visitedLinks: link
-                ? { $setUnion: [{ $ifNull: ['$visitedLinks', []] }, [link]] }
-                : { $ifNull: ['$visitedLinks', []] },
-              // timestamps: garder createdAt existant, forcer updatedAt
-              createdAt: { $ifNull: ['$createdAt', now] },
-              updatedAt: now,
-              lastVisit: now,
-              visitCount: { $add: [{ $ifNull: ['$visitCount', 0] }, 1] },
-              conversations: { $ifNull: ['$conversations', []] },
-              preferences: { $ifNull: ['$preferences', {}] },
-              messageCount: { $ifNull: ['$messageCount', 0] },
-            },
-          },
-          {
-            $set: {
-              __extras: {
-                $arrayToObject: {
-                  $filter: {
-                    input: { $objectToArray: '$$ROOT' },
-                    cond: { $not: { $in: ['$$this.k', excludeFromExtras] } },
-                  },
-                },
-              },
-            },
-          },
-          {
-            $replaceRoot: {
-              newRoot: {
-                $mergeObjects: [
-                  {
-                    _id: '$_id',
-                    name: '$name',
-                    nameNormalized: '$nameNormalized',
-                    id: '$id',
-                    ipHashes: '$ipHashes',
-                    createdAt: '$createdAt',
-                    updatedAt: '$updatedAt',
-                    lastVisit: '$lastVisit',
-                    visitCount: '$visitCount',
-                    visitedLinks: '$visitedLinks',
-                    preferences: '$preferences',
-                    messageCount: '$messageCount',
-                    conversations: '$conversations',
-                  },
-                  '$__extras',
-                ],
-              },
-            },
-          },
-        ];
-
-        // 1 seule requête DB: upsert + retour direct du document (pipeline update)
-        // NOTE: rawResult n'est pas fiable ici avec Mongoose+pipeline (value peut être absent).
-        const updated = await User.findOneAndUpdate(
-          { id: stableUserId },
-          updatePipeline,
-          { new: true, upsert: true, updatePipeline: true },
-        ).lean();
-
-        // Nouveau compte: visitCount vaut 1 juste après la création (pipeline: +1 depuis 0/null).
-        // C'est le critère le plus robuste ici, car `timestamps: true` peut modifier updatedAt
-        // et casser une comparaison createdAt===updatedAt.
-        const isNewAccount = typeof updated?.visitCount === 'number' && updated.visitCount === 1;
-
-        userId = stableUserId;
-        userProfile = updated;
-
-        // Vérification de la limite de messages (protection)
-        const MAX_MESSAGES_PER_PROFILE = 50;
-        if ((userProfile?.messageCount || 0) >= MAX_MESSAGES_PER_PROFILE) {
-          console.warn(`${EMOJIS.warning} ${CONSOLE_LOGS.backend} Limite atteinte pour ${userProfile?.name || userId}`);
-          return res.json({
-            reply: ERROR_MESSAGES.limitReached,
-            commands: [{ command: 'LockInterface', parameter: 'limit_reached' }],
-            rawResponse: ERROR_MESSAGES.limitReached,
-            userProfile: {
-              name: userProfile?.name,
-              visitCount: userProfile?.visitCount,
-              isNewUser: isNewAccount,
-              messageCount: userProfile?.messageCount,
-            },
-            activeUserId: userId,
-            rag: { coverage: [], sources: [], enabled: false },
-            tts: {
-              isStaticFile: true,
-              staticUrl: '/endmessage.mp3',
-            },
-          });
-        }
-
-        const nameForGreeting = userProfile?.name || desiredName;
-        const reply = isNewAccount
-          ? MISC_MESSAGES.welcomeNew(nameForGreeting)
-          : MISC_MESSAGES.welcomeBack(nameForGreeting);
-
-        return res.json({
-          reply,
-          commands: [],
-          rawResponse: reply,
-          userProfile: {
-            name: userProfile?.name || nameForGreeting,
-            visitCount: userProfile?.visitCount,
-            isNewUser: isNewAccount,
-            messageCount: userProfile?.messageCount,
-          },
-          activeUserId: userId,
-          rag: { coverage: [], sources: [], enabled: false },
-        });
-      }
+      const { userId, userProfile } = await processUserInfo(req, currentUserId);
 
       // Cas normal (chat) : nécessite OpenAI
       if (!validateAPIKey()) {

@@ -4,6 +4,7 @@
 import fs from 'fs';
 import path from 'path';
 import { setupChatRoute } from '../../routes/chatRoute.js';
+import { setupAuthRoutes } from '../../routes/authRoute.js';
 import { setupAdminRoutes } from '../../routes/adminRoutes.js';
 import { setupPreferencesRoute } from '../../routes/preferencesRoute.js';
 import { setupTrackingRoute } from '../../routes/trackingRoute.js';
@@ -18,6 +19,7 @@ import { isValidAssetFilename } from '../validators.js';
  */
 export function setupRoutes(app, openai, ragDir, ragInitialized, __dirname) {
   setupChatRoute(app, openai, ragInitialized);
+  setupAuthRoutes(app);
   setupAdminRoutes(app, ragDir, ragInitialized);
   setupPreferencesRoute(app);
   setupTrackingRoute(app);

@@ -32,15 +32,16 @@ export default function Home() {
   const hexAnimationRef = useRef<HexagonalAnimationHandle>(null);
 
   const { setupAudioVisualization, cleanup } = useAudioVisualization();
-  const { 
-    send: sendChatMessage, 
-    status: chatStatus, 
-    currentTranscript, 
-    lastCommands, 
-    currentUserId, 
-    currentTTS, 
-    messages, 
-    currentUserProfile, 
+  const {
+    send: sendChatMessage,
+    sendAuth,
+    status: chatStatus,
+    currentTranscript,
+    lastCommands,
+    currentUserId,
+    currentTTS,
+    messages,
+    currentUserProfile,
     loadMoreMessages,
     hasMoreMessages
   } = useChatController();
@@ -260,10 +261,11 @@ export default function Home() {
       <div className="min-h-screen text-white font-sans overflow-hidden relative bg-transparent">
         
         {/* INTRO SEQUENCE - Contient le logo en mode Sleep et l'input */}
-        <IntroSequence 
-          send={sendChatMessage} 
-          currentTTS={currentTTS} 
-          messages={messages} 
+        <IntroSequence
+          send={sendChatMessage}
+          sendAuth={sendAuth}
+          currentTTS={currentTTS}
+          messages={messages}
           currentUserProfile={currentUserProfile}
           currentUserId={currentUserId}
           overlayOverrideText={overlayOverrideText}

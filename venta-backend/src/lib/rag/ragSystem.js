@@ -39,28 +39,6 @@ export async function reindexFolder(folderPath, clearExisting = true) {
 }
 
 /**
- * Met à jour un document spécifique
- */
-export async function updateDocument(folderPath, filename) {
-  console.log(`\n🔄 [RAG-SYSTEM] Mise à jour du document: ${filename}`);
-  clearCache();
-  const source = filename.replace('.txt', '');
-  await deleteChunksBySource(source);
-  const filePath = path.join(folderPath, filename);
-  if (!fs.existsSync(filePath)) {
-    console.error(`❌ [RAG-SYSTEM] Fichier non trouvé: ${filePath}`);
-    return { success: false };
-  }
-  const content = fs.readFileSync(filePath, 'utf8');
-  const document = {
-    source,
-    content,
-    metadata: { filename, path: filePath, size: content.length },
-  };
-  return ingestDocuments([document], false);
-}
-
-/**
  * Obtient les statistiques du système
  */
 export async function getSystemStats() {

@@ -6,9 +6,6 @@
 // Contexte
 export { setRequestContext, getRequestContext } from './helpers/contextHelpers.js';
 
-// Recherche
-// searchKnowledgeBase retiré (RAG injecté côté backend, tool supprimé)
-
 // Assets et visuels
 export { getAvailableAssets, getRulePicture } from './helpers/assetsHelpers.js';
 
@@ -19,7 +16,6 @@ export { getAvailableColors } from './helpers/colorsHelpers.js';
 export {
   uiShowPicture,
   uiSetBackground,
-  uiShowCode,
   uiOpenWindow,
 } from './helpers/uiCommandsHelpers.js';
 

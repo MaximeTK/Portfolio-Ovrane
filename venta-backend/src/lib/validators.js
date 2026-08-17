@@ -43,30 +43,6 @@ export function isValidAssetFilename(filename) {
 }
 
 /**
- * Décode un URI component sans lever d'exception (ex: "100%")
- * @param {string} value
- */
-export function safeDecodeURIComponent(value) {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
-
-/**
- * Échappe une valeur pour un attribut HTML (évite injection via guillemets / balises)
- * @param {unknown} value
- */
-export function escapeHtmlAttribute(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-/**
  * Normalise un paramètre d'asset image en nom de fichier (basename) et retire le point final.
  * @param {unknown} param
  * @returns {string}
@@ -84,13 +60,5 @@ export function normalizeAssetParamToFilename(param) {
   return base;
 }
 
-/**
- * Construit une URL d'asset "public/assets" (frontend) à partir d'un nom de fichier
- * @param {string} filename
- */
-export function buildFrontendAssetUrl(filename) {
-  // encodeURIComponent encode les espaces en %20 et neutralise les caractères spéciaux
-  return `/assets/${encodeURIComponent(filename)}`;
-}
 
 

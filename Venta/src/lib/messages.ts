@@ -14,10 +14,6 @@ export const CHAT_UI = {
   applyRequestFallback: "D'accord, j'applique ta demande.",
 } as const;
 
-export const TRACKING_UI = {
-  unknownUser: 'Utilisateur inconnu',
-} as const;
-
 export const FRONTEND_ERRORS = {
   unknown: 'Erreur inconnue',
   apiError: (status: number) => `Erreur API: ${status}`,

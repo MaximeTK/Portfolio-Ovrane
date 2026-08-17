@@ -41,6 +41,7 @@ interface UseChatControllerReturn {
   status: ChatStatus;
   error?: string;
   send: (message: string, options?: { isEphemeral?: boolean }) => void;
+  sendAuth: (mode: 'register' | 'login', data: Record<string, string>) => Promise<void>;
   appendDelta: (delta: string) => void;
   currentTranscript: string;
   lastCommands: Command[];
@@ -72,7 +73,6 @@ export function useChatController(): UseChatControllerReturn {
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const HISTORY_LIMIT = 20;
 
-  const clientRef = useRef<WebSocket | null>(null);
   // Ref pour stocker temporairement le message d'accueil avec l'ID cible
   const pendingWelcomeMessageRef = useRef<{ userId: string; message: Message } | null>(null);
   // Ref pour signaler qu'on est dans le flux de création d'un nouvel utilisateur
@@ -241,9 +241,7 @@ export function useChatController(): UseChatControllerReturn {
   
   const send = useCallback(async (message: string, options?: { isEphemeral?: boolean }) => {
     if (!message.trim() || status === 'streaming') return;
-    
-    if (clientRef.current) clientRef.current.close();
-    
+
     const userMessage = createMessage('user', message);
     
     // Si le message est éphémère (Intro), on ne l'affiche PAS dans le chat
@@ -357,11 +355,68 @@ export function useChatController(): UseChatControllerReturn {
     }
   }, [status, currentUserId, hasConfirmedProfile, setAppLocked, setViewMode]);
   
+  const sendAuth = useCallback(async (
+    mode: 'register' | 'login',
+    data: Record<string, string>,
+  ): Promise<void> => {
+    setStatus('streaming');
+    setError(undefined);
+    setCurrentTranscript('');
+    setLastCommands([]);
+    setCurrentTTS(null);
+
+    try {
+      const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      let responseData: Record<string, unknown>;
+      try {
+        responseData = await response.json();
+      } catch {
+        throw new Error('Réponse invalide du serveur.');
+      }
+
+      if (!response.ok) {
+        throw new Error((responseData.error as string) || `Erreur ${response.status}`);
+      }
+
+      const replyText = String(responseData.reply ?? '');
+      setCurrentTranscript(replyText);
+      if (!hasConfirmedProfile) setHasConfirmedProfile(true);
+
+      if (responseData.userProfile) {
+        setCurrentUserProfile(responseData.userProfile as UserProfileData);
+      }
+
+      const assistantMessage = createMessage('assistant', replyText);
+      const newUserId = updateStoredUserId(responseData.activeUserId as string, currentUserId);
+
+      if (newUserId !== currentUserId && newUserId) {
+        if ((responseData.userProfile as UserProfileData)?.isNewUser) {
+          isNewUserFlowRef.current = true;
+        }
+        pendingWelcomeMessageRef.current = { userId: newUserId, message: assistantMessage };
+        setCurrentUserId(newUserId);
+      }
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      setStatus('idle');
+    } catch (err) {
+      setStatus('idle');
+      throw err;
+    }
+  }, [currentUserId, hasConfirmedProfile]);
+
   return {
     messages,
     status,
     error,
     send,
+    sendAuth,
     appendDelta,
     currentTranscript,
     lastCommands,

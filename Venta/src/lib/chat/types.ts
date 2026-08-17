@@ -32,9 +32,3 @@ export interface UserProfileData {
 }
 
 export type ChatStatus = 'idle' | 'streaming' | 'error';
-
-export interface ChatState {
-  messages: Message[];
-  status: ChatStatus;
-  error?: string;
-}

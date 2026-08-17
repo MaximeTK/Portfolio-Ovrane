@@ -39,15 +39,14 @@ function timingSafeEquals(a, b) {
 }
 
 function requireAdminAuth(req, res, next) {
-  const isProd = process.env.NODE_ENV === 'production';
   const adminKey = process.env.ADMIN_API_KEY;
 
-  // En prod: on exige une clé. En dev: on laisse passer si non configuré.
+  // Refus par défaut. L'ancienne version laissait passer quand la clé n'était pas
+  // configurée ET que NODE_ENV n'était pas "production" — or NODE_ENV n'était pas
+  // définie sur Render, donc les routes admin servaient la base entière à qui la
+  // demandait. Une porte ne s'ouvre jamais parce qu'une variable manque.
   if (!adminKey) {
-    if (isProd) {
-      return res.status(503).json({ error: ERROR_MESSAGES.adminNotConfigured });
-    }
-    return next();
+    return res.status(503).json({ error: ERROR_MESSAGES.adminNotConfigured });
   }
 
   const provided = extractAdminKey(req);
@@ -73,7 +72,7 @@ export function setupAdminRoutes(app, ragDir, ragInitialized) {
       res.json({ success: result.success, message: SUCCESS_MESSAGES.ragReindexSuccess, ...result });
     } catch (error) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.admin} ${ERROR_MESSAGES.ragReindexError}:`, error);
-      res.status(500).json({ error: ERROR_MESSAGES.ragReindexError, details: error.message });
+      res.status(500).json({ error: ERROR_MESSAGES.ragReindexError });
     }
   });
   
@@ -85,7 +84,7 @@ export function setupAdminRoutes(app, ragDir, ragInitialized) {
       res.json({ success: true, message: SUCCESS_MESSAGES.assetsLoadSuccess, assets: assets, count: assets.length });
     } catch (error) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.admin} ${ERROR_MESSAGES.assetLoadError}:`, error);
-      res.status(500).json({ error: ERROR_MESSAGES.assetLoadError, details: error.message });
+      res.status(500).json({ error: ERROR_MESSAGES.assetLoadError });
     }
   });
   
@@ -145,7 +144,7 @@ export function setupAdminRoutes(app, ragDir, ragInitialized) {
       res.json({ success: true, ...stats });
     } catch (error) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.admin} ${ERROR_MESSAGES.ragStatsError}:`, error);
-      res.status(500).json({ error: ERROR_MESSAGES.ragStatsError, details: error.message });
+      res.status(500).json({ error: ERROR_MESSAGES.ragStatsError });
     }
   });
   
@@ -159,7 +158,7 @@ export function setupAdminRoutes(app, ragDir, ragInitialized) {
       res.json({ success: true, message: SUCCESS_MESSAGES.ragCacheCleared });
     } catch (error) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.admin} ${ERROR_MESSAGES.ragCacheClearError}:`, error);
-      res.status(500).json({ error: ERROR_MESSAGES.ragCacheClearError, details: error.message });
+      res.status(500).json({ error: ERROR_MESSAGES.ragCacheClearError });
     }
   });
 }

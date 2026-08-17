@@ -35,6 +35,10 @@ const UserSchema = new mongoose.Schema({
     unique: true,
     index: true 
   },
+  // Authentification
+  email: { type: String, default: null },
+  passwordHash: { type: String, default: null },
+
   // Gestion des IPs (Hashées)
   ipHashes: { type: [String], default: [] },
   // Métadonnées de visite
@@ -68,7 +72,8 @@ const UserSchema = new mongoose.Schema({
 
 // Création de l'index pour la recherche rapide par IP
 UserSchema.index({ ipHashes: 1 });
+// Index sparse pour email (null autorisé, unicité sur les valeurs non-null)
+UserSchema.index({ email: 1 }, { sparse: true, unique: true });
 
 // Empêcher la recompilation du modèle si le fichier est réimporté (Hot Reload)
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
-
