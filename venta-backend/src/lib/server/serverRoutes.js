@@ -3,6 +3,7 @@
  */
 import fs from 'fs';
 import path from 'path';
+import mongoose from 'mongoose';
 import { setupChatRoute } from '../../routes/chatRoute.js';
 import { setupAuthRoutes } from '../../routes/authRoute.js';
 import { setupAdminRoutes } from '../../routes/adminRoutes.js';
@@ -73,10 +74,15 @@ function setupHealthRoute(app, ragInitialized) {
         ragStats = { initialized: true, error: isProd ? ERROR_MESSAGES.internalServerError : msg };
       }
     }
-    res.json({ 
-      status: SUCCESS_MESSAGES.healthOK, 
-      timestamp: new Date().toISOString(), 
-      rag: ragStats 
+    // La base était absente de ce rapport : /health répondait 200 alors que
+    // Mongo était injoignable et que chaque requête authentifiée finissait en 500.
+    const dbConnected = mongoose.connection.readyState === 1;
+
+    res.status(dbConnected ? 200 : 503).json({
+      status: dbConnected ? SUCCESS_MESSAGES.healthOK : 'degraded',
+      timestamp: new Date().toISOString(),
+      db: { connected: dbConnected, name: mongoose.connection.name || null },
+      rag: ragStats
     });
   });
 }

@@ -158,7 +158,6 @@ function processCommand(
   command: string,
   parameter: string,
   index: number,
-  userId?: string | null,
 ): WindowData | null {
   switch (command.toLowerCase()) {
     case 'showpicture':
@@ -221,12 +220,7 @@ export default function CommandProcessor({
         pending.forEach((cmd, index) => {
           console.log(`⚙️ [CommandProcessor] Traitement commande: ${cmd.command} -> ${cmd.parameter}`);
           
-          const win = processCommand(
-            cmd.command,
-            cmd.parameter,
-            index,
-            _currentUserId,
-          );
+          const win = processCommand(cmd.command, cmd.parameter, index);
           if (win) {
             // Assigner le z-index global de manière safe
             win.zIndex = incrementMaxZIndex();
@@ -239,7 +233,7 @@ export default function CommandProcessor({
         onCommandsProcessed();
       }, 0);
     },
-    [_currentUserId, onCommandsProcessed, incrementMaxZIndex],
+    [onCommandsProcessed, incrementMaxZIndex],
   );
 
   useEffect(() => {
