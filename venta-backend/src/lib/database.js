@@ -16,10 +16,21 @@ export async function connectToDatabase() {
     return;
   }
 
+  // Aucun repli : sans nom de base explicite, un serveur de dev écrirait dans
+  // la base de production. On refuse de démarrer plutôt que de deviner.
+  const dbName = process.env.MONGODB_DB;
+  if (!dbName) {
+    console.error(
+      `${EMOJIS.error} [DATABASE] MONGODB_DB n'est pas défini. Arrêt: ` +
+      `sans nom de base explicite le serveur écrirait dans la base par défaut.`,
+    );
+    process.exit(1);
+  }
+
   try {
-    const db = await mongoose.connect(process.env.MONGODB_URI, {
-      dbName: 'venta', // Nom de la base de données
-    });
+    const db = await mongoose.connect(process.env.MONGODB_URI, { dbName });
+
+    console.log(`${EMOJIS.info} [DATABASE] Base: ${dbName}`);
 
     isConnected = db.connections[0].readyState === 1;
     console.log(`${EMOJIS.success} [DATABASE] Connecté à MongoDB Atlas avec succès`);
