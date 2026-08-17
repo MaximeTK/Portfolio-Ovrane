@@ -52,12 +52,14 @@ ${functionResponse.assets.join('\n')}
   }
   
   if (functionName === 'getAvailableColors' && functionResponse.success) {
-    return `✅ LISTE DES PALETTES DE COULEURS DISPONIBLES:
+    return `✅ RÉFÉRENTIEL INTERNE DES PALETTES (${functionResponse.colors.length}):
 ${functionResponse.colors.join('\n')}
 
 🎯 INSTRUCTIONS IMPORTANTES:
+- Ce référentiel est INTERNE. Ne le recopie JAMAIS dans ta réponse, ni en liste, ni en tableau.
+- Si l'utilisateur demande quelles couleurs existent, réponds en une phrase en citant 3 ou 4 exemples parlants, puis propose de choisir.
 - Ne déclenche un changement de fond via un TOOL (uiSetBackground({ paletteId })) QUE si l'utilisateur le demande explicitement
-- paletteId doit être un ID EXACT issu de la liste ci-dessus
+- paletteId doit être un ID EXACT issu du référentiel ci-dessus
 - N'écris PAS de slash-commandes dans le texte
 - N'APPELLE PLUS getAvailableColors() - tu as déjà toutes les informations nécessaires`;
   }

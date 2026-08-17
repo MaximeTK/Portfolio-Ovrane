@@ -4,6 +4,7 @@
 import { buildRAGContextForPrompt, buildSystemPrompt } from '../promptBuilder.js';
 import { getRawConversationHistory } from '../userMemory.js';
 import { callOpenAI } from '../openai/callHandler.js';
+import { resolveModelConfig } from '../openai/apiParams.js';
 import { tools } from './toolsConfig.js';
 import { CONSOLE_LOGS, EMOJIS, ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
 
@@ -113,7 +114,8 @@ export async function generateResponse(openai, prompt, userId, userProfile, ragI
   const historyMessages = buildHistoryMessages(rawHistory);
   
   console.log(`\n📤 ${CONSOLE_LOGS.backend} ===== ENVOI À CHATGPT =====`);
-  console.log(`🤖 ${CONSOLE_LOGS.openaiModelInfo}`);
+  const modelConfig = resolveModelConfig();
+  console.log(`🤖 Modèle: ${modelConfig.model} | 🧠 Reasoning: ${modelConfig.effort} | 💬 Verbosity: ${modelConfig.verbosity}`);
   console.log(`📋 ${CONSOLE_LOGS.openaiSystemPrompt}`, systemPrompt.substring(0, 200) + '...');
   console.log(`💬 ${CONSOLE_LOGS.openaiUserPrompt}`, prompt);
   console.log(`${EMOJIS.loading} ${CONSOLE_LOGS.backend} ${CONSOLE_LOGS.openaiCallInProgress}\n`);

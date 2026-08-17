@@ -229,7 +229,6 @@ export const CONSOLE_LOGS = {
   // OpenAI
   openaiCallInProgress: 'Appel OpenAI API en cours...',
   openaiWantsToCall: 'L\'IA veut appeler',
-  openaiModelInfo: 'Modèle: gpt-5-mini | 🧠 Reasoning: medium | 💬 Verbosity: medium',
   openaiSystemPrompt: 'SYSTEM PROMPT:',
   openaiUserPrompt: 'USER PROMPT:',
   openaiFunction: 'Fonction:',

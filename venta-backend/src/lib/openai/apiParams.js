@@ -4,14 +4,30 @@
 import { OPENAI_CONFIG, CONSOLE_LOGS, EMOJIS } from '../messages.js';
 
 /**
+ * Résout la configuration modèle, environnement prioritaire sur le code.
+ *
+ * Lu à l'appel et non au chargement du module : dans server.js, les imports
+ * sont évalués avant dotenv.config(), donc un process.env lu au niveau module
+ * serait vide en local.
+ */
+export function resolveModelConfig() {
+  return {
+    model: process.env.OPENAI_MODEL || OPENAI_CONFIG.model,
+    effort: process.env.OPENAI_REASONING_EFFORT || OPENAI_CONFIG.reasoningEffort || 'medium',
+    verbosity: process.env.OPENAI_TEXT_VERBOSITY || OPENAI_CONFIG.textVerbosity || 'medium',
+  };
+}
+
+/**
  * Crée les paramètres de base pour l'API
  */
 function buildBaseParams(formattedInput) {
+  const { model, effort, verbosity } = resolveModelConfig();
   return {
-    model: OPENAI_CONFIG.model,
+    model,
     input: formattedInput,
-    reasoning: { effort: OPENAI_CONFIG.reasoningEffort || 'medium' },
-    text: { verbosity: OPENAI_CONFIG.textVerbosity || 'medium' }
+    reasoning: { effort },
+    text: { verbosity }
   };
 }
 

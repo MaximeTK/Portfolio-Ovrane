@@ -33,7 +33,7 @@ function parseColorsFile(colorsPath) {
     
     if (isPaletteId(line)) {
       if (currentPalette.id) {
-        colorsList.push(`${currentPalette.id} - ${currentPalette.name || ''} - ${currentPalette.description || ''}`);
+        colorsList.push(`${currentPalette.id} — ${currentPalette.description || currentPalette.name || ''}`);
       }
       currentPalette = { id: line };
     }
@@ -78,7 +78,6 @@ export function getAvailableColors() {
     const result = {
       success: true,
       colors: colorsList,
-      instructions: "Retourne la liste. Ne déclenche un changement de fond via uiSetBackground({ paletteId }) QUE si l'utilisateur le demande explicitement (ex: \"change le fond en ocean\").",
       message: `${colorsList.length} palettes de couleurs disponibles. Si l'utilisateur souhaite CHANGER le fond, appelle uiSetBackground({ paletteId }) avec l'ID exact. Sinon, ne change rien.`
     };
     console.log(`✅ [FUNCTION END] getAvailableColors | Retour: success=true, ${colorsList.length} palettes\n`);
