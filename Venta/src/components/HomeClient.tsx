@@ -198,49 +198,37 @@ export default function Home() {
         startStandbyAnimation();
       };
       
-      // Pas de TTS en mode messagerie
-      if (viewMode === 'messaging') {
-        stopTTS();
-        // En mode messagerie, pas de TTS: on conserve le comportement précédent (fenêtre en "background")
+      const openTextWindowOnce = () => {
         if (shouldCreateTextWindow && !didCreateTextWindow) {
           addTextWindow(currentTranscript);
           didCreateTextWindow = true;
         }
-        onEnd(); // On termine immédiatement l'animation
-      } else if (currentTTS && currentTTS.isStaticFile && currentTTS.staticUrl) {
-         // Lecture fichier statique (ex: fin de session)
-         speakWithUrl(currentTTS.staticUrl, setupAudioVisualization, onEnd, {
-           onStartSpeaking: () => {
-             showMessagingHintIfNeeded();
-             // Les deux conditions d'origine étaient complémentaires et exécutaient
-             // le même corps : la fenêtre est créée quoi qu'il arrive.
-             if (shouldCreateTextWindow && !didCreateTextWindow) {
-               addTextWindow(currentTranscript);
-               didCreateTextWindow = true;
-             }
-             setCurrentAnimation('speak');
-             startSpeakAnimation();
-             if (appState === 'processing') {
-               setAppState('awake');
-             }
-           },
-         });
+      };
+
+      // Identique pour les deux voies sonores : seule la source diffère.
+      const onStartSpeaking = () => {
+        showMessagingHintIfNeeded();
+        openTextWindowOnce();
+        setCurrentAnimation('speak');
+        startSpeakAnimation();
+        // Transition vers "awake" au moment où la voix démarre réellement
+        if (appState === 'processing') setAppState('awake');
+      };
+
+      if (viewMode === 'messaging') {
+        // Pas de TTS : fenêtre en arrière-plan et fin d'animation immédiate.
+        stopTTS();
+        openTextWindowOnce();
+        onEnd();
+        return;
+      }
+
+      const staticUrl = currentTTS?.isStaticFile ? currentTTS.staticUrl : null;
+      if (staticUrl) {
+        // Fichier statique, ex. message de fin de session.
+        speakWithUrl(staticUrl, setupAudioVisualization, onEnd, { onStartSpeaking });
       } else {
-        speakWithQueue(currentTranscript, setupAudioVisualization, onEnd, {
-          onStartSpeaking: () => {
-            showMessagingHintIfNeeded();
-            if (shouldCreateTextWindow && !didCreateTextWindow) {
-              addTextWindow(currentTranscript);
-              didCreateTextWindow = true;
-            }
-            setCurrentAnimation('speak');
-            startSpeakAnimation();
-            // Transition vers "awake" au moment où la voix démarre réellement
-            if (appState === 'processing') {
-              setAppState('awake');
-            }
-          },
-        });
+        speakWithQueue(currentTranscript, setupAudioVisualization, onEnd, { onStartSpeaking });
       }
     }
   }, [chatStatus, currentTranscript, lastProcessedTranscript, currentTTS, startSpeakAnimation, startStandbyAnimation, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addTextWindow, appState, setAppState, viewMode, currentUserId]);

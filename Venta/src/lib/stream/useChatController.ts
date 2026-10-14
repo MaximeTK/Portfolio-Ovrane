@@ -41,7 +41,7 @@ interface UseChatControllerReturn {
   status: ChatStatus;
   error?: string;
   send: (message: string, options?: { isEphemeral?: boolean }) => void;
-  sendAuth: (mode: 'register' | 'login', data: Record<string, string>) => Promise<void>;
+  sendAuth: (mode: 'register' | 'login' | 'visitor', data: Record<string, string>, welcome?: string) => Promise<void>;
   appendDelta: (delta: string) => void;
   currentTranscript: string;
   lastCommands: Command[];
@@ -356,8 +356,9 @@ export function useChatController(): UseChatControllerReturn {
   }, [status, currentUserId, hasConfirmedProfile, setAppLocked, setViewMode]);
   
   const sendAuth = useCallback(async (
-    mode: 'register' | 'login',
+    mode: 'register' | 'login' | 'visitor',
     data: Record<string, string>,
+    welcome?: string,
   ): Promise<void> => {
     setStatus('streaming');
     setError(undefined);
@@ -366,7 +367,7 @@ export function useChatController(): UseChatControllerReturn {
     setCurrentTTS(null);
 
     try {
-      const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+      const endpoint = `/api/auth/${mode}`;
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -384,7 +385,8 @@ export function useChatController(): UseChatControllerReturn {
         throw new Error((responseData.error as string) || `Erreur ${response.status}`);
       }
 
-      const replyText = String(responseData.reply ?? '');
+      // L'accueil du recruteur, s'il est fourni, remplace celui du backend
+      const replyText = welcome || String(responseData.reply ?? '');
       setCurrentTranscript(replyText);
       if (!hasConfirmedProfile) setHasConfirmedProfile(true);
 

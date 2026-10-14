@@ -29,4 +29,15 @@ export function getUserIdChangedEventName() {
   return USER_ID_CHANGED_EVENT;
 }
 
+/** Profil retenu par ce navigateur ; le backend ne reprend sans mot de passe qu'un profil visiteur. */
+export function getStoredUserId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return isValidUserId(stored) ? stored.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 

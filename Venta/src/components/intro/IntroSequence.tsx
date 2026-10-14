@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { useUIStore } from '@/lib/state/uiStore';
 import { HexagonalAnimation, HexagonalAnimationHandle } from '../ui/HexagonalAnimation';
 import { AuthForm } from './AuthForm';
-import { Message } from '@/lib/chat/types';
+import { IllusionAccueil, Message } from '@/lib/chat/types';
+import { CHAT_UI } from '@/lib/messages';
+import { getStoredUserId } from '@/lib/userId';
 
 interface IntroSequenceProps {
-  sendAuth: (mode: 'register' | 'login', data: Record<string, string>) => Promise<void>;
+  sendAuth: (mode: 'register' | 'login' | 'visitor', data: Record<string, string>, welcome?: string) => Promise<void>;
   messages: Message[];
   overlayOverrideText?: string | null;
 }
@@ -13,9 +16,34 @@ interface IntroSequenceProps {
 export const IntroSequence = ({ sendAuth, messages, overlayOverrideText }: IntroSequenceProps) => {
   const { appState, setAppState, setUserName, viewMode, isAppLocked, lockedMessage } = useUIStore();
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
+  // Le formulaire des comptes existants ne s'affiche plus que sur /connexion
+  const isLoginPage = usePathname() === '/connexion';
+  const visitStartedRef = useRef(false);
+  const [visitError, setVisitError] = useState<string | null>(null);
   
   // Ref vers l'animation pour déclencher des vagues manuelles
   const hexAnimationRef = useRef<HexagonalAnimationHandle>(null);
+
+  // Arrivée sans saisie : profil visiteur créé ou repris, accueil du recruteur si la session porte un jeton
+  useEffect(() => {
+    if (isLoginPage || visitStartedRef.current) return;
+    visitStartedRef.current = true;
+    hexAnimationRef.current?.triggerWave();
+    setAppState('processing');
+
+    const startVisit = async () => {
+      const accueil: IllusionAccueil | null = await fetch('/api/illusion/accueil')
+        .then((res) => (res.ok ? res.json() : null))
+        .catch(() => null);
+      const welcome = accueil ? CHAT_UI.recruiterWelcome(accueil) : '';
+      await sendAuth('visitor', { userId: getStoredUserId() ?? '' }, welcome || undefined);
+    };
+
+    startVisit().catch((err) => {
+      setAppState('sleeping');
+      setVisitError(err instanceof Error ? err.message : 'Erreur inconnue.');
+    });
+  }, [isLoginPage, sendAuth, setAppState]);
 
   // Si l'app est verrouillée, on force l'état 'awake' pour afficher le message
   useEffect(() => {
@@ -101,7 +129,7 @@ export const IntroSequence = ({ sendAuth, messages, overlayOverrideText }: Intro
       {/* Position ajustée pour être bien en dessous du logo */}
       <div className="absolute top-[65%] mt-[100px] w-full flex flex-col items-center justify-center pointer-events-auto">
         
-        {/* État 1: Input (Sleeping) */}
+        {/* État 1: Formulaire sur /connexion, sinon erreur éventuelle de l'arrivée (Sleeping) */}
         <div 
           className={`transition-all duration-500 absolute w-full ${
             appState === 'sleeping' 
@@ -109,7 +137,13 @@ export const IntroSequence = ({ sendAuth, messages, overlayOverrideText }: Intro
             : 'opacity-0 translate-y-0 pointer-events-none'
           }`}
         >
-          <AuthForm onSubmit={handleAuthSubmit} />
+          {isLoginPage ? (
+            <AuthForm onSubmit={handleAuthSubmit} />
+          ) : (
+            visitError && (
+              <p className="text-red-500 text-[10px] tracking-wider text-center px-6">{visitError}</p>
+            )
+          )}
         </div>
 
         {/* État 3: Awake (Message de bienvenue STATIQUE ou Message de Verrouillage) */}

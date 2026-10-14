@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { API_ERRORS } from '@/lib/messages';
+import { JETON_COOKIE, isValidJeton } from '@/lib/redirections';
 
 /** 30 s couvre le réveil d'un service Render endormi (~30 s à froid). */
 const DEFAULT_TIMEOUT = 30_000;
@@ -20,6 +21,12 @@ export function clientInfo(request: NextRequest) {
   const h = request.headers;
   const userIp = h.get('x-forwarded-for')?.split(',')[0].trim() ?? h.get('x-real-ip') ?? 'unknown';
   return { userIp, userAgent: h.get('user-agent') ?? '' };
+}
+
+/** Jeton Illusion de la session, posé en cookie par le middleware, jamais lu du corps. */
+export function sessionJeton(request: NextRequest): string | undefined {
+  const jeton = request.cookies.get(JETON_COOKIE)?.value;
+  return isValidJeton(jeton) ? jeton : undefined;
 }
 
 type ForwardInit = { method?: string; body?: unknown; timeout?: number };

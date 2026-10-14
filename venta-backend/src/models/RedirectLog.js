@@ -4,6 +4,9 @@
  */
 import mongoose from 'mongoose';
 
+// Cibles des liens suivis, transmises par le middleware du frontend
+export const REDIRECT_CIBLES = ['cv', 'cvdesign', 'linkedin', 'github', 'portfolio'];
+
 const redirectLogSchema = new mongoose.Schema({
   path: {
     type: String,
@@ -21,6 +24,20 @@ const redirectLogSchema = new mongoose.Schema({
   userAgent: {
     type: String,
     default: 'unknown'
+  },
+  // Liens d'Illusion : jeton de la candidature, absent sur les anciens liens
+  jeton: {
+    type: String,
+    index: true,
+    sparse: true
+  },
+  cible: {
+    type: String,
+    enum: REDIRECT_CIBLES
+  },
+  // Déduit du user-agent par le serveur : scanner de messagerie, aperçu, crawler...
+  robot: {
+    type: Boolean
   },
   timestamp: {
     type: Date,

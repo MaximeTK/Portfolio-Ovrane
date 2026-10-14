@@ -152,11 +152,10 @@ export default function CommandProcessor({
 }: CommandProcessorProps) {
   const [windows, setWindows] = useState<WindowData[]>([]);
   const incrementMaxZIndex = useUIStore((state) => state.incrementMaxZIndex);
-  
-  // Historique des commandes pour ne pas retraiter les anciennes (sauf si nouvelle référence)
-  const processedCommandsRef = useRef<Set<string>>(new Set());
-  
-  // Référence vers le dernier tableau de commandes traité
+
+  // Dernier lot traité, comparé par référence. `lastCommands` est un nouveau
+  // tableau à chaque réponse et reste stable entre deux rendus : cela suffit,
+  // y compris face au double appel des effets en StrictMode.
   const lastProcessedCommandsRef = useRef<Command[] | null>(null);
 
   // Fermer toutes les fenêtres quand l'utilisateur change
@@ -167,70 +166,22 @@ export default function CommandProcessor({
     }
   }, [_currentUserId]);
 
-  const trimHistory = useCallback(() => {
-    const entries = Array.from(processedCommandsRef.current);
-    processedCommandsRef.current = new Set(entries.slice(-20));
-  }, []);
-
-  const processCommands = useCallback(
-    (pending: Command[]) => {
-      const newWindows: WindowData[] = [];
-      
-      // Utilisation de setTimeout pour sortir du cycle de rendu et éviter l'erreur
-      setTimeout(() => {
-        pending.forEach((cmd, index) => {
-          console.log(`⚙️ [CommandProcessor] Traitement commande: ${cmd.command} -> ${cmd.parameter}`);
-          
-          const win = processCommand(cmd.command, cmd.parameter, index);
-          if (win) {
-            // Assigner le z-index global de manière safe
-            win.zIndex = incrementMaxZIndex();
-            newWindows.push(win);
-          }
-        });
-        if (newWindows.length) {
-          setWindows((prev) => [...prev, ...newWindows]);
-        }
-      }, 0);
-    },
-    [incrementMaxZIndex],
-  );
-
   useEffect(() => {
-    // Sécurité anti-boucle : Si on a déjà traité exactement ce tableau (même référence), on arrête tout de suite.
-    if (commands === lastProcessedCommandsRef.current) {
-      return;
-    }
-    
-    if (!commands.length) {
-      lastProcessedCommandsRef.current = commands;
-      return;
-    }
-
-    // Clé unique basée sur le contenu JSON pour l'historique global
-    const commandKey = JSON.stringify(commands);
-    
-    // Détection si c'est une commande de background
-    const isBackgroundCommand = commands.some(c => c.command.toLowerCase() === 'setbackground');
-    
-    // Si ce n'est PAS un changement de fond et qu'on a déjà vu cette commande exacte dans l'historique, on ignore.
-    if (!isBackgroundCommand && processedCommandsRef.current.has(commandKey)) {
-      lastProcessedCommandsRef.current = commands;
-      return;
-    }
-
-    // On ajoute à l'historique (sauf si background qui peut être répété)
-    if (!isBackgroundCommand) {
-      processedCommandsRef.current.add(commandKey);
-    }
-    
-    processCommands(commands);
+    if (commands === lastProcessedCommandsRef.current) return;
     lastProcessedCommandsRef.current = commands;
-    
-    if (processedCommandsRef.current.size > 20) {
-      trimHistory();
-    }
-  }, [commands, processCommands, trimHistory]);
+    if (!commands.length) return;
+
+    // On est déjà après le rendu : pas besoin de setTimeout pour appeler setState.
+    const created: WindowData[] = [];
+    commands.forEach((cmd, index) => {
+      const win = processCommand(cmd.command, cmd.parameter, index);
+      if (win) {
+        win.zIndex = incrementMaxZIndex();
+        created.push(win);
+      }
+    });
+    if (created.length) setWindows((prev) => [...prev, ...created]);
+  }, [commands, incrementMaxZIndex]);
 
   const closeWindow = useCallback((id: string) => {
     setWindows((prev) => prev.filter((window) => window.id !== id));

@@ -5,10 +5,12 @@ import { processUserInfo } from '../lib/chat/userProcessor.js';
 import { generateResponse } from '../lib/chat/responseGenerator.js';
 import { processResponse } from '../lib/chat/responseProcessor.js';
 import { getRawConversationHistory } from '../lib/userMemory.js';
+import { IllusionCandidature } from '../models/IllusionCandidature.js';
 import { ERROR_MESSAGES, CONSOLE_LOGS, EMOJIS } from '../lib/messages.js';
 import {
   isNonEmptyString,
   isValidUserId,
+  isValidJeton,
 } from '../lib/validators.js';
 
 /**
@@ -26,12 +28,26 @@ function validateAPIKey() {
 }
 
 /**
+ * Candidature Illusion du recruteur venu par un lien suivi ; une erreur ne bloque jamais le chat
+ */
+async function loadCandidature(jeton) {
+  if (!isValidJeton(jeton)) return null;
+  try {
+    return await IllusionCandidature.findOne({ jeton }).lean();
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`${EMOJIS.warning} ${CONSOLE_LOGS.backend} Candidature Illusion illisible (${jeton}):`, msg);
+    return null;
+  }
+}
+
+/**
  * Configuration de la route chat
  */
 export function setupChatRoute(app, openai, ragInitialized) {
   app.post('/api/chat', async (req, res) => {
     try {
-      const { prompt, currentUserId, isEphemeral } = req.body;
+      const { prompt, currentUserId, isEphemeral, jeton } = req.body;
       
       if (!validatePrompt(prompt)) {
         console.error(`${EMOJIS.error} ${CONSOLE_LOGS.backend} ${ERROR_MESSAGES.promptInvalid}`);
@@ -79,7 +95,8 @@ export function setupChatRoute(app, openai, ragInitialized) {
         });
       }
 
-      const response = await generateResponse(openai, prompt, userId, userProfile, ragInitialized);
+      const candidature = await loadCandidature(jeton);
+      const response = await generateResponse(openai, prompt, userId, userProfile, ragInitialized, candidature);
       const result = await processResponse(response, userId, userProfile, prompt, safeEphemeral);
       
       res.json(result);

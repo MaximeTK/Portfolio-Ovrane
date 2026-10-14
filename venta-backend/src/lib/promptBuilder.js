@@ -6,7 +6,8 @@ import {
   SYSTEM_PROMPTS, 
   RAG_HEADERS, 
   ERROR_MESSAGES,
-  formatUserInfo 
+  formatUserInfo,
+  formatCandidatureContext
 } from './messages.js';
 
 function normalizeForMatch(text) {
@@ -98,7 +99,7 @@ export async function buildRAGContextForPrompt(prompt, ragInitialized) {
 /**
  * Construit le prompt système
  */
-export async function buildSystemPrompt(userProfile, userId, ragContext, ragCoverage) {
+export async function buildSystemPrompt(userProfile, userId, ragContext, ragCoverage, candidature = null) {
   const bgPref =
     (userProfile && userProfile.preferences && userProfile.preferences.backgroundColor)
       ? String(userProfile.preferences.backgroundColor)
@@ -108,7 +109,8 @@ export async function buildSystemPrompt(userProfile, userId, ragContext, ragCove
   
   let ragInstructions = getRagInstructions(ragCoverage);
 
-  return `${ragContext}${userInfo}${bgInfo}${ragInstructions}${SYSTEM_PROMPTS.mainContext}`;
+  // Candidature en tête : identique d'un message à l'autre du recruteur, ce préfixe reste en cache côté API
+  return `${formatCandidatureContext(candidature)}${ragContext}${userInfo}${bgInfo}${ragInstructions}${SYSTEM_PROMPTS.mainContext}`;
 }
 
 function getRagInstructions(ragCoverage) {

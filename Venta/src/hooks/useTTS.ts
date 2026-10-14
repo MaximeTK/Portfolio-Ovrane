@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import pLimit from 'p-limit';
 
 type SetupVisualizationFn = (
   audio: HTMLAudioElement,
@@ -95,141 +96,6 @@ export function useTTS() {
     audioLevelRef.current = 0;
     setIsSpeaking(false);
   }, []);
-
-  const speakWithBrowser = useCallback((text: string, onEnd: () => void) => {
-    if (!('speechSynthesis' in window)) {
-      console.error('❌ Web Speech API non supportée');
-      setTimeout(onEnd, 5000);
-      return;
-    }
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'fr-FR';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    
-    const voices = window.speechSynthesis.getVoices();
-    const frenchVoice = voices.find(voice => voice.lang.startsWith('fr'));
-    if (frenchVoice) utterance.voice = frenchVoice;
-    
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      audioLevelRef.current = 0;
-      onEnd();
-    };
-    utterance.onerror = (e) => {
-      console.error('❌ Web Speech API erreur:', e);
-      setIsSpeaking(false);
-      audioLevelRef.current = 0;
-      setTimeout(onEnd, 5000);
-    };
-    
-    window.speechSynthesis.speak(utterance);
-  }, []);
-
-  const playAudio = useCallback((
-    audioBlob: Blob,
-    setupVisualization: SetupVisualizationFn,
-    onEnd: () => void
-  ) => {
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    
-    setupVisualization(audio, (level) => {
-      audioLevelRef.current = level;
-    });
-    audio.onplay = () => setIsSpeaking(true);
-    audio.onended = () => {
-      setIsSpeaking(false);
-      audioLevelRef.current = 0;
-      onEnd();
-      URL.revokeObjectURL(audioUrl);
-    };
-    audio.onerror = (e) => {
-      console.error('❌ Erreur lecture audio:', e);
-      URL.revokeObjectURL(audioUrl);
-      speakWithBrowser('', onEnd);
-    };
-    
-    audio.play();
-  }, [speakWithBrowser]);
-
-  const speakWithAPI = useCallback(async (
-    text: string, 
-    setupVisualization: SetupVisualizationFn,
-    onEnd: () => void
-  ) => {
-    try {
-      stop();
-      // IMPORTANT (prod): passer par l'API Next (same-origin) pour éviter les erreurs CORS
-      // quand le backend est sur un autre domaine (Render).
-      const response = await fetch(`/api/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-
-      if (!response.ok) {
-        console.warn('⚠️ TTS API erreur');
-        speakWithBrowser(text, onEnd);
-        return;
-      }
-
-      const contentType = response.headers.get('Content-Type');
-      if (contentType?.includes('application/json')) {
-        const data = await response.json();
-        if (data.useClientTTS && data.text) {
-          speakWithBrowser(data.text, onEnd);
-          return;
-        }
-      }
-
-      const audioBlob = await response.blob();
-      if (audioBlob.size === 0) {
-        console.warn('⚠️ Audio vide reçu');
-        speakWithBrowser(text, onEnd);
-        return;
-      }
-      
-      playAudio(audioBlob, setupVisualization, onEnd);
-    } catch (error) {
-      console.error('❌ Erreur synthèse vocale:', error);
-      speakWithBrowser(text, onEnd);
-    }
-  }, [speakWithBrowser, playAudio, stop]);
-
-  /**
-   * Joue l'audio directement depuis des données base64 (reçu du backend)
-   */
-  const speakWithBase64 = useCallback(async (
-    base64Audio: string,
-    mimeType: string | undefined,
-    setupVisualization: SetupVisualizationFn,
-    onEnd: () => void
-  ) => {
-    try {
-      stop();
-      // Convertir base64 en Blob
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const audioBlob = new Blob([bytes], { type: mimeType || 'audio/mpeg' });
-      
-      if (audioBlob.size === 0) {
-        console.warn('⚠️ Audio vide reçu depuis base64');
-        onEnd();
-        return;
-      }
-      
-      playAudio(audioBlob, setupVisualization, onEnd);
-    } catch (error) {
-      console.error('❌ Erreur lecture audio base64:', error);
-      onEnd();
-    }
-  }, [playAudio, stop]);
 
   const speakWithUrl = useCallback((
     url: string,
@@ -384,11 +250,15 @@ export function useTTS() {
   }, []);
 
   /**
-   * Lecture TTS en file (queue) :
-   * - découpe en blocs de 4 phrases (4 ".")
-   * - précharge en parallèle
-   * - démarre la lecture après 2 blocs prêts si multi-blocs, sinon dès le 1er
-   * - garde isSpeaking actif jusqu'à la fin de la queue (pas de coupure entre blocs)
+   * Lecture TTS en file :
+   * - découpe en blocs de 4 phrases
+   * - p-limit borne la génération à 2 requêtes simultanées
+   * - la lecture séquentielle attend chaque bloc dans l'ordre, donc la parole
+   *   démarre dès le premier prêt sans attendre les suivants
+   *
+   * La version précédente réimplémentait ce sémaphore à la main : waiters[],
+   * notify(), inFlight, nextToFetch, canPrefetchBeyondInitial et un tableau
+   * `prepared` rempli par effet de bord.
    */
   const speakWithQueue = useCallback(async (
     fullText: string,
@@ -398,116 +268,49 @@ export function useTTS() {
   ) => {
     stop();
     const runId = activeRunIdRef.current;
+    const isStale = () => activeRunIdRef.current !== runId;
 
     const blocks = splitTextIntoTTSBlocks(fullText, 4);
-    console.log('🧩 [TTS Queue] Découpage en blocs', {
-      blocksCount: blocks.length,
-      blocks: blocks.map((b, i) => ({ i: i + 1, length: b.length, preview: b.slice(0, 220) })),
-    });
     if (blocks.length === 0) {
       onEnd();
       return;
     }
 
-    const requiredReady = blocks.length > 1 ? 2 : 1;
-    const maxConcurrency = 2;
-    let canPrefetchBeyondInitial = false;
-
-    const prepared: Array<PreparedChunk | null> = new Array(blocks.length).fill(null);
-    let nextToFetch = 0;
-    let inFlight = 0;
-    const waiters: Array<() => void> = [];
-
-    const notify = () => {
-      while (waiters.length) {
-        const w = waiters.shift();
-        try { w?.(); } catch { /* ignore */ }
-      }
-    };
-
-    const fetchMore = () => {
-      if (activeRunIdRef.current !== runId) return;
-      while (inFlight < maxConcurrency && nextToFetch < blocks.length) {
-        // IMPORTANT: avant le démarrage de la parole, on ne précharge QUE les blocs nécessaires (1 ou 2).
-        // Cela évite l'effet "tout se génère puis ça parle" et priorise le démarrage rapide.
-        if (!canPrefetchBeyondInitial && nextToFetch >= requiredReady) {
-          break;
-        }
-        const idx = nextToFetch++;
-        console.log(`⏳ [TTS Queue] Préchargement chunk ${idx + 1}/${blocks.length}`);
+    const limit = pLimit(2);
+    const pending = blocks.map((block) =>
+      limit(async (): Promise<PreparedChunk> => {
+        if (isStale()) return { type: 'client', text: block };
         const ctrl = new AbortController();
         abortControllersRef.current.add(ctrl);
-        inFlight += 1;
+        try {
+          return await fetchChunk(block, ctrl);
+        } catch {
+          return { type: 'client', text: block };
+        } finally {
+          abortControllersRef.current.delete(ctrl);
+        }
+      }),
+    );
 
-        fetchChunk(blocks[idx], ctrl)
-          .then((chunk) => {
-            abortControllersRef.current.delete(ctrl);
-            if (activeRunIdRef.current !== runId) return;
-            prepared[idx] = chunk;
-            console.log(`✅ [TTS Queue] Chunk prêt ${idx + 1}/${blocks.length}`, {
-              type: chunk.type,
-            });
-          })
-          .catch(() => {
-            abortControllersRef.current.delete(ctrl);
-            if (activeRunIdRef.current !== runId) return;
-            prepared[idx] = { type: 'client', text: blocks[idx] };
-            console.warn(`⚠️ [TTS Queue] Chunk fallback client ${idx + 1}/${blocks.length}`);
-          })
-          .finally(() => {
-            inFlight -= 1;
-            notify();
-            fetchMore();
-          });
-      }
-    };
-
-    const waitUntilPrepared = async (idx: number) => {
-      while (activeRunIdRef.current === runId && prepared[idx] === null) {
-        await new Promise<void>((resolve) => waiters.push(resolve));
-      }
-      return prepared[idx];
-    };
-
-    // Lancer le préchargement
-    fetchMore();
-
-    // Attendre le buffer minimal (2 blocs si multi, sinon 1)
-    for (let i = 0; i < Math.min(requiredReady, blocks.length); i += 1) {
-      await waitUntilPrepared(i);
-      if (activeRunIdRef.current !== runId) return;
-    }
-
-    // Maintenant qu'on a le buffer minimal, on autorise le préchargement des blocs suivants
-    // (pendant que le TTS parle).
-    canPrefetchBeyondInitial = true;
-    fetchMore();
-
-    // Début de la parole (animation/awake, etc.)
-    console.log('▶️ [TTS Queue] Début parole (min buffer atteint)', {
-      requiredReady,
-      total: blocks.length,
-    });
+    // Tampon minimal avant de parler : 2 blocs quand il y en a plusieurs, pour
+    // qu'aucun silence n'apparaisse entre le premier et le second.
+    await Promise.all(pending.slice(0, Math.min(2, pending.length)));
+    if (isStale()) return;
     options?.onStartSpeaking?.();
     setIsSpeaking(true);
 
-    // Lecture séquentielle
-    for (let idx = 0; idx < blocks.length; idx += 1) {
-      if (activeRunIdRef.current !== runId) return;
-      const chunk = (await waitUntilPrepared(idx)) ?? { type: 'client', text: blocks[idx] };
-      if (activeRunIdRef.current !== runId) return;
+    for (const promise of pending) {
+      const chunk = await promise;
+      if (isStale()) return;
 
       if (chunk.type === 'audio') {
-        console.log(`🔊 [TTS Queue] Lecture chunk audio ${idx + 1}/${blocks.length}`);
         await playAudioQueued(chunk.blob, setupVisualization, runId);
       } else {
-        console.log(`🗣️ [TTS Queue] Lecture chunk client ${idx + 1}/${blocks.length}`);
         await speakBrowserQueued(chunk.text, runId);
       }
     }
 
-    if (activeRunIdRef.current !== runId) return;
-    console.log('⏹️ [TTS Queue] Fin parole (queue terminée)');
+    if (isStale()) return;
     audioLevelRef.current = 0;
     setIsSpeaking(false);
     onEnd();
@@ -517,9 +320,6 @@ export function useTTS() {
     isSpeaking,
     getAudioLevel: () => audioLevelRef.current,
     stop,
-    speakWithBrowser,
-    speakWithAPI,
-    speakWithBase64,
     speakWithUrl,
     speakWithQueue,
   };

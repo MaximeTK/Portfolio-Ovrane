@@ -105,9 +105,9 @@ function buildHistoryMessages(rawHistory) {
 /**
  * Génère une réponse avec OpenAI
  */
-export async function generateResponse(openai, prompt, userId, userProfile, ragInitialized) {
+export async function generateResponse(openai, prompt, userId, userProfile, ragInitialized, candidature = null) {
   const { ragContext, ragSources, ragCoverage } = await buildRAGContextForPrompt(prompt, ragInitialized);
-  const systemPrompt = await buildSystemPrompt(userProfile, userId, ragContext, ragCoverage);
+  const systemPrompt = await buildSystemPrompt(userProfile, userId, ragContext, ragCoverage, candidature);
   
   // Injecter l'historique en tant que messages (meilleure compréhension des suivis type "plus simple", "en anglais", etc.)
   // On garde une fenêtre courte pour éviter d'exploser le contexte.

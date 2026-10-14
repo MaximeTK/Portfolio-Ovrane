@@ -36,7 +36,8 @@ const UserSchema = new mongoose.Schema({
     index: true 
   },
   // Authentification
-  email: { type: String, default: null },
+  // Absent plutôt que null : l'index sparse unique n'admet qu'un seul null, qui bloquerait le 2e profil visiteur
+  email: { type: String },
   passwordHash: { type: String, default: null },
 
   // Gestion des IPs (Hashées)

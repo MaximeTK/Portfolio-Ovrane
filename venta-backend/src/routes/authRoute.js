@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { MISC_MESSAGES } from '../lib/messages.js';
+import { isValidUserId } from '../lib/validators.js';
 
 function normalizeUserName(name) {
   return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -134,6 +135,47 @@ export function setupAuthRoutes(app) {
       });
     } catch (error) {
       console.error('❌ [AUTH] Erreur login:', error.message);
+      return res.status(500).json({ error: 'Erreur interne.' });
+    }
+  });
+
+  // Arrivée sans saisie : reprend le profil visiteur du navigateur ou en crée un
+  app.post('/api/auth/visitor', async (req, res) => {
+    const { userId } = req.body || {};
+
+    try {
+      // Seul un profil sans nom ni mot de passe se reprend ainsi, jamais un compte
+      const visitor = isValidUserId(userId)
+        ? await User.findOne({ id: userId.trim(), name: null, passwordHash: null }).lean()
+        : null;
+
+      if (visitor) {
+        return res.json({
+          reply: MISC_MESSAGES.welcomeBack(),
+          userProfile: { name: null, visitCount: visitor.visitCount || 1, isNewUser: false, messageCount: visitor.messageCount || 0 },
+          activeUserId: visitor.id,
+        });
+      }
+
+      const id = `v${crypto.randomBytes(12).toString('hex')}`;
+      await User.create({
+        id,
+        visitCount: 1,
+        lastVisit: new Date(),
+        ipHashes: [],
+        visitedLinks: [],
+        preferences: {},
+        messageCount: 0,
+        conversations: [],
+      });
+
+      return res.json({
+        reply: MISC_MESSAGES.welcomeNew(),
+        userProfile: { name: null, visitCount: 1, isNewUser: true, messageCount: 0 },
+        activeUserId: id,
+      });
+    } catch (error) {
+      console.error('❌ [AUTH] Erreur visiteur:', error.message);
       return res.status(500).json({ error: 'Erreur interne.' });
     }
   });

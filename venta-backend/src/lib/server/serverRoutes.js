@@ -9,6 +9,7 @@ import { setupAuthRoutes } from '../../routes/authRoute.js';
 import { setupAdminRoutes } from '../../routes/adminRoutes.js';
 import { setupPreferencesRoute } from '../../routes/preferencesRoute.js';
 import { setupTrackingRoute } from '../../routes/trackingRoute.js';
+import { setupIllusionRoutes } from '../../routes/illusionRoute.js';
 import { handleTTS } from '../../routes/tts.js';
 import { loadAssetsFromFrontend } from '../serverHelpers.js';
 import { getSystemStats } from '../rag/ragSystem.js';
@@ -24,6 +25,7 @@ export function setupRoutes(app, openai, ragDir, ragInitialized, __dirname) {
   setupAdminRoutes(app, ragDir, ragInitialized);
   setupPreferencesRoute(app);
   setupTrackingRoute(app);
+  setupIllusionRoutes(app);
   app.post('/api/tts', handleTTS);
   
   setupAssetRoute(app, __dirname);

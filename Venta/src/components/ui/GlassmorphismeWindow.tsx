@@ -37,7 +37,6 @@ export default function Window({
   zIndex = 50,
   onFocus
 }: WindowProps) {
-  const [isDragging, setIsDragging] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [windowWidth, setWindowWidth] = useState<string>('fit-content');
@@ -46,14 +45,10 @@ export default function Window({
   const windowRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-  const startPosRef = useRef({ x: 0, y: 0 });
-  const initialPosRef = useRef({ x: 0, y: 0 });
-  
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [windowId] = useState(() => id || `window-${Math.random().toString(36).substr(2, 9)}`);
+  // Décalage curseur/coin pendant le glissé. null = pas de glissé en cours.
+  const grabRef = useRef<{ dx: number; dy: number } | null>(null);
 
-  // Focus
-  const handleMouseDown = () => onFocus?.();
+  const [windowId] = useState(() => id || `window-${Math.random().toString(36).substr(2, 9)}`);
 
   // Contraintes de taille (glass.html logic)
   const baseMaxSize = 31; // ~31vh
@@ -67,17 +62,6 @@ export default function Window({
   const TEXT_BASE_FONT_PX = 15;
   const TEXT_BASE_MAX_WIDTH_PX = 640;
   const TEXT_BASE_MAX_HEIGHT_VH = 55;
-
-  // Initialisation position
-  useEffect(() => {
-    if (windowRef.current && !isInitialized) {
-      const rect = windowRef.current.getBoundingClientRect();
-      windowRef.current.style.left = rect.left + 'px';
-      windowRef.current.style.top = rect.top + 'px';
-      windowRef.current.style.transform = 'none';
-      setIsInitialized(true);
-    }
-  }, [isInitialized]);
 
   // Calcul largeur min
   useEffect(() => {
@@ -127,48 +111,31 @@ export default function Window({
     return () => img.removeEventListener('load', applyZoom);
   }, [zoomLevel, children, isMarkdown]);
 
-  // Drag & Drop
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      
-      const deltaX = e.clientX - startPosRef.current.x;
-      const deltaY = e.clientY - startPosRef.current.y;
-      
-      const newX = initialPosRef.current.x + deltaX;
-      const newY = initialPosRef.current.y + deltaY;
-      
-      if (windowRef.current) {
-        windowRef.current.style.left = newX + 'px';
-        windowRef.current.style.top = newY + 'px';
-      }
-      onMove(newX, newY);
-    };
-
-    const handleMouseUp = () => setIsDragging(false);
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, onMove]);
-
-  const handleTitlebarMouseDown = (e: React.MouseEvent) => {
+  // Glissé en Pointer Events : couvre souris, tactile et stylet d'un seul jeu
+  // d'API. setPointerCapture garde les événements sur la barre de titre, ce qui
+  // évite les écouteurs sur document et leur nettoyage.
+  const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).classList.contains('glass-morphisme-btn-window')) return;
-    
-    if (windowRef.current) {
-      const rect = windowRef.current.getBoundingClientRect();
-      startPosRef.current = { x: e.clientX, y: e.clientY };
-      initialPosRef.current = { x: rect.left, y: rect.top };
-      setIsInitialized(true);
-    }
-    
-    setIsDragging(true);
+    const rect = windowRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    grabRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const grab = grabRef.current;
+    if (!grab) return;
+    const el = windowRef.current;
+    // Bornes : la fenêtre ne peut plus être perdue hors de l'écran.
+    const maxX = window.innerWidth - (el?.offsetWidth ?? 0);
+    const maxY = window.innerHeight - (el?.offsetHeight ?? 0);
+    const clamp = (v: number, max: number) => Math.max(0, Math.min(v, Math.max(0, max)));
+    onMove(clamp(e.clientX - grab.dx, maxX), clamp(e.clientY - grab.dy, maxY));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    grabRef.current = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
   };
 
   const handleZoomIn = (e: React.MouseEvent) => {
@@ -199,13 +166,12 @@ export default function Window({
       role="dialog"
       aria-modal="true"
       aria-labelledby={windowId}
-      onMouseDownCapture={handleMouseDown}
+      onPointerDownCapture={() => onFocus?.()}
       style={{
-        left: isInitialized ? x + 'px' : undefined,
-        top: isInitialized ? y + 'px' : undefined,
+        left: `${x}px`,
+        top: `${y}px`,
         width: windowWidth,
         minWidth: minWidth,
-        cursor: isDragging ? 'grabbing' : 'default',
         maxWidth: '90vw',
         maxHeight: '90vh',
         position: 'fixed',
@@ -226,10 +192,13 @@ export default function Window({
         }}
       ></div>
       <div className="glass-morphisme-content">
-        <header 
+        <header
           className="glass-morphisme-titlebar"
-          style={{ cursor: isDragging ? 'grabbing' : 'move' }}
-          onMouseDown={handleTitlebarMouseDown}
+          style={{ cursor: 'move', touchAction: 'none' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         >
           <div 
             id={windowId}

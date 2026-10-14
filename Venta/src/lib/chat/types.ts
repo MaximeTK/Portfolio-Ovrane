@@ -32,3 +32,10 @@ export interface UserProfileData {
 }
 
 export type ChatStatus = 'idle' | 'streaming' | 'error';
+
+/** Accueil public d'une candidature Illusion (GET /api/illusion/accueil/:jeton). */
+export interface IllusionAccueil {
+  entreprise: string;
+  poste: string;
+  langue: string;
+}

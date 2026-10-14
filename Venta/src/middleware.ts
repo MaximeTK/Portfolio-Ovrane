@@ -1,44 +1,45 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest, NextFetchEvent } from 'next/server';
+import { JETON_COOKIE, REDIRECT_TARGETS, parseRedirectPath } from '@/lib/redirections';
 
 export function middleware(request: NextRequest, event: NextFetchEvent) {
   const url = request.nextUrl;
   const path = url.pathname.toLowerCase();
 
-  // Debug (à voir dans les logs serveur Vercel/Local)
-  // console.log(`Middleware checking path: ${path}`);
-
-  // 1. Redirection CV (mot clé: redirectcv)
-
-  if (path.includes('redirectcvdesign')) {
-    // Redirection vers le fichier PDF (doit être dans public/assets/)
-    const target = '/assets/CV_Maxime_Thiong-kay.pdf';
-    trackAndRedirect(request, event, path, target);
-    return NextResponse.redirect(new URL(target, request.url));
-  }
-
-  if (path.includes('redirectcv')) {
-    // Redirection vers le fichier PDF (doit être dans public/assets/)
-    const target = '/assets/CV_Maxime_Thiong-kay_Imprimable.pdf';
-    trackAndRedirect(request, event, path, target);
-    return NextResponse.redirect(new URL(target, request.url));
-  }
-
-  // 2. Redirection LinkedIn (mot clé: redirectlinkedin)
-  if (path.includes('redirectlinkedin')) {
-    const target = 'https://www.linkedin.com/in/maxime-thiong-kay/';
-    trackAndRedirect(request, event, path, target);
-    return NextResponse.redirect(new URL(target, request.url)); // Redirection absolue
-  }
+  // Mots-clés redirectcvdesign, redirectcv, redirectlinkedin, redirectgithub, redirectportfolio, avec jeton éventuel
+  const link = parseRedirectPath(path);
 
   // Autres cas: continuer normalement
-  return NextResponse.next();
+  if (!link) return NextResponse.next();
+
+  // PDF de public/assets/, profils externes ou accueil du portfolio
+  const target = REDIRECT_TARGETS[link.cible];
+  trackAndRedirect(request, event, path, target, link.cible, link.jeton);
+  const response = NextResponse.redirect(new URL(target, request.url));
+
+  // Le jeton suit la session : la route de chat et l'accueil le relisent côté serveur
+  if (link.cible === 'portfolio' && link.jeton) {
+    response.cookies.set(JETON_COOKIE, link.jeton, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: url.protocol === 'https:',
+    });
+  }
+  return response;
 }
 
 /**
  * Helper pour envoyer le tracking au backend sans bloquer la réponse
  */
-function trackAndRedirect(request: NextRequest, event: NextFetchEvent, path: string, target: string) {
+function trackAndRedirect(
+  request: NextRequest,
+  event: NextFetchEvent,
+  path: string,
+  target: string,
+  cible: string,
+  jeton: string | null,
+) {
   // URL du backend pour le logging
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
   
@@ -48,6 +49,8 @@ function trackAndRedirect(request: NextRequest, event: NextFetchEvent, path: str
     body: JSON.stringify({
       path: path,
       target: target,
+      cible: cible,
+      jeton: jeton,
       userAgent: request.headers.get('user-agent') || 'unknown',
     }),
   }).catch(err => console.error('Tracking error:', err));

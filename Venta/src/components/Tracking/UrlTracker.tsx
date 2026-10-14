@@ -19,7 +19,13 @@ export function UrlTracker() {
     const handler = (evt: Event) => {
       const e = evt as CustomEvent<{ userId?: string }>;
       const next = e?.detail?.userId;
+      const previous = userIdRef.current;
       userIdRef.current = isValidUserId(next) ? next : null;
+      // Le profil est confirmé après l'arrivée : l'URL d'arrivée est signalée à ce moment
+      if (userIdRef.current && userIdRef.current !== previous) {
+        const { origin, pathname: path, search } = window.location;
+        sendTrackingLink(userIdRef.current, `${origin}${path}${search}`);
+      }
     };
 
     window.addEventListener(eventName, handler as EventListener);

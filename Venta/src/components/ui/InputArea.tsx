@@ -1,6 +1,24 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 
+/**
+ * Charge un fichier texte ligne à ligne, en ignorant les vides et les commentaires.
+ * Les propositions et les astuces avaient chacune leur copie de cette fonction.
+ */
+async function loadLines(url: string): Promise<string[]> {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const text = await res.text();
+    return text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.startsWith('#'));
+  } catch {
+    return []; // propositions et astuces sont optionnelles
+  }
+}
+
 interface InputAreaProps {
   onSubmit: (text: string) => void;
   onInputChange?: (text: string) => void;
@@ -76,29 +94,12 @@ export function InputArea({
     if (suggestionsLoadedRef.current) return;
     suggestionsLoadedRef.current = true;
 
-    const loadSuggestions = async () => {
-      try {
-        const res = await fetch(suggestionsUrl, { cache: 'no-store' });
-        if (!res.ok) return;
-        const text = await res.text();
-
-        const lines = text
-          .split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter((l) => l.length > 0 && !l.startsWith('#'));
-
-        if (lines.length > 0) {
-          setSuggestions(lines);
-          // Première proposition immédiate
-          setActiveSuggestion(lines[0] || '');
-          suggestionCursorRef.current = 1;
-        }
-      } catch {
-        // Silencieux : les propositions sont optionnelles
-      }
-    };
-
-    loadSuggestions();
+    loadLines(suggestionsUrl).then((lines) => {
+      if (lines.length === 0) return;
+      setSuggestions(lines);
+      setActiveSuggestion(lines[0]); // première proposition immédiate
+      suggestionCursorRef.current = 1;
+    });
   }, [suggestionsEnabled, suggestionsUrl]);
 
   const rotateSuggestion = () => {
@@ -116,26 +117,9 @@ export function InputArea({
 
     tipsLoadedRef.current = true;
 
-    const loadTips = async () => {
-      try {
-        const res = await fetch(tipsUrl, { cache: 'no-store' });
-        if (!res.ok) return;
-        const text = await res.text();
-
-        const lines = text
-          .split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter((l) => l.length > 0 && !l.startsWith('#'));
-
-        if (lines.length > 0) {
-          setTips(lines);
-        }
-      } catch {
-        // Silencieux : les astuces sont optionnelles
-      }
-    };
-
-    loadTips();
+    loadLines(tipsUrl).then((lines) => {
+      if (lines.length > 0) setTips(lines);
+    });
   }, [tipsEnabled, tipsUrl]);
 
   // Timer: toutes les 180s afficher une astuce 15s

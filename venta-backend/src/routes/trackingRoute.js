@@ -2,9 +2,9 @@
  * Route pour le tracking des visites
  */
 import { getUserProfile, saveVisitedLink } from '../lib/userMemory.js';
-import { RedirectLog } from '../models/RedirectLog.js';
+import { RedirectLog, REDIRECT_CIBLES } from '../models/RedirectLog.js';
 import { CONSOLE_LOGS, EMOJIS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../lib/messages.js';
-import { isNonEmptyString, isValidUserId } from '../lib/validators.js';
+import { isNonEmptyString, isValidUserId, isValidJeton, isRobotUserAgent } from '../lib/validators.js';
 
 const MAX_LINK_LENGTH = 2048;
 
@@ -15,7 +15,7 @@ export function setupTrackingRoute(app) {
   // Sauvegarder un lien de redirection (CV, etc.) - Indépendant du profil user
   app.post('/api/tracking/redirect', async (req, res) => {
     try {
-      const { path, target, userAgent } = req.body;
+      const { path, target, userAgent, cible, jeton } = req.body;
 
       if (!isNonEmptyString(path) || !isNonEmptyString(target)) {
         return res.status(400).json({ error: 'Paramètres manquants' });
@@ -24,11 +24,15 @@ export function setupTrackingRoute(app) {
       const ip = req.ip || req.connection?.remoteAddress || 'unknown';
 
       // Création du log (fire and forget côté client, mais on attend ici la confirmation DB)
+      // Cible et jeton viennent du middleware ; robot est toujours calculé ici, jamais reçu
       await RedirectLog.create({
         path: path.substring(0, MAX_LINK_LENGTH),
         target: target.substring(0, MAX_LINK_LENGTH),
         ip,
-        userAgent: userAgent || 'unknown'
+        userAgent: userAgent || 'unknown',
+        cible: REDIRECT_CIBLES.includes(cible) ? cible : undefined,
+        jeton: isValidJeton(jeton) ? jeton : undefined,
+        robot: isRobotUserAgent(userAgent)
       });
 
       console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Redirection trackée: ${path} -> ${target}`);

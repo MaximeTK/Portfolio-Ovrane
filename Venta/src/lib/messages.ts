@@ -2,6 +2,7 @@
  * Centralisation des textes (UI + erreurs) côté frontend
  * Objectif: faciliter la maintenance et éviter les chaînes dispersées.
  */
+import type { IllusionAccueil } from './chat/types';
 
 export const CHAT_UI = {
   youLabel: 'Vous',
@@ -12,6 +13,16 @@ export const CHAT_UI = {
   today: "Aujourd'hui",
   yesterday: 'Hier',
   applyRequestFallback: "D'accord, j'applique ta demande.",
+  // Accueil du recruteur venu par un lien d'Illusion ; vide si ni poste ni entreprise
+  recruiterWelcome: ({ entreprise, poste, langue }: IllusionAccueil) => {
+    const e = String(entreprise ?? '').trim();
+    const p = String(poste ?? '').trim();
+    if (!e && !p) return '';
+    if (langue === 'en') {
+      return `Welcome! You are viewing Maxime's application${p ? ` for the ${p} position` : ''}${e ? ` at ${e}` : ''}. I can walk you through his background and projects: how can I help you?`;
+    }
+    return `Bienvenue ! Vous découvrez la candidature de Maxime${p ? ` au poste « ${p} »` : ''}${e ? ` chez ${e}` : ''}. Je vous présente son parcours et ses projets : en quoi puis-je vous aider ?`;
+  },
 } as const;
 
 export const FRONTEND_ERRORS = {
@@ -30,6 +41,7 @@ export const API_ERRORS = {
   backendUnreachable: 'Impossible de contacter le backend',
   internalServerError: 'Erreur interne du serveur',
   userIdRequired: 'userId requis',
+  jetonMissing: 'Aucun jeton de candidature',
 } as const;
 
 
