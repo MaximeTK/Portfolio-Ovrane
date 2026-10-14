@@ -1,85 +1,11 @@
 /**
- * Routes d'Illusion : candidatures reçues, visites des liens suivis, accueil public du recruteur
+ * Routes d'Illusion : accueil public du recruteur et CV de sa candidature, lus dans la base partagée qu'Illusion remplit
  */
-import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { IllusionCandidature } from '../models/IllusionCandidature.js';
-import { RedirectLog } from '../models/RedirectLog.js';
+import { IllusionFichier } from '../models/IllusionFichier.js';
 import { CONSOLE_LOGS, EMOJIS, ERROR_MESSAGES } from '../lib/messages.js';
 import { isValidJeton } from '../lib/validators.js';
-
-const MAX_LONG_TEXT = 20000;
-const MAX_LETTER = 10000;
-const MAX_FIELD = 2000;
-const MAX_VISITS = 1000;
-
-/**
- * Comparaison en temps constant : les empreintes ont la même longueur quelle que soit la clé fournie
- */
-function isValidIllusionKey(provided, expected) {
-  const a = crypto.createHash('sha256').update(String(provided)).digest();
-  const b = crypto.createHash('sha256').update(String(expected)).digest();
-  return crypto.timingSafeEqual(a, b);
-}
-
-/**
- * Authorization: Bearer <ILLUSION_API_KEY> ; refus par défaut sans clé configurée, comme l'admin
- */
-function requireIllusionAuth(req, res, next) {
-  const expected = process.env.ILLUSION_API_KEY;
-  if (!expected) {
-    return res.status(503).json({ error: ERROR_MESSAGES.illusionNotConfigured });
-  }
-
-  const auth = req.get('authorization') || '';
-  const provided = auth.toLowerCase().startsWith('bearer ') ? auth.slice(7).trim() : '';
-  if (!provided || !isValidIllusionKey(provided, expected)) {
-    return res.status(401).json({ error: ERROR_MESSAGES.illusionUnauthorized });
-  }
-  return next();
-}
-
-const asObject = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
-const asText = (value, max = MAX_FIELD) => (typeof value === 'string' ? value.slice(0, max) : '');
-const asList = (value) => (Array.isArray(value)
-  ? value.filter((item) => typeof item === 'string').slice(0, 100).map((item) => item.slice(0, 200))
-  : []);
-
-/**
- * Ne garde que les champs du schéma d'Illusion, en chaînes tronquées
- */
-function normalizeCandidature(body) {
-  const offre = asObject(body.offre);
-  const entreprise = asObject(body.entreprise);
-  const cv = asObject(body.cv);
-
-  return {
-    langue: asText(body.langue, 20),
-    offre: {
-      titre: asText(offre.titre),
-      entreprise: asText(offre.entreprise),
-      lieu: asText(offre.lieu),
-      contrat: asText(offre.contrat),
-      url: asText(offre.url),
-      description: asText(offre.description, MAX_LONG_TEXT),
-      metiers: asList(offre.metiers),
-    },
-    entreprise: {
-      nom: asText(entreprise.nom),
-      secteur: asText(entreprise.secteur),
-      site: asText(entreprise.site),
-      localisation: asText(entreprise.localisation),
-      effectif: asText(entreprise.effectif),
-      activite: asText(entreprise.activite),
-    },
-    cv: {
-      profil: asText(cv.profil),
-      competences: asList(cv.competences),
-      texte: asText(cv.texte, MAX_LONG_TEXT),
-    },
-    lettre: asText(body.lettre, MAX_LETTER),
-  };
-}
 
 function sendInternalError(res, label, error) {
   const isProd = process.env.NODE_ENV === 'production';
@@ -92,7 +18,16 @@ function sendInternalError(res, label, error) {
 }
 
 /**
- * Configuration des routes Illusion (corps JSON limité à 200 Ko dans serverConfig)
+ * Le contenu binaire d'un document lu en lean : Binary du pilote MongoDB ou Buffer
+ */
+function contenu(donnees) {
+  if (!donnees) return null;
+  if (Buffer.isBuffer(donnees)) return donnees;
+  return donnees.buffer ? Buffer.from(donnees.buffer) : null;
+}
+
+/**
+ * Configuration des routes Illusion
  */
 export function setupIllusionRoutes(app) {
   // Limite propre aux routes Illusion, en plus du limiteur global de /api
@@ -103,51 +38,6 @@ export function setupIllusionRoutes(app) {
     legacyHeaders: false,
   });
   app.use('/api/illusion', illusionLimiter);
-
-  // Candidature envoyée par Illusion : upsert par jeton, chaque réception relance les 180 jours
-  app.post('/api/illusion/candidatures', requireIllusionAuth, async (req, res) => {
-    try {
-      const body = asObject(req.body);
-      if (!isValidJeton(body.jeton)) {
-        return res.status(400).json({ error: ERROR_MESSAGES.illusionInvalidJeton });
-      }
-
-      await IllusionCandidature.updateOne(
-        { jeton: body.jeton },
-        { $set: { ...normalizeCandidature(body), recue_le: new Date() } },
-        { upsert: true },
-      );
-      res.json({ ok: true });
-    } catch (error) {
-      sendInternalError(res, 'candidature', error);
-    }
-  });
-
-  // Visites des liens à jeton après `depuis`, par date croissante, jamais l'IP ni le user-agent
-  app.get('/api/illusion/visites', requireIllusionAuth, async (req, res) => {
-    try {
-      const since = req.query.depuis === undefined ? new Date(0) : new Date(String(req.query.depuis));
-      if (Number.isNaN(since.getTime())) {
-        return res.status(400).json({ error: ERROR_MESSAGES.illusionInvalidSince });
-      }
-
-      const logs = await RedirectLog.find(
-        { jeton: { $exists: true }, timestamp: { $gt: since } },
-        { _id: 0, jeton: 1, cible: 1, timestamp: 1, robot: 1 },
-      ).sort({ timestamp: 1, _id: 1 }).limit(MAX_VISITS).lean();
-
-      const visites = logs.map((log) => ({
-        jeton: log.jeton,
-        cible: log.cible ?? null,
-        date: new Date(log.timestamp).toISOString(),
-        robot: log.robot === true,
-      }));
-      // Sans nouvelle visite, le curseur reste sur `depuis`
-      res.json({ visites, jusqu_a: visites.length ? visites[visites.length - 1].date : since.toISOString() });
-    } catch (error) {
-      sendInternalError(res, 'visites', error);
-    }
-  });
 
   // Accueil public : entreprise, poste et langue seulement, jamais la lettre, le CV ni l'offre
   app.get('/api/illusion/accueil/:jeton', async (req, res) => {
@@ -171,6 +61,33 @@ export function setupIllusionRoutes(app) {
       });
     } catch (error) {
       sendInternalError(res, 'accueil', error);
+    }
+  });
+
+  // CV envoyé avec la candidature du jeton : le recruteur voit celui qu'il a reçu, pas un CV générique
+  app.get('/api/illusion/cv/:jeton', async (req, res) => {
+    try {
+      const { jeton } = req.params;
+      const candidature = isValidJeton(jeton)
+        ? await IllusionCandidature.findOne({ jeton }, { _id: 0, 'cv.fichier': 1 }).lean()
+        : null;
+      const fichier = candidature?.cv?.fichier
+        ? await IllusionFichier.findById(candidature.cv.fichier, { donnees: 1, type: 1 }).lean()
+        : null;
+      const pdf = contenu(fichier?.donnees);
+
+      if (!pdf) {
+        return res.status(404).json({ error: ERROR_MESSAGES.illusionCvNotFound });
+      }
+
+      res.set({
+        'Content-Type': fichier.type || 'application/pdf',
+        'Content-Disposition': 'inline; filename="CV.pdf"',
+        'Cache-Control': 'private, no-store',
+      });
+      res.send(pdf);
+    } catch (error) {
+      sendInternalError(res, 'cv', error);
     }
   });
 }

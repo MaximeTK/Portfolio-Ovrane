@@ -2,7 +2,7 @@
 
 Branche `dev`, le 18/08/2026, après nettoyage. **11 103 lignes**, 110 fichiers.
 
-Mise à jour du 12/10/2026 : liens suivis d'Illusion et arrivée sans saisie, **section I** (102 à 121).
+Mise à jour du 12/10/2026 : liens suivis d'Illusion et arrivée sans saisie, **section I** (102 à 121). Le 14/10/2026 : Illusion lit et écrit la même base, sans API entre les deux.
 
 ## Comment lire
 
@@ -26,7 +26,7 @@ Le **numéro** indique l'ordre d'exécution réel : le programme passe dans la f
 ### `lib/server/serverConfig.js`
 | № | Fonction | Rôle |
 |---|---|---|
-| 3 | `configureServer` | Crée l'app Express : helmet, limite de corps (200 Ko pour `/api/illusion`), CORS, rate limit, `trust proxy`. |
+| 3 | `configureServer` | Crée l'app Express : helmet, limite de corps (1 Mo par défaut), CORS, rate limit, `trust proxy`. |
 | 4 | `createCorsMiddleware` | Construit le filtre d'origines depuis `CORS_ALLOWED_ORIGINS`. |
 | 5 | `isNgrokOrigin` | Reconnaît une origine ngrok. Seulement si `ALLOW_NGROK_ORIGINS`. |
 
@@ -225,20 +225,20 @@ Le formulaire ne s'affiche plus que sur `/connexion`. Ailleurs, l'arrivée crée
 
 ## I. Recruteur venu d'Illusion — 102 à 121
 
-Illusion dépose la candidature, le recruteur clique un lien du CV ou de la lettre, arrive sur l'accueil sans rien saisir et parle à un agent orienté vers son poste. Illusion relève ensuite les visites.
+Illusion range la candidature dans la base partagée (`MONGODB_URI`, `MONGODB_DB`), le recruteur clique un lien du CV ou de la lettre, arrive sur l'accueil sans rien saisir et parle à un agent orienté vers son poste. Illusion relit ensuite les visites dans la même base. Aucune clé entre les deux.
 
-### Illusion dépose la candidature
+### Illusion range la candidature
 | № | Fichier · Fonction | Rôle |
 |---|---|---|
-| 102 | `lib/server/serverConfig.js` · `configureServer` | Lit le corps de `/api/illusion` à part, 200 Ko au plus, avant le parseur global. |
-| 103 | `routes/illusionRoute.js` · `setupIllusionRoutes` | Limiteur propre (120 requêtes par 15 min), puis les trois routes. Branché par `setupRoutes`. |
-| 104 | `routes/illusionRoute.js` · `requireIllusionAuth` | `Authorization: Bearer <ILLUSION_API_KEY>`. **503 sans clé**, 401 sinon. Via `isValidIllusionKey`, empreintes SHA-256 comparées en temps constant. |
-| 105 | `routes/illusionRoute.js` · `POST /api/illusion/candidatures` | Upsert par jeton, relance le TTL de 180 jours. Via `normalizeCandidature`, `asObject`, `asText`, `asList`, `sendInternalError`. |
+| 102 | `models/IllusionCandidature.js` · schéma | Collection `illusion_candidatures`, écrite par Illusion : jeton unique, utilisateur, statut, offre, entreprise, CV et lettre (texte et PDF). Sans TTL : la purge d'Illusion l'efface selon sa durée de conservation. |
+| 103 | `models/IllusionFichier.js` · schéma | Collection `illusion_fichiers` : le PDF du CV et de la lettre, rangés par Illusion avec leur jeton et leur utilisateur. |
+| 104 | `routes/illusionRoute.js` · `setupIllusionRoutes` | Limiteur propre (120 requêtes par 15 min), puis les deux routes publiques. Branché par `setupRoutes`. |
+| 105 | `routes/illusionRoute.js` · `GET /api/illusion/cv/:jeton` | Public : le PDF du CV envoyé avec la candidature, affiché et jamais gardé en cache, ou 404. Via `contenu`. Relayé par `app/api/illusion/cv/[jeton]/route.ts`, qui retombe sur le CV générique. |
 
 ### Le recruteur clique
 | № | Fichier · Fonction | Rôle |
 |---|---|---|
-| 106 | `middleware.ts` · `middleware` | Lit cible et jeton, redirige, pose le cookie httpOnly `ovrane_jeton` pour `redirectportfolio`. Via `parseRedirectPath` et `REDIRECT_TARGETS` de `lib/redirections.ts`. |
+| 106 | `middleware.ts` · `middleware` | Lit cible et jeton, redirige, pose le cookie httpOnly `ovrane_jeton` pour `redirectportfolio` ; `redirectcv` avec jeton mène au CV envoyé (105). Via `parseRedirectPath` et `REDIRECT_TARGETS` de `lib/redirections.ts`. |
 | 107 | `middleware.ts` · `trackAndRedirect` | Transmet chemin, cible, jeton et user-agent au suivi, sans bloquer la redirection. |
 | 108 | `routes/trackingRoute.js` · handler `POST /api/tracking/redirect` | Journalise cible, jeton et `robot`, toujours calculé ici. Via `isValidJeton`, `isRobotUserAgent` de `lib/validators.js`. |
 
@@ -265,7 +265,7 @@ Illusion dépose la candidature, le recruteur clique un lien du CV ou de la lett
 ### Illusion relève les visites
 | № | Fichier · Fonction | Rôle |
 |---|---|---|
-| 121 | `routes/illusionRoute.js` · `GET /api/illusion/visites` | Journaux à jeton strictement après `depuis`, par date croissante, 1000 au plus, sans IP ni user-agent. |
+| 121 | `models/RedirectLog.js` · collection `redirectlogs` | Illusion y lit elle-même les visites à jeton arrivées depuis sa dernière relevée, par date croissante ; aucune route. |
 
 ---
 

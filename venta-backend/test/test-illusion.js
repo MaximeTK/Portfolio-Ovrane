@@ -9,7 +9,6 @@ import { CHAT_UI } from '../../Venta/src/lib/messages.ts';
 // Environnement maîtrisé avant tout import du serveur : aucune base, aucun appel OpenAI réel
 process.env.NODE_ENV = 'test';
 process.env.OPENAI_API_KEY = 'sk-test-local';
-delete process.env.ILLUSION_API_KEY;
 
 const { isValidJeton, isRobotUserAgent } = await import('../src/lib/validators.js');
 const { formatCandidatureContext, MISC_MESSAGES } = await import('../src/lib/messages.js');
@@ -20,6 +19,7 @@ const { setupTrackingRoute } = await import('../src/routes/trackingRoute.js');
 const { setupAuthRoutes } = await import('../src/routes/authRoute.js');
 const { setupChatRoute } = await import('../src/routes/chatRoute.js');
 const { IllusionCandidature } = await import('../src/models/IllusionCandidature.js');
+const { IllusionFichier } = await import('../src/models/IllusionFichier.js');
 const { RedirectLog } = await import('../src/models/RedirectLog.js');
 const { User } = await import('../src/models/User.js');
 
@@ -201,6 +201,8 @@ await test('bloc de contexte : entreprise, poste, pièces, consignes, champs vid
   }
   assert.ok(!block.includes('- Lieu :'), 'champ vide omis');
   assert.match(formatCandidatureContext({ offre: { entreprise: 'Orange SA' } }), /l'entreprise Orange SA pour le poste « non précisé »/);
+  // Rangée par Illusion, la lettre est un objet avec son texte et son fichier
+  assert.ok(formatCandidatureContext({ ...CANDIDATURE, lettre: { texte: 'Lettre rangée.', fichier: null } }).includes('Lettre rangée.'));
 });
 
 await test('prompt système : bloc en tête avec candidature, inchangé sans', async () => {
@@ -235,48 +237,35 @@ await test('RedirectLog : champs facultatifs, jeton indexé, TTL d\'un an conser
   assert.equal(jetonIndex[1].sparse, true);
 });
 
-await test('IllusionCandidature : jeton unique, TTL de 180 jours sur recue_le', () => {
+await test('IllusionCandidature et IllusionFichier : collections partagées avec Illusion, jeton unique, sans péremption', () => {
   const indexes = IllusionCandidature.schema.indexes();
   const unique = indexes.find(([fields]) => fields.jeton === 1);
-  const ttl = indexes.find(([fields]) => fields.recue_le === 1);
   assert.equal(unique?.[1].unique, true);
-  assert.equal(ttl?.[1].expireAfterSeconds, 60 * 60 * 24 * 180);
+  assert.equal(indexes.some(([, options]) => 'expireAfterSeconds' in options), false);
+  assert.equal(IllusionCandidature.collection.collectionName, 'illusion_candidatures');
+  assert.equal(IllusionFichier.collection.collectionName, 'illusion_fichiers');
+  assert.equal(IllusionCandidature.schema.path('lettre.fichier').instance, 'ObjectId');
 });
 
 // ========================================
 // 5. Routes HTTP avec modèles simulés (aucun accès MongoDB)
 // ========================================
 
-const db = { candidatures: new Map(), logs: [], users: new Map(), calls: [] };
+const db = { candidatures: new Map(), fichiers: new Map(), logs: [], users: new Map(), calls: [] };
 const lean = (value) => ({ lean: async () => value });
 
-IllusionCandidature.updateOne = async (filter, update, options) => {
-  db.calls.push({ op: 'candidature.updateOne', filter, update, options });
-  db.candidatures.set(filter.jeton, { jeton: filter.jeton, ...update.$set });
-  return { acknowledged: true };
-};
 IllusionCandidature.findOne = (filter, projection) => {
   db.calls.push({ op: 'candidature.findOne', filter, projection });
   return lean(db.candidatures.get(filter.jeton) ?? null);
+};
+IllusionFichier.findById = (id, projection) => {
+  db.calls.push({ op: 'fichier.findById', id, projection });
+  return lean(db.fichiers.get(String(id)) ?? null);
 };
 RedirectLog.create = async (doc) => {
   const saved = { timestamp: new Date(), ...doc };
   db.logs.push(saved);
   return saved;
-};
-RedirectLog.find = (filter, projection) => {
-  const call = { op: 'log.find', filter, projection };
-  db.calls.push(call);
-  const query = {
-    sort(order) { call.sort = order; return query; },
-    limit(n) { call.limit = n; return query; },
-    lean: async () => db.logs
-      .filter((log) => log.jeton !== undefined && log.timestamp > filter.timestamp.$gt)
-      .sort((a, b) => a.timestamp - b.timestamp)
-      .slice(0, call.limit)
-      .map((log) => ({ jeton: log.jeton, cible: log.cible, timestamp: log.timestamp, robot: log.robot })),
-  };
-  return query;
 };
 User.findOne = (filter) => {
   db.calls.push({ op: 'user.findOne', filter });
@@ -310,103 +299,28 @@ setupIllusionRoutes(app);
 const server = app.listen(0, '127.0.0.1');
 await new Promise((resolve) => server.once('listening', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;
-const KEY = 'cle-de-test-locale-0123456789abcdef';
-
 async function call(path, { method = 'GET', body, headers = {} } = {}) {
   const res = await fetch(`${base}${path}`, {
     method,
+    redirect: 'manual',
     headers: { ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...headers },
     ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
   });
-  const text = await res.text();
+  const bytes = Buffer.from(await res.arrayBuffer());
   let json = null;
-  try { json = JSON.parse(text); } catch { json = null; }
-  return { status: res.status, json, headers: res.headers };
+  try { json = JSON.parse(bytes.toString('utf8')); } catch { json = null; }
+  return { status: res.status, json, bytes, headers: res.headers };
 }
 
-const payload = (overrides = {}) => ({
-  jeton: JETON,
-  envoyee_le: '2026-10-12T10:00:00Z',
-  langue: 'fr',
-  offre: { ...CANDIDATURE.offre },
-  entreprise: { ...CANDIDATURE.entreprise },
-  cv: { ...CANDIDATURE.cv },
-  lettre: CANDIDATURE.lettre,
-  ...overrides,
-});
-const auth = { Authorization: `Bearer ${KEY}` };
+// Ce qu'Illusion range dans la base partagée : la candidature et le PDF de son CV
+const FICHIER_CV = '665f1c2b9a1d4e0012345678';
+const PDF = Buffer.from('%PDF-1.4 CV de la candidature');
+db.candidatures.set(JETON, { ...CANDIDATURE, cv: { ...CANDIDATURE.cv, fichier: FICHIER_CV } });
+db.candidatures.set('a1b2c3d4e5', { ...CANDIDATURE, jeton: 'a1b2c3d4e5', entreprise: { nom: '' }, langue: 'en' });
+// Lu en lean, un Buffer revient du pilote MongoDB comme un Binary qui porte le contenu dans .buffer
+db.fichiers.set(FICHIER_CV, { donnees: { buffer: PDF }, type: 'application/pdf' });
 
 try {
-  await test('sans ILLUSION_API_KEY : candidatures et visites en 503, accueil public en 404', async () => {
-    assert.equal((await call('/api/illusion/candidatures', { method: 'POST', body: payload(), headers: auth })).status, 503);
-    assert.equal((await call('/api/illusion/visites', { headers: auth })).status, 503);
-    const accueil = await call(`/api/illusion/accueil/${JETON}`);
-    assert.equal(accueil.status, 404);
-    assert.equal(db.candidatures.size, 0);
-  });
-
-  process.env.ILLUSION_API_KEY = KEY;
-
-  await test('authentification : absente, fausse ou mauvais schéma en 401', async () => {
-    for (const headers of [{}, { Authorization: 'Bearer mauvaise-cle' }, { Authorization: `Basic ${KEY}` }, { Authorization: 'Bearer ' }]) {
-      const res = await call('/api/illusion/candidatures', { method: 'POST', body: payload(), headers });
-      assert.equal(res.status, 401, JSON.stringify(headers));
-      assert.deepEqual(res.json, { error: 'Accès Illusion non autorisé' });
-    }
-    assert.equal((await call('/api/illusion/visites', { headers: { Authorization: 'Bearer mauvaise-cle' } })).status, 401);
-    assert.equal(db.candidatures.size, 0);
-  });
-
-  await test('POST candidatures : upsert par jeton, réponse exacte, limite de débit propre', async () => {
-    const res = await call('/api/illusion/candidatures', { method: 'POST', body: payload(), headers: { Authorization: `bearer ${KEY}` } });
-    assert.equal(res.status, 200);
-    assert.deepEqual(res.json, { ok: true });
-    assert.equal(res.headers.get('ratelimit-limit'), '120');
-    const upsert = db.calls.findLast((c) => c.op === 'candidature.updateOne');
-    assert.deepEqual(upsert.filter, { jeton: JETON });
-    assert.deepEqual(upsert.options, { upsert: true });
-    assert.ok(upsert.update.$set.recue_le instanceof Date);
-    assert.equal('envoyee_le' in upsert.update.$set, false);
-    assert.deepEqual(upsert.update.$set.cv, CANDIDATURE.cv);
-    assert.equal(upsert.update.$set.entreprise.nom, 'Orange');
-  });
-
-  await test('POST candidatures : textes tronqués, types imprévus neutralisés', async () => {
-    const long = 'x'.repeat(25000);
-    const res = await call('/api/illusion/candidatures', {
-      method: 'POST',
-      headers: auth,
-      body: payload({
-        offre: { ...CANDIDATURE.offre, description: long, titre: 42, metiers: ['Dev', 5, null] },
-        cv: { profil: '', competences: 'React', texte: long },
-        lettre: 'y'.repeat(15000),
-        entreprise: 'pas un objet',
-      }),
-    });
-    assert.equal(res.status, 200);
-    const saved = db.calls.findLast((c) => c.op === 'candidature.updateOne').update.$set;
-    assert.equal(saved.offre.description.length, 20000);
-    assert.equal(saved.cv.texte.length, 20000);
-    assert.equal(saved.lettre.length, 10000);
-    assert.equal(saved.offre.titre, '');
-    assert.deepEqual(saved.offre.metiers, ['Dev']);
-    assert.deepEqual(saved.cv.competences, []);
-    assert.equal(saved.entreprise.nom, '');
-  });
-
-  await test('POST candidatures : jeton invalide en 400, corps au-delà de 200 Ko en 413', async () => {
-    for (const jeton of ['K3F9A0X2M1', 'court', undefined]) {
-      assert.equal((await call('/api/illusion/candidatures', { method: 'POST', body: payload({ jeton }), headers: auth })).status, 400);
-    }
-    const heavy = await call('/api/illusion/candidatures', { method: 'POST', body: payload({ lettre: 'z'.repeat(210 * 1024) }), headers: auth });
-    assert.equal(heavy.status, 413);
-    const fits = await call('/api/illusion/candidatures', { method: 'POST', body: payload({ lettre: 'z'.repeat(150 * 1024) }), headers: auth });
-    assert.equal(fits.status, 200);
-  });
-
-  // Remet la candidature de référence pour l'accueil et le chat
-  await call('/api/illusion/candidatures', { method: 'POST', body: payload(), headers: auth });
-
   await test('GET accueil : public, entreprise, poste et langue seulement', async () => {
     const res = await call(`/api/illusion/accueil/${JETON}`);
     assert.equal(res.status, 200);
@@ -415,17 +329,37 @@ try {
     for (const hidden of ['lettre', 'cv', 'offre.description', 'cv.texte']) {
       assert.equal(hidden in lookup.projection, false, hidden);
     }
+    assert.equal(res.headers.get('ratelimit-limit'), '120');
     assert.equal((await call('/api/illusion/accueil/K3F9A0X2M1')).status, 404);
     assert.equal((await call('/api/illusion/accueil/zzzzzzzzzz')).status, 404);
     assert.equal((await call('/api/illusion/accueil/trop-long-pour-un-jeton')).status, 404);
   });
 
-  await test('GET accueil : entreprise de l\'offre si la fiche est vide', async () => {
-    await call('/api/illusion/candidatures', {
-      method: 'POST', headers: auth, body: payload({ jeton: 'a1b2c3d4e5', entreprise: { nom: '' }, langue: 'en' }),
-    });
+  await test("GET accueil : entreprise de l'offre si la fiche est vide", async () => {
     const res = await call('/api/illusion/accueil/a1b2c3d4e5');
     assert.deepEqual(res.json, { entreprise: 'Orange SA', poste: 'Développeur React', langue: 'en' });
+  });
+
+  await test('GET cv : le PDF rangé avec la candidature, servi en ligne et jamais mis en cache', async () => {
+    const res = await call(`/api/illusion/cv/${JETON}`);
+    assert.equal(res.status, 200);
+    assert.ok(res.bytes.equals(PDF));
+    assert.equal(res.headers.get('content-type'), 'application/pdf');
+    assert.equal(res.headers.get('content-disposition'), 'inline; filename="CV.pdf"');
+    assert.equal(res.headers.get('cache-control'), 'private, no-store');
+    const lookup = db.calls.findLast((c) => c.op === 'candidature.findOne');
+    assert.deepEqual(lookup.projection, { _id: 0, 'cv.fichier': 1 });
+    assert.equal(String(db.calls.findLast((c) => c.op === 'fichier.findById').id), FICHIER_CV);
+  });
+
+  await test('GET cv : sans fichier, jeton inconnu ou mal formé en 404, sans lecture pour un jeton mal formé', async () => {
+    assert.equal((await call('/api/illusion/cv/a1b2c3d4e5')).status, 404);
+    assert.equal((await call('/api/illusion/cv/zzzzzzzzzz')).status, 404);
+    const lookups = db.calls.filter((c) => c.op === 'candidature.findOne').length;
+    const bad = await call('/api/illusion/cv/K3F9A0X2M1');
+    assert.equal(bad.status, 404);
+    assert.deepEqual(bad.json, { error: 'CV introuvable' });
+    assert.equal(db.calls.filter((c) => c.op === 'candidature.findOne').length, lookups);
   });
 
   await test('suivi de redirection : cible, jeton et robot calculé par le serveur', async () => {
@@ -440,40 +374,6 @@ try {
     assert.deepEqual([chrome.cible, chrome.jeton, chrome.robot], ['linkedin', JETON, false]);
     assert.deepEqual([legacy.cible, legacy.jeton, legacy.robot, legacy.target], [undefined, undefined, false, REDIRECT_TARGETS.cv]);
     assert.deepEqual([forged.cible, forged.jeton, forged.robot], [undefined, undefined, true]);
-  });
-
-  await test('GET visites : jetons seuls, ordre croissant, curseur strict, ni IP ni user-agent', async () => {
-    // Dans une heure : les journaux du test de suivi, datés de maintenant, restent avant le curseur
-    const t0 = Date.now() + 3600_000;
-    db.logs.push(
-      { path: '/redirectgithub/a1b2c3d4e5', target: 'x', ip: '1.2.3.4', userAgent: CHROME, cible: 'github', jeton: 'a1b2c3d4e5', robot: false, timestamp: new Date(t0 + 2000) },
-      { path: '/redirectcv', target: 'x', ip: '1.2.3.4', userAgent: CHROME, robot: false, timestamp: new Date(t0 + 1500) },
-      { path: `/redirectportfolio/${JETON}`, target: '/', ip: '1.2.3.4', userAgent: OFFICE, cible: 'portfolio', jeton: JETON, robot: true, timestamp: new Date(t0 + 1000) },
-    );
-    const since = new Date(t0).toISOString();
-    const res = await call(`/api/illusion/visites?depuis=${encodeURIComponent(since)}`, { headers: auth });
-    assert.equal(res.status, 200);
-    assert.deepEqual(res.json, {
-      visites: [
-        { jeton: JETON, cible: 'portfolio', date: new Date(t0 + 1000).toISOString(), robot: true },
-        { jeton: 'a1b2c3d4e5', cible: 'github', date: new Date(t0 + 2000).toISOString(), robot: false },
-      ],
-      jusqu_a: new Date(t0 + 2000).toISOString(),
-    });
-    const find = db.calls.findLast((c) => c.op === 'log.find');
-    assert.deepEqual(find.filter.jeton, { $exists: true });
-    assert.equal(find.filter.timestamp.$gt.toISOString(), since);
-    assert.deepEqual(find.sort, { timestamp: 1, _id: 1 });
-    assert.equal(find.limit, 1000);
-    assert.equal('ip' in find.projection || 'userAgent' in find.projection, false);
-
-    const next = await call(`/api/illusion/visites?depuis=${encodeURIComponent(res.json.jusqu_a)}`, { headers: auth });
-    assert.deepEqual(next.json, { visites: [], jusqu_a: res.json.jusqu_a });
-    const all = await call('/api/illusion/visites', { headers: auth });
-    assert.ok(all.json.visites.length >= 4);
-    assert.ok(all.json.visites.every((v, i, list) => i === 0 || v.date >= list[i - 1].date));
-    assert.ok(all.json.visites.every((v) => Object.keys(v).join() === 'jeton,cible,date,robot'));
-    assert.equal((await call('/api/illusion/visites?depuis=pas-une-date', { headers: auth })).status, 400);
   });
 
   let visitorId = null;

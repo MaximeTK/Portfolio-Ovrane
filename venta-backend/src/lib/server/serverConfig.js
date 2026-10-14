@@ -66,8 +66,6 @@ export function configureServer() {
 
   // Limite de taille body (DoS)
   const bodyLimit = process.env.REQUEST_BODY_LIMIT || '1mb';
-  // Envois d'Illusion : 200 Ko au plus. Lus ici d'abord, ils ne repassent pas par le parseur global
-  app.use('/api/illusion', express.json({ limit: '200kb' }));
   app.use(express.json({ limit: bodyLimit }));
   app.use(express.urlencoded({ extended: false, limit: bodyLimit }));
 

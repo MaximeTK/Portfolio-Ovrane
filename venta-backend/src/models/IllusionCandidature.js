@@ -1,7 +1,10 @@
 /**
- * Candidature envoyée par Illusion : offre, fiche entreprise, CV et lettre derrière le jeton des liens suivis
+ * Candidature rangée par Illusion dans la base partagée : offre, fiche entreprise, CV et lettre derrière le jeton des liens suivis
  */
 import mongoose from 'mongoose';
+
+// Fichier du CV ou de la lettre dans illusion_fichiers, rangé par Illusion
+const fichierLie = { type: mongoose.Schema.Types.ObjectId, default: null };
 
 const illusionCandidatureSchema = new mongoose.Schema({
   jeton: {
@@ -9,12 +12,10 @@ const illusionCandidatureSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  // Supprimée 180 jours après sa dernière réception
-  recue_le: {
-    type: Date,
-    default: Date.now,
-    expires: 60 * 60 * 24 * 180
-  },
+  // Les données d'un utilisateur ne se mêlent jamais à celles d'un autre
+  utilisateur: mongoose.Schema.Types.ObjectId,
+  statut: { type: String, default: '' },
+  envoyee_le: Date,
   langue: { type: String, default: '' },
   offre: {
     titre: String,
@@ -36,9 +37,13 @@ const illusionCandidatureSchema = new mongoose.Schema({
   cv: {
     profil: String,
     competences: [String],
-    texte: String
+    texte: String,
+    fichier: fichierLie
   },
-  lettre: { type: String, default: '' }
-});
+  lettre: {
+    texte: String,
+    fichier: fichierLie
+  }
+}, { collection: 'illusion_candidatures', strict: false });
 
 export const IllusionCandidature = mongoose.model('IllusionCandidature', illusionCandidatureSchema);

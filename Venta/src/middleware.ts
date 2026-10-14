@@ -12,8 +12,9 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   // Autres cas: continuer normalement
   if (!link) return NextResponse.next();
 
-  // PDF de public/assets/, profils externes ou accueil du portfolio
-  const target = REDIRECT_TARGETS[link.cible];
+  // PDF de public/assets/, profils externes ou accueil du portfolio ; avec un jeton, le CV envoyé avec la candidature
+  const cvEnvoye = (link.cible === 'cv' || link.cible === 'cvdesign') && link.jeton;
+  const target = cvEnvoye ? `/api/illusion/cv/${link.jeton}` : REDIRECT_TARGETS[link.cible];
   trackAndRedirect(request, event, path, target, link.cible, link.jeton);
   const response = NextResponse.redirect(new URL(target, request.url));
 

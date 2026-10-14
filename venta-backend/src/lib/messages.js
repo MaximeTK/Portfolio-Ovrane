@@ -173,10 +173,7 @@ export const ERROR_MESSAGES = {
   historyUserIdRequired: 'userId requis',
 
   // Erreurs Illusion
-  illusionNotConfigured: 'Accès Illusion non configuré',
-  illusionUnauthorized: 'Accès Illusion non autorisé',
-  illusionInvalidJeton: 'Jeton invalide',
-  illusionInvalidSince: 'Paramètre depuis invalide (ISO 8601 attendu)',
+  illusionCvNotFound: 'CV introuvable',
   illusionNotFound: 'Candidature introuvable',
   
   // Limites
@@ -472,7 +469,7 @@ ${lines([
 ])}
 
 LETTRE ENVOYÉE :
-${candidature.lettre || ''}
+${typeof candidature.lettre === 'string' ? candidature.lettre : candidature.lettre?.texte || ''}
 
 `;
 }
