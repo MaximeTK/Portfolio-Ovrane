@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useUIStore } from '@/lib/state/uiStore';
+import { CENTRE_HEADER_PX } from '@/components/site/SiteHeader';
+
+// Largeur du conteneur une fois l'œil logé dans le header : l'hexagone visible y fait ~29 px de haut
+const LARGEUR_EN_HAUT_PX = 96;
 
 export interface HexagonalAnimationHandle {
   triggerWave: () => void;
@@ -35,7 +39,26 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
   const viewMode = useUIStore((state) => state.viewMode);
   const setViewMode = useUIStore((state) => state.setViewMode);
   const isAppLocked = useUIStore((state) => state.isAppLocked);
+  const page = useUIStore((state) => state.page);
+  const setPage = useUIStore((state) => state.setPage);
   const isInteractive = mode !== 'sleep' && !isAppLocked;
+  // Messagerie ou page ouverte : l'œil quitte le centre pour l'emplacement du header
+  const enHaut = mode !== 'sleep' && (viewMode === 'messaging' || page !== null);
+  const [cible, setCible] = useState<{ y: number; echelle: number } | null>(null);
+
+  // Le parent n'est jamais transformé : son centre est la position de repos de l'œil
+  useEffect(() => {
+    if (mode === 'sleep') return;
+    const mesurer = () => {
+      const conteneur = containerRef.current;
+      const repos = conteneur?.parentElement?.getBoundingClientRect();
+      if (!conteneur || !repos) return;
+      setCible({ y: CENTRE_HEADER_PX - (repos.top + repos.height / 2), echelle: LARGEUR_EN_HAUT_PX / conteneur.offsetWidth });
+    };
+    mesurer();
+    window.addEventListener('resize', mesurer);
+    return () => window.removeEventListener('resize', mesurer);
+  }, [mode]);
   
   const HEX_POINTS = '0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6';
   const MAX_WAVES = 3;
@@ -157,7 +180,13 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
   // Gestion du clic pour changer de mode
   const handleClick = () => {
     if (mode === 'sleep' || isAppLocked) return;
-    
+
+    // Depuis une page, l'œil ramène à l'écran de base, sans toucher à la session
+    if (page) {
+      setPage(null);
+      return;
+    }
+
     if (viewMode === 'dashboard') {
       setViewMode('messaging');
     } else {
@@ -303,9 +332,8 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
       
       <div 
         ref={containerRef} 
-        className={`relative w-[90vmin] md:w-[min(78vmin,900px)] aspect-square transition-all duration-500 ease-out ${
-          viewMode === 'messaging' ? 'translate-y-[-38vh] scale-[0.35] md:scale-[0.40]' : ''
-        }`}
+        className="relative w-[90vmin] md:w-[min(78vmin,900px)] aspect-square transition-all duration-500 ease-out"
+        style={enHaut && cible ? { transform: `translateY(${cible.y}px) scale(${cible.echelle})` } : undefined}
       >
         {/* Wrapper de hover: plein-size + origin-center pour grossir sans décaler */}
         <div
@@ -398,8 +426,8 @@ export const HexagonalAnimation = forwardRef<HexagonalAnimationHandle, Hexagonal
             // Réduction ~20% de la hitbox:
             // - Dashboard: 80% -> 64% (inset 10% -> 18%)
             // - Messaging: 144% -> ~115% (-22% -> ~-8%)
-            viewMode === 'messaging' ? '-inset-[8%]' : 'inset-[18%]'
-          } ${isInteractive ? 'cursor-pointer' : 'cursor-default pointer-events-none'}`}
+            enHaut ? 'inset-[30%]' : 'inset-[18%]'
+          } ${isInteractive ? 'cursor-pointer pointer-events-auto' : 'cursor-default pointer-events-none'}`}
           onClick={handleClick}
           onMouseEnter={() => isInteractive && setIsLogoHover(true)}
           onMouseLeave={() => setIsLogoHover(false)}

@@ -388,3 +388,12 @@ body {
   height: fit-content;
 }
 
+/* Entrée d'une page projet ou de la page légale, au changement de vue */
+.apparition {
+  animation: apparition 0.5s ease-out;
+}
+
+@keyframes apparition {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}

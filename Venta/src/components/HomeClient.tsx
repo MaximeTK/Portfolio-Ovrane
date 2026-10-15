@@ -13,6 +13,8 @@ import { useBackgroundStore } from '@/lib/state/backgroundStore';
 import { InputArea } from '@/components/ui/InputArea';
 import { IntroSequence } from '@/components/intro/IntroSequence';
 import { MessagingView } from '@/components/chat/MessagingView';
+import { SiteHeader } from '@/components/site/SiteHeader';
+import { PageView } from '@/components/site/PageView';
 
 export default function Home() {
   const [scrollTrigger, setScrollTrigger] = useState(0); // Trigger pour le scroll
@@ -55,6 +57,7 @@ export default function Home() {
   const appState = useUIStore((state) => state.appState);
   const setAppState = useUIStore((state) => state.setAppState);
   const viewMode = useUIStore((state) => state.viewMode);
+  const page = useUIStore((state) => state.page);
   const isAppLocked = useUIStore((state) => state.isAppLocked);
   const lastAppliedBackgroundCmdRef = useRef<string | null>(null);
 
@@ -95,16 +98,16 @@ export default function Home() {
     }
   }, [currentUserId]);
 
-  // Cacher l'overlay dès qu'on passe en messagerie
+  // Cacher l'overlay dès qu'on passe en messagerie ou sur une page
   useEffect(() => {
-    if (viewMode === 'messaging') {
+    if (viewMode === 'messaging' || page) {
       setOverlayOverrideText(null);
       if (messagingHintTimerRef.current !== null) {
         window.clearTimeout(messagingHintTimerRef.current);
         messagingHintTimerRef.current = null;
       }
     }
-  }, [viewMode]);
+  }, [viewMode, page]);
 
   // Fermer toutes les fenêtres (TextWindows) quand l'utilisateur change
   useEffect(() => {
@@ -254,12 +257,15 @@ export default function Home() {
           scrollTrigger={scrollTrigger}
         />
 
-        {/* MAIN CONTENT - Hexagone */}
-        <div className={`fixed inset-0 flex flex-col items-center justify-center transition-all duration-500 ${appState === 'awake' ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${viewMode === 'messaging' ? '-translate-y-[4vh]' : ''}`}>
+        <SiteHeader />
+        <PageView />
+
+        {/* MAIN CONTENT - Hexagone, au-dessus du header où il se loge ; seul son bouton capte les clics */}
+        <div className={`fixed inset-0 z-[45] pointer-events-none flex flex-col items-center justify-center transition-all duration-500 ${appState === 'awake' ? 'opacity-100' : 'opacity-0'}`}>
           <main className="flex items-center justify-center min-h-screen w-full relative z-30 pointer-events-none">
             {/* L'animation Hexagonale remplace celle de l'intro quand on est éveillé */}
             {appState === 'awake' && (
-              <div className="pointer-events-auto">
+              <div>
                 <HexagonalAnimation
                   ref={hexAnimationRef}
                   currentAnimation={currentAnimation}
@@ -273,7 +279,7 @@ export default function Home() {
         </div>
 
         {/* Input Form - Sorti du conteneur principal pour garantir le Z-Index 30 */}
-        <div className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[min(600px,90vw)] z-30 transition-all duration-1000 delay-1000 ${appState === 'awake' && !isAppLocked ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+        <div className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[min(600px,90vw)] z-30 transition-all duration-1000 delay-1000 ${appState === 'awake' && !isAppLocked && !page ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
           <InputArea
             onSubmit={(text) => {
               setLastProcessedTranscript('');
@@ -316,7 +322,7 @@ export default function Home() {
 
       {/* Overlays - Toujours présents mais gérés par le store et masqués sur mobile via CSS/Logique */}
       {/* Fenêtres flottantes : jamais en messagerie, jamais sous md. */}
-      {appState === 'awake' && viewMode !== 'messaging' && (
+      {appState === 'awake' && viewMode !== 'messaging' && !page && (
         <div className="hidden md:block">
           <TextWindowsManager />
           <CommandProcessor commands={lastCommands || []} currentUserId={currentUserId} />

@@ -14,7 +14,7 @@ interface IntroSequenceProps {
 }
 
 export const IntroSequence = ({ sendAuth, messages, overlayOverrideText }: IntroSequenceProps) => {
-  const { appState, setAppState, setUserName, viewMode, isAppLocked, lockedMessage } = useUIStore();
+  const { appState, setAppState, setUserName, viewMode, page, isAppLocked, lockedMessage } = useUIStore();
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
   // Le formulaire des comptes existants ne s'affiche plus que sur /connexion
   const isLoginPage = usePathname() === '/connexion';
@@ -66,12 +66,12 @@ export const IntroSequence = ({ sendAuth, messages, overlayOverrideText }: Intro
     };
   }, [appState, isAppLocked]);
 
-  // Disparition immédiate si on passe en mode messagerie
+  // Disparition immédiate si on passe en mode messagerie ou sur une page
   useEffect(() => {
-    if (viewMode === 'messaging' && !isAppLocked) {
+    if ((viewMode === 'messaging' || page) && !isAppLocked) {
       setIsWelcomeVisible(false);
     }
-  }, [viewMode, isAppLocked]);
+  }, [viewMode, page, isAppLocked]);
 
   const handleAuthSubmit = async (mode: 'register' | 'login', data: Record<string, string>) => {
     hexAnimationRef.current?.triggerWave();
@@ -147,7 +147,7 @@ export const IntroSequence = ({ sendAuth, messages, overlayOverrideText }: Intro
         </div>
 
         {/* État 3: Awake (Message de bienvenue STATIQUE ou Message de Verrouillage) */}
-        <OverlayMessage visible={appState === 'awake' && isWelcomeVisible && !overlayOverrideText}>
+        <OverlayMessage visible={appState === 'awake' && isWelcomeVisible && !overlayOverrideText && !page}>
           {getWelcomeMessage()}
         </OverlayMessage>
 

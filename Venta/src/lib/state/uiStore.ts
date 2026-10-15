@@ -12,6 +12,7 @@ interface TextWindow {
 interface UIState {
   viewMode: 'dashboard' | 'messaging';
   appState: 'sleeping' | 'processing' | 'awake';
+  page: string | null;
   userName?: string;
   maxZIndex: number;
   textWindows: TextWindow[];
@@ -21,6 +22,7 @@ interface UIState {
   // Actions
   setViewMode: (mode: 'dashboard' | 'messaging') => void;
   setAppState: (state: 'sleeping' | 'processing' | 'awake') => void;
+  setPage: (page: string | null) => void;
   setUserName: (name: string) => void;
   incrementMaxZIndex: () => number;
   setAppLocked: (locked: boolean, message?: string) => void;
@@ -36,6 +38,7 @@ interface UIState {
 export const useUIStore = create<UIState>((set, get) => ({
   viewMode: 'dashboard',
   appState: 'sleeping',
+  page: null,
   userName: undefined,
   maxZIndex: 100,
   
@@ -47,6 +50,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   setViewMode: (mode) => set({ viewMode: mode }),
   
   setAppState: (state) => set({ appState: state }),
+  // Ouvrir ou fermer une page ramène au tableau de bord : on revient toujours à l'écran de l'œil
+  setPage: (page) => set({ page, viewMode: 'dashboard' }),
   setUserName: (name) => set({ userName: name }),
   setAppLocked: (locked, message) => set({ isAppLocked: locked, lockedMessage: message }),
   

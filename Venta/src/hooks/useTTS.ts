@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import pLimit from 'p-limit';
 
 type SetupVisualizationFn = (
@@ -96,6 +96,9 @@ export function useTTS() {
     audioLevelRef.current = 0;
     setIsSpeaking(false);
   }, []);
+
+  // Quitter l'accueil pour une page projet coupe la voix et la file en cours
+  useEffect(() => stop, [stop]);
 
   const speakWithUrl = useCallback((
     url: string,
