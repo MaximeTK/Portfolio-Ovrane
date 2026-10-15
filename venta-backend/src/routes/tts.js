@@ -1,53 +1,28 @@
 /**
- * Route TTS avec système de fallback - max 5 fonctions, max 20 lignes
+ * Synthèse vocale d'un passage de réponse, pour l'utilisateur de la session
  */
-import dotenv from 'dotenv';
-import { 
-  ERROR_MESSAGES, 
-  CONSOLE_LOGS, 
-  EMOJIS, 
-  MISC_MESSAGES 
-} from '../lib/messages.js';
-import { generateTTS } from '../lib/tts/ttsGenerator.js';
+import { generateTTS } from '../services/tts.js';
+import { sendError, requireSession, limite } from '../http.js';
+import { ERROR_MESSAGES } from '../messages.js';
 
-dotenv.config();
+const MAX_TEXTE = 1000;
 
-/**
- * Route TTS avec système de fallback
- */
-export async function handleTTS(req, res) {
-  try {
-    const { text } = req.body;
-    if (!text || typeof text !== 'string') {
-      return res.status(400).json({ error: ERROR_MESSAGES.ttsTextRequired });
+export function setupTTSRoutes(app, openai) {
+  // Par session, comptée sur son utilisateur : une réponse part en plusieurs passages
+  const parSession = limite(60 * 1000, 30, (req) => req.user.id);
+
+  app.post('/api/tts', requireSession, parSession, async (req, res, next) => {
+    try {
+      const { text } = req.body || {};
+      if (typeof text !== 'string' || !text) return sendError(res, 400, ERROR_MESSAGES.ttsTextRequired);
+      if (text.length > MAX_TEXTE) return sendError(res, 413, ERROR_MESSAGES.ttsTextTooLong);
+
+      const audio = await generateTTS(text, openai);
+      // Sans audio, la voix du navigateur lit le texte
+      if (!audio) return res.json({ useClientTTS: true, text });
+      res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-cache', 'X-TTS-Provider': audio.provider }).send(audio.buffer);
+    } catch (error) {
+      next(error);
     }
-    
-    console.log(`${EMOJIS.info} ${CONSOLE_LOGS.tts} Chunk reçu`, {
-      length: text.length,
-      preview: String(text).slice(0, 220),
-    });
-
-    const result = await generateTTS(text);
-
-    if (!result || result.useClientTTS || !result.buffer) {
-      return res.json({ useClientTTS: true, text: text });
-    }
-
-    const audioBuffer = Buffer.isBuffer(result.buffer)
-      ? result.buffer
-      : Buffer.from(result.buffer);
-    const mimeType = result.mimeType || MISC_MESSAGES.contentTypeAudioMPEG;
-    const provider = result.provider || 'unknown';
-
-    res.set({
-      [MISC_MESSAGES.httpContentType]: mimeType,
-      [MISC_MESSAGES.httpContentLength]: audioBuffer.length,
-      [MISC_MESSAGES.httpCacheControl]: MISC_MESSAGES.httpNoCacheValue,
-      [MISC_MESSAGES.httpTTSProvider]: provider
-    });
-    res.send(audioBuffer);
-  } catch (error) {
-    console.error(`${EMOJIS.error} ${CONSOLE_LOGS.tts} ${ERROR_MESSAGES.ttsGlobalError}:`, error);
-    res.json({ useClientTTS: true, text: req.body.text || '' });
-  }
+  });
 }

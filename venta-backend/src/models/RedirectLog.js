@@ -39,10 +39,10 @@ const redirectLogSchema = new mongoose.Schema({
   robot: {
     type: Boolean
   },
+  // Pas de TTL : la purge quotidienne suit l'activité de la candidature (services/conservation.js)
   timestamp: {
     type: Date,
-    default: Date.now,
-    expires: 60 * 60 * 24 * 365 // Optionnel: Auto-suppression après 1 an pour éviter de saturer la DB ? (à voir)
+    default: Date.now
   }
 });
 

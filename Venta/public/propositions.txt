@@ -1,149 +1,149 @@
 # Une proposition par ligne. Les lignes vides et celles commençant par # sont ignorées.
 
-Présente moi le profil de Maxime.
-Présente moi ce que tu es.
-Quelle sont tes capacités ?
+Présentez-moi le profil de Maxime.
+Présentez-moi ce que vous êtes.
+Quelles sont vos capacités ?
 Quelles sont les compétences phares de Maxime ?
-Quelles sont les projets de Maxime ?
-Explique moi Pico.
-Montre-moi les interfaces de Pico.
-Qu'est ce que Hikup ?
-Montre-moi l'évolution de Hikup et de ses interfaces.
-Montre-moi les affiches de Hikup.
-Montre-moi la refonte des interfaces de Hikup
+Quels sont les projets de Maxime ?
+Expliquez-moi Pico.
+Montrez-moi les interfaces de Pico.
+Qu'est-ce que Hikup ?
+Montrez-moi l'évolution de Hikup et de ses interfaces.
+Montrez-moi les affiches de Hikup.
+Montrez-moi la refonte des interfaces de Hikup.
 
-Peux-tu me présenter Ovrane ?
-Peux-tu résumer Ovrane en une phrase ?
-Peux-tu me dire ce qui rend Ovrane original ?
-Peux-tu m’expliquer le concept de portfolio interactif ?
-Peux-tu m’expliquer l’œil central d’Ovrane ?
-Peux-tu me dire pourquoi le design est minimaliste ?
-Peux-tu m’expliquer le fonctionnement du dashboard ?
-Peux-tu m’expliquer le mode messagerie ?
-Peux-tu me dire pourquoi il y a deux modes ?
-Peux-tu me dire quel modèle d’IA est utilisé ?
-Peux-tu me dire pourquoi GPT-4o-mini a été choisi ?
-Peux-tu m’expliquer le streaming audio ?
-Peux-tu me dire comment la latence est réduite ?
-Peux-tu me dire ce que fait le RAG ?
-Peux-tu m’expliquer comment le RAG est structuré ?
-Peux-tu me dire comment tu évites les hallucinations ?
-Peux-tu me dire comment l’IA interagit avec l’interface ?
-Peux-tu me dire comment tu gères l’historique ?
-Peux-tu me dire ce que tu sais sur les projets ?
-Peux-tu me dire quelles actions UI tu peux faire ?
+Pouvez-vous me présenter Ovrane ?
+Pouvez-vous résumer Ovrane en une phrase ?
+Pouvez-vous me dire ce qui rend Ovrane original ?
+Pouvez-vous m’expliquer le concept de portfolio interactif ?
+Pouvez-vous m’expliquer l’œil central d’Ovrane ?
+Pouvez-vous me dire pourquoi le design est minimaliste ?
+Pouvez-vous m’expliquer le fonctionnement du dashboard ?
+Pouvez-vous m’expliquer le mode messagerie ?
+Pouvez-vous me dire pourquoi il y a deux modes ?
+Pouvez-vous me dire quel modèle d’IA est utilisé ?
+Pouvez-vous me dire pourquoi GPT-4o mini a été choisi ?
+Pouvez-vous m’expliquer le streaming audio ?
+Pouvez-vous me dire comment la latence est réduite ?
+Pouvez-vous me dire ce que fait le RAG ?
+Pouvez-vous m’expliquer comment le RAG est structuré ?
+Pouvez-vous me dire comment vous évitez les hallucinations ?
+Pouvez-vous me dire comment l’IA interagit avec l’interface ?
+Pouvez-vous me dire comment vous gérez l’historique ?
+Pouvez-vous me dire ce que vous savez sur les projets ?
+Pouvez-vous me dire quelles actions UI vous pouvez faire ?
 
-Peux-tu me présenter Pico ?
-Peux-tu résumer Pico en une phrase ?
-Peux-tu me dire à qui s’adresse Pico ?
-Peux-tu me dire quel problème Pico résout ?
-Peux-tu me dire pourquoi Pico existe ?
-Peux-tu me comparer Pico et Proloquo2Go ?
-Peux-tu me comparer Pico et TD Snap ?
-Peux-tu me comparer Pico et LetMeTalk ?
-Peux-tu me montrer l’interface de Pico ?
-Peux-tu me montrer le logo de Pico ?
-Peux-tu me montrer la page de login de Pico ?
-Peux-tu me montrer l’interface de Proloquo2Go ?
-Peux-tu m’expliquer la zone de syntaxe de Pico ?
-Peux-tu m’expliquer le noyau lexical de Pico ?
-Peux-tu m’expliquer la barre de fonctions de Pico ?
-Peux-tu m’expliquer le panneau de temporalité de Pico ?
-Peux-tu m’expliquer la logique “toucher court” ?
-Peux-tu m’expliquer la logique “toucher long” ?
-Peux-tu me dire pourquoi l’interface est statique ?
-Peux-tu me dire si Pico prédit le prochain mot ?
-Peux-tu me dire ce que signifie “modèle hybride” ?
-Peux-tu me dire comment fonctionne le cache local ?
-Peux-tu me dire si Pico respecte le RGPD ?
-Peux-tu me dire quelles données Pico stocke ?
-Peux-tu me dire où sont stockées les données ?
-Peux-tu me dire comment Pico gère la motricité fine ?
-Peux-tu me dire si le drag & drop est obligatoire ?
-Peux-tu me dire si un mode nuit est prévu ?
-Peux-tu me dire si un mode haut contraste est prévu ?
-Peux-tu me décrire les comptes de Pico ?
-Peux-tu m’expliquer le compte Standard de Pico ?
-Peux-tu m’expliquer le compte Praticien de Pico ?
-Peux-tu m’expliquer le compte Admin de Pico ?
-Peux-tu me dire où en est Pico aujourd’hui ?
-Peux-tu me dire si Pico est déjà un prototype ?
-Peux-tu me dire quelles sont les prochaines étapes ?
+Pouvez-vous me présenter Pico ?
+Pouvez-vous résumer Pico en une phrase ?
+Pouvez-vous me dire à qui s’adresse Pico ?
+Pouvez-vous me dire quel problème Pico résout ?
+Pouvez-vous me dire pourquoi Pico existe ?
+Pouvez-vous me comparer Pico et Proloquo2Go ?
+Pouvez-vous me comparer Pico et TD Snap ?
+Pouvez-vous me comparer Pico et LetMeTalk ?
+Pouvez-vous me montrer l’interface de Pico ?
+Pouvez-vous me montrer le logo de Pico ?
+Pouvez-vous me montrer la page de login de Pico ?
+Pouvez-vous me montrer l’interface de Proloquo2Go ?
+Pouvez-vous m’expliquer la zone de syntaxe de Pico ?
+Pouvez-vous m’expliquer le noyau lexical de Pico ?
+Pouvez-vous m’expliquer la barre de fonctions de Pico ?
+Pouvez-vous m’expliquer le panneau de temporalité de Pico ?
+Pouvez-vous m’expliquer la logique « toucher court » ?
+Pouvez-vous m’expliquer la logique « toucher long » ?
+Pouvez-vous me dire pourquoi l’interface est statique ?
+Pouvez-vous me dire si Pico prédit le prochain mot ?
+Pouvez-vous me dire ce que signifie « modèle hybride » ?
+Pouvez-vous me dire comment fonctionne le cache local ?
+Pouvez-vous me dire si Pico respecte le RGPD ?
+Pouvez-vous me dire quelles données Pico stocke ?
+Pouvez-vous me dire où sont stockées les données ?
+Pouvez-vous me dire comment Pico gère la motricité fine ?
+Pouvez-vous me dire si le drag & drop est obligatoire ?
+Pouvez-vous me dire si un mode nuit est prévu ?
+Pouvez-vous me dire si un mode haut contraste est prévu ?
+Pouvez-vous me décrire les comptes de Pico ?
+Pouvez-vous m’expliquer le compte Standard de Pico ?
+Pouvez-vous m’expliquer le compte Praticien de Pico ?
+Pouvez-vous m’expliquer le compte Admin de Pico ?
+Pouvez-vous me dire où en est Pico aujourd’hui ?
+Pouvez-vous me dire si Pico est déjà un prototype ?
+Pouvez-vous me dire quelles sont les prochaines étapes ?
 
-Peux-tu me présenter Hikup ?
-Peux-tu résumer Hikup en une phrase ?
-Peux-tu me dire l’objectif de Hikup ?
-Peux-tu me dire à qui s’adresse Hikup ?
-Peux-tu me dire ce que tu as fait sur Hikup ?
-Peux-tu me dire ton rôle exact sur Hikup ?
-Peux-tu me dire pourquoi la refonte était urgente ?
-Peux-tu m’expliquer ce qu’est le “Barrage Bêta” ?
-Peux-tu me dire pourquoi le projet risquait l’arrêt ?
-Peux-tu m’expliquer l’audit UX de Hikup ?
-Peux-tu m’expliquer la direction artistique de Hikup ?
-Peux-tu me dire ce qui a été optimisé côté UI ?
-Peux-tu me dire ce qui a été stabilisé avant le rendu ?
-Peux-tu m’expliquer la gamification de Hikup ?
-Peux-tu m’expliquer le système de skins ?
-Peux-tu m’expliquer la collecte de ressources ?
-Peux-tu me dire si Hikup utilise le GPS ?
-Peux-tu me dire si Hikup fait du tracking ?
-Peux-tu me dire comment Hikup gère les itinéraires ?
-Peux-tu me dire quelle techno mobile est utilisée ?
+Pouvez-vous me présenter Hikup ?
+Pouvez-vous résumer Hikup en une phrase ?
+Pouvez-vous me dire l’objectif de Hikup ?
+Pouvez-vous me dire à qui s’adresse Hikup ?
+Pouvez-vous me dire ce que vous avez fait sur Hikup ?
+Pouvez-vous me dire votre rôle exact sur Hikup ?
+Pouvez-vous me dire pourquoi la refonte était urgente ?
+Pouvez-vous m’expliquer ce qu’est le « Barrage Bêta » ?
+Pouvez-vous me dire pourquoi le projet risquait l’arrêt ?
+Pouvez-vous m’expliquer l’audit UX de Hikup ?
+Pouvez-vous m’expliquer la direction artistique de Hikup ?
+Pouvez-vous me dire ce qui a été optimisé côté UI ?
+Pouvez-vous me dire ce qui a été stabilisé avant le rendu ?
+Pouvez-vous m’expliquer la gamification de Hikup ?
+Pouvez-vous m’expliquer le système de skins ?
+Pouvez-vous m’expliquer la collecte de ressources ?
+Pouvez-vous me dire si Hikup utilise le GPS ?
+Pouvez-vous me dire si Hikup fait du tracking ?
+Pouvez-vous me dire comment Hikup gère les itinéraires ?
+Pouvez-vous me dire quelle techno mobile est utilisée ?
 
-Peux-tu me montrer l’architecture de Hikup ?
-Peux-tu me montrer l’évolution du design de Hikup ?
-Peux-tu me montrer l’évolution du parcours de Hikup ?
-Peux-tu me montrer l’affiche Hikup 1 ?
-Peux-tu me montrer l’affiche Hikup 2 ?
-Peux-tu me montrer l’affiche Hikup 3 ?
-Peux-tu me dire combien d’affiches Hikup existent ?
-Peux-tu me montrer le logo de Hikup ?
-Peux-tu me montrer l’interface des commentaires ?
-Peux-tu me montrer l’interface “liste rando” ?
-Peux-tu me montrer la map bleue de Hikup ?
-Peux-tu me montrer la map jaune de Hikup ?
-Peux-tu me montrer la map finale de Hikup ?
-Peux-tu me montrer le menu final de Hikup ?
-Peux-tu me montrer le profil final de Hikup ?
-Peux-tu me montrer la refonte map nuit ?
-Peux-tu me montrer la refonte map jour ?
-Peux-tu me montrer la refonte map rando ?
-Peux-tu me montrer la refonte du menu ?
-Peux-tu me montrer la refonte des quêtes ?
-Peux-tu me montrer la refonte messagerie ?
-Peux-tu me montrer la refonte tchat ?
-Peux-tu me montrer la refonte visuelle de Hikup ?
+Pouvez-vous me montrer l’architecture de Hikup ?
+Pouvez-vous me montrer l’évolution du design de Hikup ?
+Pouvez-vous me montrer l’évolution du parcours de Hikup ?
+Pouvez-vous me montrer l’affiche Hikup 1 ?
+Pouvez-vous me montrer l’affiche Hikup 2 ?
+Pouvez-vous me montrer l’affiche Hikup 3 ?
+Pouvez-vous me dire combien d’affiches Hikup existent ?
+Pouvez-vous me montrer le logo de Hikup ?
+Pouvez-vous me montrer l’interface des commentaires ?
+Pouvez-vous me montrer l’interface « liste rando » ?
+Pouvez-vous me montrer la map bleue de Hikup ?
+Pouvez-vous me montrer la map jaune de Hikup ?
+Pouvez-vous me montrer la map finale de Hikup ?
+Pouvez-vous me montrer le menu final de Hikup ?
+Pouvez-vous me montrer le profil final de Hikup ?
+Pouvez-vous me montrer la refonte map nuit ?
+Pouvez-vous me montrer la refonte map jour ?
+Pouvez-vous me montrer la refonte map rando ?
+Pouvez-vous me montrer la refonte du menu ?
+Pouvez-vous me montrer la refonte des quêtes ?
+Pouvez-vous me montrer la refonte messagerie ?
+Pouvez-vous me montrer la refonte tchat ?
+Pouvez-vous me montrer la refonte visuelle de Hikup ?
 
-Peux-tu me présenter Maxime ?
-Peux-tu résumer le profil de Maxime ?
-Peux-tu me dire les compétences phares de Maxime ?
-Peux-tu me dire si Maxime est plutôt UX ou dev ?
-Peux-tu me dire pourquoi son profil est hybride ?
-Peux-tu me dire ce que Maxime a appris à Epitech ?
-Peux-tu me dire ce que Maxime a fait à TU Dublin ?
-Peux-tu me dire ce qu’est son rôle d’assistant pédagogique ?
-Peux-tu me dire quels outils UX il maîtrise ?
-Peux-tu me dire si Maxime utilise Figma ?
-Peux-tu me dire ce qu’est l’Atomic Design ?
-Peux-tu me dire comment il fait des tests utilisateurs ?
-Peux-tu me dire quelle est sa stack web ?
-Peux-tu me dire s’il utilise MongoDB ?
-Peux-tu me dire s’il utilise NextJS ?
-Peux-tu me dire s’il maîtrise le C et le C++ ?
-Peux-tu me donner le contact de Maxime ?
+Pouvez-vous me présenter Maxime ?
+Pouvez-vous résumer le profil de Maxime ?
+Pouvez-vous me dire les compétences phares de Maxime ?
+Pouvez-vous me dire si Maxime est plutôt UX ou dev ?
+Pouvez-vous me dire pourquoi son profil est hybride ?
+Pouvez-vous me dire ce que Maxime a appris à Epitech ?
+Pouvez-vous me dire ce que Maxime a fait à TU Dublin ?
+Pouvez-vous me dire ce qu’est son rôle d’assistant pédagogique ?
+Pouvez-vous me dire quels outils UX il maîtrise ?
+Pouvez-vous me dire si Maxime utilise Figma ?
+Pouvez-vous me dire ce qu’est l’Atomic Design ?
+Pouvez-vous me dire comment il fait des tests utilisateurs ?
+Pouvez-vous me dire quelle est sa stack web ?
+Pouvez-vous me dire s’il utilise MongoDB ?
+Pouvez-vous me dire s’il utilise Next.js ?
+Pouvez-vous me dire s’il maîtrise le C et le C++ ?
+Pouvez-vous me donner le contact de Maxime ?
 
-Peux-tu changer le fond en océan ?
-Peux-tu changer le fond en noir ?
-Peux-tu changer le fond en rose ?
-Peux-tu changer le fond en mauve ?
-Peux-tu changer le fond en doré ?
-Peux-tu changer le fond en argenté ?
-Peux-tu remettre le fond par défaut ?
-Peux-tu me lister les palettes disponibles ?
-Peux-tu me proposer un fond sombre ?
-Peux-tu me proposer un fond coloré ?
+Pouvez-vous changer le fond en océan ?
+Pouvez-vous changer le fond en noir ?
+Pouvez-vous changer le fond en rose ?
+Pouvez-vous changer le fond en mauve ?
+Pouvez-vous changer le fond en doré ?
+Pouvez-vous changer le fond en argenté ?
+Pouvez-vous remettre le fond par défaut ?
+Pouvez-vous me lister les palettes disponibles ?
+Pouvez-vous me proposer un fond sombre ?
+Pouvez-vous me proposer un fond coloré ?
 
-Peux-tu me montrer le CV de Maxime ?
-Peux-tu me montrer le CV Business ?
-Peux-tu me montrer le CV Imprimable ?
+Pouvez-vous me montrer le CV de Maxime ?
+Pouvez-vous me montrer le CV Business ?
+Pouvez-vous me montrer le CV Imprimable ?

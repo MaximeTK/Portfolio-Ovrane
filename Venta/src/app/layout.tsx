@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Background } from "@/components/Fonction AI/Background";
-import { UrlTracker } from "@/components/Tracking/UrlTracker";
+import { Background } from "@/features/fond/Background";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
+// Chasse fixe, rare à l'arrivée : pas de préchargement
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -30,18 +30,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <head>
-        <meta httpEquiv="Permissions-Policy" content="interest-cohort=()" />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Suspense fallback={null}>
-          <UrlTracker />
-        </Suspense>
-        <Background>
-          {children}
-        </Background>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Background>{children}</Background>
       </body>
     </html>
   );

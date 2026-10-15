@@ -71,8 +71,6 @@ const UserSchema = new mongoose.Schema({
   strict: false // Permet d'ajouter des champs non prévus si nécessaire (flexibilité)
 });
 
-// Création de l'index pour la recherche rapide par IP
-UserSchema.index({ ipHashes: 1 });
 // Index sparse pour email (null autorisé, unicité sur les valeurs non-null)
 UserSchema.index({ email: 1 }, { sparse: true, unique: true });
 

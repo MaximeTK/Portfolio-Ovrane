@@ -16,6 +16,8 @@ const illusionCandidatureSchema = new mongoose.Schema({
   utilisateur: mongoose.Schema.Types.ObjectId,
   statut: { type: String, default: '' },
   envoyee_le: Date,
+  // Dernière activité : clic humain ou retour du recruteur (Ovrane), mail reçu (Illusion) ; la conservation en part
+  activite_le: Date,
   langue: { type: String, default: '' },
   offre: {
     titre: String,

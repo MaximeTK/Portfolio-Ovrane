@@ -7,19 +7,14 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node test/test-server.js",
-    "test:memory": "node test/test-memory.js",
-    "test:rag": "node test/test-rag-system.js",
-    "test:rag:hybride": "node test/test-rag-hybride.js",
-    "test:illusion": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON test/test-illusion.js",
-    "check:rag": "node test/check-rag-setup.js",
-    "eval:rag": "node test/eval-rag.js",
-    "update-rag": "node scripts/update-rag.js"
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/*.test.js\"",
+    "test:openai": "node --test test/openai.js",
+    "eval:rag": "node scripts/eval-rag.js",
+    "update-rag": "node scripts/update-rag.js",
+    "voix:accueil": "node scripts/voix-accueil.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.5.0",

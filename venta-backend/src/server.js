@@ -1,66 +1,67 @@
 /**
- * Serveur principal Venta
+ * Démarrage : configuration, MongoDB, RAG puis écoute ; sans configuration valide ni base, le serveur s'arrête
  */
-import dotenv from 'dotenv';
-import OpenAI from 'openai';
-import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { setOpenAI } from './lib/openaiHandler.js';
-import { configureServer } from './lib/server/serverConfig.js';
-import { initializeRAGSystem } from './lib/server/ragInitializer.js';
-import { connectToDatabase } from './lib/database.js';
-import { watchRAGFolder } from './lib/server/ragWatcher.js';
-import { registerAllFunctions } from './lib/server/functionsRegistry.js';
-import { setupRoutes } from './lib/server/serverRoutes.js';
-import { logServerStart } from './lib/server/serverLogger.js';
-import { CONSOLE_LOGS, EMOJIS } from './lib/messages.js';
+import mongoose from 'mongoose';
+import OpenAI from 'openai';
+import { config } from './config.js';
+import { createApp } from './app.js';
+import { initializeRAG, reindexFolder } from './services/rag/ragSystem.js';
+import { conserver } from './services/conservation.js';
+import * as log from './log.js';
 
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PORT = process.env.PORT || 3001;
-const ragDir = path.join(__dirname, '..', 'rag');
-
-let ragInitialized = false;
-
-/**
- * Initialise le serveur
- */
-async function initializeServer() {
-  const { app, allowedOrigins } = configureServer();
-  
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  setOpenAI(openai);
-  
-  // Connexion à MongoDB
-  await connectToDatabase();
-
-  registerAllFunctions();
-  
-  ragInitialized = await initializeRAGSystem(ragDir, process.env.OPENAI_API_KEY);
-  watchRAGFolder(ragDir, ragInitialized);
-  
-  // Nettoyage des profils temporaires supprimé (plus de profils temporaires)
-  
-  setupRoutes(app, openai, ragDir, ragInitialized, __dirname);
-  
-  return { app, allowedOrigins };
-}
-
-/**
- * Démarre le serveur
- */
-async function startServer() {
-  const { app, allowedOrigins } = await initializeServer();
-  
-  app.listen(PORT, '0.0.0.0', async () => {
-    await logServerStart(PORT, ragInitialized, allowedOrigins);
-  });
-}
-
-// Point d'entrée
-startServer().catch(error => {
-  console.error(`${EMOJIS.error} ${CONSOLE_LOGS.startup} Erreur critique:`, error.message);
+if (config.erreurs.length) {
+  for (const erreur of config.erreurs) log.error('[DÉMARRAGE]', erreur);
   process.exit(1);
+}
+
+try {
+  await mongoose.connect(config.mongodbUri, { dbName: config.mongodbDb });
+} catch (error) {
+  log.error('[DÉMARRAGE] Connexion MongoDB impossible :', error.message);
+  process.exit(1);
+}
+log.info(`[DÉMARRAGE] Base MongoDB : ${config.mongodbDb}`);
+
+// 90 jours sans activité : purge au démarrage puis chaque jour ; un échec attend le lendemain
+async function purgerChaqueJour() {
+  try {
+    log.info(`[CONSERVATION] ${config.conservationJours} jours sans activité :`, JSON.stringify(await conserver()));
+  } catch (error) {
+    log.error('[CONSERVATION] Purge impossible :', error.message);
+  }
+}
+await purgerChaqueJour();
+setInterval(purgerChaqueJour, 86_400_000).unref();
+
+// Un appel bloqué ne retient pas la requête au-delà d'une minute
+const openai = new OpenAI({ apiKey: config.openaiApiKey, timeout: 60_000, maxRetries: 1 });
+const ragDir = fileURLToPath(new URL('../rag', import.meta.url));
+initializeRAG(openai);
+
+// Seuls les passages nouveaux ou modifiés sont embeddés ; un échec laisse le chat sans RAG
+async function indexer() {
+  try {
+    await reindexFolder(ragDir);
+  } catch (error) {
+    log.error('[RAG] Indexation impossible :', error.message);
+  }
+}
+await indexer();
+
+// Réindexation une seconde après la dernière modification d'un .md, jamais deux à la fois
+let minuteur = null;
+let enCours = false;
+fs.watch(ragDir, (evenement, fichier) => {
+  if (!fichier?.endsWith('.md')) return;
+  clearTimeout(minuteur);
+  minuteur = setTimeout(async () => {
+    if (enCours) return;
+    enCours = true;
+    await indexer();
+    enCours = false;
+  }, 1000);
 });
+
+createApp({ openai }).listen(config.port, '0.0.0.0', () => log.info(`🚀 [DÉMARRAGE] Serveur Venta à l'écoute sur le port ${config.port}`));

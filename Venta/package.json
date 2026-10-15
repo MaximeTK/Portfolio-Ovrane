@@ -6,12 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint",
-    "find-unused": "ts-prune --error",
-    "find-unused-all": "ts-prune"
+    "lint": "eslint"
   },
   "dependencies": {
-    "next": "^15.5.23",
+    "next": "^15.5.28",
     "p-limit": "^7.3.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -30,11 +28,8 @@
     "@types/react-dom": "^19",
     "@types/react-syntax-highlighter": "^15.5.13",
     "eslint": "^9",
-    "eslint-config-next": "15.5.4",
+    "eslint-config-next": "15.5.28",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "installConfig": {
-    "legacyPeerDeps": true
   }
 }

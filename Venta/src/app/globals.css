@@ -1,94 +1,37 @@
 @import "tailwindcss";
 
+/* Site toujours sombre : texte clair sur le fond animé ; --verre-opacite se règle dans les réglages */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #ededed;
+  --verre-opacite: 0.55;
+  --verre: rgb(10 10 14 / var(--verre-opacite));
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  /* background: var(--background);  <-- SUPPRIMÉ pour ne pas masquer BackgroundProvider */
-  background: transparent; /* Explicite */
+  background: transparent; /* le fond vient du composant Background */
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  overflow: hidden; /* Empêche le scroll de la page entière, notamment sur mobile */
-  position: fixed; /* Fixe le body pour éviter le bounce sur iOS */
+  font-family: var(--font-sans);
+  overflow: hidden; /* pas de défilement de la page entière, notamment sur mobile */
+  position: fixed; /* pas de rebond sur iOS */
   width: 100%;
   height: 100%;
-  touch-action: none; /* Désactive le scroll par défaut sur mobile */
+  touch-action: none;
 }
 
-/* ===== Classes utilitaires pour les overlays et highlights ===== */
-
-/* Effet de highlight appliqué aux sections */
-.section-highlighted {
-  animation: highlight-pulse 2s ease-in-out;
-  position: relative;
-}
-
-.section-highlighted::before {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  border: 3px solid rgba(125, 160, 255, 0.6);
-  border-radius: 16px;
-  pointer-events: none;
-  animation: highlight-glow 2s ease-in-out;
-}
-
-/* Animation de pulsation */
-@keyframes highlight-pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.02);
+/* Focus clavier visible partout ; en couche de base, les utilitaires d'un composant (l'œil) le remplacent */
+@layer base {
+  :focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
   }
 }
 
-/* Animation du glow */
-@keyframes highlight-glow {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.05);
-  }
-}
-
-/* Classe pour masquer visuellement mais garder accessible */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-/* ===== Scrollbar personnalisée (Style Discord / Moderne) ===== */
+/* ===== Barre de défilement discrète ===== */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -99,7 +42,7 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4); /* Gris discret */
+  background: rgba(156, 163, 175, 0.4);
   border-radius: 10px;
 }
 
@@ -107,30 +50,43 @@ body {
   background: rgba(156, 163, 175, 0.6);
 }
 
-/* Firefox */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
 }
 
+/* ===== Listes du Markdown, que le reset de Tailwind dépouille de leurs puces ===== */
+.markdown ul,
+.text-window-markdown ul {
+  list-style: disc;
+}
 
-/* ===== Styles pour fenêtres glassmorphisme ===== */
+.markdown ol,
+.text-window-markdown ol {
+  list-style: decimal;
+}
 
+.markdown ul,
+.markdown ol {
+  padding-left: 1.25rem;
+}
+
+/* ===== Fenêtres en verre ; --zoom vient de la fenêtre ===== */
 .glass-morphisme {
   max-width: 90vw;
   max-height: 90vh;
   position: fixed;
   height: fit-content;
-  z-index: 50;
 }
 
 .glass-morphisme-background {
   position: absolute;
   inset: 0;
   border-radius: 16px;
-  background: rgba(135, 135, 135, 0.15);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--verre);
+  backdrop-filter: blur(60px) saturate(200%);
+  -webkit-backdrop-filter: blur(60px) saturate(200%);
   pointer-events: none;
 }
 
@@ -193,34 +149,33 @@ body {
   justify-content: center;
 }
 
-.glass-morphisme-content-area img {
+/* Le petit côté de l'image suit le zoom : sa hauteur, ou sa largeur en portrait */
+.glass-morphisme-content-area > img {
   display: block;
   max-width: 100%;
   max-height: 100%;
   width: auto;
-  height: auto;
-  padding: 0px 14px 14px 14px;
+  height: calc(31vh * var(--zoom, 1));
+  padding: 0 14px 14px 14px;
 }
 
-.glass-morphisme-content-area p {
-  padding: 18px;
-  margin: 0;
-  max-width: 65ch;
-  line-height: 1.6;
+.glass-morphisme-content-area > img[data-portrait] {
+  width: calc(31vh * var(--zoom, 1));
+  height: auto;
 }
 
 .text-window-markdown {
   align-self: stretch;
   width: 100%;
-  max-width: min(640px, 90vw);
-  max-height: 55vh;
+  max-width: min(calc(640px * var(--zoom, 1)), 90vw);
+  max-height: min(calc(55vh * var(--zoom, 1)), 90vh);
   overflow: auto;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   color: rgba(248, 250, 252, 0.95);
-  font-size: 15px;
+  font-size: calc(15px * var(--zoom, 1));
   line-height: 1.7;
   text-align: left;
   box-sizing: border-box;
@@ -276,7 +231,7 @@ body {
 }
 
 .text-window-markdown code {
-  font-family: 'Fira Code', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: var(--font-mono), monospace;
   background: rgba(15, 23, 42, 0.65);
   color: #fbbf24;
   padding: 2px 6px;
@@ -362,30 +317,24 @@ body {
   border-radius: 8px;
 }
 
-@media (max-width: 640px) {
-  .text-window-markdown {
-    max-height: 50vh;
-    padding: 20px 18px;
-    font-size: 14px;
-    gap: 0.65rem;
-  }
-}
-
-.glass-morphisme-content-area::-webkit-scrollbar {
-  width: 8px;
-}
-
-.glass-morphisme-content-area::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-}
-
 .glass-morphisme.minimized .glass-morphisme-content-area {
   display: none;
 }
 
-.glass-morphisme.minimized {
-  height: fit-content;
+/* ===== Ondes de l'œil, émises au rythme de la voix ===== */
+.hexagon-wave {
+  fill: none;
+  stroke-width: 4;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.9;
+  transform-origin: 50% 50%;
+  transform-box: fill-box;
+  animation: hexagon-wave-animation 2s ease-out forwards;
+}
+
+@keyframes hexagon-wave-animation {
+  0% { transform: scale(1) translateZ(0); opacity: 0.9; }
+  100% { transform: scale(12) translateZ(0); opacity: 0; }
 }
 
 /* Entrée d'une page projet ou de la page légale, au changement de vue */
@@ -396,4 +345,20 @@ body {
 @keyframes apparition {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: none; }
+}
+
+/* Mouvement réduit : animations et transitions quasi instantanées, plus d'ondes */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hexagon-wave {
+    display: none;
+  }
 }
