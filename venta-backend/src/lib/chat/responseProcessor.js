@@ -42,7 +42,7 @@ let cachedPaletteIds = null;
 function getKnownPaletteIds() {
   if (cachedPaletteIds) return cachedPaletteIds;
   try {
-    const colorsPath = path.join(__dirname, '..', '..', '..', 'rag', 'colors.txt');
+    const colorsPath = path.join(__dirname, '..', '..', '..', 'prompts', 'colors.txt');
     if (!fs.existsSync(colorsPath)) {
       cachedPaletteIds = [];
       return cachedPaletteIds;

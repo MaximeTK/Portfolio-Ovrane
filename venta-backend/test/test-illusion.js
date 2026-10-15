@@ -12,7 +12,7 @@ process.env.OPENAI_API_KEY = 'sk-test-local';
 
 const { isValidJeton, isRobotUserAgent } = await import('../src/lib/validators.js');
 const { formatCandidatureContext, MISC_MESSAGES } = await import('../src/lib/messages.js');
-const { buildSystemPrompt } = await import('../src/lib/promptBuilder.js');
+const { buildVisitorContext } = await import('../src/lib/promptBuilder.js');
 const { configureServer } = await import('../src/lib/server/serverConfig.js');
 const { setupIllusionRoutes } = await import('../src/routes/illusionRoute.js');
 const { setupTrackingRoute } = await import('../src/routes/trackingRoute.js');
@@ -205,11 +205,11 @@ await test('bloc de contexte : entreprise, poste, pièces, consignes, champs vid
   assert.ok(formatCandidatureContext({ ...CANDIDATURE, lettre: { texte: 'Lettre rangée.', fichier: null } }).includes('Lettre rangée.'));
 });
 
-await test('prompt système : bloc en tête avec candidature, inchangé sans', async () => {
+await test('contexte visiteur : bloc en tête avec candidature, inchangé sans', () => {
   const profile = { name: null, visitCount: 1, preferences: {} };
-  const without = await buildSystemPrompt(profile, 'v0', '', 'none');
-  const withBlock = await buildSystemPrompt(profile, 'v0', '', 'none', CANDIDATURE);
-  assert.ok(without.startsWith('\n\nUTILISATEUR: Visiteur anonyme'));
+  const without = buildVisitorContext(profile);
+  const withBlock = buildVisitorContext(profile, CANDIDATURE);
+  assert.ok(without.startsWith('UTILISATEUR: Visiteur anonyme'));
   assert.ok(withBlock.startsWith('VISITEUR RECRUTEUR'));
   assert.ok(withBlock.endsWith(without));
 });
@@ -399,23 +399,26 @@ try {
     assert.equal(account.json.userProfile.isNewUser, true);
   });
 
-  await test('chat : le jeton ajoute le bloc du recruteur en tête des consignes', async () => {
+  await test('chat : le jeton ajoute le bloc du recruteur en tête du contexte visiteur, après les consignes fixes', async () => {
     const before = openaiCalls.length;
     const send = (extra) => call('/api/chat', { method: 'POST', body: { prompt: 'Quels projets pour ce poste ?', currentUserId: visitorId, ...extra } });
 
     const withJeton = await send({ jeton: JETON });
     assert.equal(withJeton.status, 200, JSON.stringify(withJeton.json));
     assert.equal(withJeton.json.reply, 'Bonjour, bienvenue sur le portfolio.');
-    const system = openaiCalls[before].input[0];
-    assert.equal(system.role, 'system');
-    assert.ok(system.content.startsWith("VISITEUR RECRUTEUR : le visiteur est un recruteur de l'entreprise Orange pour le poste « Développeur React »"));
-    assert.ok(system.content.includes(CANDIDATURE.lettre));
+    const [fixe, visiteur] = openaiCalls[before].input;
+    assert.equal(fixe.role, 'system');
+    assert.equal(visiteur.role, 'system');
+    assert.ok(!fixe.content.includes('VISITEUR RECRUTEUR'), 'consignes fixes sans candidature');
+    assert.ok(visiteur.content.startsWith("VISITEUR RECRUTEUR : le visiteur est un recruteur de l'entreprise Orange pour le poste « Développeur React »"));
+    assert.ok(visiteur.content.includes(CANDIDATURE.lettre));
 
     const lookups = db.calls.filter((c) => c.op === 'candidature.findOne').length;
     for (const extra of [{}, { jeton: 'zzzzzzzzzz' }, { jeton: 'PAS-UN-JETON' }]) {
       const res = await send(extra);
       assert.equal(res.status, 200);
-      assert.ok(!openaiCalls.at(-1).input[0].content.includes('VISITEUR RECRUTEUR'), JSON.stringify(extra));
+      assert.equal(openaiCalls.at(-1).input[0].content, fixe.content, 'préfixe identique pour le cache');
+      assert.ok(!openaiCalls.at(-1).input[1].content.includes('VISITEUR RECRUTEUR'), JSON.stringify(extra));
     }
     // Seul le jeton bien formé et inconnu interroge la base
     assert.equal(db.calls.filter((c) => c.op === 'candidature.findOne').length, lookups + 1);

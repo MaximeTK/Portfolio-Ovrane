@@ -1,0 +1,49 @@
+[
+  { "question": "Qui est Maxime Thiong-kay ?", "attendu": ["product engineer"] },
+  { "question": "Quelles sont ses compétences techniques en programmation ?", "attendu": ["flutter, javascript, typescript"] },
+  { "question": "Quels sont les défauts de Maxime ?", "attendu": ["du mal à délégué"] },
+  { "question": "Quel stage a-t-il fait en Italie ?", "attendu": ["bbn solution"] },
+  { "question": "Comment contacter Maxime ?", "attendu": ["linkedin.com/in/maxime-thiong-kay"] },
+  { "question": "Pourquoi a-t-il appris l'UX/UI design en autodidacte ?", "attendu": ["designer les interfaces puis de les développer", "plus compétitifs et surtout plus autonome"] },
+
+  { "question": "C'est quoi Hikup ?", "attendu": ["simplifier l'organisation de randonnées"] },
+  { "question": "Qu'est-ce que le Barrage Bêta ?", "attendu": ["test de survie ultime"] },
+  { "question": "Quel a été le rôle de Maxime sur Hikup ?", "attendu": ["double casquette d'ux designer", "leadership créatif", "en tant que développeur flutter"] },
+  { "question": "Comment fonctionne la gamification dans Hikup ?", "attendu": ["système de skins", "loot sur sentier"] },
+  { "question": "Maxime a-t-il beaucoup codé sur Hikup ?", "attendu": ["quasiment jamais codé"] },
+
+  { "question": "Quelles applications concurrentes ont été analysées pour Pico ?", "attendu": ["proloquo2go, td snap, letmetalk"] },
+  { "question": "Comment est organisée l'interface de Pico ?", "attendu": ["quatre zones stratégiques"] },
+  { "question": "À quoi sert le toucher long dans Pico ?", "attendu": ["mode édition par toucher long", "exploration sémantique"] },
+  { "question": "Pourquoi Pico utilise un LLM pour faire des phrases ?", "attendu": ["je vouloir manger", "modèle hybride llm"] },
+  { "question": "Combien coûte Pico pour une famille ?", "attendu": ["entièrement gratuit", "gratuité totale pour les familles"] },
+  { "question": "Comment Pico protège-t-il les données de santé ?", "attendu": ["conformité rgpd", "tout doit être anonymiser", "hds"] },
+
+  { "question": "Pourquoi avoir créé Ovrane ?", "attendu": ["le portfolio statique est devenu un format obsolète"] },
+  { "question": "Pourquoi un hexagone au centre de l'interface ?", "attendu": ["sphere 3d avec des anneaux", "oeil central"] },
+  { "question": "Comment la latence de la voix a-t-elle été réduite ?", "attendu": ["chunk-based generation", "découpage en chunk"] },
+  { "question": "Pourquoi le RAG plutôt que le fine-tuning ?", "attendu": ["entrainer une ia de 0"] },
+  { "question": "Quelle est la stack technique d'Ovrane ?", "attendu": ["next.js, typescript, tailwind css, framer motion"] },
+  { "question": "Quelle est la roadmap d'Ovrane ?", "attendu": ["dashboard personnel global", "hyper-connectivité"] },
+  { "question": "Quel est le pire bug généré par l'IA pendant le développement ?", "attendu": ["tout réinstaller"] },
+
+  { "question": "C'est quoi Illusion ?", "attendu": ["chaîne complète de candidature"] },
+  { "question": "Comment Illusion trie-t-il les offres ?", "attendu": ["mots bannis"] },
+  { "question": "Combien coûte une candidature envoyée par Illusion ?", "attendu": ["1 centime par candidature"] },
+  { "question": "Comment Illusion suit-il les réponses des recruteurs ?", "attendu": ["boîte mail est relevée en continu"] },
+
+  { "precedent": "Parle-moi de Pico", "question": "Comment est organisée son interface ?", "attendu": ["quatre zones stratégiques"] },
+  { "precedent": "Comment fonctionne la gamification de Hikup ?", "question": "Et les pièces récoltées, elles servent à quoi ?", "attendu": ["pièces récoltées permettent"] },
+  { "precedent": "Quel modèle d'IA fait tourner Ovrane ?", "question": "Pourquoi celui-là plutôt qu'un modèle plus gros ?", "attendu": ["rester 8 heures a attendre"] },
+  { "precedent": "Quels stages Maxime a-t-il effectués ?", "question": "Qu'a-t-il fait pendant celui de 2022 ?", "attendu": ["laverie connectée"] },
+  { "precedent": "C'est quoi Illusion ?", "question": "Combien d'offres ont été retenues au total ?", "attendu": ["652 offres retenues"] },
+  { "precedent": "Qu'est-ce que le Barrage Bêta ?", "question": "Et l'équipe l'a réussi ?", "attendu": ["non seulement validé le barrage bêta"] },
+
+  { "question": "Bonjour !", "attendu": [] },
+  { "question": "Mets le fond en rouge", "attendu": [] },
+  { "precedent": "Mets le fond en rouge", "question": "Maintenant en écarlate", "attendu": [] },
+  { "question": "Quel temps fait-il à Paris aujourd'hui ?", "attendu": [] },
+  { "question": "Quelle heure est-il ?", "attendu": [] },
+  { "question": "Passe en cyberpunk", "attendu": [] },
+  { "question": "Écris-moi une fonction Python qui inverse une liste", "attendu": [] }
+]

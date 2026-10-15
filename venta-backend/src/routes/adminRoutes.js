@@ -67,8 +67,7 @@ export function setupAdminRoutes(app, ragDir, ragInitialized) {
       if (!ragInitialized) {
         return res.status(503).json({ error: ERROR_MESSAGES.ragSystemNotInitialized, success: false });
       }
-      clearCache(); // Vider le cache avant la réindexation
-      const result = await reindexFolder(ragDir, true);
+      const result = await reindexFolder(ragDir);
       res.json({ success: result.success, message: SUCCESS_MESSAGES.ragReindexSuccess, ...result });
     } catch (error) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.admin} ${ERROR_MESSAGES.ragReindexError}:`, error);

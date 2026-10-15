@@ -2,7 +2,7 @@
 
 Branche `dev`, le 18/08/2026, après nettoyage. **11 103 lignes**, 110 fichiers.
 
-Mise à jour du 12/10/2026 : liens suivis d'Illusion et arrivée sans saisie, **section I** (102 à 121). Le 14/10/2026 : Illusion lit et écrit la même base, sans API entre les deux.
+Mise à jour du 12/10/2026 : liens suivis d'Illusion et arrivée sans saisie, **section I** (102 à 121). Le 14/10/2026 : Illusion lit et écrit la même base, sans API entre les deux. Le 15/10/2026 : refonte du RAG, étapes 9 à 16 et 32 à 40.
 
 ## Comment lire
 
@@ -44,14 +44,14 @@ Le **numéro** indique l'ordre d'exécution réel : le programme passe dans la f
 ### `lib/server/ragInitializer.js` · `lib/rag/*`
 | № | Fonction | Rôle |
 |---|---|---|
-| 9 | `initializeRAGSystem` | Orchestre l'init RAG. |
-| 10 | `initializeRAG` | Fixe la config : chunk 500, overlap 100, topK 5, minScore 0.5. |
-| 11 | `initializeEmbeddings` | Instancie le client OpenAI pour les embeddings. |
-| 12 | `initializeVectorStore` | Ouvre ou crée l'index `vectra` dans `data/vector-index`. |
-| 13 | `reindexFolder` | **Vide puis reconstruit** l'index à chaque démarrage. |
-| 14 | `loadDocumentsFromFolder` | Lit les `.txt` de `rag/`. Via `getTxtFiles`, `createDocument`. |
-| 15 | `ingestDocuments` | Chunk → embeddings → insertion. Via `createChunks`, `chunkDocuments`, `chunkText`, `findChunkEnd`, `deduplicateChunks`, `generateEmbeddings`, `processBatch`, `addChunks`, `addChunk`. |
-| 16 | `watchRAGFolder` | Surveille `rag/`, relance `handleReindex` à chaud. |
+| 9 | `initializeRAGSystem` | Orchestre l'init RAG, après la connexion MongoDB. |
+| 10 | `initializeRAG` | Instancie le client OpenAI pour les embeddings. |
+| 11 | `reindexFolder` | Lit les `.md` de `rag/`, reprend par hash les embeddings connus de `rag_chunks`, garde tout en mémoire. |
+| 12 | `decouperMarkdown` | Un passage par section `#`/`##`/`###`, préfixé de son fil d'Ariane. Via `regrouperParagraphes` au-delà de ~350 tokens. |
+| 13 | `embedder` | **N'embedde que les passages manquants**, par lots de 100 (`text-embedding-3-small`). |
+| 14 | `RagChunk.bulkWrite`, `RagChunk.deleteMany` | Persiste les nouveaux passages et retire les hash obsolètes. Sans MongoDB, rien n'est persisté. |
+| 15 | `indexerBm25` | Index BM25 en mémoire sur les textes préfixés. Via `termes`, `normaliser`. |
+| 16 | `watchRAGFolder` | Surveille les `.md` de `rag/`, relance `handleReindex` à chaud. |
 | 17 | `setupRoutes` | Branche toutes les routes. Puis `logServerStart`. |
 
 ---
@@ -87,16 +87,15 @@ Le **numéro** indique l'ordre d'exécution réel : le programme passe dans la f
 | № | Fichier · Fonction | Rôle |
 |---|---|---|
 | 31 | `lib/chat/responseGenerator.js` · `generateResponse` | Chef d'orchestre de l'appel modèle. |
-| 32 | `lib/promptBuilder.js` · `buildRAGContextForPrompt` | Récupère et filtre le contexte documentaire. |
-| 33 | `lib/rag/ragRetrieval.js` · `buildRAGContext` | Déduplique les chunks, score moyen. |
-| 34 | `lib/rag/ragRetrieval.js` · `retrieveRelevantChunks` | Cache, embedding, recherche. |
-| 35 | `lib/rag/embeddings.js` · `generateEmbedding` | Vectorise la question. |
-| 36 | `lib/rag/vectorStoreQuery.js` · `searchSimilarChunks` | Top-5 par cosinus. |
-| 36b | `lib/rag/ragRetrieval.js` · `lexicalFallback` | **Seulement si le vectoriel ne rend rien.** Via `extractKeywords`, `normalizeForMatch`. |
-| 37 | `lib/promptBuilder.js` · `isRagLinkedToPrompt` | Écarte le contexte hors sujet. |
-| 38 | `lib/promptBuilder.js` · `buildSystemPrompt` | Assemble candidature (en tête, voir 120), contexte, profil, palette, instructions. Via `getRagInstructions`. |
-| 39 | `lib/user/userConversations.js` · `getRawConversationHistory` | Les 8 derniers échanges. |
-| 40 | `lib/chat/responseGenerator.js` · `buildHistoryMessages` | Historique au format messages. Via `toSafeText`. |
+| 32 | `lib/user/userConversations.js` · `getRawConversationHistory` | Les 8 derniers échanges, chargés avant le RAG. |
+| 33 | `lib/chat/responseGenerator.js` · `buildHistoryMessages` | Historique au format messages ; son dernier message utilisateur sert de requête secondaire. Via `toSafeText`. |
+| 34 | `lib/promptBuilder.js` · `buildRAGContextForPrompt` | Bloc `<contexte>` de blocs `<source document section>` sans score, vide si la porte reste fermée. |
+| 35 | `lib/rag/ragSystem.js` · `rechercher` | Question (poids 1) et message précédent (poids 0,5), top 6 passages. |
+| 36 | `lib/rag/ragSystem.js` · `vecteursRequetes` | Les deux embeddings en un seul appel, cache de 200 questions. Via `embedder`. |
+| 37 | `lib/rag/recherche.js` · `listesClassees` | Classements par cosinus (tous les passages) et par BM25. Via `bm25`, `termes`, `normaliser`, `ordre`. |
+| 38 | `lib/rag/recherche.js` · `fusionner` | Reciprocal Rank Fusion, `Σ poids/(60+rang)`. |
+| 39 | `lib/rag/recherche.js` · `porteOuverte` | **Seule la question juge** : cosinus ≥ 0,45, ou couverture ≥ 0,6 avec cosinus ≥ 0,3 (`SEUILS`). |
+| 40 | `lib/promptBuilder.js` · `buildVisitorContext` | Second message système : candidature (en tête, voir 120), profil, palette. Le premier, `SYSTEM_FIXE` (consignes, `prompts/instructions.txt`, règle du contexte), ne change jamais : c'est le préfixe en cache. |
 | 41 | `lib/chat/responseGenerator.js` · `filterToolsForPrompt` | N'expose que les tools dont l'intention est détectée. Via `isUserIntent`, `isImageIntent`, `isColorIntent`. |
 
 ### Back, boucle d'agent
@@ -260,7 +259,7 @@ Illusion range la candidature dans la base partagée (`MONGODB_URI`, `MONGODB_DB
 |---|---|---|
 | 118 | `lib/api/proxy.ts` · `sessionJeton` | Ajoute le jeton du cookie au relai du chat (étape 22), jamais celui du corps. |
 | 119 | `routes/chatRoute.js` · `loadCandidature` | Candidature du jeton, `null` si absente, mal formée ou en erreur (étape 26). |
-| 120 | `lib/messages.js` · `formatCandidatureContext` | Bloc en tête des consignes (étape 38) : recruteur, consignes, offre, entreprise, CV, lettre. Via `SYSTEM_PROMPTS.recruiterContext`. |
+| 120 | `lib/messages.js` · `formatCandidatureContext` | Bloc en tête du contexte visiteur (étape 40) : recruteur, consignes, offre, entreprise, CV, lettre. Via `SYSTEM_PROMPTS.recruiterContext`. |
 
 ### Illusion relève les visites
 | № | Fichier · Fonction | Rôle |
@@ -278,9 +277,6 @@ Aucun numéro : rien dans les parcours ci-dessus n'y mène.
 | `app/admin/users/**` — 8 composants, ~400 l. | **Le plus gros bloc sans chemin.** `useUsersData` appelle le backend sans en-tête : depuis la fermeture de la faille, la page reçoit 503. Soit on la rebranche derrière un proxy au chantier 00, soit elle sort. |
 | `lib/user/userMerge.js` · `linkProfiles`, `mergeUserProfiles` | Fusion de profils. Aucun appelant trouvé. |
 | `lib/user/profileManagement.js` · `searchUserByName` | Aucun appelant hors admin. |
-| `lib/rag/vectorStoreQuery.js` · `getChunksBySource` | Aucun appelant. |
-| `lib/rag/ragInit.js` · `updateConfig` | Aucun appelant. |
-| `lib/rag/chunker.js` · `estimateTokens`, `chunkText`, `chunkDocument` | Utilisées seulement dans leur fichier. L'`export` est inutile, les fonctions non. |
 | `lib/messages.js` · `formatLog` | Un seul usage, dans l'export par défaut. Probablement morte. |
 | `lib/serverHelpers.js` · `loadAssetsFromFrontend` | Uniquement `/api/admin/reload-assets`, donc injoignable aujourd'hui. |
 | `lib/rag/ragSystem.js` · `getSystemStats` | `/health` et admin uniquement. Légitime mais rare. |

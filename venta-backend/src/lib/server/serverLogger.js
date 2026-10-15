@@ -14,7 +14,7 @@ async function logRAGStats(ragInitialized) {
       const stats = await getSystemStats();
       console.log(`📚 ${CONSOLE_LOGS.serverRAGSystem}     ${EMOJIS.success} ${CONSOLE_LOGS.serverRAGActivated} (${stats.index.itemCount} ${CONSOLE_LOGS.serverRAGChunksIndexed})`);
       console.log(`   ${EMOJIS.subitem} ${CONSOLE_LOGS.serverRAGSources}      ${stats.index.sources.join(', ')}`);
-      console.log(`   ${EMOJIS.subitem} ${CONSOLE_LOGS.serverRAGConfig}       chunks=${stats.config.chunkSize}tok, overlap=${stats.config.overlap}tok, topK=${stats.config.topK}`);
+      console.log(`   ${EMOJIS.subitem} ${CONSOLE_LOGS.serverRAGConfig}       hybride BM25 + ${stats.config.embeddingModel}, topK=${stats.config.topK}, embeddings ${stats.index.persisted ? 'persistés dans MongoDB' : 'en mémoire'}`);
     } catch (error) {
       console.log(`📚 ${CONSOLE_LOGS.serverRAGSystem}     ${EMOJIS.success} ${CONSOLE_LOGS.serverRAGActivated} (${CONSOLE_LOGS.serverStatsNotAvailable})`);
     }

@@ -45,7 +45,7 @@ function addToolsToParams(apiParams, tools) {
  * Affiche les paramètres en debug
  */
 function logParamsDebug(apiParams, formattedInput, functionCallCount, messagesLength) {
-  if (functionCallCount === 0 && messagesLength === 2) {
+  if (functionCallCount === 0 && messagesLength === 3) {
     console.log(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Paramètres envoyés:`, JSON.stringify({
       model: apiParams.model,
       input_length: formattedInput.length,

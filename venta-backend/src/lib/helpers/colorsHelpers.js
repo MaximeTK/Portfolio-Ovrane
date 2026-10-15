@@ -67,7 +67,7 @@ export function getAvailableColors() {
   try {
     debug(`${EMOJIS.picture} ${CONSOLE_LOGS.functionCall} Récupération des couleurs disponibles`);
     
-    const colorsPath = path.join(__dirname, '..', '..', '..', 'rag', 'colors.txt');
+    const colorsPath = path.join(__dirname, '..', '..', '..', 'prompts', 'colors.txt');
     
     if (!fs.existsSync(colorsPath)) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.functionCall} Fichier colors.txt non trouvé`);

@@ -55,7 +55,7 @@ export function getAvailableAssets() {
   try {
     debug(`${EMOJIS.picture} ${CONSOLE_LOGS.functionCall} ${CONSOLE_LOGS.assetsRetrieving}`);
     
-    const assetsPath = path.join(__dirname, '..', '..', '..', 'rag', 'assets.txt');
+    const assetsPath = path.join(__dirname, '..', '..', '..', 'prompts', 'assets.txt');
     
     if (!fs.existsSync(assetsPath)) {
       console.error(`${EMOJIS.error} ${CONSOLE_LOGS.functionCall} ${ERROR_MESSAGES.assetsFileNotFound}`);

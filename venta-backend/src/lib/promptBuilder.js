@@ -1,131 +1,56 @@
 /**
  * Construction des prompts pour OpenAI
  */
-import { buildRAGContext } from './rag/ragSystem.js';
-import { 
-  SYSTEM_PROMPTS, 
-  RAG_HEADERS, 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { rechercher } from './rag/ragSystem.js';
+import {
+  SYSTEM_PROMPTS,
   ERROR_MESSAGES,
   formatUserInfo,
   formatCandidatureContext
 } from './messages.js';
+import { debug } from './log.js';
 
-function normalizeForMatch(text) {
-  return String(text ?? '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const INSTRUCTIONS = fs.readFileSync(path.join(__dirname, '..', '..', 'prompts', 'instructions.txt'), 'utf8').trim();
 
-function isRagLinkedToPrompt(prompt, sources) {
-  const p = normalizeForMatch(prompt);
-  if (!p) return false;
+// Identique pour tous les messages : c'est le préfixe que le cache de prompt d'OpenAI réutilise
+export const SYSTEM_FIXE = `${SYSTEM_PROMPTS.mainContext}\n\n${INSTRUCTIONS}\n\n${SYSTEM_PROMPTS.contextRule}`;
 
-  // Si l'utilisateur parle explicitement du portfolio / projets, on considère le RAG pertinent
-  if (/\b(maxime|hikup|ovrane|portfolio|projet|projets|pico)\b/i.test(prompt)) return true;
-
-  const keywords = new Set(p.split(' ').filter((t) => t.length >= 3));
-  if (keywords.size === 0) return false;
-
-  for (const src of sources) {
-    const s = normalizeForMatch(src);
-    if (!s) continue;
-    const parts = s.split(' ').filter((t) => t.length >= 3);
-    // Si au moins un mot "significatif" du titre/source est dans la requête, on considère lié
-    if (parts.some((w) => keywords.has(w))) {
-      return true;
-    }
-  }
-  return false;
-}
+const attribut = (valeur) => String(valeur).replace(/"/g, "'");
 
 /**
- * Construit le contexte RAG
+ * Bloc <contexte> des passages retrouvés pour la question et le message précédent, vide si la porte reste fermée
  */
-export async function buildRAGContextForPrompt(prompt, ragInitialized) {
+export async function buildRAGContextForPrompt(prompt, precedent, ragInitialized) {
   if (!ragInitialized) {
     return { ragContext: '', ragSources: [], ragCoverage: 'disabled' };
   }
-  
+
   try {
-    const ragResult = await buildRAGContext(prompt, 5);
-
-    const filteredChunks = ragResult.chunks || [];
-
-    const filteredSources = [...new Set(filteredChunks.map((c) => c.source))];
-    if (filteredChunks.length === 0) {
+    const { porte, passages, cosinusMax, couverture } = await rechercher(prompt, precedent);
+    debug(`📚 [RAG] Porte ${porte ? 'ouverte' : 'fermée'} (cosinus ${cosinusMax.toFixed(3)}, couverture ${couverture.toFixed(2)})${porte ? ` : ${passages.map((p) => p.section).join(' | ')}` : ''}`);
+    if (!porte) {
       return { ragContext: '', ragSources: [], ragCoverage: 'none' };
     }
-
-    // Si le prompt n'est pas clairement lié aux sources remontées, on ignore le RAG.
-    if (!isRagLinkedToPrompt(prompt, filteredSources)) {
-      return { ragContext: '', ragSources: [], ragCoverage: 'none' };
-    }
-
-    const averageScore = filteredChunks.reduce((sum, c) => sum + (c.score || 0), 0) / filteredChunks.length;
-
-    // Reconstruire le texte de contexte à partir des chunks filtrés
-    const contextParts = filteredChunks.map((chunk) => {
-      return `[SOURCE: ${chunk.source} | Chunk ${chunk.chunkIndex + 1}/${chunk.totalChunks} | Score: ${(chunk.score * 100).toFixed(1)}%]\n${chunk.text}`;
-    });
-    const contextText = contextParts.join('\n\n---\n\n');
-    
-    if (averageScore >= 0.55) {
-      return {
-        ragContext: `\n\n${RAG_HEADERS.contextRelevant}\n${contextText}\n\n`,
-        ragSources: filteredSources,
-        ragCoverage: 'good'
-      };
-    }
-    
-    if (filteredChunks.length > 0) {
-      return {
-        ragContext: `\n\n${RAG_HEADERS.contextLowRelevance}\n${contextText}\n\n`,
-        ragSources: filteredSources,
-        ragCoverage: 'low'
-      };
-    }
-    
-    return { ragContext: '', ragSources: [], ragCoverage: 'none' };
+    const sources = passages.map((p) => `<source document="${attribut(p.document)}" section="${attribut(p.section)}">\n${p.texte}\n</source>`);
+    return {
+      ragContext: `<contexte>\n${sources.join('\n')}\n</contexte>`,
+      ragSources: [...new Set(passages.map((p) => p.document))],
+      ragCoverage: 'good'
+    };
   } catch (error) {
     console.error(`❌ [BACKEND] ${ERROR_MESSAGES.ragRetrievalError}`, error.message);
-    return { ragContext: `\n\n${RAG_HEADERS.errorContext}\n\n`, ragSources: [], ragCoverage: 'error' };
+    return { ragContext: '', ragSources: [], ragCoverage: 'error' };
   }
 }
 
 /**
- * Construit le prompt système
+ * Contexte du visiteur : candidature du recruteur, nom et visites, fond actuel
  */
-export async function buildSystemPrompt(userProfile, userId, ragContext, ragCoverage, candidature = null) {
-  const bgPref =
-    (userProfile && userProfile.preferences && userProfile.preferences.backgroundColor)
-      ? String(userProfile.preferences.backgroundColor)
-      : null;
-  const bgInfo = `\n\nFOND ACTUEL (palette): ${bgPref ? bgPref : 'default'}`;
-  const userInfo = `\n\n${formatUserInfo(userProfile.name, userProfile.visitCount)}`;
-  
-  let ragInstructions = getRagInstructions(ragCoverage);
-
-  // Candidature en tête : identique d'un message à l'autre du recruteur, ce préfixe reste en cache côté API
-  return `${formatCandidatureContext(candidature)}${ragContext}${userInfo}${bgInfo}${ragInstructions}${SYSTEM_PROMPTS.mainContext}`;
+export function buildVisitorContext(userProfile, candidature = null) {
+  const bgPref = userProfile?.preferences?.backgroundColor ? String(userProfile.preferences.backgroundColor) : 'default';
+  return `${formatCandidatureContext(candidature)}${formatUserInfo(userProfile.name, userProfile.visitCount)}\n\nFOND ACTUEL (palette): ${bgPref}`;
 }
-
-function getRagInstructions(ragCoverage) {
-  if (ragCoverage === 'good') {
-    return `\n\n${SYSTEM_PROMPTS.ragGoodCoverage}`;
-  }
-  
-  if (ragCoverage === 'low') {
-    return `\n\n${SYSTEM_PROMPTS.ragLowCoverage}`;
-  }
-  
-  if (ragCoverage === 'none') {
-    return `\n\n${SYSTEM_PROMPTS.ragNoCoverage}`;
-  }
-  
-  return '';
-}
-

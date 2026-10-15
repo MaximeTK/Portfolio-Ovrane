@@ -1,7 +1,7 @@
 /**
  * Génération de réponses avec OpenAI
  */
-import { buildRAGContextForPrompt, buildSystemPrompt } from '../promptBuilder.js';
+import { buildRAGContextForPrompt, buildVisitorContext, SYSTEM_FIXE } from '../promptBuilder.js';
 import { getRawConversationHistory } from '../userMemory.js';
 import { callOpenAI } from '../openai/callHandler.js';
 import { resolveModelConfig } from '../openai/apiParams.js';
@@ -106,25 +106,27 @@ function buildHistoryMessages(rawHistory) {
  * Génère une réponse avec OpenAI
  */
 export async function generateResponse(openai, prompt, userId, userProfile, ragInitialized, candidature = null) {
-  const { ragContext, ragSources, ragCoverage } = await buildRAGContextForPrompt(prompt, ragInitialized);
-  const systemPrompt = await buildSystemPrompt(userProfile, userId, ragContext, ragCoverage, candidature);
-  
   // Injecter l'historique en tant que messages (meilleure compréhension des suivis type "plus simple", "en anglais", etc.)
   // On garde une fenêtre courte pour éviter d'exploser le contexte.
   const rawHistory = await getRawConversationHistory(userId, 8, 0);
   const historyMessages = buildHistoryMessages(rawHistory);
-  
+  const precedent = historyMessages.findLast((m) => m.role === 'user')?.content || '';
+  const { ragContext, ragSources, ragCoverage } = await buildRAGContextForPrompt(prompt, precedent, ragInitialized);
+  const visitorContext = buildVisitorContext(userProfile, candidature);
+
   debug(`\n📤 ${CONSOLE_LOGS.backend} ===== ENVOI À CHATGPT =====`);
   const modelConfig = resolveModelConfig();
   debug(`🤖 Modèle: ${modelConfig.model} | 🧠 Reasoning: ${modelConfig.effort} | 💬 Verbosity: ${modelConfig.verbosity}`);
-  debug(`📋 ${CONSOLE_LOGS.openaiSystemPrompt}`, systemPrompt.substring(0, 200) + '...');
+  debug(`📋 ${CONSOLE_LOGS.openaiSystemPrompt}`, visitorContext.substring(0, 200) + '...');
   debug(`💬 ${CONSOLE_LOGS.openaiUserPrompt}`, prompt);
   debug(`${EMOJIS.loading} ${CONSOLE_LOGS.backend} ${CONSOLE_LOGS.openaiCallInProgress}\n`);
-  
+
+  // Du plus stable au plus variable pour le cache de prompt : consignes fixes, visiteur, historique, passages + question
   const messages = [
-    { role: 'system', content: systemPrompt },
+    { role: 'system', content: SYSTEM_FIXE },
+    { role: 'system', content: visitorContext },
     ...historyMessages,
-    { role: 'user', content: prompt }
+    { role: 'user', content: ragContext ? `${ragContext}\n\n${prompt}` : prompt }
   ];
   
   const effectiveTools = filterToolsForPrompt(prompt);

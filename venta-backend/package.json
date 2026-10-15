@@ -10,8 +10,10 @@
     "test": "node test/test-server.js",
     "test:memory": "node test/test-memory.js",
     "test:rag": "node test/test-rag-system.js",
+    "test:rag:hybride": "node test/test-rag-hybride.js",
     "test:illusion": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON test/test-illusion.js",
     "check:rag": "node test/check-rag-setup.js",
+    "eval:rag": "node test/eval-rag.js",
     "update-rag": "node scripts/update-rag.js"
   },
   "dependencies": {
@@ -23,8 +25,7 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^7.2.0",
     "mongoose": "^9.1.1",
-    "openai": "^4.67.3",
-    "vectra": "^0.11.1"
+    "openai": "^4.67.3"
   },
   "keywords": [
     "ai",

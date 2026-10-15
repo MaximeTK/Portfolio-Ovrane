@@ -157,11 +157,15 @@ export async function callOpenAI(openai, messages, tools) {
     const formattedInput = convertMessagesToInput(messages);
     const apiParams = buildAPIParams(formattedInput, tools, totalFunctionCallCount, messages.length);
     
-    if (messages.length > 2) {
-      debug(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Messages dans la conversation: ${messages.length} (system + user + ${messages.length - 2} interaction(s))`);
+    if (messages.length > 3) {
+      debug(`${EMOJIS.info} ${CONSOLE_LOGS.backend} Messages dans la conversation: ${messages.length} (2 system + user + ${messages.length - 3} interaction(s))`);
     }
-    
+
     const response = await openai.responses.create(apiParams);
+    if (response.usage) {
+      const cached = response.usage.input_tokens_details?.cached_tokens ?? response.usage.prompt_tokens_details?.cached_tokens ?? 0;
+      debug(`💾 ${CONSOLE_LOGS.backend} Tokens en entrée : ${response.usage.input_tokens ?? response.usage.prompt_tokens}, dont ${cached} en cache`);
+    }
     const responseMessage = parseOpenAIResponse(response);
     
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {

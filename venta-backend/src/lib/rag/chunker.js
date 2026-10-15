@@ -1,108 +1,57 @@
 /**
- * Module de chunking pour le système RAG - max 5 fonctions, max 20 lignes
+ * Découpage structurel des documents Markdown du RAG
  */
 
-/**
- * Estime le nombre de tokens
- */
-export function estimateTokens(text) {
-  return Math.ceil(text.length / 4);
-}
+// ~350 tokens à 4 caractères par token
+const MAX_CARACTERES = 1400;
 
-/**
- * Découpe un texte en chunks avec chevauchement
- */
-export function chunkText(text, chunkSizeTokens = 500, overlapTokens = 100) {
-  if (!text || text.trim().length === 0) return [];
-
-  const chunkSizeChars = chunkSizeTokens * 4;
-  const overlapChars = overlapTokens * 4;
-  const stepSize = chunkSizeChars - overlapChars;
-  const chunks = [];
-  let start = 0;
-
-  while (start < text.length) {
-    const end = findChunkEnd(text, start, chunkSizeChars);
-    const chunk = text.substring(start, end).trim();
-    if (chunk.length > 0) chunks.push(chunk);
-    
-    start += stepSize;
-    if (start < text.length && start + chunkSizeChars >= text.length) {
-      const lastChunk = text.substring(start).trim();
-      if (lastChunk.length > 0 && lastChunk !== chunks[chunks.length - 1]) {
-        chunks.push(lastChunk);
-      }
-      break;
+function regrouperParagraphes(texte) {
+  if (texte.length <= MAX_CARACTERES) return [texte];
+  const morceaux = [];
+  let courant = '';
+  for (const paragraphe of texte.split(/\n\s*\n/)) {
+    if (courant && courant.length + paragraphe.length + 2 > MAX_CARACTERES) {
+      morceaux.push(courant);
+      courant = paragraphe;
+    } else {
+      courant = courant ? `${courant}\n\n${paragraphe}` : paragraphe;
     }
   }
-  return chunks;
-}
-
-function findChunkEnd(text, start, chunkSizeChars) {
-  let end = start + chunkSizeChars;
-  if (end >= text.length) return text.length;
-  
-  const textWindow = text.substring(start, end);
-  const lastPeriod = textWindow.lastIndexOf('.');
-  const lastExclamation = textWindow.lastIndexOf('!');
-  const lastQuestion = textWindow.lastIndexOf('?');
-  const lastNewline = textWindow.lastIndexOf('\n\n');
-  const lastSentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion, lastNewline);
-  
-  if (lastSentenceEnd > chunkSizeChars * 0.5) {
-    return start + lastSentenceEnd + 1;
-  }
-  
-  const lastSpace = textWindow.lastIndexOf(' ');
-  if (lastSpace > chunkSizeChars * 0.7) {
-    return start + lastSpace;
-  }
-  return end;
+  if (courant) morceaux.push(courant);
+  return morceaux;
 }
 
 /**
- * Découpe un document avec métadonnées
+ * Un passage par section #/##/### qui porte du texte, préfixé de son fil d'Ariane pour l'embedding et BM25
  */
-export function chunkDocument(document, chunkSizeTokens = 500, overlapTokens = 100) {
-  const { content, source, metadata = {} } = document;
-  const textChunks = chunkText(content, chunkSizeTokens, overlapTokens);
-  
-  return textChunks.map((text, index) => ({
-    id: `${source}_chunk_${index}`,
-    text,
-    source,
-    chunkIndex: index,
-    totalChunks: textChunks.length,
-    tokenCount: estimateTokens(text),
-    metadata: { ...metadata, createdAt: new Date().toISOString() }
-  }));
-}
+export function decouperMarkdown(contenu, document) {
+  const passages = [];
+  const titres = [];
+  let lignes = [];
+  let dansCode = false;
 
-/**
- * Découpe plusieurs documents
- */
-export function chunkDocuments(documents, chunkSizeTokens = 500, overlapTokens = 100) {
-  const allChunks = [];
-  for (const doc of documents) {
-    const chunks = chunkDocument(doc, chunkSizeTokens, overlapTokens);
-    allChunks.push(...chunks);
-  }
-  return allChunks;
-}
-
-/**
- * Déduplique les chunks similaires par hash
- */
-export function deduplicateChunks(chunks) {
-  const seen = new Set();
-  const deduplicated = [];
-  
-  for (const chunk of chunks) {
-    const hash = chunk.text.trim().toLowerCase();
-    if (!seen.has(hash)) {
-      seen.add(hash);
-      deduplicated.push(chunk);
+  const vider = () => {
+    const texte = lignes.join('\n').trim();
+    lignes = [];
+    if (!texte) return;
+    const section = titres.filter(Boolean).join(' > ') || document;
+    for (const morceau of regrouperParagraphes(texte)) {
+      passages.push({ document, section, texte: morceau, prefixe: `${section}\n\n${morceau}` });
     }
+  };
+
+  for (const ligne of contenu.split(/\r?\n/)) {
+    if (ligne.trimStart().startsWith('```')) dansCode = !dansCode;
+    const titre = !dansCode && /^(#{1,3})\s+(.+)$/.exec(ligne);
+    if (!titre) {
+      lignes.push(ligne);
+      continue;
+    }
+    vider();
+    // Un titre ferme les niveaux plus profonds que le sien
+    titres.length = titre[1].length;
+    titres[titre[1].length - 1] = titre[2].trim();
   }
-  return deduplicated;
+  vider();
+  return passages;
 }
