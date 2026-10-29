@@ -34,7 +34,7 @@ Le dépôt GitHub est **public**.
 | Haute | `.oldenv` (vraies clés) non ignoré par git ; jeton ngrok commité dans `tmp/ngrok.yml` | `*oldenv` et `tmp/` ignorés, `tmp/` retiré du suivi |
 | Haute | next 15.5.23 vulnérable ; express, qs, proxy-addr | next 15.5.28 ; `npm audit fix` côté back |
 | Moyenne | CORS accepté pour toute origine contenant « ngrok », avec credentials | CORS supprimé : aucun navigateur n'appelle le backend |
-| Moyenne | Énumération de comptes, code d'invitation comparé avec `!==`, mots de passe de 8 caractères | Message et durée identiques que le compte existe ou non, comparaisons en temps constant, 12 à 128 caractères à l'inscription |
+| Moyenne | Énumération de comptes, code d'invitation comparé avec `!==`, mots de passe de 8 caractères | Message et durée identiques que le compte existe ou non, comparaisons en temps constant, 8 à 128 caractères à l'inscription, le minimum d'Illusion (décision du 15/10) |
 | Moyenne | Erreurs détaillées renvoyées au client, `NODE_ENV` facultatif, aucun en-tête de sécurité au front | Middleware d'erreur JSON final ; démarrage refusé sans `NODE_ENV` ou, en production, sans `SERVICE_SECRET` ; CSP en Report-Only, `X-Frame-Options`, HSTS, `Referrer-Policy`, `Permissions-Policy` |
 | Basse | Images du chat acceptées depuis n'importe quel domaine ; texte TTS et réponses du modèle journalisés ; `/health` donnait le nom de la base | Images limitées à `/assets/` ; journaux sans données personnelles ; `/health` minimal |
 

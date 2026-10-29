@@ -159,7 +159,7 @@ function computeLevel(buffer: Uint8Array) {
   return Math.min(1, Math.pow(rms * 3, 2));
 }
 
-function startLevelLoop(
+export function startLevelLoop(
   analyser: AnalyserNode,
   onLevel: LevelHandler,
 ): () => void {

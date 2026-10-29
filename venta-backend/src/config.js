@@ -26,13 +26,19 @@ export const config = {
   logVerbose: env.LOG_VERBOSE === 'true',
   serviceSecret: env.SERVICE_SECRET || (production ? '' : 'dev-ovrane-service'),
   inviteCode: env.INVITE_CODE || '',
+  // Adresse publique du site pour les liens des e-mails, jamais déduite de la requête (en-tête Host falsifiable)
+  siteUrl: (env.SITE_URL || (production ? '' : 'http://localhost:3000')).replace(/\/+$/, ''),
+  mails: { resendKey: env.RESEND_API_KEY, expediteur: env.MAIL_FROM },
   mongodbUri: env.MONGODB_URI,
   mongodbDb: env.MONGODB_DB,
   openaiApiKey: env.OPENAI_API_KEY,
   openai: {
-    model: env.OPENAI_MODEL || 'gpt-5-mini',
-    effort: env.OPENAI_REASONING_EFFORT || 'medium',
-    verbosity: env.OPENAI_TEXT_VERBOSITY || 'medium',
+    model: env.OPENAI_MODEL || 'gpt-5.6-luna',
+    // Luna dose déjà son raisonnement selon la question ; un tri préalable coûterait ~1 s de plus
+    effort: env.OPENAI_REASONING_EFFORT || 'low',
+    // Commandes d'interface proposées : plus de raisonnement pour enchaîner les outils
+    effortOutils: 'medium',
+    verbosity: env.OPENAI_TEXT_VERBOSITY || 'low',
     maxTours: 5,
   },
   tts: {

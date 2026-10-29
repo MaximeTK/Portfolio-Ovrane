@@ -5,16 +5,15 @@ import { base, appeler, visiteur, fermer, modele, appelsOpenAI, REPONSE, SECRET 
 import { test, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'crypto';
-import fs from 'fs';
 import { spawnSync } from 'child_process';
 import bcrypt from 'bcryptjs';
 import { Session } from '../src/models/Session.js';
 import { MAX_MESSAGES } from '../src/services/utilisateurs.js';
 import { purger } from '../src/services/conservation.js';
 import { ipClient } from '../src/http.js';
-import { VOIX_ACCUEIL } from '../src/services/tts.js';
 import { config } from '../src/config.js';
-import { ERROR_MESSAGES, MISC_MESSAGES } from '../src/messages.js';
+import { preparerPourVoix } from '../src/services/tts.js';
+import { ERROR_MESSAGES, MAILS, MISC_MESSAGES } from '../src/messages.js';
 
 const repondreParDefaut = modele.repondre;
 after(fermer);
@@ -37,7 +36,8 @@ function compte(nom, motDePasse) {
 }
 
 test('secret de service : 401 partout sans lui ou avec un faux, sonde publique', async () => {
-  const routes = [['POST', '/api/auth/visitor'], ['POST', '/api/auth/login'], ['POST', '/api/auth/register'], ['POST', '/api/auth/logout'],
+  const routes = [['POST', '/api/auth/visitor'], ['POST', '/api/auth/login'], ['POST', '/api/auth/register'], ['POST', '/api/auth/logout'], ['GET', '/api/auth/compte'],
+    ['POST', '/api/auth/oubli'], ['POST', '/api/auth/reinitialiser'],
     ['POST', '/api/chat'], ['GET', '/api/chat/history'], ['GET', '/api/preferences'], ['POST', '/api/preferences'], ['POST', '/api/tracking/visit'],
     ['POST', '/api/tracking/redirect'], ['POST', '/api/tts'], ['GET', '/api/illusion/accueil?jeton=k3f9a0x2m1'], ['GET', '/api/illusion/cv/k3f9a0x2m1'],
     ['GET', '/api/admin/users'], ['GET', '/api/assets'], ['GET', '/api/tracking/pixel?id=campagne'], ['GET', '/api/inconnue']];
@@ -138,7 +138,6 @@ test('visiteur : jeton opaque stocké haché, valable 30 jours, repris sans nouv
   assert.match(cree.json.activeUserId, /^v[0-9a-f]{24}$/);
   assert.deepEqual(cree.json.userProfile, { name: null, visitCount: 1, isNewUser: true, messageCount: 0 });
   assert.equal(cree.json.reply, MISC_MESSAGES.welcomeNew());
-  assert.deepEqual(cree.json.tts, { isStaticFile: true, staticUrl: VOIX_ACCUEIL.nouveau.url });
   assert.equal(base.sessions.find((s) => s.utilisateur === cree.json.activeUserId)._id, sha256(jeton));
   assert.ok(!JSON.stringify(base.sessions).includes(jeton), 'jeton jamais stocké en clair');
   const jours = (new Date(expireLe) - Date.now()) / UN_JOUR;
@@ -149,10 +148,6 @@ test('visiteur : jeton opaque stocké haché, valable 30 jours, repris sans nouv
   assert.equal('session' in repris.json, false);
   assert.equal(repris.json.userProfile.isNewUser, false);
   assert.equal(repris.json.reply, MISC_MESSAGES.welcomeBack());
-  assert.deepEqual(repris.json.tts, { isStaticFile: true, staticUrl: VOIX_ACCUEIL.retour.url });
-  for (const { url } of Object.values(VOIX_ACCUEIL)) {
-    assert.ok(fs.existsSync(new URL(`../../Venta/public${url}`, import.meta.url)), `${url} absent : npm run voix:accueil`);
-  }
 });
 
 test('session : prolongée au plus une fois par jour à l\'usage', async () => {
@@ -210,7 +205,7 @@ test('inscription puis connexion : rotation de la session, déconnexion qui la r
   assert.equal(connecte.json.userProfile.isNewUser, false);
   const s2 = connecte.json.session.jeton;
   const reprisNomme = await appeler('/api/auth/visitor', { method: 'POST', session: s2, body: {} });
-  assert.deepEqual([reprisNomme.json.reply, 'tts' in reprisNomme.json], [MISC_MESSAGES.welcomeBack('Lea'), false], 'accueil nommé : pas de voix pré-générée');
+  assert.equal(reprisNomme.json.reply, MISC_MESSAGES.welcomeBack('Lea'), 'compte nommé repris par la route visiteur');
   assert.equal((await appeler('/api/chat/history', { session: s1 })).status, 401, 'ancienne session révoquée');
 
   assert.deepEqual((await appeler('/api/auth/logout', { method: 'POST', session: s2 })).json, { deconnexion: true });
@@ -218,7 +213,18 @@ test('inscription puis connexion : rotation de la session, déconnexion qui la r
   assert.deepEqual((await appeler('/api/auth/logout', { method: 'POST' })).json, { deconnexion: true });
 });
 
-test('connexion et inscription : même message que le compte existe ou non, mot de passe de 12 à 128 caractères', async () => {
+test('compte : pseudo et e-mail du compte de la session, null pour un visiteur, sans session ou après déconnexion', async () => {
+  const v = await visiteur();
+  assert.deepEqual((await appeler('/api/auth/compte', { session: v.session })).json, { compte: null });
+  assert.deepEqual((await appeler('/api/auth/compte')).json, { compte: null });
+  compte('Anna', 'mot-de-passe-d-anna');
+  const { jeton } = (await appeler('/api/auth/login', { method: 'POST', body: { identifier: 'anna', password: 'mot-de-passe-d-anna' } })).json.session;
+  assert.deepEqual((await appeler('/api/auth/compte', { session: jeton })).json, { compte: { pseudo: 'Anna', email: 'anna@exemple.fr' } });
+  await appeler('/api/auth/logout', { method: 'POST', session: jeton });
+  assert.deepEqual((await appeler('/api/auth/compte', { session: jeton })).json, { compte: null });
+});
+
+test('connexion et inscription : même message que le compte existe ou non, mot de passe de 8 à 128 caractères comme Illusion', async () => {
   compte('Zoe', 'mot-de-passe-de-zoe');
   const inconnu = await appeler('/api/auth/login', { method: 'POST', body: { identifier: 'personne', password: 'mot-de-passe-de-zoe' } });
   const mauvais = await appeler('/api/auth/login', { method: 'POST', body: { identifier: 'zoe', password: 'mauvais-mot-de-passe' } });
@@ -227,12 +233,80 @@ test('connexion et inscription : même message que le compte existe ou non, mot 
 
   const inscrire = (body) => appeler('/api/auth/register', { method: 'POST',
     body: { pseudo: 'Nouveau', email: 'nouveau@exemple.fr', password: 'un-mot-de-passe-long', inviteCode: 'invitation-de-test', ...body } });
-  for (const password of ['x'.repeat(11), 'x'.repeat(129), 123456789012]) {
+  for (const password of ['x'.repeat(7), 'x'.repeat(129), 12345678]) {
     assert.deepEqual((await inscrire({ password })).json, { error: ERROR_MESSAGES.passwordLength }, String(password));
   }
   assert.equal((await inscrire({ inviteCode: 'invitation-de-tesT' })).status, 403);
   assert.deepEqual((await inscrire({ pseudo: 'zoe' })).json, { error: ERROR_MESSAGES.accountTaken });
   assert.deepEqual((await inscrire({ email: 'ZOE@exemple.fr' })).json, { error: ERROR_MESSAGES.accountTaken });
+  assert.equal((await inscrire({ password: 'x'.repeat(8) })).status, 200, '8 caractères suffisent');
+});
+
+// Resend simulé ; l'envoi suit la réponse, d'où l'attente des e-mails
+async function avecResend(corps) {
+  const fetchReel = globalThis.fetch;
+  const envois = [];
+  Object.assign(config.mails, { resendKey: 'cle-resend-de-test', expediteur: 'Ovrane <no-reply@exemple.fr>' });
+  globalThis.fetch = (url, init) => {
+    if (!String(url).startsWith('https://api.resend.com/')) return fetchReel(url, init);
+    envois.push({ authorization: init.headers.Authorization, ...JSON.parse(init.body) });
+    return Promise.resolve(new Response('{"id":"mail-de-test"}', { status: 200 }));
+  };
+  const mails = async (n) => {
+    for (let i = 0; i < 500 && envois.length < n; i += 1) await attendre();
+    return envois;
+  };
+  try {
+    await corps(mails);
+  } finally {
+    globalThis.fetch = fetchReel;
+    Object.assign(config.mails, { resendKey: undefined, expediteur: undefined });
+  }
+}
+const lienDe = (mail) => /#reinit=([A-Za-z0-9_-]{43})/.exec(mail.text)?.[1];
+const reinitialiser = (jeton, password = 'nouveau-mot-de-passe') => appeler('/api/auth/reinitialiser', { method: 'POST', body: { jeton, password } });
+
+test('mot de passe oublié : même réponse, lien par Resend à usage unique, le dernier seul valable, sessions du compte fermées', async () => {
+  await avecResend(async (mails) => {
+    const marc = compte('Marc', 'ancien-mot-de-passe');
+    const login = (password) => appeler('/api/auth/login', { method: 'POST', body: { identifier: 'marc', password } });
+    const { jeton: session } = (await login('ancien-mot-de-passe')).json.session;
+
+    const inconnu = await appeler('/api/auth/oubli', { method: 'POST', body: { email: 'personne@exemple.fr' } });
+    const connu = await appeler('/api/auth/oubli', { method: 'POST', body: { email: ' MARC@exemple.fr ' } });
+    assert.deepEqual([inconnu.status, inconnu.json], [connu.status, connu.json], 'même réponse que le compte existe ou non');
+    const [mail] = await mails(1);
+    assert.deepEqual([mail.to, mail.from, mail.authorization], [['marc@exemple.fr'], 'Ovrane <no-reply@exemple.fr>', 'Bearer cle-resend-de-test']);
+    const premier = lienDe(mail);
+    assert.ok(mail.html.includes(`${config.siteUrl}/connexion#reinit=${premier}`), 'jeton dans le fragment, jamais envoyé à un serveur');
+    assert.deepEqual(base.reinitialisations.map((r) => r._id), [sha256(premier)], 'seule l\'empreinte est gardée');
+
+    await appeler('/api/auth/oubli', { method: 'POST', body: { email: 'marc@exemple.fr' } });
+    const second = lienDe((await mails(2))[1]);
+    assert.deepEqual((await reinitialiser(premier)).json, { error: ERROR_MESSAGES.reinitInvalide }, 'le nouveau lien remplace l\'ancien');
+    assert.deepEqual((await reinitialiser(second, 'court')).json, { error: ERROR_MESSAGES.passwordLength });
+    assert.deepEqual((await reinitialiser(second)).json, { reinitialise: true });
+    assert.deepEqual((await reinitialiser(second)).json, { error: ERROR_MESSAGES.reinitInvalide }, 'usage unique');
+
+    assert.equal((await mails(3))[2].subject, MAILS.motDePasseChange('Marc').sujet, 'confirmation envoyée');
+    assert.equal((await mails(4)).length, 3, 'aucun e-mail pour l\'adresse inconnue');
+    assert.equal((await appeler('/api/chat/history', { session })).status, 401, 'sessions du compte fermées');
+    assert.equal((await login('ancien-mot-de-passe')).status, 401);
+    assert.equal((await login('nouveau-mot-de-passe')).status, 200);
+    assert.ok(profil(marc.id).motDePasseChangeLe instanceof Date);
+  });
+});
+
+test('mot de passe oublié : lien expiré ou mal formé refusé, 3 demandes par heure et par adresse', async () => {
+  const leon = compte('Leon', 'mot-de-passe-de-leon');
+  const jeton = crypto.randomBytes(32).toString('base64url');
+  base.reinitialisations.push({ _id: sha256(jeton), utilisateur: leon.id, creeLe: new Date(Date.now() - 2 * 3600_000), expireLe: new Date(Date.now() - 3600_000) });
+  for (const essai of [jeton, 'mal-forme', { $ne: null }]) {
+    assert.deepEqual((await reinitialiser(essai)).json, { error: ERROR_MESSAGES.reinitInvalide }, String(essai));
+  }
+  const demander = () => appeler('/api/auth/oubli', { method: 'POST', body: { email: 'quelquun@exemple.fr' } });
+  for (let i = 0; i < 3; i += 1) assert.equal((await demander()).status, 200);
+  assert.equal((await demander()).status, 429);
 });
 
 test('limite de connexion : 10 essais par IP et 10 par identifiant sur 15 minutes', async () => {
@@ -435,6 +509,42 @@ test('TTS : Cartesia en premier, sans langue imposée ; refusé (crédits épuis
   }
 });
 
+test('TTS : l\'audio de Cartesia part au fil de l\'eau, avant la fin de sa synthèse', async () => {
+  const { session } = await visiteur();
+  const fetchReel = globalThis.fetch;
+  const texte = new TextEncoder();
+  let finir;
+  config.tts.cartesiaKey = 'cle-de-test';
+  globalThis.fetch = (url, init) => {
+    if (!String(url).startsWith('https://api.cartesia.ai/')) return fetchReel(url, init);
+    // Synthèse simulée en deux temps : la fin n'arrive qu'une fois le début reçu par le client
+    const corps = new ReadableStream({
+      start(flux) {
+        flux.enqueue(texte.encode('debut-'));
+        finir = () => {
+          flux.enqueue(texte.encode('fin'));
+          flux.close();
+        };
+      },
+    });
+    return Promise.resolve(new Response(corps, { status: 200 }));
+  };
+  try {
+    const res = await appeler('/api/tts', { method: 'POST', session, body: { text: 'Bonjour' }, brut: true });
+    const lecteur = res.body.getReader();
+    const lu = new TextDecoder();
+    const delai = new Promise((_, rejeter) => setTimeout(() => rejeter(new Error('aucun morceau avant la fin : audio mis en mémoire')), 2000));
+    assert.equal(lu.decode((await Promise.race([lecteur.read(), delai])).value), 'debut-');
+    finir();
+    let reste = '';
+    for (let morceau = await lecteur.read(); !morceau.done; morceau = await lecteur.read()) reste += lu.decode(morceau.value);
+    assert.equal(reste, 'fin');
+  } finally {
+    globalThis.fetch = fetchReel;
+    config.tts.cartesiaKey = '';
+  }
+});
+
 test('schéma Session : collection sessions, effacée par MongoDB à expireLe', () => {
   assert.equal(Session.collection.collectionName, 'sessions');
   assert.equal(Session.schema.indexes().find(([champs]) => champs.expireLe === 1)?.[1].expireAfterSeconds, 0);
@@ -466,5 +576,90 @@ test('configuration : le serveur refuse de démarrer sans NODE_ENV connu ni secr
     const { status, stderr } = demarrer(env);
     assert.equal(status, 1, JSON.stringify(env));
     assert.ok(stderr.includes(attendu), stderr);
+  }
+});
+
+// Événements d'une réponse SSE, dans l'ordre
+const evenements = (texte) => texte.split('\n\n').filter(Boolean).map((bloc) => ({
+  type: bloc.match(/^event: (.+)$/m)?.[1],
+  donnees: JSON.parse(bloc.match(/^data: (.+)$/m)?.[1] ?? 'null'),
+}));
+
+// Cartesia simulé : à la fin du contexte, un morceau d'audio puis « done » ; chaque message envoyé est gardé
+class FauxWebSocket {
+  static OPEN = 1;
+  static derniere = null;
+  constructor(url, options) {
+    Object.assign(this, { url, options, readyState: 0, envois: [] });
+    FauxWebSocket.derniere = this;
+    setTimeout(() => {
+      this.readyState = 1;
+      this.onopen?.();
+    }, 5);
+  }
+  send(message) {
+    const envoi = JSON.parse(message);
+    this.envois.push(envoi);
+    if (envoi.continue !== false) return;
+    setTimeout(() => {
+      this.onmessage?.({ data: JSON.stringify({ type: 'chunk', data: Buffer.from('pcm').toString('base64') }) });
+      this.onmessage?.({ data: JSON.stringify({ type: 'done' }) });
+    }, 5);
+  }
+  close() {
+    this.readyState = 3;
+    this.onclose?.();
+  }
+}
+
+test('chat : luna, effort bas sans outils, moyen quand l\'interface est en jeu, toujours en flux et sur le même cache', async () => {
+  const { session } = await visiteur();
+  await appeler('/api/chat', { method: 'POST', session, body: { prompt: 'Qui est Maxime ?' } });
+  const simple = appelsOpenAI.at(-1);
+  await appeler('/api/chat', { method: 'POST', session, body: { prompt: 'Affiche le logo de Pico' } });
+  const interface_ = appelsOpenAI.at(-1);
+  assert.deepEqual([simple.model, simple.reasoning.effort, simple.stream, 'tools' in simple], ['gpt-5.6-luna', 'low', true, false]);
+  assert.deepEqual([interface_.reasoning.effort, interface_.tools?.length > 0], ['medium', true]);
+  assert.equal(simple.prompt_cache_key, interface_.prompt_cache_key);
+});
+
+test('voix en flux : texte sans code, liens ni Markdown, espaces gardés pour recoller les morceaux', () => {
+  const etat = { dansCode: false };
+  assert.equal(preparerPourVoix('Voici **Illusion** : https://exemple.fr/a ', etat), 'Voici Illusion : un lien ');
+  assert.equal(preparerPourVoix('regardez ```js\nconst a', etat), 'regardez ');
+  assert.equal(etat.dansCode, true, 'le bloc de code continue au morceau suivant');
+  assert.equal(preparerPourVoix(' = 1;\n``` fini.', etat), ' Je vous ai affiché un exemple de code. fini.');
+});
+
+test('chat en flux sans Cartesia : secours annoncé, texte en morceaux puis réponse complète enregistrée', async () => {
+  const { session } = await visiteur();
+  const res = await appeler('/api/chat/flux', { method: 'POST', session, body: { prompt: 'Bonjour' } });
+  assert.equal(res.headers.get('content-type'), 'text/event-stream; charset=utf-8');
+  const liste = evenements(res.bytes.toString());
+  assert.deepEqual(liste.map((e) => e.type), ['secours', 'texte', 'texte', 'fin']);
+  assert.equal(liste.filter((e) => e.type === 'texte').map((e) => e.donnees.delta).join(''), REPONSE);
+  assert.equal(liste.at(-1).donnees.reply, REPONSE);
+  assert.equal((await appeler('/api/chat/flux', { method: 'POST', session, body: { prompt: '' } })).status, 400);
+});
+
+test('chat en flux avec Cartesia : mots complets en continuation d\'un même contexte, audio relayé avant la fin', async () => {
+  const { session } = await visiteur();
+  const vrai = globalThis.WebSocket;
+  globalThis.WebSocket = FauxWebSocket;
+  config.tts.cartesiaKey = 'cle-de-test';
+  try {
+    const res = await appeler('/api/chat/flux', { method: 'POST', session, body: { prompt: 'Bonjour' } });
+    const liste = evenements(res.bytes.toString());
+    assert.deepEqual(liste.map((e) => e.type), ['texte', 'texte', 'audio', 'fin']);
+    assert.equal(liste[2].donnees.pcm, Buffer.from('pcm').toString('base64'));
+    const ws = FauxWebSocket.derniere;
+    assert.equal(ws.options.headers['X-API-Key'], 'cle-de-test');
+    assert.equal(ws.envois.map((e) => e.transcript).join(''), REPONSE, 'les morceaux se recollent en la réponse');
+    assert.ok(ws.envois.slice(0, -1).every((e) => e.continue === true) && ws.envois.at(-1).continue === false);
+    assert.equal(new Set(ws.envois.map((e) => e.context_id)).size, 1);
+    assert.ok(ws.envois.every((e) => !('language' in e) && e.output_format.container === 'raw'));
+  } finally {
+    globalThis.WebSocket = vrai;
+    config.tts.cartesiaKey = '';
   }
 });

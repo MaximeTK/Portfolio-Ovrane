@@ -1,6 +1,7 @@
 /**
  * Démarrage : configuration, MongoDB, RAG puis écoute ; sans configuration valide ni base, le serveur s'arrête
  */
+import dns from 'dns';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
@@ -15,6 +16,9 @@ if (config.erreurs.length) {
   for (const erreur of config.erreurs) log.error('[DÉMARRAGE]', erreur);
   process.exit(1);
 }
+
+// Sous Windows, Node se rabat sur 127.0.0.1 quand il ne lit pas le DNS du réseau, et la recherche SRV de mongodb+srv échoue
+if (dns.getServers().every((serveur) => serveur === '127.0.0.1' || serveur === '::1')) dns.setServers(['1.1.1.1', '8.8.8.8']);
 
 try {
   await mongoose.connect(config.mongodbUri, { dbName: config.mongodbDb });

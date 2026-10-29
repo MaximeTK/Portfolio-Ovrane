@@ -49,7 +49,7 @@ export function buildVisitorContext(user, candidature = null) {
   return `${formatCandidatureContext(candidature)}${formatUserInfo(user.name, user.visitCount)}\n\nFOND ACTUEL (palette): ${user.preferences?.backgroundColor || 'default'}`;
 }
 
-export async function generateResponse(openai, prompt, user, candidature, ctx) {
+export async function generateResponse(openai, prompt, user, candidature, ctx, surTexte) {
   // Les derniers échanges en messages : les relances courtes (« en anglais ») s'y rattachent
   const historique = aPlat(user.conversations)
     .map((message) => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: String(message.content ?? '').trim() }))
@@ -63,7 +63,7 @@ export async function generateResponse(openai, prompt, user, candidature, ctx) {
     ...historique,
     { role: 'user', content: ragContext ? `${ragContext}\n\n${prompt}` : prompt },
   ];
-  const texte = await callOpenAI(openai, messages, outilsPour(prompt), ctx);
+  const texte = await callOpenAI(openai, messages, outilsPour(prompt), ctx, surTexte);
   if (!texte) log.warn('[CHAT] Réponse vide du modèle, repli sur la réponse par défaut');
   return texte || MISC_MESSAGES.defaultResponse;
 }

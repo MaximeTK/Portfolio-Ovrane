@@ -10,8 +10,7 @@
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/*.test.js\"",
     "test:openai": "node --test test/openai.js",
     "eval:rag": "node scripts/eval-rag.js",
-    "update-rag": "node scripts/update-rag.js",
-    "voix:accueil": "node scripts/voix-accueil.js"
+    "update-rag": "node scripts/update-rag.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

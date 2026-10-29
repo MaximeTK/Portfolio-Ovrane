@@ -1,6 +1,6 @@
 'use client';
 
-import { ETIQUETTE, VERRE, allerA } from './ProjectPage';
+import { ETIQUETTE, Verre, allerA } from './ProjectPage';
 
 const CONTACT = 'maxime.thiong-kay@proton.me';
 const MAJ = '15 octobre 2026';
@@ -36,8 +36,8 @@ const TRAITEMENTS = [
   },
   {
     titre: 'Votre compte (facultatif)',
-    donnees: 'Pseudo, adresse e-mail, mot de passe conservé uniquement sous forme hachée, illisible même pour moi.',
-    pourquoi: 'Vous reconnecter, depuis n’importe quel appareil.',
+    donnees: 'Pseudo, adresse e-mail, mot de passe conservé uniquement sous forme hachée, illisible même pour moi. Un lien « mot de passe oublié » n’est gardé que 30 minutes, lui aussi haché.',
+    pourquoi: 'Vous reconnecter, depuis n’importe quel appareil, et vous envoyer le lien pour changer de mot de passe si vous le demandez.',
     base: 'Exécution du service que vous demandez.',
     duree: 'Jusqu’à la suppression du compte ; après 90 jours sans visite, ses conversations et ses traces de connexion sont effacées.',
   },
@@ -53,6 +53,7 @@ const TRAITEMENTS = [
 const DESTINATAIRES = [
   ['OpenAI', 'vos messages, pour générer les réponses et la voix'],
   ['ElevenLabs', 'le texte des réponses, quand cette voix est utilisée'],
+  ['Resend', 'votre adresse e-mail et votre pseudo, pour envoyer le lien « mot de passe oublié »'],
   ['Vercel, Render, MongoDB', 'l’hébergement du site, du serveur et de la base'],
 ];
 
@@ -91,12 +92,12 @@ export function LegalPage() {
           <h3 className={`${ETIQUETTE} mt-8`}>Hébergement</h3>
           <ul className="mt-3 grid gap-3 md:grid-cols-3">
             {HEBERGEURS.map((h) => (
-              <li key={h.nom} className={`${VERRE} p-4 text-sm`}>
+              <Verre as="li" key={h.nom} className="p-4 text-sm">
                 <p className="text-white/60">{h.role}</p>
                 <p className="mt-1 font-semibold text-white">{h.nom}</p>
                 <p className="mt-1 leading-relaxed text-white/75">{h.adresse}</p>
                 <p className="mt-1 text-white/75">{h.contact}</p>
-              </li>
+              </Verre>
             ))}
           </ul>
         </section>
@@ -109,7 +110,7 @@ export function LegalPage() {
           </p>
           <div className="mt-6 space-y-3">
             {TRAITEMENTS.map((t) => (
-              <article key={t.titre} className={`${VERRE} p-5`}>
+              <Verre as="article" key={t.titre} className="p-5">
                 <h3 className="font-semibold text-white">{t.titre}</h3>
                 <dl className="mt-3 grid gap-x-6 gap-y-3 text-sm leading-relaxed sm:grid-cols-2">
                   <div className="sm:col-span-2"><dt className={ETIQUETTE}>Données</dt><dd className="mt-1 text-white/80">{t.donnees}</dd></div>
@@ -117,7 +118,7 @@ export function LegalPage() {
                   <div><dt className={ETIQUETTE}>Base légale</dt><dd className="mt-1 text-white/80">{t.base}</dd></div>
                   <div className="sm:col-span-2"><dt className={ETIQUETTE}>Conservation</dt><dd className="mt-1 text-white/80">{t.duree}</dd></div>
                 </dl>
-              </article>
+              </Verre>
             ))}
           </div>
 

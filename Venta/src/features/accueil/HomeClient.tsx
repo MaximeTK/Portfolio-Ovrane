@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAudioVisualization } from '@/features/oeil/useAudioVisualization';
-import { useTTS } from '@/features/oeil/useTTS';
+import { useTTS, type FluxVoix } from '@/features/oeil/useTTS';
 import { HexagonalAnimation, type HexagonalAnimationHandle } from '@/features/oeil/HexagonalAnimation';
 import { useChatController } from '@/features/chat/useChatController';
 import { InputArea } from '@/features/chat/InputArea';
@@ -16,6 +16,12 @@ import { IntroSequence } from './IntroSequence';
 
 const MessagingView = dynamic(() => import('@/features/chat/MessagingView').then((m) => m.MessagingView));
 
+// Page actualisée par le visiteur, et non ouverte : l'accueil s'affiche sans être redit
+const estRechargement = () => (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload';
+
+// Réponse dite pendant qu'elle s'écrit : sa voix, sa fenêtre ouverte au premier son, le texte reçu et le texte final
+type ReponseEnFlux = { texte: string; final: string | null; voix: FluxVoix | null; fenetre: string | null; secours: boolean };
+
 export default function HomeClient() {
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const [currentAnimation, setCurrentAnimation] = useState<'standby' | 'thinking' | 'speak'>('standby');
@@ -27,12 +33,14 @@ export default function HomeClient() {
   // Seules les réponses à une question ouvrent une fenêtre, pas l'accueil
   const questionAskedRef = useRef(false);
   const hexAnimationRef = useRef<HexagonalAnimationHandle>(null);
+  const reponseRef = useRef<ReponseEnFlux | null>(null);
 
   const { setupAudioVisualization } = useAudioVisualization();
   const { send, sendAuth, status, currentTranscript, currentTTS, currentUserId, isNewProfile, messages, loadMoreMessages, hasMoreMessages } =
     useChatController();
-  const { isSpeaking, getAudioLevel, speakWithQueue, speakWithUrl, stop: stopTTS } = useTTS();
+  const { isSpeaking, getAudioLevel, speakWithQueue, speakWithUrl, ouvrirFlux, stop: stopTTS } = useTTS();
   const addWindow = useUIStore((state) => state.addWindow);
+  const setWindowContent = useUIStore((state) => state.setWindowContent);
   const appState = useUIStore((state) => state.appState);
   const setAppState = useUIStore((state) => state.setAppState);
   const viewMode = useUIStore((state) => state.viewMode);
@@ -59,6 +67,11 @@ export default function HomeClient() {
       // Stockage bloqué : réglages par défaut
     }
   }, []);
+
+  // L'œil s'éveille avec une onde, à l'arrivée de l'accueil et pas avant
+  useEffect(() => {
+    if (appState === 'awake') hexAnimationRef.current?.triggerWave();
+  }, [appState]);
 
   useEffect(() => {
     hintStepRef.current = isNewProfile ? 'armed' : null;
@@ -90,6 +103,14 @@ export default function HomeClient() {
     return () => clearTimeout(timer);
   }, [appState, currentTranscript, setAppState]);
 
+  // Astuce de messagerie, due depuis le premier message d'un nouveau profil, montrée quand la réponse commence
+  const montrerAstuce = useCallback(() => {
+    const ui = useUIStore.getState();
+    if (hintStepRef.current !== 'due' || ui.viewMode === 'messaging' || ui.isAppLocked) return;
+    hintStepRef.current = null;
+    setMessagingHint(true);
+  }, []);
+
   // Chaque réponse : fenêtre et voix au tableau de bord, fenêtre seule en messagerie ou sur une page
   useEffect(() => {
     if (status !== 'idle' || !currentTranscript || currentTranscript === lastProcessedTranscript) return;
@@ -111,16 +132,20 @@ export default function HomeClient() {
       return;
     }
 
+    // Réponse déjà dite pendant qu'elle s'écrivait : sa fenêtre, ouverte au premier son, prend le texte final
+    const enFlux = isAnswer ? reponseRef.current : null;
+    if (enFlux?.voix) {
+      enFlux.final = currentTranscript;
+      if (enFlux.fenetre) setWindowContent(enFlux.fenetre, currentTranscript);
+      return;
+    }
+
     // Fenêtre, astuce et réveil arrivent avec le son, pas avant
     const onStart = () => {
       openWindow();
-      const ui = useUIStore.getState();
-      if (hintStepRef.current === 'due' && ui.viewMode !== 'messaging' && !ui.isAppLocked) {
-        hintStepRef.current = null;
-        setMessagingHint(true);
-      }
+      montrerAstuce();
       setCurrentAnimation('speak');
-      if (ui.appState === 'processing') setAppState('awake');
+      if (useUIStore.getState().appState === 'processing') setAppState('awake');
     };
 
     // Voix coupée : fenêtre, astuce et réveil arrivent aussitôt, sans le son ni la synthèse
@@ -130,10 +155,16 @@ export default function HomeClient() {
       return;
     }
 
+    // L'accueil réveille l'œil dès qu'il arrive ; sa voix suit quand la synthèse est prête, sauf après une actualisation
+    if (!isAnswer) {
+      if (useUIStore.getState().appState === 'processing') setAppState('awake');
+      if (estRechargement()) return onEnd();
+    }
+
     const staticUrl = currentTTS?.isStaticFile ? currentTTS.staticUrl : undefined;
     if (staticUrl) speakWithUrl(staticUrl, setupAudioVisualization, onEnd, onStart);
     else speakWithQueue(currentTranscript, setupAudioVisualization, onEnd, onStart);
-  }, [status, currentTranscript, lastProcessedTranscript, currentTTS, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addWindow, setAppState, viewMode, page, sonCoupe]);
+  }, [status, currentTranscript, lastProcessedTranscript, currentTTS, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addWindow, setWindowContent, montrerAstuce, setAppState, viewMode, page, sonCoupe]);
 
   const handleSubmit = (text: string) => {
     setLastProcessedTranscript('');
@@ -141,7 +172,30 @@ export default function HomeClient() {
     setCurrentAnimation('thinking');
     questionAskedRef.current = true;
     if (hintStepRef.current === 'armed') hintStepRef.current = 'due';
-    send(text);
+
+    // Voix en flux : la fenêtre s'ouvre au premier son, puis le texte s'y allonge à mesure qu'il arrive
+    const reponse: ReponseEnFlux = { texte: '', final: null, voix: null, fenetre: null, secours: false };
+    reponseRef.current = reponse;
+    const auPremierSon = () => {
+      reponse.fenetre = addWindow('text', reponse.final ?? reponse.texte);
+      montrerAstuce();
+      setCurrentAnimation('speak');
+    };
+    send(text, {
+      texte: (complet) => {
+        reponse.texte = complet;
+        if (reponse.fenetre) setWindowContent(reponse.fenetre, complet);
+      },
+      audio: (pcm) => {
+        const ui = useUIStore.getState();
+        if (reponse.secours || ui.sonCoupe || ui.viewMode === 'messaging' || ui.page || reponseRef.current !== reponse) return;
+        reponse.voix ??= ouvrirFlux(() => setCurrentAnimation('standby'), auPremierSon);
+        reponse.voix.pousser(pcm);
+      },
+      secours: () => {
+        reponse.secours = true;
+      },
+    }).then(() => reponse.voix?.terminer());
   };
 
   return (
@@ -160,11 +214,11 @@ export default function HomeClient() {
         )}
 
         <SiteHeader />
-        <PageView />
+        <PageView sendAuth={sendAuth} utilisateur={currentUserId} />
 
         {/* L'œil, au-dessus du header où il se loge ; seul son bouton capte les clics */}
         <div
-          className={`fixed inset-0 z-[45] pointer-events-none flex flex-col items-center justify-center transition-all duration-500 ${
+          className={`fixed inset-0 z-[45] pointer-events-none flex flex-col items-center justify-center transition-all duration-300 ${
             appState === 'awake' ? 'opacity-100' : 'opacity-0'
           }`}
         >
@@ -179,7 +233,7 @@ export default function HomeClient() {
 
         <div
           inert={!inputVisible}
-          className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[min(600px,90vw)] z-30 transition-all duration-1000 delay-1000 ${
+          className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[min(600px,90vw)] z-30 transition-all duration-500 delay-150 ${
             inputVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
           }`}
         >

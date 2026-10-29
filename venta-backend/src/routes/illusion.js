@@ -5,6 +5,7 @@ import { IllusionCandidature } from '../models/IllusionCandidature.js';
 import { IllusionFichier } from '../models/IllusionFichier.js';
 import { noterActivite } from '../services/conservation.js';
 import { sendError } from '../http.js';
+import * as log from '../log.js';
 import { ERROR_MESSAGES } from '../messages.js';
 import { isValidJeton } from '../validators.js';
 
@@ -24,13 +25,13 @@ export function setupIllusionRoutes(app) {
         ? await IllusionCandidature.findOne({ jeton }, { _id: 0, langue: 1, 'offre.titre': 1, 'offre.entreprise': 1, 'entreprise.nom': 1 }).lean()
         : null;
       if (!candidature) return sendError(res, 404, ERROR_MESSAGES.illusionNotFound);
-      // Le recruteur revient sur le site : la candidature reste active
-      await noterActivite(jeton);
       res.json({
         entreprise: candidature.entreprise?.nom || candidature.offre?.entreprise || '',
         poste: candidature.offre?.titre || '',
         langue: candidature.langue || '',
       });
+      // Après la réponse : le recruteur n'attend pas l'écriture qui garde sa candidature active
+      noterActivite(jeton).catch((error) => log.error('[ILLUSION] Activité non notée :', error.message));
     } catch (error) {
       next(error);
     }

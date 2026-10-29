@@ -34,6 +34,13 @@ const ICONE_REGLAGES = (
   </svg>
 );
 
+const ICONE_COMPTE = (
+  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+  </svg>
+);
+
 export function SiteHeader() {
   const awake = useUIStore((s) => s.appState === 'awake');
   // L'emplacement central s'ouvre dès que l'œil quitte le centre de l'écran : page ou messagerie
@@ -51,7 +58,9 @@ export function SiteHeader() {
         aria-label="Navigation principale"
         className={`inline-grid h-11 grid-cols-[1fr_auto_1fr] items-center ${awake ? 'pointer-events-auto' : ''}`}
       >
+        {/* Une icône à chaque bout : les deux colonnes gardent la même largeur sur mobile */}
         <div className="flex items-center justify-end gap-4 sm:gap-7">
+          <Onglet page="reglages" label="Réglages" icone={ICONE_REGLAGES} />
           <Onglet page="pico" label="Pico" />
           <Onglet page="ovrane" label="Ovrane" />
         </div>
@@ -59,7 +68,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-4 sm:gap-7">
           <Onglet page="illusion" label="Illusion" />
           <Onglet page="hikup" label="Hikup" />
-          <Onglet page="reglages" label="Réglages" icone={ICONE_REGLAGES} />
+          <Onglet page="connexion" label="Compte" icone={ICONE_COMPTE} />
         </div>
       </nav>
     </header>

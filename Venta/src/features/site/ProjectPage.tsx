@@ -1,12 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentPropsWithoutRef, type ElementType, type ReactNode } from 'react';
 import Image from 'next/image';
 import type { Bloc, Projet, Scene, Visuel } from './projets';
 import { useUIStore } from '@/lib/uiStore';
 
 export const ETIQUETTE = 'text-[10px] font-bold uppercase tracking-[0.25em] text-white/60';
-export const VERRE = 'rounded-2xl border border-white/[0.18] bg-(--verre) backdrop-blur-[60px] backdrop-saturate-200';
+
+// Bloc en verre (Figma 333-2359) : la classe .verre et le calque de ses halos, toujours premier enfant
+export function Verre<T extends ElementType = 'div'>({
+  as,
+  className = '',
+  children,
+  ...props
+}: { as?: T; className?: string; children?: ReactNode } & Omit<ComponentPropsWithoutRef<T>, 'as' | 'className' | 'children'>) {
+  const Balise: ElementType = as ?? 'div';
+  return (
+    <Balise className={`verre ${className}`} {...props}>
+      <span className="verre-halos" aria-hidden="true" />
+      {children}
+    </Balise>
+  );
+}
 const PARAGRAPHE = 'max-w-[68ch] text-[15px] leading-relaxed text-white/80 md:text-base';
 
 const GRILLE = { 1: '', 2: 'sm:grid-cols-2', 3: 'grid-cols-2 md:grid-cols-3', 4: 'grid-cols-2 md:grid-cols-4' } as const;
@@ -69,11 +84,11 @@ function RenduBloc({ bloc }: { bloc: Bloc }) {
       return (
         <ol className={`grid gap-3 sm:grid-cols-2 ${bloc.items.length === 3 ? 'lg:grid-cols-3' : bloc.items.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-5'}`}>
           {bloc.items.map((e, i) => (
-            <li key={e.titre} className={`${VERRE} p-4`}>
+            <Verre as="li" key={e.titre} className="p-4">
               <span className="font-mono text-xs text-white/50">{String(i + 1).padStart(2, '0')}</span>
               <p className="mt-2 font-semibold text-white">{e.titre}</p>
               <p className="mt-1 text-sm leading-relaxed text-white/70">{e.texte}</p>
-            </li>
+            </Verre>
           ))}
         </ol>
       );
@@ -114,10 +129,10 @@ function RenduBloc({ bloc }: { bloc: Bloc }) {
       );
     case 'encadre':
       return (
-        <aside className={`${VERRE} max-w-3xl p-5 md:p-6`}>
+        <Verre as="aside" className="max-w-3xl p-5 md:p-6">
           <p className={ETIQUETTE}>{bloc.titre}</p>
           <p className="mt-2 leading-relaxed text-white/85">{bloc.texte}</p>
-        </aside>
+        </Verre>
       );
   }
 }
@@ -132,7 +147,7 @@ function ScenePremierEcran({ scene, nom }: { scene: Scene; nom: string }) {
     </span>
   );
   return (
-    <figure className={`${VERRE} mt-8 p-5 md:p-7`}>
+    <Verre as="figure" className="mt-8 p-5 md:p-7">
       <figcaption className="sr-only">Exemple : les mots {scene.mots.join(', ')} deviennent « {scene.phrase} »</figcaption>
       <div aria-hidden="true" className="flex flex-wrap items-center gap-3">
         {scene.mots.map((mot) => (
@@ -153,7 +168,7 @@ function ScenePremierEcran({ scene, nom }: { scene: Scene; nom: string }) {
           <dd>{points(scene.apres.touches, true)}</dd>
         </div>
       </dl>
-    </figure>
+    </Verre>
   );
 }
 
@@ -182,14 +197,14 @@ export function ProjectPage({ projet, rang, total, suivant }: { projet: Projet; 
 
           {projet.scene && <ScenePremierEcran scene={projet.scene} nom={projet.nom} />}
 
-          <div className={`${VERRE} mt-8 grid divide-y divide-white/10 md:grid-cols-3 md:divide-x md:divide-y-0`}>
+          <Verre className="mt-8 grid divide-y divide-white/10 md:grid-cols-3 md:divide-x md:divide-y-0">
             {([[l1, projet.tldr.probleme], [l2, projet.tldr.solution], [l3, projet.tldr.impact]] as const).map(([titre, texte]) => (
               <div key={titre} className="p-5">
                 <p className={ETIQUETTE}>{titre}</p>
                 <p className="mt-2 text-sm leading-relaxed text-white/85">{texte}</p>
               </div>
             ))}
-          </div>
+          </Verre>
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-3">
             {projet.fiche.map((f) => (
@@ -218,14 +233,14 @@ export function ProjectPage({ projet, rang, total, suivant }: { projet: Projet; 
         </div>
 
         <footer className="mt-4 grid gap-4 border-t border-white/10 pt-10 sm:grid-cols-2">
-          <button type="button" onClick={() => setPage(null)} className={`${VERRE} group p-5 text-left transition hover:border-white/40`}>
+          <Verre as="button" type="button" onClick={() => setPage(null)} className="group p-5 text-left">
             <p className={ETIQUETTE}>Une question sur {projet.nom} ?</p>
             <p className="mt-2 font-semibold">Demandez à l&apos;IA d&apos;Ovrane <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-1">→</span></p>
-          </button>
-          <button type="button" onClick={() => setPage(suivant.slug)} className={`${VERRE} group p-5 text-right transition hover:border-white/40`}>
+          </Verre>
+          <Verre as="button" type="button" onClick={() => setPage(suivant.slug)} className="group p-5 text-right">
             <p className={ETIQUETTE}>Projet suivant</p>
             <p className="mt-2 font-semibold">{suivant.nom} <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-1">→</span></p>
-          </button>
+          </Verre>
           <button type="button" onClick={() => setPage('legal')} className={`${ETIQUETTE} mt-6 justify-self-center transition-colors hover:text-white sm:col-span-2`}>
             Informations légales
           </button>

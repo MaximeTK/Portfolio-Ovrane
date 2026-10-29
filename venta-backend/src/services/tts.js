@@ -3,13 +3,6 @@
  */
 import { config } from '../config.js';
 import * as log from '../log.js';
-import { MISC_MESSAGES } from '../messages.js';
-
-// Accueils sans nom : voix générée une fois dans Venta/public par `npm run voix:accueil`, à relancer si le texte change
-export const VOIX_ACCUEIL = {
-  nouveau: { texte: MISC_MESSAGES.welcomeNew(), url: '/voix/accueil-nouveau.mp3' },
-  retour: { texte: MISC_MESSAGES.welcomeBack(), url: '/voix/accueil-retour.mp3' },
-};
 
 // Le texte affiché reste complet ; seul l'audio perd le code, les liens et le Markdown
 function nettoyer(text) {
@@ -43,7 +36,8 @@ async function cartesia(texte) {
       log.warn(`[TTS] Cartesia a répondu ${response.status}`);
       return null;
     }
-    return { buffer: Buffer.from(await response.arrayBuffer()), provider: 'cartesia' };
+    // Le corps reste un flux : la route le transmet à mesure que Cartesia synthétise
+    return { stream: response.body, provider: 'cartesia' };
   } catch (error) {
     log.error('[TTS] Cartesia :', error.message);
     return null;
@@ -85,6 +79,98 @@ async function voixOpenAI(texte, openai) {
     log.error('[TTS] OpenAI :', error.message);
     return null;
   }
+}
+
+const CARTESIA_WS = 'wss://api.cartesia.ai/tts/websocket?cartesia_version=2026-08-14';
+const FORMAT_FLUX = { container: 'raw', encoding: 'pcm_s16le', sample_rate: 24000 };
+
+// Morceau lisible à voix haute, espaces gardés pour que les morceaux se recollent : sans code, liens ni Markdown
+export function preparerPourVoix(segment, etat) {
+  let sortie = '';
+  segment.split('```').forEach((partie, i) => {
+    if (i > 0) {
+      etat.dansCode = !etat.dansCode;
+      if (!etat.dansCode) sortie += ' Je vous ai affiché un exemple de code. ';
+    }
+    if (!etat.dansCode) sortie += partie;
+  });
+  return sortie.replace(/https?:\/\/\S+/g, 'un lien').replace(/[*_#`>|]/g, '').replace(/\s+/g, ' ');
+}
+
+/**
+ * Voix d'une réponse écrite en flux : les mots complets partent en continuation d'un même contexte Cartesia,
+ * l'audio PCM revient à mesure ; null sans clé ; surEchec seulement si la voix tombe avant tout son
+ */
+export function ouvrirVoixFlux({ surAudio, surEchec }) {
+  const { cartesiaKey, cartesiaVoice, cartesiaModel, navigateur } = config.tts;
+  if (!cartesiaKey || navigateur) return null;
+  const contexte = crypto.randomUUID();
+  const ws = new WebSocket(CARTESIA_WS, { headers: { 'X-API-Key': cartesiaKey } });
+  const enAttente = [];
+  const etat = { dansCode: false };
+  let reste = '';
+  let audioRecu = false;
+  let termine = false;
+  let signalerFin;
+  const fin = new Promise((ok) => { signalerFin = ok; });
+  const terminer = (raison) => {
+    if (termine) return;
+    termine = true;
+    if (raison) {
+      log.warn('[TTS] Voix en flux :', raison);
+      if (!audioRecu) surEchec();
+    }
+    signalerFin();
+  };
+  const envoyer = (transcript, suite) => {
+    const message = JSON.stringify({ model_id: cartesiaModel, transcript, voice: { id: cartesiaVoice }, output_format: FORMAT_FLUX, context_id: contexte, continue: suite, max_buffer_delay_ms: 200 });
+    if (ws.readyState === WebSocket.OPEN) ws.send(message);
+    else enAttente.push(message);
+  };
+  ws.onopen = () => {
+    for (const message of enAttente.splice(0)) ws.send(message);
+  };
+  ws.onmessage = (evenement) => {
+    let message;
+    try {
+      message = JSON.parse(evenement.data);
+    } catch {
+      return;
+    }
+    if (message.type === 'chunk' && message.data) {
+      audioRecu = true;
+      surAudio(message.data);
+    }
+    if (message.type === 'error') terminer(`${message.status_code} ${message.title ?? ''} ${message.message ?? ''}`);
+    if (message.type === 'done') terminer();
+  };
+  ws.onerror = () => terminer('connexion impossible');
+  ws.onclose = () => terminer('connexion fermée avant la fin');
+
+  return {
+    // Seuls les mots complets partent : le dernier, peut-être coupé, attend le morceau suivant
+    dire(delta) {
+      if (termine) return;
+      reste += delta;
+      const coupe = reste.search(/\s\S*$/);
+      if (coupe < 0) return;
+      const segment = preparerPourVoix(reste.slice(0, coupe + 1), etat);
+      reste = reste.slice(coupe + 1);
+      if (segment.trim()) envoyer(segment, true);
+    },
+    // Dernier morceau puis attente de la fin de la synthèse, bornée à deux minutes
+    async finir() {
+      if (!termine) envoyer(preparerPourVoix(reste, etat), false);
+      await Promise.race([fin, new Promise((ok) => setTimeout(ok, 120_000).unref())]);
+      ws.close();
+    },
+    annuler() {
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ context_id: contexte, cancel: true }));
+      termine = true;
+      signalerFin();
+      ws.close();
+    },
+  };
 }
 
 export async function generateTTS(text, openai) {

@@ -13,6 +13,7 @@ import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
 import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
 import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
 import { CHAT_UI } from '@/lib/messages';
+import { Verre } from '@/features/site/ProjectPage';
 import type { Command, Message } from './types';
 
 // Leurs alias suivent : js, ts, py, sh…
@@ -48,6 +49,7 @@ export function MessageBubble({ message, time, dateDivider, onImageClick, onImag
   const isUser = role === 'user';
   const images = messageImages(content, message.commands);
   const enGrille = images.length > 1;
+  const Bulle = isUser ? 'div' : Verre;
 
   return (
     <>
@@ -66,12 +68,12 @@ export function MessageBubble({ message, time, dateDivider, onImageClick, onImag
             <span className="text-[10px] text-white/60">{time}</span>
           </div>
 
-          <div
-            className={`markdown px-4 py-3 rounded-2xl ring-1 ring-inset ring-white/25 text-sm md:text-base text-white break-words whitespace-pre-wrap ${
-              // Le visiteur flotte sur le verre réglable ; l'IA, sans ombre, 15 % plus sombre
+          <Bulle
+            className={`markdown px-4 py-3 text-sm md:text-base text-white break-words whitespace-pre-wrap ${
+              // Le visiteur flotte sur la teinte réglable ; l'IA prend le verre du Figma, coin d'attache gardé
               isUser
-                ? 'bg-(--verre) shadow-[0_2px_8px_0_rgba(0,0,0,0.15)] rounded-tr-sm'
-                : 'bg-[color-mix(in_srgb,var(--verre)_85%,black)] rounded-tl-sm'
+                ? 'bg-(--verre) shadow-[0_2px_8px_0_rgba(0,0,0,0.15)] rounded-2xl rounded-tr-sm'
+                : '[--verre-rayon:4px_25px_25px_25px]'
             }`}
           >
             <ReactMarkdown
@@ -147,7 +149,7 @@ export function MessageBubble({ message, time, dateDivider, onImageClick, onImag
                 ))}
               </div>
             )}
-          </div>
+          </Bulle>
         </div>
       </div>
     </>

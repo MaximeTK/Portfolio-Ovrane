@@ -1,6 +1,6 @@
 'use client';
 
-import { ETIQUETTE, VERRE } from './ProjectPage';
+import { ETIQUETTE, Verre } from './ProjectPage';
 import { useUIStore, VERRE_DEFAUT } from '@/lib/uiStore';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { COLOR_PALETTES } from '@/features/fond/colorPalettes';
@@ -17,7 +17,7 @@ export function ReglagesPage() {
       <p className={ETIQUETTE}>Réglages</p>
       <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">Affichage</h1>
 
-      <section className={`${VERRE} mt-10 p-5`} aria-labelledby="titre-fond">
+      <Verre as="section" className="mt-10 p-5" aria-labelledby="titre-fond">
         <h2 id="titre-fond" className="font-semibold">Fond</h2>
         <p className="mt-1 text-sm leading-relaxed text-white/70">La palette s&apos;applique tout de suite et reste à votre prochaine visite.</p>
         <ul className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
@@ -38,15 +38,15 @@ export function ReglagesPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </Verre>
 
-      <section className={`${VERRE} mt-4 p-5`}>
+      <Verre as="section" className="mt-4 p-5">
         <div className="flex items-baseline justify-between gap-4">
           <label htmlFor="teinte-verre" className="font-semibold">Teinte des boîtes</label>
           <output htmlFor="teinte-verre" className="font-mono text-sm text-white/80">{Math.round(opacite * 100)} %</output>
         </div>
         <p className="mt-1 text-sm leading-relaxed text-white/70">
-          Fenêtres, bulles, cartes et champ de saisie. Plus sombres, elles restent lisibles sur les fonds clairs.
+          Vos messages et le champ de saisie. Plus sombres, ils restent lisibles sur les fonds clairs.
         </p>
         <input
           id="teinte-verre"
@@ -69,14 +69,15 @@ export function ReglagesPage() {
         >
           Revenir à {Math.round(VERRE_DEFAUT * 100)} %
         </button>
-      </section>
+      </Verre>
 
-      <section className={`${VERRE} mt-4 p-5`} aria-label="Aperçu">
+      {/* L'aperçu montre un message du visiteur, que la teinte règle */}
+      <Verre as="section" className="mt-4 p-5" aria-label="Aperçu">
         <p className={ETIQUETTE}>Aperçu</p>
-        <p className="mt-2 leading-relaxed text-white/85">
-          Bonjour, je suis Ovrane. Demandez-moi de changer le fond pour juger la lisibilité sur une autre palette.
+        <p className="ml-auto mt-3 w-fit max-w-[80%] rounded-2xl rounded-tr-sm bg-(--verre) px-4 py-3 text-sm leading-relaxed text-white shadow-[0_2px_8px_0_rgba(0,0,0,0.15)] md:text-base">
+          Pouvez-vous changer le fond, pour voir si le texte reste lisible ?
         </p>
-      </section>
+      </Verre>
     </div>
   );
 }

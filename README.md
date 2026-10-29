@@ -112,6 +112,8 @@ Node.js 22 ou plus. Deux fichiers d'exemple, sans secret : `venta-backend/env.lo
 | `ELEVEN_API_KEY`, `ELEVEN_VOICE_ID` | Facultatives : relais si Cartesia échoue, sinon OpenAI TTS |
 | `TTS_DEFAULT` | `true` : la voix du navigateur lit tout |
 | `INVITE_CODE` | Code d'inscription ; vide, l'inscription est fermée |
+| `SITE_URL` | Adresse publique du front, pour les liens des e-mails ; `http://localhost:3000` hors production |
+| `RESEND_API_KEY`, `MAIL_FROM` | E-mails « mot de passe oublié » par Resend, depuis un domaine vérifié ; vides, aucun e-mail ne part |
 | `PORT`, `TRUST_PROXY`, `LOG_VERBOSE` | `3001` ; toujours vrai en production ; traçage par requête |
 
 **Front** (`Venta/.env.local`), lu côté serveur seulement :
@@ -137,7 +139,7 @@ npm run dev                  # http://localhost:3000
 
 ### 🚀 Déploiement
 - **Vercel** (`Venta`) : `BACKEND_URL` (l'URL du service Render) et `SERVICE_SECRET`. Retirer `NEXT_PUBLIC_BACKEND_URL` : le navigateur ne connaît plus le backend.
-- **Render** (`venta-backend`, `npm start`, sonde `/health`) : `NODE_ENV=production`, `SERVICE_SECRET` (même valeur que sur Vercel), `MONGODB_URI`, `MONGODB_DB`, `OPENAI_API_KEY`, `CARTESIA_API_KEY` ; au besoin `INVITE_CODE`, `CARTESIA_VOICE_ID`, `ELEVEN_API_KEY`, `ELEVEN_VOICE_ID`, `TTS_DEFAULT`, `OPENAI_MODEL`. Retirer `ADMIN_API_KEY`, `CORS_ALLOWED_ORIGINS`, `FRONTEND_URL`, `ALLOW_NGROK_ORIGINS`, `LOG_CORS` et `REQUEST_BODY_LIMIT`, qui ne sont plus lues ; `TTS-DEFAULT` devient `TTS_DEFAULT`.
+- **Render** (`venta-backend`, `npm start`, sonde `/health`) : `NODE_ENV=production`, `SERVICE_SECRET` (même valeur que sur Vercel), `MONGODB_URI`, `MONGODB_DB`, `OPENAI_API_KEY`, `CARTESIA_API_KEY`, `SITE_URL`, `RESEND_API_KEY`, `MAIL_FROM` ; au besoin `INVITE_CODE`, `CARTESIA_VOICE_ID`, `ELEVEN_API_KEY`, `ELEVEN_VOICE_ID`, `TTS_DEFAULT`, `OPENAI_MODEL`. Retirer `ADMIN_API_KEY`, `CORS_ALLOWED_ORIGINS`, `FRONTEND_URL`, `ALLOW_NGROK_ORIGINS`, `LOG_CORS` et `REQUEST_BODY_LIMIT`, qui ne sont plus lues ; `TTS-DEFAULT` devient `TTS_DEFAULT`.
 - Générer le secret : `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
 
 ---

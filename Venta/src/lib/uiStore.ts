@@ -36,7 +36,9 @@ interface UIState {
   setAppState: (state: AppState) => void;
   setPage: (page: string | null) => void;
   setAppLocked: (locked: boolean, message?: string) => void;
-  addWindow: (kind: Fenetre['kind'], content: string, position?: { x: number; y: number }) => void;
+  addWindow: (kind: Fenetre['kind'], content: string, position?: { x: number; y: number }) => string;
+  // Texte d'une réponse qui s'allonge pendant qu'Ovrane la dit
+  setWindowContent: (id: string, content: string) => void;
   closeWindow: (id: string) => void;
   moveWindow: (id: string, x: number, y: number) => void;
   focusWindow: (id: string) => void;
@@ -80,11 +82,12 @@ export const useUIStore = create<UIState>((set) => ({
   setAppLocked: (locked, message) => set({ isAppLocked: locked, lockedMessage: message }),
 
   // Sans position, près du centre avec un léger décalage pour ne pas couvrir exactement la précédente
-  addWindow: (kind, content, position) =>
+  addWindow: (kind, content, position) => {
+    const id = `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     set((s) => {
       const decalage = Math.floor(Math.random() * 30);
       const fenetre: Fenetre = {
-        id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id,
         kind,
         content,
         x: position?.x ?? window.innerWidth / 2 - 200 + decalage,
@@ -93,7 +96,10 @@ export const useUIStore = create<UIState>((set) => ({
       };
       // Au-delà de 10, la plus ancienne se ferme
       return { maxZIndex: fenetre.zIndex, windows: [...s.windows, fenetre].slice(-MAX_FENETRES) };
-    }),
+    });
+    return id;
+  },
+  setWindowContent: (id, content) => set((s) => ({ windows: s.windows.map((w) => (w.id === id ? { ...w, content } : w)) })),
   closeWindow: (id) => set((s) => ({ windows: s.windows.filter((w) => w.id !== id) })),
   moveWindow: (id, x, y) => set((s) => ({ windows: s.windows.map((w) => (w.id === id ? { ...w, x, y } : w)) })),
   focusWindow: (id) =>

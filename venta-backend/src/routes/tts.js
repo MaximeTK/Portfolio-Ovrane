@@ -1,9 +1,12 @@
 /**
  * Synthèse vocale d'un passage de réponse, pour l'utilisateur de la session
  */
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
 import { generateTTS } from '../services/tts.js';
 import { sendError, requireSession, limite } from '../http.js';
 import { ERROR_MESSAGES } from '../messages.js';
+import * as log from '../log.js';
 
 const MAX_TEXTE = 1000;
 
@@ -20,7 +23,10 @@ export function setupTTSRoutes(app, openai) {
       const audio = await generateTTS(text, openai);
       // Sans audio, la voix du navigateur lit le texte
       if (!audio) return res.json({ useClientTTS: true, text });
-      res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-cache', 'X-TTS-Provider': audio.provider }).send(audio.buffer);
+      res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-cache', 'X-TTS-Provider': audio.provider });
+      if (!audio.stream) return res.send(audio.buffer);
+      // Chaque morceau part dès sa réception ; une coupure ferme la réponse, le navigateur lit ce qu'il a reçu
+      await pipeline(Readable.fromWeb(audio.stream), res).catch((error) => log.warn('[TTS] Flux interrompu :', error.message));
     } catch (error) {
       next(error);
     }

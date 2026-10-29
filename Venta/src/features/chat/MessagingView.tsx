@@ -118,7 +118,8 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     <div
       inert={!visible}
       className={`fixed bottom-0 left-0 right-0 z-10 h-[85vh] flex flex-col pb-32 px-4 max-w-5xl mx-auto transition-all duration-500 ease-in-out ${
-        visible ? 'opacity-100 pointer-events-auto translate-y-0 starting:opacity-0 starting:translate-y-8' : 'opacity-0 pointer-events-none translate-y-8'
+        // Ouverte, sans translation : le fond que le verre des bulles recopie reste fixe à l'écran
+        visible ? 'opacity-100 pointer-events-auto translate-none starting:opacity-0 starting:translate-y-8' : 'opacity-0 pointer-events-none translate-y-8'
       }`}
     >
       {/* Pastille de lecture d'anciens messages */}

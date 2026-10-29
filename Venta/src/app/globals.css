@@ -71,6 +71,135 @@ body {
   padding-left: 1.25rem;
 }
 
+/* Couleurs du fond, que le verre recopie ; déclarées pour glisser d'une palette à l'autre */
+@property --fond-haut {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #121219;
+}
+
+@property --fond-bas {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0a0a0d;
+}
+
+/* ===== Verre du Figma (Portfolio, 333-2359) : voile gris, halos de coin en densité de couleur, liseré blanc en incrustation ===== */
+/* Les mélanges ne voient pas le fond, rangé dans un autre empilement : chaque panneau recopie le dégradé, fixe à l'écran, et sa forme le découpe */
+.verre {
+  position: relative;
+  isolation: isolate;
+  /* --verre-rayon garde le coin d'attache d'une bulle */
+  border-radius: var(--verre-rayon, 25px);
+  clip-path: inset(0 round var(--verre-rayon, 25px));
+  /* #d9d9d9 vers #737373 transparent, couleur et opacité menées ensemble comme dans Figma */
+  --halo: rgb(217 217 217 / 0.5), rgb(204 204 204 / 0.4375) 12.5%, rgb(192 192 192 / 0.375) 25%, rgb(179 179 179 / 0.3125) 37.5%, rgb(166 166 166 / 0.25) 50%, rgb(153 153 153 / 0.1875) 62.5%, rgb(140 140 140 / 0.125) 75%, rgb(128 128 128 / 0.0625) 87.5%, rgb(115 115 115 / 0) 100%;
+}
+
+.verre::before,
+.verre::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Le fond recopié, cadré comme le vrai, sous le voile gris à 10 % ; un flou n'y changerait rien */
+.verre::before {
+  position: fixed;
+  min-height: 100vh;
+  z-index: -3;
+  background: linear-gradient(rgb(104 104 104 / 0.1) 0 0), linear-gradient(180deg, var(--fond-haut), var(--fond-bas));
+}
+
+/* Les halos des coins haut-gauche et bas-droit, disjoints : une seule couche ; marges et bordures neutralisées contre les space-y et divide du parent */
+.verre-halos {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  margin: 0;
+  border: 0;
+  pointer-events: none;
+  mix-blend-mode: color-dodge;
+  opacity: 0.75;
+  transition: opacity 0.3s;
+  /* Taille relative au bloc, dans les proportions du Figma (471×476 sur 2056×243) : même éclat quelle que soit la taille */
+  background:
+    radial-gradient(22.9% 195.9% at -1px 0, var(--halo)),
+    radial-gradient(22.9% 195.9% at calc(100% - 1px) 100%, var(--halo));
+}
+
+/* Un bloc cliquable s'éclaire au survol ; son contour de focus passe dedans, la découpe le cacherait */
+:is(a, button).verre:is(:hover, :focus-visible) > .verre-halos {
+  opacity: 1;
+}
+
+.verre:focus-visible {
+  outline-offset: -4px;
+}
+
+/* Le liseré de 2 px : blanc en incrustation, il double la clarté de ce qu'il couvre */
+.verre::after {
+  z-index: -1;
+  border-radius: inherit;
+  border: 2px solid #fff;
+  mix-blend-mode: overlay;
+}
+
+/* ===== Verre des fenêtres flottantes : elles passent devant l'œil et d'autres fenêtres, le flou doit les voir ===== */
+/* Les mélanges ne voyant pas ce flou, densité de couleur et incrustation y sont rendues par la luminosité de l'arrière-plan, couche après couche */
+.verre-flottant {
+  isolation: isolate;
+  border-radius: 25px;
+  background: rgb(104 104 104 / 0.1);
+  /* Masques des deux paliers de halo, calculés pour suivre la densité de couleur du Figma à 6 niveaux près */
+  --palier-fort: rgb(0 0 0 / 0.192), rgb(0 0 0 / 0.086) 12.5%, rgb(0 0 0 / 0.037) 25%, rgb(0 0 0 / 0.007) 37.5%, transparent 50%;
+  --palier-doux: rgb(0 0 0 / 0.226), rgb(0 0 0 / 0.294) 12.5%, rgb(0 0 0 / 0.275) 25%, rgb(0 0 0 / 0.234) 37.5%, rgb(0 0 0 / 0.173) 50%, rgb(0 0 0 / 0.117) 62.5%, rgb(0 0 0 / 0.071) 75%, rgb(0 0 0 / 0.032) 87.5%, transparent;
+}
+
+/* Quatre couches côte à côte, jamais l'une dans l'autre : sous un flou, une couche ne verrait plus l'arrière-plan */
+.verre-flottant::before,
+.verre-flottant::after,
+.verre-flottant-halos::before,
+.verre-flottant-halos::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 25px;
+  pointer-events: none;
+}
+
+/* Le voile : flou de 25 px de ce qui est derrière */
+.verre-flottant::before {
+  backdrop-filter: blur(25px);
+}
+
+.verre-flottant-halos {
+  display: contents;
+}
+
+.verre-flottant-halos::before {
+  backdrop-filter: brightness(6.71);
+  mask:
+    radial-gradient(22.9% 195.9% at -1px 0, var(--palier-fort)),
+    radial-gradient(22.9% 195.9% at calc(100% - 1px) 100%, var(--palier-fort));
+}
+
+.verre-flottant-halos::after {
+  backdrop-filter: brightness(3.2);
+  mask:
+    radial-gradient(22.9% 195.9% at -1px 0, var(--palier-doux)),
+    radial-gradient(22.9% 195.9% at calc(100% - 1px) 100%, var(--palier-doux));
+}
+
+/* Le liseré de 2 px : la clarté doublée, comme le blanc en incrustation ; seul le bord reste sous le masque */
+.verre-flottant::after {
+  padding: 2px;
+  backdrop-filter: brightness(2);
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
 /* ===== Fenêtres en verre ; --zoom vient de la fenêtre ===== */
 .glass-morphisme {
   max-width: 90vw;
@@ -82,25 +211,12 @@ body {
 .glass-morphisme-background {
   position: absolute;
   inset: 0;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: var(--verre);
-  backdrop-filter: blur(60px) saturate(200%);
-  -webkit-backdrop-filter: blur(60px) saturate(200%);
   pointer-events: none;
-}
-
-.glass-morphisme-background::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .glass-morphisme-content {
   position: relative;
-  border-radius: 16px;
+  border-radius: 25px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -337,14 +453,15 @@ body {
   100% { transform: scale(12) translateZ(0); opacity: 0; }
 }
 
-/* Entrée d'une page projet ou de la page légale, au changement de vue */
+/* Entrée d'une page projet ou de la page légale, au changement de vue ; glissée par top, une transformation décalerait le fond recopié par le verre */
 .apparition {
+  position: relative;
   animation: apparition 0.5s ease-out;
 }
 
 @keyframes apparition {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; top: 12px; }
+  to { opacity: 1; top: 0; }
 }
 
 /* Mouvement réduit : animations et transitions quasi instantanées, plus d'ondes */

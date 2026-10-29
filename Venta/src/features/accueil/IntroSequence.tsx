@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { useUIStore } from '@/lib/uiStore';
-import { HexagonalAnimation, type HexagonalAnimationHandle } from '@/features/oeil/HexagonalAnimation';
+import { HexagonalAnimation } from '@/features/oeil/HexagonalAnimation';
 import type { IllusionAccueil, Message } from '@/features/chat/types';
 import type { useChatController } from '@/features/chat/useChatController';
 import { CHAT_UI, INDISPONIBLE } from '@/lib/messages';
-import { AuthForm } from './AuthForm';
 
 // Identifiant que le navigateur gardait avant la session en cookie
 const ANCIEN_ID = 'venta_userId';
@@ -25,14 +23,10 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
   const lockedMessage = useUIStore((state) => state.lockedMessage);
   const [isWelcomeVisible, setIsWelcomeVisible] = useState(true);
   const [visitError, setVisitError] = useState(false);
-  // Le formulaire des comptes existants ne s'affiche que sur /connexion
-  const isLoginPage = usePathname() === '/connexion';
   const visitStartedRef = useRef(false);
-  const hexAnimationRef = useRef<HexagonalAnimationHandle>(null);
 
   // Arrivée sans saisie : profil visiteur créé ou repris, accueil du recruteur si la session porte un jeton
   const startVisit = useCallback(async () => {
-    hexAnimationRef.current?.triggerWave();
     setAppState('processing');
     setVisitError(false);
     // En parallèle de l'arrivée : l'accueil du recruteur ne dépend pas de la session
@@ -57,10 +51,10 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
   }, [sendAuth, setAppState]);
 
   useEffect(() => {
-    if (isLoginPage || visitStartedRef.current) return;
+    if (visitStartedRef.current) return;
     visitStartedRef.current = true;
     startVisit();
-  }, [isLoginPage, startVisit]);
+  }, [startVisit]);
 
   // Verrouillée (limite atteinte), l'app s'éveille pour afficher le message
   useEffect(() => {
@@ -80,17 +74,6 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
     return () => clearTimeout(timer);
   }, [appState, isAppLocked, viewMode, page]);
 
-  const handleAuthSubmit = async (mode: 'register' | 'login', data: Record<string, string>) => {
-    hexAnimationRef.current?.triggerWave();
-    setAppState('processing');
-    try {
-      await sendAuth(mode, data);
-    } catch (err) {
-      setAppState('sleeping');
-      throw err;
-    }
-  };
-
   // Sous l'œil : le message de verrouillage, sinon la dernière réponse de l'IA, dont l'accueil du backend
   const welcomeMessage =
     isAppLocked && lockedMessage
@@ -99,36 +82,32 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-colors duration-1000 ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-colors duration-300 ${
         appState === 'awake' ? 'bg-transparent pointer-events-none' : 'bg-[#020106]'
       }`}
     >
       {/* Œil endormi, relayé par celui de l'accueil au réveil */}
-      <div inert className={`transition-opacity duration-500 ${appState === 'awake' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        <HexagonalAnimation ref={hexAnimationRef} currentAnimation="standby" isSpeaking={false} getAudioLevel={() => 0} mode="sleep" />
+      <div inert className={`transition-opacity duration-300 ${appState === 'awake' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <HexagonalAnimation currentAnimation="standby" isSpeaking={false} getAudioLevel={() => 0} mode="sleep" />
       </div>
 
       <div className="absolute top-[65%] mt-[100px] w-full flex flex-col items-center justify-center pointer-events-auto">
-        {/* Endormi : formulaire sur /connexion, sinon l'erreur éventuelle de l'arrivée */}
+        {/* Endormi : l'erreur éventuelle de l'arrivée */}
         <div
           inert={appState !== 'sleeping'}
           className={`transition-all duration-500 absolute w-full ${appState === 'sleeping' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         >
-          {isLoginPage ? (
-            <AuthForm onSubmit={handleAuthSubmit} />
-          ) : (
-            visitError && (
-              <div className="flex flex-col items-center gap-3 px-6 text-center">
-                <p role="alert" className="text-red-500 text-[10px] tracking-wider">{INDISPONIBLE}</p>
-                <button
-                  type="button"
-                  onClick={startVisit}
-                  className="text-[10px] font-bold tracking-[0.3em] uppercase text-white/60 hover:text-white transition-colors"
-                >
-                  {CHAT_UI.retry}
-                </button>
-              </div>
-            )
+          {visitError && (
+            <div className="flex flex-col items-center gap-3 px-6 text-center">
+              <p role="alert" className="text-red-500 text-[10px] tracking-wider">{INDISPONIBLE}</p>
+              <button
+                type="button"
+                onClick={startVisit}
+                className="text-[10px] font-bold tracking-[0.3em] uppercase text-white/60 hover:text-white transition-colors"
+              >
+                {CHAT_UI.retry}
+              </button>
+            </div>
           )}
         </div>
 
@@ -145,7 +124,7 @@ function OverlayMessage({ visible, children }: { visible: boolean; children: Rea
   return (
     <div
       aria-hidden={!visible}
-      className={`pointer-events-none transition-all duration-1000 delay-300 flex flex-col items-center text-center w-full px-6 absolute ${
+      className={`pointer-events-none transition-all duration-300 flex flex-col items-center text-center w-full px-6 absolute ${
         visible ? 'opacity-100' : 'opacity-0'
       }`}
     >

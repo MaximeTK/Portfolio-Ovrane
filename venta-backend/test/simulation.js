@@ -5,6 +5,7 @@ import './env.js';
 import { once } from 'node:events';
 import { User } from '../src/models/User.js';
 import { Session } from '../src/models/Session.js';
+import { Reinitialisation } from '../src/models/Reinitialisation.js';
 import { IllusionCandidature } from '../src/models/IllusionCandidature.js';
 import { IllusionFichier } from '../src/models/IllusionFichier.js';
 import { RedirectLog } from '../src/models/RedirectLog.js';
@@ -112,6 +113,10 @@ function simuler(Modele) {
       if (doc) appliquer(doc, maj);
       return { matchedCount: doc ? 1 : 0 };
     },
+    findOneAndDelete: (filtre) => {
+      const i = docs.findIndex((doc) => correspond(doc, filtre));
+      return requete(i >= 0 ? docs.splice(i, 1)[0] : null);
+    },
     deleteOne: async (filtre) => {
       const i = docs.findIndex((doc) => correspond(doc, filtre));
       if (i >= 0) docs.splice(i, 1);
@@ -136,6 +141,7 @@ function simuler(Modele) {
 export const base = {
   users: simuler(User),
   sessions: simuler(Session),
+  reinitialisations: simuler(Reinitialisation),
   candidatures: simuler(IllusionCandidature),
   fichiers: simuler(IllusionFichier),
   logs: simuler(RedirectLog),
@@ -145,11 +151,19 @@ export const base = {
 export const appelsOpenAI = [];
 export const REPONSE = 'Bonjour, bienvenue sur le portfolio.';
 export const modele = { repondre: async () => ({ output: [], output_text: REPONSE }) };
+// En flux, la réponse simulée arrive comme chez OpenAI : son texte en deux morceaux, puis la réponse complète
+async function* enFlux(reponse) {
+  const texte = String(reponse.output_text ?? '');
+  const milieu = Math.ceil(texte.length / 2);
+  for (const delta of [texte.slice(0, milieu), texte.slice(milieu)].filter(Boolean)) yield { type: 'response.output_text.delta', delta };
+  yield { type: 'response.completed', response: reponse };
+}
 const openai = {
   responses: {
     create: async (params) => {
       appelsOpenAI.push(params);
-      return modele.repondre(params);
+      const reponse = await modele.repondre(params);
+      return params.stream ? enFlux(reponse) : reponse;
     },
   },
   audio: { speech: { create: async ({ input }) => ({ arrayBuffer: async () => Buffer.from(`audio:${input}`) }) } },
@@ -164,7 +178,8 @@ export const SECRET = process.env.SERVICE_SECRET;
 
 let adresses = 0;
 // Requête comme Next la relaie : secret de service, IP du visiteur (une nouvelle par défaut) et session
-export async function appeler(chemin, { method = 'GET', body, session, secret = SECRET, ip = `10.0.0.${++adresses}`, headers = {} } = {}) {
+// `brut` rend la réponse sans lire son corps, pour suivre un flux morceau par morceau
+export async function appeler(chemin, { method = 'GET', body, session, secret = SECRET, ip = `10.0.0.${++adresses}`, headers = {}, brut = false } = {}) {
   const res = await fetch(`${url}${chemin}`, {
     method,
     redirect: 'manual',
@@ -176,6 +191,7 @@ export async function appeler(chemin, { method = 'GET', body, session, secret = 
     },
     ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
   });
+  if (brut) return res;
   const bytes = Buffer.from(await res.arrayBuffer());
   let json = null;
   try {

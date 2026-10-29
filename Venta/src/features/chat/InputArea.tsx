@@ -104,7 +104,7 @@ export function InputArea({ onSubmit, triggerWave, isLoading = false, tipsEnable
         {inputValue.length} / {MAX_LENGTH}
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden bg-(--verre) backdrop-blur-xl border border-white/10 pr-4 focus-within:ring-2 focus-within:ring-white/40">
+      <div className="relative rounded-2xl overflow-hidden bg-(--verre) backdrop-blur-xl pr-4 focus-within:ring-2 focus-within:ring-white/40">
         <form onSubmit={handleSubmit} className="relative z-10 w-full flex items-center">
           <textarea
             ref={textareaRef}

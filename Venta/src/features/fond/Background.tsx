@@ -38,7 +38,17 @@ export function Background({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      <div className="relative z-10">{children}</div>
+      {/* Les couleurs du fond pour le verre qui le recopie, menées au rythme du fondu croisé */}
+      <div
+        className="relative z-10"
+        style={{
+          '--fond-haut': currentPalette.topColor,
+          '--fond-bas': currentPalette.bottomColor,
+          transition: '--fond-haut 2500ms cubic-bezier(0.4, 0, 0.2, 1), --fond-bas 2500ms cubic-bezier(0.4, 0, 0.2, 1)',
+        } as React.CSSProperties}
+      >
+        {children}
+      </div>
     </>
   );
 }

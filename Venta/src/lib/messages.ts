@@ -24,8 +24,10 @@ export const CHAT_UI = {
     const p = String(poste ?? '').trim();
     if (!e && !p) return '';
     if (langue === 'en') {
-      return `Welcome! You are viewing Maxime's application${p ? ` for the ${p} position` : ''}${e ? ` at ${e}` : ''}. I can walk you through his background and projects: how can I help you?`;
+      const who = e ? `You're from ${e}, I presume${p ? `, here about the ${p} position` : ''}.` : `You're here about the ${p} position, I presume.`;
+      return `Oh, welcome! ${who} I'm Ovrane, and I'll be guiding you through this portfolio.`;
     }
-    return `Bienvenue ! Vous découvrez la candidature de Maxime${p ? ` au poste « ${p} »` : ''}${e ? ` chez ${e}` : ''}. Je vous présente son parcours et ses projets : en quoi puis-je vous aider ?`;
+    const qui = e ? `Vous êtes de chez ${e}, je présume${p ? `, pour le poste « ${p} »` : ''}.` : `Vous venez pour le poste « ${p} », je présume.`;
+    return `Oh, bienvenue ! ${qui} Je suis Ovrane, et je suis chargée de vous accompagner sur ce portfolio.`;
   },
 } as const;

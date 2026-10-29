@@ -27,6 +27,31 @@ function createMessage(role: MessageRole, content: string, timestamp = Date.now(
 
 const normalize = (text: string) => text.replace(/\s+/g, ' ').trim();
 
+/** Écoute d'une réponse en flux : texte reçu jusqu'ici, audio PCM en base64, voix de secours annoncée par le serveur. */
+export interface EcouteReponse {
+  texte: (complet: string) => void;
+  audio: (pcm: string) => void;
+  secours: () => void;
+}
+
+// Événements SSE d'un corps de réponse, au fil de leur arrivée
+async function* lireEvenements(corps: ReadableStream<Uint8Array>) {
+  const lecteur = corps.getReader();
+  // Un caractère accentué coupé entre deux morceaux est recollé par le décodage en flux
+  const decodeur = new TextDecoder();
+  let reste = '';
+  for (let morceau = await lecteur.read(); !morceau.done; morceau = await lecteur.read()) {
+    reste += decodeur.decode(morceau.value, { stream: true });
+    for (let fin = reste.indexOf('\n\n'); fin >= 0; fin = reste.indexOf('\n\n')) {
+      const bloc = reste.slice(0, fin);
+      reste = reste.slice(fin + 2);
+      const type = bloc.match(/^event: (.+)$/m)?.[1];
+      const donnees = bloc.match(/^data: (.+)$/m)?.[1];
+      if (type && donnees) yield { type, donnees: JSON.parse(donnees) };
+    }
+  }
+}
+
 async function fetchHistory(skip: number): Promise<Message[]> {
   const res = await fetch(`/api/chat/history?limit=${HISTORY_LIMIT}&skip=${skip}`);
   const data = res.ok ? await res.json() : null;
@@ -102,7 +127,7 @@ export function useChatController() {
     setStatus('idle');
   }, [currentUserId]);
 
-  const send = useCallback(async (prompt: string) => {
+  const send = useCallback(async (prompt: string, ecoute?: EcouteReponse) => {
     if (!prompt.trim() || status === 'streaming') return;
     setMessages((prev) => [...prev, createMessage('user', prompt)]);
     setHistorySkip((n) => n + 1);
@@ -110,12 +135,27 @@ export function useChatController() {
     setCurrentTranscript('');
     setCurrentTTS(null);
 
-    const res = await fetch('/api/chat', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ prompt }) })
-      .catch((err) => {
-        console.error('[chat] envoi :', err);
-        return null;
-      });
-    const data: Reponse = (res?.ok && (await res.json().catch(() => null))) || {};
+    // Texte et voix arrivent pendant que le modèle écrit ; la réponse complète clôt le flux
+    let data: Reponse = {};
+    try {
+      const res = await fetch('/api/chat/flux', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ prompt }) });
+      if (res.ok && res.body && res.headers.get('Content-Type')?.startsWith('text/event-stream')) {
+        let complet = '';
+        for await (const { type, donnees } of lireEvenements(res.body)) {
+          if (type === 'texte') {
+            complet += donnees.delta;
+            ecoute?.texte(complet);
+          }
+          if (type === 'audio') ecoute?.audio(donnees.pcm);
+          if (type === 'secours') ecoute?.secours();
+          if (type === 'fin') data = donnees;
+        }
+      } else if (res.ok) {
+        data = (await res.json().catch(() => null)) || {};
+      }
+    } catch (err) {
+      console.error('[chat] envoi :', err);
+    }
     const text = data.reply?.trim() || (data.commands?.length ? CHAT_UI.applyRequestFallback : '');
     if (text) setHistorySkip((n) => n + 1);
     // Réponse vide ou en erreur : un message lisible, dit puis suivi du retour au repos
@@ -136,9 +176,9 @@ export function useChatController() {
       setStatus('idle');
       throw new Error(data?.error || INDISPONIBLE);
     }
-    // L'accueil du recruteur, s'il est fourni, remplace celui du backend et sa voix pré-générée
+    // L'accueil du recruteur, s'il est fourni, remplace celui du backend
     const recruteur = await welcome;
-    applyResponse(recruteur ? { ...data, tts: undefined } : data, recruteur || data.reply || '');
+    applyResponse(data, recruteur || data.reply || '');
   }, [applyResponse]);
 
   const loadMoreMessages = useCallback(async () => {

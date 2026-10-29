@@ -88,13 +88,14 @@ export const ERROR_MESSAGES = {
   fieldsRequired: 'Tous les champs sont requis.',
   inviteInvalid: 'Code d\'invitation invalide.',
   emailInvalid: 'Email invalide.',
-  passwordLength: 'Le mot de passe doit contenir de 12 à 128 caractères.',
+  passwordLength: 'Le mot de passe doit contenir de 8 à 128 caractères.',
   pseudoInvalid: 'Pseudo invalide (lettres, chiffres, espace, tiret, underscore, max 25 caractères).',
   // Le même message que le pseudo ou l'email soit pris
   accountTaken: 'Ce pseudo ou cet email est déjà utilisé.',
   loginRequired: 'Identifiant et mot de passe requis.',
   // Le même message que le compte existe ou non
   invalidCredentials: 'Identifiant ou mot de passe incorrect.',
+  reinitInvalide: 'Ce lien est invalide, déjà utilisé ou expiré. Demandez-en un nouveau.',
 
   // Chat et TTS
   promptRequired: 'Prompt requis',
@@ -108,6 +109,32 @@ export const ERROR_MESSAGES = {
   illusionNotFound: 'Candidature introuvable',
 
   limitReached: 'Vous avez beaucoup discuté ! J\'espère que la démonstration vous a plu. Pour aller plus loin ou discuter d\'un projet, je vous invite à me contacter directement.',
+};
+
+const echapper = (texte) => String(texte ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const paragraphes = (lignes) => lignes.map((ligne) => `<p style="margin:0 0 16px">${ligne}</p>`).join('');
+
+// E-mails du système : texte brut, et HTML sobre lisible dans toutes les messageries
+export const MAILS = {
+  reinitialisation: (nom, lien) => ({
+    sujet: 'Choisir un nouveau mot de passe Ovrane',
+    texte: `Bonjour ${nom},\n\nPour choisir un nouveau mot de passe, ouvrez ce lien dans les 30 minutes :\n${lien}\n\nSi vous n'avez rien demandé, ignorez cet e-mail : votre mot de passe ne change pas.`,
+    html: paragraphes([
+      `Bonjour ${echapper(nom)},`,
+      'Pour choisir un nouveau mot de passe, ouvrez ce lien dans les 30 minutes :',
+      `<a href="${echapper(lien)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#0a0a0e;color:#ffffff;text-decoration:none;font-weight:600">Choisir un nouveau mot de passe</a>`,
+      '<span style="color:#666666;font-size:13px">Si vous n\'avez rien demandé, ignorez cet e-mail : votre mot de passe ne change pas.</span>',
+    ]),
+  }),
+  motDePasseChange: (nom) => ({
+    sujet: 'Votre mot de passe Ovrane a été changé',
+    texte: `Bonjour ${nom},\n\nLe mot de passe de votre compte Ovrane vient d'être changé, et vos sessions ouvertes ont été fermées.\n\nSi ce n'est pas vous, choisissez-en un nouveau tout de suite depuis « Mot de passe oublié » sur la page de connexion.`,
+    html: paragraphes([
+      `Bonjour ${echapper(nom)},`,
+      'Le mot de passe de votre compte Ovrane vient d\'être changé, et vos sessions ouvertes ont été fermées.',
+      'Si ce n\'est pas vous, choisissez-en un nouveau tout de suite depuis « Mot de passe oublié » sur la page de connexion.',
+    ]),
+  }),
 };
 
 export const SUCCESS_MESSAGES = {

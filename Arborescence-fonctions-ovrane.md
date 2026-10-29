@@ -159,12 +159,12 @@ Chemins relatifs : `venta-backend/src/` pour le backend, `Venta/src/` pour le fr
 
 ## E. Arrivée et authentification — 72 à 86
 
-Hors `/connexion`, toute arrivée crée ou reprend un profil visiteur sans saisie. Le formulaire ne s'affiche que sur `/connexion`. Chaque profil ouvert reçoit sa session.
+Toute arrivée crée ou reprend un profil visiteur sans saisie, `/connexion` compris. Connexion et inscription se font dans la vue Compte, porte d'entrée d'Illusion. Chaque profil ouvert reçoit sa session.
 
 ### Arrivée sans saisie
 | № | Fichier · Fonction | Rôle |
 |---|---|---|
-| 72 | `features/accueil/IntroSequence.tsx` · effet d'arrivée | Hors `/connexion`, une seule fois même en StrictMode (`visitStartedRef`). |
+| 72 | `features/accueil/IntroSequence.tsx` · effet d'arrivée | Une seule fois, même en StrictMode (`visitStartedRef`). |
 | 73 | `IntroSequence.tsx` · `startVisit` | Onde, `processing`, accueil du recruteur (111), puis l'ancien `venta_userId` du localStorage s'il existe. |
 | 74 | `features/chat/useChatController.ts` · `sendAuth('visitor')` | `POST /api/auth/visitor` avec `{ ancienId }` éventuel, relayé par 20 à 23. |
 | 75 | `routes/auth.js` · `reprendreVisiteur` | Session valide : profil repris. Via `lireSession`, `accueil`. |
@@ -175,14 +175,19 @@ Hors `/connexion`, toute arrivée crée ou reprend un profil visiteur sans saisi
 | 80 | `IntroSequence.tsx` · `startVisit` (fin) | Ancien identifiant effacé du localStorage. Échec : `sleeping`, `INDISPONIBLE`, bouton « Réessayer ». |
 | 81 | `useChatController.ts` · `applyResponse` (nouveau profil) | Ferme les fenêtres, signale l'URL d'arrivée (97). Nouveau profil : fond par défaut ; sinon préférence (98) et historique (`fetchHistory`), l'accueil en dernier. |
 
-### Connexion, sur `/connexion`
+### Connexion, dans la vue Compte
 | № | Fichier · Fonction | Rôle |
 |---|---|---|
-| 82 | `features/accueil/AuthForm.tsx` · `handleChange`, `handleSubmit` | Saisie contrôlée ; connexion (identifiant, mot de passe) ou inscription (pseudo, email, mot de passe, code d'invitation). |
-| 83 | `IntroSequence.tsx` · `handleAuthSubmit` | Onde, `processing`, `sendAuth(mode)` ; une erreur revient sous le formulaire. |
+| 82 | `features/site/ConnexionPage.tsx` · `ConnexionPage` | Vue `connexion` (icône Compte du header, ou lien `/connexion`, ramené à `/`). Lit `GET /api/auth/compte` à chaque changement de profil : formulaire, ou pseudo, e-mail et « Se déconnecter ». |
+| 83 | `ConnexionPage.tsx` · `envoyer`, `deconnecter` | Connexion (identifiant, mot de passe) ou inscription (pseudo, e-mail, mot de passe de 8 caractères au moins, code d'invitation) par `sendAuth(mode)`, l'erreur du backend sous le formulaire. Déconnexion : `POST /api/auth/logout`, puis un nouveau visiteur par `sendAuth('visitor')`. |
+| 83b | `routes/auth.js` · handler `GET /api/auth/compte` | Pseudo et e-mail du compte de la session ; `null` pour un visiteur ou sans session. |
 | 84 | `routes/auth.js` · handler `POST /api/auth/login` | 10 essais / 15 min par IP et par identifiant ; bcrypt comparé même sans compte (`HASH_FACTICE`), même message. Via `identifiant`, `compterVisite`. |
-| 84b | `routes/auth.js` · handler `POST /api/auth/register` | Code d'invitation en temps constant (`egal`), email ≤ 254, mot de passe de 12 à 128, pseudo ≤ 25 ; bcrypt avant la recherche de doublon ; identifiant calculé côté serveur. |
+| 84b | `routes/auth.js` · handler `POST /api/auth/register` | Code d'invitation en temps constant (`egal`), email ≤ 254, mot de passe de 8 à 128 (le minimum d'Illusion, comptes partagés), pseudo ≤ 25 ; bcrypt avant la recherche de doublon ; identifiant calculé côté serveur. |
 | 85 | `routes/auth.js` · `ouvrirSession` | Rotation : la session reçue est révoquée (`revoquerSession`), une neuve est créée (78), puis posée en cookie (79). |
+| 85b | `routes/auth.js` · handler `POST /api/auth/oubli` | Répond `{ envoye: true }` aussitôt, compte existant ou non, puis `demanderReinitialisation` ; 10 / 15 min par IP, 3 / h par adresse. |
+| 85c | `services/reinitialisation.js` · `demanderReinitialisation` | Jeton de 32 octets, seul son sha256 gardé dans `reinitialisations` (30 min, index TTL), le précédent effacé ; lien `SITE_URL/connexion#reinit=…`, le jeton dans le fragment, envoyé par `envoyerMail` (`services/mails.js`, API Resend). |
+| 85d | `routes/auth.js` · handler `POST /api/auth/reinitialiser` → `reinitialiser` | Mot de passe de 8 à 128 ; jeton consommé en une fois (`findOneAndDelete`, non expiré) ; nouveau hash, `motDePasseChangeLe`, toutes les sessions du compte fermées, e-mail de confirmation. |
+| 85e | `PageView.tsx` · état `reinit`, `ConnexionPage.tsx` modes `oubli` et `reinit` | Le jeton est lu dans le fragment de `/connexion` avant le retour à `/` ; « Mot de passe oublié ? » demande le lien, le lien ouvre « Nouveau mot de passe », puis un visiteur valable reprend le chat. |
 | 86 | `IntroSequence.tsx` · `OverlayMessage` | Sous l'œil : accueil (10 s), astuce de messagerie ou message de verrouillage. |
 
 ---
@@ -267,9 +272,6 @@ Aucun numéro : rien dans les parcours ci-dessus n'y mène, ou le chemin est rom
 
 | Fichier · Fonction | Constat |
 |---|---|
-| `routes/auth.js` · handler `POST /api/auth/logout` | En liste blanche et testé, mais aucun bouton ne l'appelle. Prêt pour la zone de connexion. |
-| `routes/preferences.js` · handler `POST /api/preferences` | En liste blanche, sans appelant depuis que le backend enregistre le fond (47). |
-| `routes/tracking.js` · handler `GET /api/tracking/pixel` | Seule route publique avec `/health` : GIF 1 × 1 pour les clients mail, sans appelant connu. Gardée, décision en attente. |
 | `ragSystem.js` · `etatIndex`, `embedder` (exports) | Pour `scripts/eval-rag.js` seulement. Légitime. |
 | `scripts/test-connexion.js` | Diagnostic MongoDB manuel, absent des scripts npm. |
 

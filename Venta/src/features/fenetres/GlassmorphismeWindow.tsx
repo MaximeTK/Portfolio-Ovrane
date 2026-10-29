@@ -61,7 +61,9 @@ function Window({ fenetre }: { fenetre: Fenetre }) {
       onPointerDownCapture={() => focusWindow(fenetre.id)}
       style={{ left: fenetre.x, top: fenetre.y, width, minWidth, zIndex: fenetre.zIndex, '--zoom': zoom } as React.CSSProperties}
     >
-      <div className="glass-morphisme-background" />
+      <div className="glass-morphisme-background verre-flottant">
+        <span className="verre-flottant-halos" aria-hidden="true" />
+      </div>
       <div className="glass-morphisme-content">
         <header
           className="glass-morphisme-titlebar cursor-move touch-none"

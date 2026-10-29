@@ -81,14 +81,26 @@ test('front : message d\'accueil du recruteur en français, en anglais, ou vide'
   const { CHAT_UI } = await front('messages.ts');
   assert.equal(
     CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: 'Développeur React', langue: 'fr' }),
-    'Bienvenue ! Vous découvrez la candidature de Maxime au poste « Développeur React » chez Orange. Je vous présente son parcours et ses projets : en quoi puis-je vous aider ?',
+    'Oh, bienvenue ! Vous êtes de chez Orange, je présume, pour le poste « Développeur React ». Je suis Ovrane, et je suis chargée de vous accompagner sur ce portfolio.',
   );
   assert.equal(
     CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: 'React Developer', langue: 'en' }),
-    "Welcome! You are viewing Maxime's application for the React Developer position at Orange. I can walk you through his background and projects: how can I help you?",
+    "Oh, welcome! You're from Orange, I presume, here about the React Developer position. I'm Ovrane, and I'll be guiding you through this portfolio.",
   );
-  assert.match(CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: '', langue: '' }), /candidature de Maxime chez Orange\./);
+  assert.match(CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: '', langue: '' }), /Vous êtes de chez Orange, je présume\. Je suis Ovrane/);
+  assert.match(CHAT_UI.recruiterWelcome({ entreprise: '', poste: 'Développeur React', langue: 'fr' }), /Vous venez pour le poste « Développeur React », je présume\./);
   assert.equal(CHAT_UI.recruiterWelcome({ entreprise: ' ', poste: '', langue: 'fr' }), '');
+});
+
+test('front : la voix découpe en blocs de 4 phrases et de 900 caractères au plus, entre deux phrases', async () => {
+  const { splitTextIntoTTSBlocks } = await import(new URL('../../Venta/src/features/oeil/useTTS.ts', import.meta.url).href);
+  const courtes = Array.from({ length: 8 }, (_, i) => `Phrase ${i + 1}.`).join(' ');
+  assert.deepEqual(splitTextIntoTTSBlocks(courtes).map((b) => b.split('.').length - 1), [4, 4]);
+  // Quatre phrases de 250 caractères, 1 003 en tout : refusées par le backend en un seul bloc
+  const longues = Array.from({ length: 4 }, () => `${'a'.repeat(249)}.`).join(' ');
+  const blocs = splitTextIntoTTSBlocks(longues);
+  assert.deepEqual(blocs.map((b) => b.length), [752, 250]);
+  assert.equal(blocs.join(' '), longues, 'aucun mot perdu ni coupé');
 });
 
 test('user-agents humains : jamais robots', () => {

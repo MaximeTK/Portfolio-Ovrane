@@ -7,9 +7,9 @@ import { Session } from '../models/Session.js';
 const DUREE = 30 * 24 * 3600 * 1000;
 const UN_JOUR = 24 * 3600 * 1000;
 
-const empreinte = (jeton) => crypto.createHash('sha256').update(jeton).digest('hex');
-// 32 octets en base64url
-const estJeton = (jeton) => typeof jeton === 'string' && /^[A-Za-z0-9_-]{43}$/.test(jeton);
+export const empreinte = (jeton) => crypto.createHash('sha256').update(jeton).digest('hex');
+// 32 octets en base64url, comme les jetons de réinitialisation
+export const estJeton = (jeton) => typeof jeton === 'string' && /^[A-Za-z0-9_-]{43}$/.test(jeton);
 
 export async function creerSession(utilisateur) {
   const jeton = crypto.randomBytes(32).toString('base64url');
