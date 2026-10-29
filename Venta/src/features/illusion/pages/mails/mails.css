@@ -1,0 +1,152 @@
+/* Page Mails : la boîte, ses filtres, sa ligne d'état et ses colonnes, puis les sous-fenêtres de son panneau. */
+
+/* Filtres en texte seul, chacun son menu posé sous lui ; la recherche suit, une loupe puis la saisie sans cadre. */
+.ov [data-fen=boite] .filtre-hote+.filtre-hote{margin-left:20px}
+.ov [data-fen=boite] .filtre-hote .menu{left:0;right:auto;max-height:min(360px,calc(100vh - 260px));overflow-y:auto;scrollbar-width:none}
+.ov [data-fen=boite] .menu-option .compteur{margin-left:auto;padding-left:16px;color:rgb(255 255 255 / .5)}
+.ov [data-fen=boite] .recherche{display:inline-flex;align-items:center;gap:8px;min-width:0;height:34px;margin-left:20px;color:rgba(255,255,255,.6);cursor:text}
+.ov [data-fen=boite] .recherche svg{flex:none;width:13px;height:13px}
+.ov [data-fen=boite] .recherche input{width:214px;min-width:0;height:28px;padding:0;border:0;background:none;font:inherit;font-size:12.5px;color:#fff}
+.ov [data-fen=boite] .recherche input::placeholder{color:rgba(255,255,255,.6)}
+.ov [data-fen=boite] .recherche input:focus{outline:none}
+.ov [data-fen=boite] .recherche:focus-within{color:#fff}
+/* Fenêtre resserrée : la recherche se replie sur sa loupe ; un clic, ou une recherche en cours, la rouvre. */
+.ov [data-fen=boite]:not([data-l=l]) .recherche input{width:140px}
+.ov [data-fen=boite]:not([data-l=l]) .recherche:not(:focus-within):has(input:placeholder-shown){gap:0}
+.ov [data-fen=boite]:not([data-l=l]) .recherche:not(:focus-within):has(input:placeholder-shown) input{width:0}
+.ov [data-fen=boite]:is([data-l=s],[data-l=xs]) .filtre-hote+.filtre-hote,.ov [data-fen=boite]:is([data-l=s],[data-l=xs]) .recherche{margin-left:12px}
+/* Comme la planche, les filtres gardent leur libellé tant que la fenêtre passe 600 px. */
+.ov [data-fen=boite].boite[data-l=s] .outils .filtre .lib{display:inline}
+/* Étiqueter, comme Supprimer, n'apparaît qu'avec des mails cochés. */
+.ov [data-fen=boite]:not(:has(tbody .case:checked)) .action.selon{display:none}
+
+/* Ligne d'état : la boîte relevée et son volume, en petit et en gris ; chez l'admin, l'écoute et les gestes de la boîte à droite. */
+.ov [data-fen=boite] .etat-boite{flex:none;display:flex;align-items:center;gap:22px;height:18px;margin:-2px 0 6px;padding:0 14px;font-size:11.5px;color:rgba(255,255,255,.62);white-space:nowrap;container-type:inline-size}
+.ov [data-fen=boite] .etat-boite>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ov [data-fen=boite] .etat-boite .lib-champ{margin-right:9px;font-size:9px}
+.ov [data-fen=boite] .etat-boite .espace{flex:1}
+.ov [data-fen=boite] .actions-etat{display:flex;align-items:center;gap:14px;flex:none;overflow:visible}
+.ov [data-fen=boite] .actions-etat .action{height:18px;gap:6px;font-size:11.5px;font-weight:500;color:rgba(255,255,255,.75)}
+.ov [data-fen=boite] .actions-etat .action:hover{color:#fff}
+.ov [data-fen=boite] .actions-etat .action .ico{width:14px;height:14px}
+.ov [data-fen=boite] .actions-etat .action .ico svg{width:11px;height:11px}
+.ov [data-fen=boite] .actions-etat .marque-admin{margin-left:0}
+/* L'écoute qui tourne : un voyant cyan qui bat devant « Arrêter l'écoute » ; arrêtée, un carré éteint. */
+.ov [data-fen=boite] .voyant-ecoute{flex:none;width:6px;height:6px;margin:0 4px 0 2px;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:ov-pouls 1.4s infinite}
+.ov [data-fen=boite] .voyant-ecoute.arrete{background:none;box-shadow:none;border:1px solid rgb(255 255 255 / .55);animation:none}
+/* Fenêtre étroite : le volume part chez l'admin d'abord, puis ses gestes se replient sur leur icône ; chez tous, le volume part en dernier. */
+@container (max-width:1020px){.ov [data-fen=boite] .etat-boite:has(.actions-etat) .volume{display:none}}
+@container (max-width:660px){.ov [data-fen=boite] .actions-etat .action .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
+@container (max-width:500px){.ov [data-fen=boite] .etat-boite .volume{display:none}}
+
+/* Colonnes de la planche : la case et Brouillon fixes, les autres prennent leur contenu plus le même écart. */
+.ov [data-fen=boite] thead th:nth-child(1){width:57px}
+.ov [data-fen=boite] thead th:nth-child(2){width:calc(24px + (100cqw - 931px) / 7)}
+.ov [data-fen=boite] thead th:nth-child(3){width:calc(80px + (100cqw - 931px) / 7)}
+.ov [data-fen=boite] thead th:nth-child(4){width:calc(138px + (100cqw - 931px) / 7)}
+.ov [data-fen=boite] thead th:nth-child(5){width:calc(240px + (100cqw - 931px) / 7)}
+.ov [data-fen=boite] thead th:nth-child(6){width:calc(34px + (100cqw - 931px) / 7)}
+.ov [data-fen=boite] thead th:nth-child(7){width:calc(170px + (100cqw - 931px) / 7)}
+.ov [data-fen=boite] thead th:nth-child(8){width:calc(108px + (100cqw - 931px) / 7)}
+.ov [data-fen=boite] thead th:nth-child(9){width:80px}
+/* Fenêtre resserrée (panneau ouvert) : PJ, Nature, Sur et Brouillon se retirent, les colonnes restantes gardent un écart égal ; plus étroite encore, la date part. */
+@container (max-width:930px){
+  .ov [data-fen=boite] :is(th,td):is(:nth-child(6),:nth-child(7),:nth-child(8),:nth-child(9)){display:none}
+  .ov [data-fen=boite] :is(th,td):nth-child(5){padding-right:12px}
+  .ov [data-fen=boite] thead th:nth-child(2){width:calc(24px + (100cqw - 551px) / 4)}
+  .ov [data-fen=boite] thead th:nth-child(3){width:calc(80px + (100cqw - 551px) / 4)}
+  .ov [data-fen=boite] thead th:nth-child(4){width:calc(138px + (100cqw - 551px) / 4)}
+  .ov [data-fen=boite] thead th:nth-child(5){width:calc(252px + (100cqw - 551px) / 4)}
+}
+@container (max-width:550px){
+  .ov [data-fen=boite] :is(th,td):nth-child(3){display:none}
+  .ov [data-fen=boite] thead th:nth-child(2){width:30px}
+  .ov [data-fen=boite] thead th:nth-child(4){width:38%}
+  .ov [data-fen=boite] thead th:nth-child(5){width:auto}
+}
+
+/* Les cellules : le sens en flèche, l'objet en gras tant qu'il n'est pas lu, « à » devant le destinataire d'un envoi. */
+.ov [data-fen=boite] .sens{font-size:14px;line-height:1}
+.ov [data-fen=boite] .sens.recu{color:var(--accent)}
+.ov [data-fen=boite] .sens.envoye{color:#93FFB3}
+.ov [data-fen=boite] td.non-lu{font-weight:600;color:#fff}
+.ov [data-fen=boite] .vers{margin-right:5px;color:rgba(255,255,255,.45)}
+.ov [data-fen=boite] .pj{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.75)}
+.ov [data-fen=boite] .pj svg{width:12px;height:12px}
+.ov [data-fen=boite] .nat+.nat{margin-left:12px}
+.ov [data-fen=boite] .sur button{font:inherit;color:rgba(255,255,255,.85);text-decoration:underline;text-decoration-color:rgba(255,255,255,.25);text-underline-offset:3px}
+.ov [data-fen=boite] .sur button:hover{color:#fff;text-decoration-color:#fff}
+.ov [data-fen=boite] .vide-c{color:rgba(255,255,255,.28)}
+.ov [data-fen=boite] .brouillon.redige{color:rgba(255,255,255,.88)}
+.ov [data-fen=boite] .brouillon.echec{color:#ffb0b0}
+.ov [data-fen=boite] tbody tr:focus-visible{outline:1px solid #fff;outline-offset:-1px}
+.ov [data-fen=boite] tr.vide-f td{height:auto;padding:16px 20px;white-space:normal;color:rgb(255 255 255 / .6);cursor:default}
+.ov [data-fen=boite] tr.vide-f:hover td{background:none}
+.ov [data-fen=boite] .pagination .trou{min-width:16px;text-align:center;line-height:28px}
+/* L'avis d'un geste : en bas à droite de la fenêtre, au-dessus de la pagination ; un clic le ferme. */
+.ov [data-fen=boite] .avis-boite{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(560px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
+.ov [data-fen=boite] .avis-boite.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+
+/* Nature : une pastille carrée de la couleur du libellé de la boîte, puis son nom, sans cadre ; dans la liste comme dans le panneau. */
+.ov:has([data-fen=boite]) .nat{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.88);white-space:nowrap}
+.ov:has([data-fen=boite]) .nat::before{content:"";flex:none;width:7px;height:7px;background:var(--n);box-shadow:0 0 6px var(--n)}
+
+/* Panneau : ses onglets passent à la ligne plutôt que de se couper. */
+.ov:has([data-fen=boite]) [data-fen=panneau] .p-tete{height:auto;min-height:44px;align-items:flex-start}
+.ov:has([data-fen=boite]) [data-fen=panneau] .p-onglets{flex-wrap:wrap;column-gap:16px;row-gap:0}
+.ov:has([data-fen=boite]) [data-fen=panneau] .p-onglet{flex:none;height:42px}
+.ov:has([data-fen=boite]) [data-fen=panneau] .p-tete .f-btn{margin-top:7px}
+.ov:has([data-fen=boite]) [data-fen=panneau] .erreur-f{color:#ffb0b0}
+/* Une ligne de méta sous la barre, puis les gestes du fil en libellés à icône. */
+.ov:has([data-fen=boite]) [data-fen=panneau] .meta-f{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:10px;font-size:12px;color:rgba(255,255,255,.7)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .actions-f{display:flex;flex-wrap:wrap;gap:6px 20px;margin-bottom:14px}
+/* Fil : chaque message bordé à gauche de la couleur de son sens ; un message déjà lu se replie sur sa ligne d'en-tête. */
+.ov:has([data-fen=boite]) [data-fen=panneau] .messages-fil{display:flex;flex-direction:column;gap:12px;margin:2px 0 4px;padding:0;list-style:none}
+.ov:has([data-fen=boite]) [data-fen=panneau] .msg{padding:2px 0 2px 12px;border-left:2px solid var(--accent)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .msg.envoye{border-left-color:#93FFB3}
+.ov:has([data-fen=boite]) [data-fen=panneau] .msg-tete{display:flex;align-items:baseline;gap:8px;margin:0;font-size:12.5px;white-space:nowrap}
+.ov:has([data-fen=boite]) [data-fen=panneau] summary.msg-tete{list-style:none;cursor:pointer}
+.ov:has([data-fen=boite]) [data-fen=panneau] summary.msg-tete::-webkit-details-marker{display:none}
+.ov:has([data-fen=boite]) [data-fen=panneau] summary.msg-tete:hover b{text-shadow:0 0 8px rgb(255 255 255 / .45)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .msg-tete b{flex:none;font-weight:600}
+.ov:has([data-fen=boite]) [data-fen=panneau] .msg-tete .d{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;color:rgba(255,255,255,.55)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .msg-tete time{flex:none;margin-left:auto;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.55)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .msg-objet{margin:2px 0 0;font-size:11.5px;color:rgba(255,255,255,.62);overflow-wrap:anywhere}
+.ov:has([data-fen=boite]) [data-fen=panneau] .msg-corps{margin:6px 0 0;max-height:420px;overflow:auto;scrollbar-width:none;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.9);white-space:pre-wrap;overflow-wrap:anywhere}
+/* Le mail mis en page : sur fond blanc, comme l'expéditeur l'a dessiné, dans un cadre qui se tire en hauteur. */
+.ov:has([data-fen=boite]) [data-fen=panneau] .corps-html{display:block;width:100%;height:320px;margin-top:6px;border:0;background:#fff;resize:vertical}
+.ov:has([data-fen=boite]) [data-fen=panneau] .pieces{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 0}
+.ov:has([data-fen=boite]) [data-fen=panneau] .piece{display:inline-flex;align-items:center;gap:6px;max-width:100%;font-size:11.5px;color:rgba(255,255,255,.82)}
+.ov:has([data-fen=boite]) [data-fen=panneau] button.piece:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.ov:has([data-fen=boite]) [data-fen=panneau] .piece svg{flex:none;width:12px;height:12px;color:rgba(255,255,255,.6)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .piece small{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10px;color:rgba(255,255,255,.5)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .piece .retirer{display:grid;place-items:center;width:16px;height:16px;color:rgba(255,255,255,.6)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .piece .retirer:hover{color:#fff}
+/* Répondre : séparé du fil par un trait, le destinataire court, l'objet plus large ; aucun ascenseur visible dans le message. */
+.ov:has([data-fen=boite]) [data-fen=panneau] .repondre{margin-top:14px;padding-top:14px;border-top:1px solid rgb(255 255 255 / .08)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .section-f h3+.aide-champ{margin:-4px 0 10px}
+.ov:has([data-fen=boite]) [data-fen=panneau] .dest-objet{grid-template-columns:minmax(0,2fr) minmax(0,3fr)}
+.ov:has([data-fen=boite]) [data-fen=panneau] textarea.saisie{scrollbar-width:none}
+@media (max-width:1366px){.ov:has([data-fen=boite]) [data-fen=panneau] .dest-objet{grid-template-columns:minmax(0,1fr)}}
+/* Étiqueter : les tags en grille de boutons pleins, le choix s'allume en blanc ; le mode en trois boutons. */
+.ov:has([data-fen=boite]) [data-fen=panneau] .tags-f{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:12px 0 14px}
+.ov:has([data-fen=boite]) [data-fen=panneau] :is(.tag-f,.mode-f){display:flex;align-items:center;height:32px;padding:0 10px;cursor:pointer}
+.ov:has([data-fen=boite]) [data-fen=panneau] .modes-f{display:flex;gap:6px}
+.ov:has([data-fen=boite]) [data-fen=panneau] .mode-f{flex:1 0 auto;justify-content:center;padding:0 12px;font-size:12.5px;color:rgba(255,255,255,.85);white-space:nowrap}
+/* Exécuter : un choix par commande, son nom en chasse fixe puis ce qu'elle fait ; la sortie du lancement en dessous. */
+.ov:has([data-fen=boite]) [data-fen=panneau] .commandes-f{display:flex;flex-direction:column;gap:4px}
+.ov:has([data-fen=boite]) [data-fen=panneau] .commande-f{display:grid;grid-template-columns:52px 1fr;gap:8px;align-items:baseline;padding:6px 10px;cursor:pointer}
+.ov:has([data-fen=boite]) [data-fen=panneau] .commande-f code{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:12px;color:#fff}
+.ov:has([data-fen=boite]) [data-fen=panneau] .commande-f span{font-size:11.5px;line-height:1.4;color:rgba(255,255,255,.7)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .commande-f:has(:checked) span{text-shadow:none;color:rgba(255,255,255,.85)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .inter>span{display:inline-flex;align-items:center}
+.ov:has([data-fen=boite]) [data-fen=panneau] .lancement{color:rgba(255,255,255,.75)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .lancement.en-cours{color:var(--accent)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .lancement.echec{color:#ffb0b0}
+.ov:has([data-fen=boite]) [data-fen=panneau] .sortie-f{max-height:260px;margin:0;overflow:auto;scrollbar-width:none;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;line-height:1.45;color:rgba(255,255,255,.75);white-space:pre-wrap;overflow-wrap:anywhere}
+/* Réglages : le mot de passe et son « Effacer » sur une ligne ; le tri par mots-clés, un champ par tag, la pastille devant son nom. */
+.ov:has([data-fen=boite]) [data-fen=panneau] .secret-f{display:flex;align-items:center;gap:12px}
+.ov:has([data-fen=boite]) [data-fen=panneau] .secret-f .action{flex:none;font-size:11.5px}
+.ov:has([data-fen=boite]) [data-fen=panneau] .mots-f .champ>label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.88);white-space:nowrap}
+.ov:has([data-fen=boite]) [data-fen=panneau] .mots-f .champ>label::before{content:"";flex:none;width:7px;height:7px;background:var(--n);box-shadow:0 0 5px var(--n)}
+.ov:has([data-fen=boite]) [data-fen=panneau] .mots-f .grille-2 .champ{margin-bottom:12px}

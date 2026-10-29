@@ -1,0 +1,29 @@
+/* Activité : son refus dit dans la fenêtre, puis ses deux fenêtres flottantes, l'historique par jour et le journal technique. */
+.ov .avis-activite{flex:none;margin:0 4px 6px !important;font-size:11px;line-height:1.35;color:#ffb0b0;overflow-wrap:anywhere}
+
+/* Posées à droite sous l'en-tête, au-dessus des fenêtres de la page ; la barre les déplace. */
+.ov .activite-flottante{top:96px;right:24px;width:440px;max-width:calc(100% - 48px);max-height:calc(100% - 136px)}
+.ov .activite-flottante .f-barre{touch-action:none}
+.ov .activite-flottante .f-titre .marque-admin{margin-left:8px}
+.ov .histo-filtres{display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;margin-bottom:8px}
+.ov .histo-filtres .filtre+.filtre{margin-left:0}
+.ov .activite-flottante .tuiles-sortes{padding:0 0 12px}
+
+/* Une journée : son nom, puis ses actions, l'heure, la sorte dans sa couleur et la phrase. */
+.ov .histo-jour+.histo-jour{margin-top:14px}
+.ov .histo-jour>h3{margin-bottom:6px}
+.ov .liste-histo{display:flex;flex-direction:column;gap:6px}
+.ov .liste-histo li{display:grid;grid-template-columns:40px 70px minmax(0,1fr);gap:8px;padding-left:10px;border-left:1px solid rgba(255,255,255,.2);font-size:12px;line-height:1.35}
+.ov .liste-histo .h{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.62)}
+.ov .liste-histo .s{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;line-height:16px}
+.ov .liste-histo .p{color:#fff;overflow-wrap:anywhere}
+.ov .liste-histo .envoi{border-left-color:var(--c-envoi)}.ov .liste-histo .envoi .s{color:var(--c-envoi)}
+.ov .liste-histo .reponse{border-left-color:var(--c-reponse)}.ov .liste-histo .reponse .s{color:var(--c-reponse)}
+.ov .liste-histo .entretien{border-left-color:var(--c-entretien)}.ov .liste-histo .entretien .s{color:var(--c-entretien)}
+.ov .liste-histo .relance{border-left-color:var(--c-relance)}.ov .liste-histo .relance .s{color:var(--c-relance)}
+.ov .liste-histo .offres{border-left-color:var(--c-offres)}.ov .liste-histo .offres .s{color:var(--c-offres)}
+.ov .liste-histo .afaire{border-left-color:var(--c-afaire)}.ov .liste-histo .afaire .s{color:var(--c-afaire)}
+
+/* Journal technique : une ligne par événement, en chasse fixe. */
+.ov .journal-lignes{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;line-height:1.5;color:rgba(255,255,255,.82);overflow-wrap:anywhere}
+.ov .journal-lignes li+li{margin-top:3px;padding-top:3px;border-top:1px solid rgb(255 255 255 / .06)}

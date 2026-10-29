@@ -1,0 +1,108 @@
+/* Paramètres serveur : sous la rangée d'outils, la colonne des groupes à gauche et le contenu du groupe choisi à droite. */
+.ov [data-fen=serveur]{display:flex;flex-direction:column}
+.ov [data-fen=serveur] .titre-groupe{cursor:default;color:#fff}
+.ov [data-fen=serveur] .menu-fournisseur{left:0;right:auto}
+.ov [data-fen=serveur] .menu-fournisseur .compteur{margin-left:auto;padding-left:16px}
+.ov [data-fen=serveur] .corps-groupes{flex:1;min-height:0;display:flex;border-top:1px solid rgb(255 255 255 / .08)}
+/* Colonne des groupes : du texte seul, le groupe choisi allumé en blanc ; Réinitialiser garde le rouge du danger. */
+.ov [data-fen=serveur] .groupes{flex:none;display:flex;flex-direction:column;padding:10px 28px 10px 20px;border-right:1px solid rgb(255 255 255 / .08);overflow-y:auto;scrollbar-width:none}
+.ov [data-fen=serveur] .rubrique{display:flex;align-items:center;height:32px;font-size:13px;color:rgb(255 255 255 / .62);white-space:nowrap;text-align:left;transition:color .2s}
+.ov [data-fen=serveur] .rubrique:hover{color:#fff}
+.ov [data-fen=serveur] .rubrique.actif{color:#fff;font-weight:600;text-shadow:0 0 8px rgb(255 255 255 / .5)}
+.ov [data-fen=serveur] .rubrique.danger{color:#ffb0b0}
+.ov [data-fen=serveur] .rubrique.allume{color:#fff;text-shadow:0 0 6px rgb(255 255 255 / .5)}
+/* Fenêtre resserrée : la colonne des groupes se serre, les noms longs passent à la ligne. */
+.ov [data-fen=serveur]:is([data-l=s],[data-l=xs]) .groupes{max-width:160px;padding:10px 16px 10px 16px}
+.ov [data-fen=serveur]:is([data-l=s],[data-l=xs]) .rubrique{height:auto;min-height:32px;white-space:normal;line-height:1.3}
+.ov [data-fen=serveur] .groupe-contenu{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;container:groupe/inline-size}
+.ov [data-fen=serveur] .groupe-contenu>.defile{flex:1;min-height:0;overflow:auto}
+.ov [data-fen=serveur] .aide-groupe{flex:none;padding:10px 20px 8px;font-size:11.5px;line-height:1.45;color:rgb(255 255 255 / .55)}
+.ov [data-fen=serveur] .aide-groupe.erreur{color:#ffd0d0}
+/* Pied du groupe : l'état des changements à gauche, Enregistrer à droite. */
+.ov [data-fen=serveur] .pied-groupe{flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;height:48px;padding:0 14px 0 20px;border-top:1px solid rgb(255 255 255 / .08);font-size:12px;color:rgb(255 255 255 / .6)}
+.ov [data-fen=serveur] .etat-changes{min-width:0;line-height:1.3;overflow-wrap:anywhere}
+@media (max-height:780px){.ov [data-fen=serveur] .rubrique{height:29px}.ov [data-fen=serveur] .pied-groupe{height:44px}}
+
+/* Formulaires des autres groupes : autant de colonnes que la largeur en tient. */
+.ov [data-fen=serveur] .form-colonnes{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 28px;padding:6px 20px 14px}
+.ov :is([data-fen=serveur],.serveur-f) .secret{display:flex;align-items:center;gap:8px}
+.ov :is([data-fen=serveur],.serveur-f) .secret .saisie{flex:1;min-width:0}
+.ov :is([data-fen=serveur],.serveur-f) .effacer{flex:none;font-size:11.5px;font-weight:600;color:rgb(255 255 255 / .68);text-decoration:underline;text-decoration-color:rgb(255 255 255 / .25);text-underline-offset:3px;transition:color .2s}
+.ov :is([data-fen=serveur],.serveur-f) .effacer:hover{color:#fff}
+
+/* Catalogue des modèles : commandes fixes, colonnes de texte et de prix à parts égales ; les prix partent d'abord quand la place manque, puis Tokens max et Clé secrète. */
+.ov [data-fen=serveur] .grille-tab{container-type:inline-size}
+.ov [data-fen=serveur] .tab-modeles th{letter-spacing:.06em}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(1){width:34px}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(10){width:18px}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(11){width:56px}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(2){width:calc(112px + (100cqw - 800px) / 8)}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(3){width:calc(84px + (100cqw - 800px) / 8)}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(4){width:calc(108px + (100cqw - 800px) / 8)}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(5){width:calc(76px + (100cqw - 800px) / 8)}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(6){width:calc(64px + (100cqw - 800px) / 8)}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(7){width:calc(84px + (100cqw - 800px) / 8)}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(8){width:calc(64px + (100cqw - 800px) / 8)}
+.ov [data-fen=serveur] .tab-modeles thead th:nth-child(9){width:calc(100px + (100cqw - 800px) / 8)}
+@container (max-width:799.98px){
+  .ov [data-fen=serveur] .tab-modeles :is(th,td):is(:nth-child(6),:nth-child(7),:nth-child(8)){display:none}
+  .ov [data-fen=serveur] .tab-modeles thead th:nth-child(2){width:calc(112px + (100cqw - 588px) / 5)}
+  .ov [data-fen=serveur] .tab-modeles thead th:nth-child(3){width:calc(84px + (100cqw - 588px) / 5)}
+  .ov [data-fen=serveur] .tab-modeles thead th:nth-child(4){width:calc(108px + (100cqw - 588px) / 5)}
+  .ov [data-fen=serveur] .tab-modeles thead th:nth-child(5){width:calc(76px + (100cqw - 588px) / 5)}
+  .ov [data-fen=serveur] .tab-modeles thead th:nth-child(9){width:calc(100px + (100cqw - 588px) / 5)}
+}
+@container (max-width:587.98px){
+  .ov [data-fen=serveur] .tab-modeles :is(th,td):is(:nth-child(5),:nth-child(9)){display:none}
+  .ov [data-fen=serveur] .tab-modeles thead th:nth-child(2){width:calc(112px + (100cqw - 412px) / 3)}
+  .ov [data-fen=serveur] .tab-modeles thead th:nth-child(3){width:calc(84px + (100cqw - 412px) / 3)}
+  .ov [data-fen=serveur] .tab-modeles thead th:nth-child(4){width:calc(108px + (100cqw - 412px) / 3)}
+}
+.ov [data-fen=serveur] .tab-modeles td .action{height:26px;font-size:12px}
+.ov [data-fen=serveur] .tab-modeles b{font-weight:600}
+.ov [data-fen=serveur] .tab-modeles tr:focus-visible{outline:1px solid #fff;outline-offset:-1px}
+.ov [data-fen=serveur] .tab-modeles tr.vide-s td{height:auto;padding:16px 20px;white-space:normal;color:rgb(255 255 255 / .6);cursor:default}
+.ov [data-fen=serveur] .num{font-variant-numeric:tabular-nums}
+.ov [data-fen=serveur] .d.vide{color:rgb(255 255 255 / .4)}
+/* Voyant carré d'un test : cyan ouvert, cyan battant en cours, rouge refusé, gris jamais testé. */
+.ov :is([data-fen=serveur],.serveur-f,.tester-f) .voyant{display:inline-block;flex:none;width:8px;height:8px;background:rgb(255 255 255 / .28);vertical-align:middle}
+.ov :is([data-fen=serveur],.serveur-f,.tester-f) .voyant.ok{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.ov :is([data-fen=serveur],.serveur-f,.tester-f) .voyant.encours{background:var(--accent);animation:ov-pouls 1.2s infinite}
+.ov :is([data-fen=serveur],.serveur-f,.tester-f) .voyant.ko{background:#ffb0b0;box-shadow:0 0 6px rgb(255 176 176 / .6)}
+.ov .tester-f .voyant{margin-right:2px}
+
+/* Modèle de chaque brique : une liste par brique, quatre par rangée sous le catalogue, trois quand la place manque. */
+.ov [data-fen=serveur] .briques{flex:none;padding:12px 20px 14px;border-top:1px solid rgb(255 255 255 / .08)}
+.ov [data-fen=serveur] .briques .etiquette{margin-bottom:10px;color:#fff}
+.ov [data-fen=serveur] .grille-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 14px}
+.ov [data-fen=serveur] .grille-4 .champ{margin-bottom:0}
+@container groupe (max-width:620px){.ov [data-fen=serveur] .grille-4{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-height:780px){
+  .ov [data-fen=serveur] .briques{padding:10px 20px}
+  .ov [data-fen=serveur] .briques .etiquette{margin-bottom:8px}
+  .ov [data-fen=serveur] .grille-4{gap:8px 14px}
+  .ov [data-fen=serveur] .grille-4 .champ{gap:4px}
+  .ov [data-fen=serveur] .grille-4 .saisie{height:28px}
+  .ov [data-fen=serveur] .form-colonnes .champ{gap:4px;margin-bottom:8px}
+  .ov [data-fen=serveur] .form-colonnes .saisie{height:28px}
+}
+
+/* Fenêtre étroite : la confirmation passe sur deux lignes plutôt que de couper sa question. */
+.ov [data-fen=serveur]:not([data-l=l]) .confirmer{flex-wrap:wrap;height:auto;min-height:36px;row-gap:4px;padding:6px 12px}
+.ov [data-fen=serveur]:not([data-l=l]) .confirmer p{flex:1 1 100%;white-space:normal}
+
+/* L'avis du dernier geste, posé au-dessus du pied ; un clic le ferme. */
+.ov [data-fen=serveur] .avis{position:absolute;left:14px;right:14px;bottom:56px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid #fff;background:rgb(14 14 18 / .92);font-size:12.5px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
+.ov [data-fen=serveur] .avis.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+
+/* Panneau : le formulaire d'un modèle, serré ; ce qui part à l'effacement, le nombre à gauche, le type et son contenu à droite. */
+.ov .serveur-f .form-serre .champ{margin-bottom:8px}
+.ov .serveur-f .form-serre+.form-serre{margin-top:10px;padding-top:10px}
+.ov .serveur-f .alerte-f{margin-top:10px;font-size:12px;line-height:1.45;color:#ffb0b0}
+.ov .serveur-f .intro-f{margin-bottom:8px;font-size:12.5px;line-height:1.5;color:rgb(255 255 255 / .88)}
+.ov .serveur-f .liste-f.compte>li{gap:14px;min-height:28px;padding:4px 0}
+.ov .serveur-f .liste-f.compte>li.rien{color:rgb(255 255 255 / .45)}
+.ov .serveur-f .liste-f.compte .n{flex:none;width:52px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.ov .serveur-f .liste-f.compte small{display:block;font-size:11px;line-height:1.35;color:rgb(255 255 255 / .5)}
+.ov .serveur-f .liste-f.compte .total{border-top:1px solid rgb(255 255 255 / .25);font-weight:600}
+.ov .serveur-f .aide-champ{margin-top:10px}

@@ -1,0 +1,36 @@
+/* Page Constructeur (admin) : les éléments que les CV de tous les comptes tirent au sort, puis ce qu'on impose au tirage. */
+
+.ov .docs-constructeur{display:flex;flex-direction:column;padding:2px 0 0}
+
+/* Résumé de la page sur deux lignes, à la place des filtres : ce que sont ces éléments et combien il y en a. */
+.ov .docs-constructeur .resume{display:flex;flex-direction:column;justify-content:center;min-width:0;font-size:12px;line-height:1.3;white-space:nowrap}
+.ov .docs-constructeur .resume b{font-weight:600}
+.ov .docs-constructeur .resume span{font-size:11px;color:rgba(255,255,255,.62)}
+.ov .docs-constructeur .action:disabled:hover{color:rgba(255,255,255,.88)}
+.ov .docs-constructeur .action.plein:disabled:hover .ico{box-shadow:none}
+
+/* Trois gestionnaires côte à côte, séparés d'un trait fin ; chaque liste défile seule, barre masquée ; les réglages imposés dessous. */
+.ov .docs-constructeur .elements{flex:1;min-height:0;display:flex;flex-direction:column;padding:4px 20px 18px}
+.ov .docs-constructeur .gest-cols{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+.ov .docs-constructeur .gest{display:flex;flex-direction:column;min-width:0;min-height:0;padding:0 24px}
+.ov .docs-constructeur .gest:first-child{padding-left:0}
+.ov .docs-constructeur .gest:last-child{padding-right:0}
+.ov .docs-constructeur .gest+.gest{border-left:1px solid rgba(255,255,255,.08)}
+.ov .docs-constructeur .gest-tete{display:flex;align-items:center;gap:8px;height:28px;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;white-space:nowrap}
+.ov .docs-constructeur .gest-tete .marque-admin{margin-left:0}
+.ov .docs-constructeur .gest-tete .compteur{margin-left:auto;letter-spacing:0}
+.ov .docs-constructeur .gest>:not(.fichiers){flex-shrink:0}
+.ov .docs-constructeur .gest>.aide-champ{min-height:31px;margin:2px 0 8px !important}
+.ov .docs-constructeur .fichiers{flex:0 1 auto;min-height:0;overflow-y:auto;scrollbar-width:none}
+.ov .docs-constructeur .fichiers::-webkit-scrollbar{display:none}
+.ov .docs-constructeur .gest>.action{flex:none;align-self:flex-start;margin-top:10px}
+@media (min-height:900px){
+  .ov .docs-constructeur{--h-f:56px}
+  .ov .docs-constructeur .fichiers .ap:not(.feuille){width:60px;height:42px}
+  .ov .docs-constructeur .fichiers .ap.feuille{width:32px;height:44px;margin:0 14px}
+}
+
+/* Réglages imposés à tous les CV du compte : le fond et la palette, en deux colonnes sous les gestionnaires. */
+.ov .docs-constructeur .imposes{flex:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 48px;margin-top:22px !important;padding-top:18px;border-top:1px solid rgba(255,255,255,.12)}
+.ov .docs-constructeur .imposes .champ{margin:0}
+.ov .docs-constructeur .imposes select.saisie{width:220px;max-width:100%}

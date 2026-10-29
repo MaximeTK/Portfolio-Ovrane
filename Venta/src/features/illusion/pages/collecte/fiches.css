@@ -1,0 +1,111 @@
+/* Collecte, Parser et Audit : le tableau des fiches, ses filtres, ses lots, et les onglets d'une brique (réglages, exécution, import). */
+
+/* Tableau des fiches : chaque colonne prend son contenu le plus large plus le même écart, qui grandit avec la fenêtre. */
+.ov [data-fen=fiches] .fiches thead th:nth-child(1){width:46px}
+.ov [data-fen=fiches] .fiches thead th:nth-child(2){width:calc(72px + (100cqw - 926px) / 10)}
+.ov [data-fen=fiches] .fiches thead th:nth-child(3){width:calc(158px + (100cqw - 926px) / 10)}
+.ov [data-fen=fiches] .fiches thead th:nth-child(4){width:calc(86px + (100cqw - 926px) / 10)}
+.ov [data-fen=fiches] .fiches thead th:nth-child(5){width:calc(82px + (100cqw - 926px) / 10)}
+.ov [data-fen=fiches] .fiches thead th:nth-child(6){width:calc(97px + (100cqw - 926px) / 10)}
+.ov [data-fen=fiches] .fiches thead th:nth-child(7){width:calc(97px + (100cqw - 926px) / 10)}
+.ov [data-fen=fiches] .fiches thead th:nth-child(8){width:calc(88px + (100cqw - 926px) / 10)}
+.ov [data-fen=fiches] .fiches thead th:nth-child(9){width:calc(47px + (100cqw - 926px) / 10)}
+.ov [data-fen=fiches] .fiches thead th:nth-child(10){width:calc(71px + (100cqw - 926px) / 10)}
+.ov [data-fen=fiches] .fiches thead th:nth-child(11){width:calc(82px + (100cqw - 926px) / 10)}
+@media (max-width:1366px){.ov [data-fen=fiches] .fiches{font-size:12px}}
+/* Fenêtre resserrée : Localisation, Effectif, Site, Email et Téléphone se retirent, les autres gardent un écart égal. */
+@container (max-width:925px){
+  .ov [data-fen=fiches] .fiches :is(th,td):is(:nth-child(4),:nth-child(5),:nth-child(6),:nth-child(7),:nth-child(8)){display:none}
+  .ov [data-fen=fiches] .fiches thead th:nth-child(2){width:calc(72px + (100cqw - 476px) / 5)}
+  .ov [data-fen=fiches] .fiches thead th:nth-child(3){width:calc(158px + (100cqw - 476px) / 5)}
+  .ov [data-fen=fiches] .fiches thead th:nth-child(9){width:calc(47px + (100cqw - 476px) / 5)}
+  .ov [data-fen=fiches] .fiches thead th:nth-child(10){width:calc(71px + (100cqw - 476px) / 5)}
+  .ov [data-fen=fiches] .fiches thead th:nth-child(11){width:calc(82px + (100cqw - 476px) / 5)}
+}
+/* Entreprise : le nom puis le SIREN dessous, sans changer la hauteur de ligne. */
+.ov [data-fen=fiches] td.ent2{line-height:1.15}
+.ov [data-fen=fiches] td.ent2 .ent{display:block;overflow:hidden;text-overflow:ellipsis}
+.ov [data-fen=fiches] td.vide{color:rgba(255,255,255,.28)}
+.ov [data-fen=fiches] .vide-tableau td{height:auto;padding:28px 20px;white-space:normal;color:rgba(255,255,255,.6);cursor:default}
+.ov [data-fen=fiches] .vide-tableau:hover td{background:none}
+/* Recherche en texte de la rangée d'outils : sans cadre, un trait fin dessous. */
+.ov [data-fen=fiches] .cherche{display:inline-flex;align-items:center;gap:7px;height:28px;margin-left:20px;border-bottom:1px solid rgb(255 255 255 / .2);color:rgba(255,255,255,.6)}
+.ov [data-fen=fiches] .cherche:focus-within{border-color:#fff;color:#fff}
+.ov [data-fen=fiches] .ico-cherche svg{display:block;width:13px;height:13px}
+.ov [data-fen=fiches] .cherche input{width:160px;height:26px;border:0;background:none;padding:0;font-size:12.5px;color:#fff}
+.ov [data-fen=fiches] .cherche input::placeholder{color:rgba(255,255,255,.5)}
+.ov [data-fen=fiches] .cherche input:focus{outline:none}
+.ov [data-fen=fiches]:is([data-l=s],[data-l=xs]) .cherche{flex:0 1 auto;min-width:0;margin-left:14px}
+.ov [data-fen=fiches]:is([data-l=s],[data-l=xs]) .cherche input{width:136px;min-width:0}
+/* Menus des filtres : sous le filtre, alignés sur sa gauche, chaque choix avec son compte. */
+.ov [data-fen=fiches] .menu{left:0;right:auto;min-width:190px}
+.ov [data-fen=fiches] .menu-option .compte{margin-left:auto;padding-left:18px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.55)}
+/* Lots : celui qui tourne s'écrit en cyan avec son signal, ceux qu'il bloque s'effacent ; le nombre n'apparaît qu'avec des lignes cochées. */
+.ov [data-fen=fiches] .action.encours{color:var(--accent)}
+.ov [data-fen=fiches] .action.encours .ico .barres{height:11px}
+.ov [data-fen=fiches] .etat-a{margin-left:2px;font-size:10.5px;font-weight:500;color:rgb(147 244 255 / .75)}
+.ov [data-fen=fiches] .action:disabled{opacity:.38}
+.ov [data-fen=fiches]:not(:has(tbody .case:checked)) .nb-sel{display:none}
+/* Note discrète au bout de la pagination ; un avis la remplace le temps d'être lu. */
+.ov [data-fen=fiches] .note-bas{margin-left:auto;font-size:11.5px;color:rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ov [data-fen=fiches] .note-bas b{font-weight:500;color:rgba(255,255,255,.75)}
+.ov [data-fen=fiches] .note-bas.avis{color:rgba(255,255,255,.85)}
+.ov [data-fen=fiches] .note-bas.erreur{color:#ffb0b0}
+.ov [data-fen=fiches] .pagination{min-width:0}
+
+/* Onglets du panneau des trois pages. */
+.ov .pf .catalogue{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-height:32px;padding:4px;border:1px solid rgb(255 255 255 / .16);background:rgb(0 0 0 / .25)}
+.ov .pf .catalogue input{flex:1;min-width:90px;height:22px;border:0;background:none;padding:0 6px;font-size:12.5px;color:#fff}
+.ov .pf .catalogue input::placeholder{color:rgba(255,255,255,.45)}
+.ov .pf .catalogue input:focus{outline:none}
+.ov .pf .catalogue:focus-within{border-color:#fff}
+.ov .pf .catalogue .puce{gap:6px;height:auto;min-height:22px;padding:0 0 0 8px;font-size:12px;line-height:1.3;color:#fff;white-space:normal}
+.ov .pf .catalogue .puce b{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;font-weight:500;color:rgba(255,255,255,.65)}
+.ov .pf .catalogue .puce button{display:grid;place-items:center;width:20px;height:20px;color:rgba(255,255,255,.55);opacity:1}
+.ov .pf .catalogue .puce button:hover{color:#fff}
+.ov .pf .catalogue .puce svg{width:9px;height:9px}
+.ov .pf .propositions{position:absolute;top:calc(100% + 2px);left:-1px;right:-1px;z-index:5;display:flex;flex-direction:column;max-height:180px;overflow:auto;padding:4px 0;background:rgb(14 14 18 / .96);border:1px solid rgb(255 255 255 / .18);scrollbar-width:none}
+.ov .pf .propositions button{display:flex;gap:8px;min-height:28px;align-items:center;padding:0 10px;text-align:left;font-size:12px;color:rgba(255,255,255,.8)}
+.ov .pf .propositions button:is(:hover,:focus-visible){background:rgb(255 255 255 / .06);color:#fff}
+.ov .pf .propositions b{flex:none;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;font-weight:500;color:rgba(255,255,255,.6)}
+.ov .pf .grille-2.bas{align-items:end}
+.ov .pf .grille-2.inters{gap:0 22px}
+.ov .pf .inter>span{display:inline-flex;align-items:center}
+.ov .pf .champ>label abbr{text-decoration:none}
+.ov .pf .aide-champ{margin-top:8px}
+.ov .pf .liste-f .lib-champ{flex:none}
+.ov .pf .liste-f .d{text-align:right;overflow-wrap:anywhere}
+.ov .pf .liste-f .d.pile{display:flex;flex-direction:column;align-items:flex-end}
+/* Couleurs d'une identité, avec leur code. */
+.ov .pf .couleurs{display:inline-flex;align-items:center;gap:10px}
+.ov .pf .couleurs span{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.75)}
+.ov .pf .couleurs i{width:12px;height:12px;border:1px solid rgb(255 255 255 / .3)}
+/* Sortie d'une exécution : son badge, terminé en vert, en cours en cyan, en échec en rouge. */
+.ov .pf .titre-badge{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.ov .pf .titre-badge h3{margin:0}
+.ov .pf .badge{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ov .pf .badge.fini{background:rgb(147 255 179 / .14);color:#93FFB3}
+.ov .pf .badge.echec{background:rgb(255 176 176 / .14);color:#ffb0b0}
+.ov .pf .note-f{margin-bottom:12px !important;padding-left:10px;border-left:2px solid rgba(255,255,255,.25);font-size:12px;line-height:1.45;color:rgba(255,255,255,.65)}
+.ov .pf .gestes-f{display:flex;justify-content:flex-end;gap:22px;margin-top:8px}
+.ov .pf .journal-f{max-height:160px;overflow:auto;margin:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;line-height:1.45;color:rgba(255,255,255,.62);white-space:pre-wrap;overflow-wrap:anywhere;scrollbar-width:none}
+.ov .pf .cmd>summary{cursor:pointer;list-style:none}
+.ov .pf .cmd>summary::-webkit-details-marker{display:none}
+.ov .pf .cmd>summary::after{content:" +";color:rgba(255,255,255,.5)}
+.ov .pf .cmd[open]>summary{margin-bottom:10px}
+/* Résultats de l'import : la société et son SIREN, puis secteur et lieu, puis le geste. */
+.ov .pf .resultats>li{gap:14px;padding:7px 0}
+.ov .pf .soc{flex:none;width:112px;display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.ov .pf .soc b{overflow-wrap:anywhere}
+.ov .pf .soc-d{flex:1;min-width:0;font-size:12px;line-height:1.35;color:rgba(255,255,255,.72)}
+.ov .pf .tag-f{padding:2px 6px;border:1px solid rgb(255 255 255 / .2);font-size:8.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);white-space:nowrap}
+/* Arbitrage d'un doublon : pour chaque champ, deux tuiles ; la retenue s'allume en blanc. */
+.ov .pf .arb{margin:0 0 6px !important}
+.ov .pf .arbitre{gap:8px;margin-bottom:12px}
+.ov .pf .arbitre:last-child{margin-bottom:0}
+.ov .pf .tranche{display:flex;flex-direction:column;gap:3px;padding:8px 10px;cursor:pointer;min-width:0}
+.ov .pf .tr-lib{font-size:11px;color:rgba(255,255,255,.62);white-space:nowrap}
+.ov .pf .tranche:has(:checked) .tr-lib{color:#fff}
+.ov .pf .tr-val{font-size:12.5px;overflow-wrap:anywhere}
+/* Comme sur la planche, l'action pleine garde son libellé jusque dans une fenêtre étroite ; seules les secondaires passent à l'icône. */
+.ov [data-fen=fiches][data-l=xs] .outils .action.plein .txt{position:static;width:auto;height:auto;overflow:visible;clip:auto}

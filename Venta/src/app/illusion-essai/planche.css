@@ -1,0 +1,29 @@
+/* Propre à la planche Candidatures du prototype, rejouée par le banc d'essai. */
+/* Publiée et Timer restent en place ; entre les deux, chaque colonne prend son contenu le plus large plus le même écart. */
+.ov [data-fen=tableau] thead th:nth-child(1){width:57px}
+.ov [data-fen=tableau] thead th:nth-child(2){width:calc(45px + (100cqw - 903px) / 7)}
+.ov [data-fen=tableau] thead th:nth-child(3){width:calc(66px + (100cqw - 903px) / 7)}
+.ov [data-fen=tableau] thead th:nth-child(4){width:calc(175px + (100cqw - 903px) / 7)}
+.ov [data-fen=tableau] thead th:nth-child(5){width:calc(96px + (100cqw - 903px) / 7)}
+.ov [data-fen=tableau] thead th:nth-child(6){width:calc(149px + (100cqw - 903px) / 7)}
+.ov [data-fen=tableau] thead th:nth-child(7){width:calc(134px + (100cqw - 903px) / 7)}
+.ov [data-fen=tableau] thead th:nth-child(8){width:calc(101px + (100cqw - 903px) / 7)}
+.ov [data-fen=tableau] thead th:nth-child(9){width:80px}
+.ov [data-fen=tableau] th:is(:nth-child(2),:nth-child(3)){letter-spacing:.06em}
+/* La fenêtre se resserre : ses colonnes secondaires se retirent, sans rien couper. */
+.ov [data-fen=tableau][data-l=m] :is(th,td):is(:nth-child(6),:nth-child(7)){display:none}
+.ov [data-fen=tableau][data-l=m] thead th:nth-child(2){width:calc(45px + (100cqw - 620px) / 5)}
+.ov [data-fen=tableau][data-l=m] thead th:nth-child(3){width:calc(66px + (100cqw - 620px) / 5)}
+.ov [data-fen=tableau][data-l=m] thead th:nth-child(4){width:calc(175px + (100cqw - 620px) / 5)}
+.ov [data-fen=tableau][data-l=m] thead th:nth-child(5){width:calc(96px + (100cqw - 620px) / 5)}
+.ov [data-fen=tableau][data-l=m] thead th:nth-child(8){width:calc(101px + (100cqw - 620px) / 5)}
+.ov [data-fen=tableau]:is([data-l=s],[data-l=xs]) :is(th,td):is(:nth-child(5),:nth-child(6),:nth-child(7)){display:none}
+.ov [data-fen=tableau][data-l=s] thead th:nth-child(2){width:calc(45px + (100cqw - 524px) / 4)}
+.ov [data-fen=tableau][data-l=s] thead th:nth-child(3){width:calc(66px + (100cqw - 524px) / 4)}
+.ov [data-fen=tableau][data-l=s] thead th:nth-child(4){width:calc(175px + (100cqw - 524px) / 4)}
+.ov [data-fen=tableau][data-l=s] thead th:nth-child(8){width:calc(101px + (100cqw - 524px) / 4)}
+.ov [data-fen=tableau][data-l=xs] :is(th,td):is(:nth-child(2),:nth-child(9)){display:none}
+.ov [data-fen=tableau][data-l=xs] thead th:nth-child(3){width:calc(66px + (100cqw - 399px) / 3)}
+.ov [data-fen=tableau][data-l=xs] thead th:nth-child(4){width:calc(175px + (100cqw - 399px) / 3)}
+.ov [data-fen=tableau][data-l=xs] thead th:nth-child(8){width:calc(101px + (100cqw - 399px) / 3)}
+.ov [data-fen=tableau][data-l=xs] .outils .filtre:nth-of-type(3){display:none}

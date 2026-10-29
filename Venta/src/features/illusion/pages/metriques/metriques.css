@@ -1,0 +1,164 @@
+/* Page Métriques : neuf tuiles chiffrées, la grille des cartes, puis les petites cartes ; tout tient sans défiler. */
+/* Panneau de 440 px, 400 px jusqu'à 1366 px, 360 px sous 1300 px pour laisser place aux cartes, 560 px sur les grands écrans pour le tableau des coûts. */
+.ov .coquille:has(>[data-fen=metriques]){--panneau:440px}
+@media (max-width:1366px){.ov .coquille:has(>[data-fen=metriques]){--panneau:400px}}
+@media (max-width:1300px){.ov .coquille:has(>[data-fen=metriques]){--panneau:360px}}
+@media (min-width:1700px){.ov .coquille:has(>[data-fen=metriques]){--panneau:560px}}
+
+.ov [data-fen=metriques] .filtre .chevron,.ov [data-fen=metriques] .filtre svg{flex:none}
+.ov [data-fen=metriques] .raccourcis{display:inline-flex;margin-left:26px;padding-left:22px;border-left:1px solid rgb(255 255 255 / .14)}
+.ov [data-fen=metriques] .raccourcis .filtre+.filtre{margin-left:18px}
+.ov [data-fen=metriques]:is([data-l=s],[data-l=xs]) .raccourcis{margin-left:14px;padding-left:14px}
+.ov [data-fen=metriques]:is([data-l=s],[data-l=xs]) .raccourcis .filtre+.filtre{margin-left:12px}
+/* Choix d'une date : sous son filtre, la date puis Afficher ; le calcul ne part qu'à la validation. */
+.ov [data-fen=metriques] .menu-periode{top:46px;right:auto;min-width:0;padding:12px 14px}
+.ov [data-fen=metriques] .menu-periode form{display:flex;align-items:center;gap:12px}
+.ov [data-fen=metriques] .menu-periode .saisie{width:150px;height:30px}
+.ov [data-fen=metriques] .attente-m{padding:14px 20px;font-size:12.5px;color:rgb(255 255 255 / .6)}
+.ov [data-fen=metriques] .attente-m.erreur{color:#ffd0d0}
+
+.ov [data-fen=metriques] .metriques{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:2px 14px 14px;container:metriques/inline-size}
+/* Tuiles chiffrées : une rangée entre deux filets, sans verre ; le trait de couleur des sortes d'activité sur celles qui en sont une. */
+.ov [data-fen=metriques] .tuiles-m{flex:none;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));border-top:1px solid rgb(255 255 255 / .12);border-bottom:1px solid rgb(255 255 255 / .12)}
+.ov [data-fen=metriques] .tuile-m{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:4px;min-width:0;padding:9px 12px}
+.ov [data-fen=metriques] .tuile-m+.tuile-m{border-left:1px solid rgb(255 255 255 / .08)}
+.ov [data-fen=metriques] .tuile-m .etiquette{min-height:2.6em;font-size:8.5px;line-height:1.3;letter-spacing:.14em}
+.ov [data-fen=metriques] .tuile-m b{font-size:19px;font-weight:600;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ov [data-fen=metriques] .tuile-m::before{content:"";position:absolute;left:12px;top:-1px;width:18px;height:2px;background:var(--c,transparent);box-shadow:0 0 6px var(--c,transparent)}
+.ov [data-fen=metriques] .tuile-m.c-offres{--c:var(--c-offres)}
+.ov [data-fen=metriques] .tuile-m.c-envoi{--c:var(--c-envoi)}
+.ov [data-fen=metriques] .tuile-m.c-reponse{--c:var(--c-reponse)}
+.ov [data-fen=metriques] .tuile-m.c-entretien{--c:var(--c-entretien)}
+
+/* Grille des cartes : des sous-blocs à filet, pas en verre ; un clic ouvre leur détail. */
+.ov [data-fen=metriques] .cartes{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:12px}
+.ov [data-fen=metriques] .carte{min-width:0;min-height:0;display:flex;flex-direction:column;padding:9px 14px 10px;border:1px solid rgb(255 255 255 / .1);cursor:pointer;transition:border-color .2s;container:carte/inline-size}
+.ov [data-fen=metriques] .carte:hover{border-color:rgb(255 255 255 / .3)}
+.ov [data-fen=metriques] .carte.ouverte{border-color:rgb(255 255 255 / .7)}
+.ov [data-fen=metriques] .carte.large{grid-column:span 2}
+.ov [data-fen=metriques] .carte-tete{flex:none;display:flex;align-items:baseline;gap:12px;margin-bottom:6px;min-width:0}
+.ov [data-fen=metriques] .carte-tete .etiquette{flex:none;color:#fff}
+.ov [data-fen=metriques] .carte-tete .d{min-width:0;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov [data-fen=metriques] .carte-tete .detail{flex:none;margin-left:auto;font-size:11.5px;color:rgb(255 255 255 / .55);white-space:nowrap;transition:color .2s}
+.ov [data-fen=metriques] .carte:hover .detail,.ov [data-fen=metriques] .carte .detail:focus-visible{color:#fff}
+.ov [data-fen=metriques] .carte.ouverte .detail{color:#fff;text-shadow:0 0 6px rgb(255 255 255 / .5)}
+.ov [data-fen=metriques] .corps-carte{flex:1;min-height:0;overflow:hidden}
+.ov [data-fen=metriques] .vide-m{font-size:12px;color:rgb(255 255 255 / .55)}
+
+/* Tableaux compacts des cartes et du panneau : lignes basses, chiffres alignés à droite, en-têtes sur deux lignes au besoin. */
+.ov :is([data-fen=metriques],.metriques-f) .compact{table-layout:auto;font-size:12px}
+.ov :is([data-fen=metriques],.metriques-f) .compact thead th{width:auto;height:auto;padding:0 0 5px 12px;font-size:8.5px;line-height:1.25;letter-spacing:.1em;text-align:right;white-space:normal;vertical-align:bottom}
+.ov :is([data-fen=metriques],.metriques-f) .compact td{height:22px;padding:0 0 0 12px;text-align:right;font-variant-numeric:tabular-nums;color:rgb(255 255 255 / .82);border-top:0}
+.ov :is([data-fen=metriques],.metriques-f) .compact :is(th,td):first-child{padding-left:0;text-align:left}
+.ov :is([data-fen=metriques],.metriques-f) .compact td:first-child{font-weight:600;color:#fff}
+.ov :is([data-fen=metriques],.metriques-f) .compact :is(th,td):last-child{padding-right:0}
+.ov :is([data-fen=metriques],.metriques-f) .compact tbody tr{cursor:inherit}
+.ov :is([data-fen=metriques],.metriques-f) .compact tbody tr:hover td{background:none}
+.ov :is([data-fen=metriques],.metriques-f) .compact tfoot td{height:26px;border-top:1px solid rgb(255 255 255 / .3);font-weight:600;color:#fff}
+
+/* Histogramme des coûts : une barre par jour, une seule série, grille discrète ; le survol donne le jour et le montant. */
+.ov [data-fen=metriques] .histo{flex:1;min-height:56px;display:flex;gap:6px}
+.ov [data-fen=metriques] .histo-y{flex:none;display:flex;flex-direction:column;justify-content:space-between;width:40px;white-space:nowrap;margin:-5px 0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:9.5px;text-align:right;color:rgb(255 255 255 / .5)}
+.ov [data-fen=metriques] .histo-y i{font-style:normal}
+.ov [data-fen=metriques] .histo-trace{flex:1;min-width:0;border-bottom:1px solid rgb(255 255 255 / .3);background:linear-gradient(rgb(255 255 255 / .08),rgb(255 255 255 / .08)) 0 0/100% 1px no-repeat,linear-gradient(rgb(255 255 255 / .08),rgb(255 255 255 / .08)) 0 50%/100% 1px no-repeat}
+.ov [data-fen=metriques] .histo-svg{display:block;width:100%;height:100%}
+.ov [data-fen=metriques] .histo-svg rect{fill:rgb(255 255 255 / .55);transition:fill .15s}
+.ov [data-fen=metriques] .histo-svg rect:hover{fill:#fff}
+.ov [data-fen=metriques] .histo-x{flex:none;display:flex;justify-content:space-between;margin:3px 0 6px 46px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:9.5px;color:rgb(255 255 255 / .5)}
+.ov [data-fen=metriques] .postes{flex:none}
+.ov [data-fen=metriques] .postes li{display:flex;justify-content:space-between;gap:10px;height:18px;font-size:11.5px;white-space:nowrap;color:rgb(255 255 255 / .75)}
+.ov [data-fen=metriques] .postes span{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:#fff}
+
+/* Winrate : entretiens sur envois, une barre rose par profil, l'échelle va de 0 à 10 %. */
+.ov :is([data-fen=metriques],.metriques-f) .sous-carte{margin:2px 0 3px;font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgb(255 255 255 / .5)}
+.ov [data-fen=metriques] .winrate li{display:flex;align-items:center;gap:8px;height:22px;font-size:12px}
+.ov [data-fen=metriques] .w-nom{flex:0 1 auto;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov [data-fen=metriques] .w-barre{flex:1 1 0;min-width:0;height:6px;background:rgb(255 255 255 / .08)}
+.ov [data-fen=metriques] .w-barre i{display:block;height:100%;background:var(--c-entretien)}
+.ov [data-fen=metriques] .w-val{flex:none;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;white-space:nowrap;color:rgb(255 255 255 / .8)}
+/* Carte assez large : les noms prennent une colonne commune, les barres partent du même bord. */
+@container carte (min-width:300px){.ov [data-fen=metriques] .w-nom{flex:none;min-width:118px}.ov [data-fen=metriques] .w-barre{flex-basis:30px}}
+
+/* Petites cartes : les autres mesures, un chiffre chacune, qui ouvrent leur détail. */
+.ov [data-fen=metriques] .mini-cartes-m{flex:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.ov [data-fen=metriques] .mini-m{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;padding:7px 10px 8px;border:1px solid rgb(255 255 255 / .1);text-align:left;transition:border-color .2s}
+.ov [data-fen=metriques] .mini-m:hover,.ov [data-fen=metriques] .mini-m:focus-visible{border-color:rgb(255 255 255 / .3)}
+.ov [data-fen=metriques] .mini-m.allume{border-color:rgb(255 255 255 / .7)}
+.ov [data-fen=metriques] .mini-m .etiquette{font-size:8.5px;letter-spacing:.1em;white-space:nowrap}
+.ov [data-fen=metriques] .mini-m b{font-size:13px;font-weight:600;white-space:nowrap}
+
+@media (max-height:780px){
+  .ov [data-fen=metriques] .metriques,.ov [data-fen=metriques] .cartes{gap:10px}
+  .ov [data-fen=metriques] .compact td{height:20px}
+  .ov [data-fen=metriques] .carte-tete{margin-bottom:4px}
+  .ov [data-fen=metriques] .tuile-m{padding:7px 12px}
+  .ov [data-fen=metriques] .winrate li{height:20px}
+  .ov [data-fen=metriques] .postes li{height:16px}
+}
+/* Écran de 720 px de haut : cartes, tableaux, tuiles et petites cartes se serrent pour tenir sans défiler. */
+@media (max-height:740px){
+  .ov [data-fen=metriques] .metriques{gap:8px}
+  .ov [data-fen=metriques] .carte{padding:6px 10px}
+  .ov [data-fen=metriques] .compact td{height:18px}
+  .ov [data-fen=metriques] .winrate li{height:18px}
+  .ov [data-fen=metriques] .tuile-m{padding:5px 12px}
+  .ov [data-fen=metriques] .mini-m{padding:5px 8px}
+}
+
+/* Place réduite : les tuiles passent sur deux rangées de cinq et quatre, les petites cartes à la largeur de leur chiffre, les cartes sur deux colonnes. */
+@container metriques (max-width:760px){
+  .ov [data-fen=metriques] .tuiles-m{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .ov [data-fen=metriques] .tuile-m:nth-child(6){border-left:0}
+  .ov [data-fen=metriques] .tuile-m:nth-child(n+6){border-top:1px solid rgb(255 255 255 / .08)}
+  .ov [data-fen=metriques] .mini-cartes-m{grid-template-columns:repeat(6,auto)}
+  .ov [data-fen=metriques] .mini-m{min-width:min-content;padding:7px 8px 8px}
+  .ov [data-fen=metriques] .mini-m .etiquette{white-space:normal}
+  .ov [data-fen=metriques] .cartes{grid-template-columns:minmax(273px,1fr) minmax(0,1.3fr)}
+  .ov [data-fen=metriques] .carte.large{grid-column:auto}
+}
+/* Tableaux des cartes : quand la carte se resserre, ils retirent d'abord leurs colonnes secondaires, puis les moins parlantes. */
+@container carte (max-width:566px){.ov [data-fen=metriques] .t-jobs :is(th,td):is(:nth-child(3),:nth-child(7),:nth-child(8)){display:none}}
+@container carte (max-width:388px){.ov [data-fen=metriques] .t-jobs :is(th,td):nth-child(2){display:none}}
+@container carte (max-width:337px){.ov [data-fen=metriques] .t-jobs :is(th,td):nth-child(5){display:none}}
+@container carte (max-width:272px){.ov [data-fen=metriques] .t-jobs :is(th,td):nth-child(6){display:none}}
+@container carte (max-width:547px){.ov [data-fen=metriques] .t-wf :is(th,td):is(:nth-child(4),:nth-child(5),:nth-child(7)){display:none}}
+@container carte (max-width:351px){.ov [data-fen=metriques] .t-wf :is(th,td):nth-child(6){display:none}}
+@container carte (max-width:297px){.ov [data-fen=metriques] .t-wf :is(th,td):nth-child(3){display:none}}
+
+/* L'avis du dernier geste, posé au bas de la fenêtre ; un clic le ferme. */
+.ov [data-fen=metriques] .avis{position:absolute;left:14px;right:14px;bottom:14px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid #fff;background:rgb(14 14 18 / .92);font-size:12.5px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
+.ov [data-fen=metriques] .avis.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+
+/* Sous-fenêtres du panneau : le tableau des coûts garde Poste et Coût et retire d'abord ses colonnes « dont », puis Appels, selon la largeur. */
+.ov .metriques-f{container:metriques-f/inline-size}
+.ov .metriques-f .intro-f{margin-bottom:10px;font-size:12.5px;line-height:1.5;color:rgb(255 255 255 / .85)}
+.ov .metriques-f .alerte-f{margin-bottom:10px;font-size:12px;line-height:1.45;color:#ffb0b0}
+.ov .metriques-f .aide-champ{margin-top:12px}
+.ov .metriques-f .compact+.compact,.ov .metriques-f .compact+.sous-carte{margin-top:16px}
+.ov .metriques-f .sous-carte{margin-top:14px}
+.ov .metriques-f .tab-couts td{height:28px}
+.ov .metriques-f .tab-couts :is(th,td):is(:nth-child(5),:nth-child(7)){display:none}
+@container metriques-f (max-width:488px){.ov .metriques-f .tab-couts :is(th,td):nth-child(4){display:none}}
+@container metriques-f (max-width:388px){.ov .metriques-f .tab-couts :is(th,td):nth-child(2){display:none}}
+@container metriques-f (max-width:348px){.ov .metriques-f .tab-couts :is(th,td):nth-child(6){display:none}}
+.ov .metriques-f .tab-couts td:first-child{white-space:nowrap}
+/* Bilans et listes du panneau : le nom passe à la ligne plutôt que d'être coupé. */
+.ov .metriques-f :is(.tab-bilans,.tab-liste) td{height:auto;min-height:26px;padding-top:5px;padding-bottom:5px;line-height:1.35;white-space:normal;overflow:visible;border-top:1px solid rgb(255 255 255 / .07)}
+.ov .metriques-f :is(.tab-bilans,.tab-liste) td:not(:first-child){white-space:nowrap}
+.ov .metriques-f .tab-liste td{text-align:left;vertical-align:top}
+.ov .metriques-f .tab-liste th{text-align:left}
+.ov .metriques-f .tab-liste td:first-child{font-weight:400;color:rgb(255 255 255 / .75);white-space:nowrap}
+.ov .metriques-f .tab-liste td:nth-child(2){white-space:normal}
+.ov .metriques-f .tab-liste td:last-child:not(:nth-child(2)){white-space:normal}
+.ov .metriques-f .tab-liste tbody tr[tabindex]{cursor:pointer}
+.ov .metriques-f .tab-liste tbody tr[tabindex]:hover td{background:rgb(255 255 255 / .04)}
+.ov .metriques-f .tab-liste tbody tr:focus-visible{outline:1px solid #fff;outline-offset:-1px}
+.ov .metriques-f .tab-liste tbody tr.inerte{cursor:default}
+.ov .metriques-f .puces{margin-bottom:10px}
+/* Un bloc par ligne des tableaux de carte : son nom puis ses mesures. */
+.ov .metriques-f .bloc-m+.bloc-m{margin-top:14px}
+.ov .metriques-f .bloc-m h4{margin:0 0 4px;font-size:13px;font-weight:600;color:#fff}
+.ov .metriques-f .bloc-m .def{grid-template-columns:132px minmax(0,1fr)}
+.ov .metriques-f .bloc-m .def>:is(dt,dd){padding:4px 0;font-size:12px}
+.ov .metriques-f .bloc-m dt{color:rgb(255 255 255 / .6)}
+.ov .metriques-f .genre-m+.genre-m{margin-top:18px}

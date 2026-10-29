@@ -1,0 +1,58 @@
+/* Documents et Constructeur, sous leurs seules racines (.docs-galerie, .docs-f, .docs-constructeur) : avis d'un geste, menus de filtre, couleurs et gestionnaire de fichiers, repris des planches. */
+
+/* L'avis d'un geste : posé en bas à droite de la fenêtre, au-dessus de son pied ; un clic le ferme. */
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .avis-doc{position:absolute;right:14px;bottom:52px;z-index:6;max-width:min(560px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .avis-doc.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+
+/* Menus des filtres : posés sous leur filtre, à gauche, dans le verre ; Depuis porte une date. */
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .filtre-doc .menu{left:0;right:auto;max-height:min(360px,calc(100vh - 260px));overflow-y:auto;scrollbar-width:none}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .filtre-doc .menu::-webkit-scrollbar{display:none}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .menu-date{display:flex;flex-direction:column;gap:6px;padding:8px 16px 10px;font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgb(255 255 255 / .62)}
+
+/* Couleurs : jusqu'à quatre pastilles carrées, chacune ouvre le sélecteur du navigateur ; sa croix paraît au survol. */
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) :is(.couleurs,.pastilles){display:flex;align-items:center;gap:8px;min-height:32px}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .pastille-c{position:relative;display:inline-flex}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .pastille-c .pastille{appearance:none;flex:none;width:22px;height:22px;padding:0;border:1px solid rgb(255 255 255 / .35);background:none;cursor:pointer}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .pastille-c .pastille::-webkit-color-swatch-wrapper{padding:0}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .pastille-c .pastille::-webkit-color-swatch{border:0}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .pastille-c .pastille::-moz-color-swatch{border:0}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .pastilles .pastille-c .pastille{width:26px;height:26px}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .retirer-c{position:absolute;top:-7px;right:-7px;display:grid;place-items:center;width:14px;height:14px;border:1px solid rgb(255 255 255 / .45);background:#0a0a0e;font-size:10px;line-height:1;color:#fff;opacity:0;transition:opacity .2s}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .pastille-c:hover .retirer-c,.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .retirer-c:focus-visible{opacity:1}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .couleurs .action{margin-left:4px}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .ajout-c{margin-left:6px;font-size:12px;font-weight:600;color:rgba(255,255,255,.8);white-space:nowrap}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .ajout-c:hover{color:#fff}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) i.pastille.petite{display:inline-block;flex:none;width:11px;height:11px;margin-right:6px;vertical-align:-1px;border:1px solid rgb(255 255 255 / .35)}
+
+/* Gestionnaire de fichiers : une ligne par fichier (aperçu, nom et poids, renommer, supprimer), puis « Téléverser… ». */
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .vide-f{font-size:12px;color:rgb(255 255 255 / .55)}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers.compact{margin-bottom:4px}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers.compact>li{min-height:30px;gap:8px}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers.compact .nom-f{min-width:0;overflow-wrap:anywhere}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .mini{flex:none;display:grid;place-items:center;width:24px;height:24px;font-size:13px;color:rgb(255 255 255 / .65);transition:color .2s,background .2s}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .mini:hover{color:#fff;background:rgb(255 255 255 / .08)}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers:not(.compact)>li{display:flex;align-items:center;gap:12px;min-height:var(--h-f,46px);border-top:1px solid rgba(255,255,255,.08)}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers:not(.compact)>li:last-child{border-bottom:1px solid rgba(255,255,255,.08)}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers>li:hover,.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers>li.vise{background:rgb(255 255 255 / .06)}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .nf{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .nf b{font-size:12.5px;font-weight:500;overflow-wrap:anywhere}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .nf small{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.55)}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt{flex:none;display:grid;place-items:center;width:24px;height:24px;color:rgba(255,255,255,.6);transition:color .2s}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt:hover{color:#fff}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt.sup:hover{color:#ffb0b0}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt svg{width:13px;height:13px}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt+.bt{margin-left:-8px}
+/* Aperçus : une vignette de photo, une feuille A4, ou « Aa » dans la police. */
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap{flex:none;width:48px;height:34px;border:1px solid rgba(255,255,255,.18);object-fit:cover}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap.feuille{width:26px;height:36px;margin:0 11px;object-fit:contain;background:#E9E8EF;border-color:#E9E8EF}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap.police{display:grid;place-items:center;background:rgb(255 255 255 / .04);font-size:17px;line-height:1;color:#fff}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap.police.illisible{color:#ffb0b0}
+/* Renommer sur place : la ligne devient son champ, libellé et actions au-dessus, aperçu et nouveau nom au milieu, l'aide dessous. */
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers li.renomme{display:grid;grid-template-columns:48px minmax(0,1fr) auto;grid-template-areas:"lib lib act" "ap champ champ" "aide aide aide";align-items:center;gap:3px 12px;height:auto;padding:5px 0 6px}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers li.renomme>.ap{grid-area:ap;margin:0}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers.compact li.renomme{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"lib act" "champ champ" "aide aide"}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers li.renomme .renommer{display:contents}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers li.renomme label{grid-area:lib;font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgb(255 255 255 / .62)}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers li.renomme .saisie{grid-area:champ}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers li.renomme .aide-champ{grid-area:aide}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ren-pied{grid-area:act;display:flex;gap:22px}

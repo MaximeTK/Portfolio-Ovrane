@@ -1,0 +1,363 @@
+/* Styles communs d'Illusion, repris des planches : tout vit sous .ov, rien ne touche au portfolio. */
+
+/* Bases sous .ov, en couche base comme le préflight de Tailwind : les utilitaires restent au-dessus. */
+@layer base {
+  .ov :where(h1, h2, h3, p, ul, ol) { margin: 0 }
+  .ov :where(ul, ol) { list-style: none; padding: 0 }
+  .ov :where(button, input, select) { font: inherit; color: inherit }
+  .ov :where(button) { background: none; border: 0; padding: 0; cursor: pointer }
+  .ov :where(a) { text-decoration: none }
+  /* Le préflight met les icônes en bloc ; les planches les gardent en ligne. */
+  .ov svg { display: inline; vertical-align: baseline }
+}
+
+/* --fond-haut et --fond-bas ne sont pas posés ici : ils viennent de la palette d'Ovrane, par Background au-dessus de .ov. */
+.ov{--accent:#93F4FF;--boite:rgb(10 10 14 / .55);--ligne:36px;--panneau:440px;position:relative;height:100vh;min-height:620px;display:flex;flex-direction:column;overflow:hidden;color:#fff;color-scheme:dark;font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.ov *{box-sizing:border-box}
+.ov a{color:#fff}
+.ov a:hover{color:#fff}
+@media (max-width:1366px){.ov{--panneau:400px}}
+@media (min-width:1700px){.ov{--panneau:500px}}
+.ov .fond{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--fond-haut),var(--fond-bas))}
+.ov .cache{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.ov .etiquette{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:rgba(255,255,255,.72)}
+.ov .coquille{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:row;gap:16px;padding:18px 24px 20px}
+.ov .espace{flex:1}
+.ov .icone{flex:none;width:18px;height:18px}
+.ov .mono{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11.5px}
+
+/* Verre des pages d'Ovrane (Figma 333-2359) : fond recopié sous un voile, halos ronds de deux coins, liseré blanc en incrustation. */
+.ov .verre{position:relative;isolation:isolate;border-radius:var(--verre-rayon,25px);clip-path:inset(0 round var(--verre-rayon,25px));--halo:rgb(217 217 217 / .5),rgb(204 204 204 / .4375) 5.73%,rgb(192 192 192 / .375) 11.45%,rgb(179 179 179 / .3125) 17.18%,rgb(166 166 166 / .25) 22.9%,rgb(153 153 153 / .1875) 28.63%,rgb(140 140 140 / .125) 34.35%,rgb(128 128 128 / .0625) 40.08%,rgb(115 115 115 / 0) 45.8%}
+.ov .verre::before,.ov .verre::after{content:"";position:absolute;inset:0;pointer-events:none}
+/* Verre assombri deux fois de 25 % : un voile noir à 43,75 % sous les halos et le liseré. */
+.ov .verre::before{position:fixed;min-height:100vh;z-index:-3;background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0),linear-gradient(180deg,var(--fond-haut),var(--fond-bas))}
+.ov .verre-halos{position:absolute;inset:0;z-index:-2;margin:0;border:0;pointer-events:none;mix-blend-mode:color-dodge;opacity:.75;transition:opacity .3s;background:radial-gradient(circle farthest-side at -1px 0,var(--halo)),radial-gradient(circle farthest-side at calc(100% - 1px) 100%,var(--halo))}
+.ov :is(a,button).verre:is(:hover,:focus-visible)>.verre-halos{opacity:1}
+.ov .verre:focus-visible{outline-offset:-4px}
+/* Le liseré déborde d'un pixel sous la découpe : aucun fil sombre ne reste au bord. */
+.ov .verre::after{z-index:-1;inset:-1px;border-radius:inherit;border:3px solid #fff;mix-blend-mode:overlay}
+/* Matière « teinte » : le même verre, fond et liseré compris, sans les halos des coins. */
+.ov.mat-teinte .verre>.verre-halos{display:none}
+
+.ov .compteur{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.65)}
+.ov .badge{border-radius:999px;background:rgba(147,244,255,.16);color:var(--accent);padding:0 7px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;font-weight:500;line-height:18px}
+.ov:not(.admin) .admin-seul{display:none}
+.ov .marque-admin{margin-left:8px;padding:1px 5px;border:1px solid rgb(255 255 255 / .3);font-size:8.5px;font-weight:700;letter-spacing:.16em;color:rgb(255 255 255 / .75)}
+
+/* En-tête : canaux d'Illusion de part et d'autre du logo, qui garde le centre exact. */
+.ov .entete{position:relative;z-index:2;flex:none;display:flex;align-items:center;justify-content:center;gap:0;height:60px;padding:16px 24px 0}
+.ov .barre-canaux{display:inline-grid;grid-template-columns:1fr 64px 1fr;align-items:center;height:44px}
+.ov .barre-canaux .cote{display:flex;align-items:center;gap:28px}
+.ov .barre-canaux .gauche{justify-content:flex-end}
+.ov .jeu{display:contents}
+.ov .cote-ovrane .jeu-illusion,.ov .cote-illusion .jeu-ovrane{display:none}
+.ov .onglet{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;white-space:nowrap;color:rgb(255 255 255 / .6);transition:color .5s,filter .5s}
+.ov .onglet:hover{color:#fff}
+.ov .onglet.actif{color:#fff;filter:drop-shadow(0 0 3px rgb(255 255 255 / .5))}
+.ov .onglet .icone{width:16px;height:16px}
+.ov .onglet .chevron{width:11px;height:11px;transition:transform .2s}
+.ov .onglet[aria-expanded=true] .chevron{transform:rotate(180deg)}
+/* Logo au centre : Illusion ou Ovrane à la même place, l'un s'efface pour l'autre en 0,2 s. */
+.ov .centre{display:grid;width:64px;height:44px}
+.ov .logo{grid-area:1/1;display:grid;place-items:center;width:64px;height:44px;transition:opacity .2s}
+.ov .logo svg{overflow:visible;filter:drop-shadow(0 0 4px rgb(255 255 255 / .75));transition:filter .2s}
+.ov .cote-ovrane .logo-illusion,.ov .cote-illusion .logo-ovrane{opacity:0;pointer-events:none}
+.ov.vue-accueil .logo-illusion svg{filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 12px rgb(255 255 255 / .7))}
+.ov.vue-accueil .jeu-illusion .onglet.actif{color:rgb(255 255 255 / .6);filter:none}
+/* Accueil : la place du contenu reste vide, l'Activité seule à gauche. */
+.ov.vue-accueil .dock [data-fen]:not([data-fen=activite]){visibility:hidden}
+
+/* Menus (Administration, filtres) : une colonne de choix dans la matière des fenêtres, le choix courant allumé. */
+.ov .menu-hote{position:relative;display:inline-flex}
+.ov .menu{position:absolute;top:calc(100% + 6px);right:0;z-index:40;display:flex;flex-direction:column;min-width:210px;padding:6px 0}
+.ov .menu-option{display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:12.5px;white-space:nowrap;color:rgb(255 255 255 / .75);transition:color .2s,background .2s}
+.ov .menu-option:hover,.ov .menu-option:focus-visible{background:rgb(255 255 255 / .05);color:#fff}
+.ov .menu-option.actif{color:#fff;text-shadow:0 0 8px rgb(255 255 255 / .35)}
+.ov .menu-option .icone{width:16px;height:16px}
+
+/* Actions d'une fenêtre : texte et icône ; l'action pleine garde son carré blanc après le texte. */
+.ov .actions{display:flex;align-items:center;gap:22px}
+.ov .action{display:inline-flex;align-items:center;gap:8px;height:28px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.88);white-space:nowrap;transition:color .2s}
+.ov .action:hover{color:#fff}
+.ov .action .ico{display:grid;place-items:center;width:20px;height:20px}
+.ov .action .ico svg{width:13px;height:13px}
+.ov .action.plein .ico{background:#fff;color:#0a0a0e;transition:box-shadow .2s}
+.ov .action.plein .ico svg{width:11px;height:11px}
+.ov .action.plein:hover .ico{box-shadow:0 0 10px rgb(255 255 255 / .45)}
+.ov .action.rouge{color:#ffb0b0}
+.ov .action.rouge:hover{color:#ffd0d0}
+.ov .action.rouge-plein{color:#ffb0b0;font-weight:700}
+.ov .action .marque-admin{margin-left:0}
+.ov .action:disabled{opacity:.45;cursor:default}
+/* Bouton qui a ouvert le panneau : allumé en blanc tant que son onglet est ouvert. */
+.ov .action.allume{color:#fff;text-shadow:0 0 6px rgb(255 255 255 / .5)}
+.ov label.action{cursor:pointer}
+/* Supprimer n'apparaît qu'avec des lignes cochées. */
+.ov .tableau:not(:has(tbody .case:checked)) .action.rouge{display:none}
+
+/* Rangée d'outils d'une fenêtre : filtres à gauche, actions à droite. */
+.ov .outils{flex:none;display:flex;align-items:center;gap:8px;height:36px;margin:8px 0 4px;padding:0 14px}
+.ov .filtre{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0;font-size:12.5px;color:rgba(255,255,255,.85);white-space:nowrap;transition:color .2s}
+.ov .filtre+.filtre{margin-left:20px}
+.ov .filtre:hover,.ov .filtre.actif{color:#fff}
+.ov .filtre.actif{text-shadow:0 0 8px rgb(255 255 255 / .5)}
+.ov .filtre .lib{margin-right:8px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.7)}
+.ov .filtre.actif .lib{color:#fff}
+@media (max-width:1366px){.ov .outils{gap:6px}.ov .filtre{font-size:12px}}
+/* Fenêtre resserrée : les actions secondaires se replient sur leur icône, puis les libellés des filtres partent. */
+.ov [data-fen]:is([data-l=m],[data-l=s],[data-l=xs]) .outils .action:not(.plein) .txt,.ov [data-fen][data-l=xs] .outils .action.plein .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ov [data-fen]:is([data-l=m],[data-l=s],[data-l=xs]) .outils .actions{gap:16px}
+.ov [data-fen]:is([data-l=s],[data-l=xs]) .outils .filtre .lib{display:none}
+
+/* Confirmation intégrée : elle prend la place de la rangée d'outils, à la même hauteur. */
+.ov .confirmer{display:flex;flex:none;align-items:center;gap:20px;height:36px;margin:8px 14px 4px;padding:0 12px;white-space:nowrap;border-left:2px solid #ff8a8a;background:rgb(255 138 138 / .08);font-size:12.5px;color:rgba(255,255,255,.88)}
+.ov .confirmer p{flex:1;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis}
+.ov .confirmer b{color:#fff}
+.ov .outils:has(~ .confirmer){display:none}
+
+/* Tableau : le défileur sert de repère de largeur aux colonnes (cqw). */
+.ov .tableau{flex:1;min-height:0;display:flex;flex-direction:column;padding:2px 0 0}
+.ov .defile{flex:1;min-height:0;overflow:auto;container-type:inline-size}
+.ov table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px}
+.ov th{height:34px;padding:0;text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:rgba(255,255,255,.72);white-space:nowrap}
+.ov td{height:var(--ligne);padding:0;border-top:1px solid rgba(255,255,255,.08);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov th:first-child,.ov td:first-child{padding-left:20px;padding-right:0}
+.ov th:last-child,.ov td:last-child{padding-right:12px}
+.ov td a.ent{font-weight:600}
+.ov tbody tr{cursor:pointer}
+.ov tbody tr:hover td{background:rgba(255,255,255,.04)}
+.ov .d{color:rgba(255,255,255,.75)}
+.ov .chrono{margin-left:6px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.6)}
+.ov td.chrono{margin-left:0;color:rgba(255,255,255,.62)}
+.ov td.chrono.vide{color:rgba(255,255,255,.28)}
+.ov .auto{margin-left:5px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+/* Ligne cochée : un voile clair à plat ; ligne ouverte dans le panneau : voile plus clair et trait blanc. */
+.ov tr.coche td{background:rgb(255 255 255 / .07);color:#fff}
+.ov tr.coche .d{color:rgba(255,255,255,.92)}
+.ov tr.ouverte td{background:rgb(255 255 255 / .1);color:#fff}
+.ov tr.ouverte td:first-child{box-shadow:inset 2px 0 0 #fff}
+.ov .dock .defile{scrollbar-width:none}
+.ov .dock .defile::-webkit-scrollbar{display:none}
+@media (max-height:780px){.ov th{height:30px}.ov{--ligne:30px}}
+
+/* Pagination sans cadres : la page courante allumée, un « … » où taper la page voulue. */
+.ov .pagination{flex:none;height:44px;display:flex;align-items:center;gap:14px;border-top:1px solid rgba(255,255,255,.08);padding:0 14px;font-size:12.5px;color:rgba(255,255,255,.75)}
+.ov .pagination select{height:28px;border:0;background:none;padding:0 2px;font-size:12.5px;color:rgba(255,255,255,.6);cursor:pointer}
+.ov .pages{display:flex;align-items:center;gap:4px}
+.ov .pl{min-width:24px;height:28px;font-size:12.5px;color:rgba(255,255,255,.6);transition:color .2s}
+.ov .pl:hover{color:#fff}
+.ov .pl.actif{color:#fff;font-weight:600;text-shadow:0 0 8px rgb(255 255 255 / .5)}
+.ov .pl:disabled{opacity:.35;cursor:default}
+.ov .aller{width:3.4em;height:22px;margin:0 6px;border:0;background:none;padding:0;font:inherit;text-align:center;color:#fff}
+.ov .aller::placeholder{color:rgba(255,255,255,.7)}
+.ov .aller:hover::placeholder{color:#fff}
+.ov .aller:focus{outline:none}
+.ov .aller:focus::placeholder{color:transparent}
+
+/* Case de sélection : l'hexagone d'Ovrane, vide puis plein et lumineux. */
+.ov .case{appearance:none;display:block;width:11px;height:16px;margin:0;cursor:pointer;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-46 -68 92 136'%3E%3Cpolygon points='0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6' fill='none' stroke='white' stroke-opacity='.5' stroke-width='10' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.ov .case:hover{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-46 -68 92 136'%3E%3Cpolygon points='0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6' fill='none' stroke='white' stroke-opacity='1' stroke-width='10' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.ov .case:checked{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-46 -68 92 136'%3E%3Cpolygon points='0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6' fill='white' stroke='white' stroke-opacity='1' stroke-width='10' stroke-linejoin='round'/%3E%3C/svg%3E");filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 7px rgb(255 255 255 / .6))}
+.ov .case:focus-visible{outline:1px solid #fff;outline-offset:3px}
+
+/* Étape : un trait de sa couleur puis son nom. */
+.ov .eo{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:500;color:rgba(255,255,255,.82)}
+.ov .eo::before{content:"";flex:none;width:3px;height:13px;background:currentColor;opacity:.75}
+.ov .eo:is(.env,.main,.inad,.ech)::before{opacity:1;box-shadow:0 0 6px currentColor}
+.ov .eo.env{color:#93FFB3}.ov .eo.main{color:#FFF58D}.ov .eo.inad{color:#93F4FF}.ov .eo.ech{color:#ffb0b0}
+.ov .eo.eca{color:rgba(255,255,255,.5)}
+.ov .eo.eca::before{background:repeating-linear-gradient(currentColor 0 2px,transparent 2px 4px)}
+.ov .t-envoi{color:#93FFB3}.ov .t-rep{color:var(--accent)}.ov .t-faire{color:#FFF58D}.ov .t-neutre{color:rgba(255,255,255,.6)}
+
+/* Signal d'écoute : quatre barres, vivantes quand ça tourne. */
+.ov .onde{display:inline-block;font-size:10.5px;color:rgba(255,255,255,.65);white-space:nowrap}
+.ov .onde.on{color:var(--accent)}
+.ov .onde>.barres{margin-right:5px;vertical-align:1px}
+.ov .barres{display:inline-flex;align-items:flex-end;gap:1.5px;height:10px}
+.ov .barres i{width:2px;background:currentColor}
+.ov .barres i:nth-child(1){height:3px}.ov .barres i:nth-child(2){height:5px}.ov .barres i:nth-child(3){height:7px}.ov .barres i:nth-child(4){height:10px}
+.ov .barres.vivant i{animation:ov-pouls 1.2s ease-in-out infinite}
+.ov .barres.vivant i:nth-child(2){animation-delay:.15s}.ov .barres.vivant i:nth-child(3){animation-delay:.3s}.ov .barres.vivant i:nth-child(4){animation-delay:.45s}
+@keyframes ov-pouls{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Zones de sélection : des boutons pleins, sans verre ; ce qui est choisi s'allume en blanc. */
+.ov .choix{background:var(--boite);border:1px solid rgba(255,255,255,.12);transition:border-color .2s,background .2s}
+.ov .choix:hover{border-color:rgba(255,255,255,.32)}
+.ov .choix:is(.actif,:has(:checked)){background:rgb(255 255 255 / .1);border-color:rgba(255,255,255,.85);color:#fff;text-shadow:0 0 8px rgb(255 255 255 / .5);box-shadow:inset 0 0 14px rgb(255 255 255 / .16)}
+
+/* Activité : le bilan du jour filtre le fil ; le plus récent en bas. */
+.ov{--c-envoi:#93FFB3;--c-reponse:#93F4FF;--c-entretien:#FF9EDB;--c-relance:#FFC08A;--c-offres:#B9A8FF;--c-afaire:#FFF58D}
+.ov .echos{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 10px 10px}
+.ov .echos-tete{flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 4px 8px}
+.ov .echos-tete :is(a,button){font-size:11.5px;color:rgba(255,255,255,.65);text-decoration:underline;text-decoration-color:rgba(255,255,255,.25);text-underline-offset:3px}
+.ov .liens-tete{display:flex;gap:12px;white-space:nowrap}
+.ov .tuiles-sortes{flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:0 4px 6px}
+.ov .tuile-sorte{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;color:#fff;cursor:pointer}
+.ov .tuile-sorte .chiffre{display:flex;align-items:center;gap:5px}
+.ov .tuile-sorte svg{width:12px;height:12px}
+.ov .tuile-sorte b{font-size:15px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}
+.ov .tuile-sorte small{font-size:9.5px;color:#fff;white-space:nowrap}
+.ov .tuile-sorte input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.ov .tuile-sorte:has(input:focus-visible){outline:1px solid #fff;outline-offset:2px}
+.ov .fil-actions{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column-reverse;gap:8px;padding:10px 6px 2px 8px;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 36px);mask-image:linear-gradient(transparent,#000 36px)}
+.ov .fil-actions::-webkit-scrollbar{display:none}
+.ov .fil-actions li{flex:none;padding-left:10px;border-left:1px solid rgba(255,255,255,.2)}
+.ov .fil-actions .phrase{margin-top:2px !important;font-size:11.5px;font-weight:400;line-height:1.3;color:#fff}
+.ov .fil-actions .etiquette{font-size:9px;letter-spacing:.18em}
+.ov .fil-actions .encours{position:relative;border-left:2px solid var(--accent)}
+.ov .fil-actions .encours .etiquette{color:var(--accent)}
+.ov .fil-actions .encours .phrase::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);vertical-align:2px;animation:ov-pouls 1.4s infinite}
+.ov .fil-actions .jour{padding:0;border:0;text-align:center;color:rgba(255,255,255,.4)}
+/* La ligne « Maintenant » peut ouvrir un onglet du panneau : toute la ligne est le bouton. */
+.ov .ouvre-li{position:absolute;inset:0;cursor:pointer}
+.ov .tuile-sorte.s-envoi svg,.ov .fil-actions .envoi .etiquette{color:var(--c-envoi)}
+.ov .tuile-sorte.s-reponse svg,.ov .fil-actions .reponse .etiquette{color:var(--c-reponse)}
+.ov .tuile-sorte.s-entretien svg,.ov .fil-actions .entretien .etiquette{color:var(--c-entretien)}
+.ov .tuile-sorte.s-relance svg,.ov .fil-actions .relance .etiquette{color:var(--c-relance)}
+.ov .tuile-sorte.s-offres svg,.ov .fil-actions .offres .etiquette{color:var(--c-offres)}
+.ov .tuile-sorte.s-afaire svg,.ov .fil-actions .afaire .etiquette{color:var(--c-afaire)}
+.ov .fil-actions .envoi{border-left-color:var(--c-envoi)}.ov .fil-actions .reponse{border-left-color:var(--c-reponse)}.ov .fil-actions .entretien{border-left-color:var(--c-entretien)}
+.ov .fil-actions .relance{border-left-color:var(--c-relance)}.ov .fil-actions .offres{border-left-color:var(--c-offres)}.ov .fil-actions .afaire{border-left-color:var(--c-afaire)}
+/* Tuile allumée : teintée et bordée de sa couleur ; éteinte : simple contour, texte lisible. */
+.ov .tuile-sorte.s-envoi{--c:var(--c-envoi)}.ov .tuile-sorte.s-reponse{--c:var(--c-reponse)}.ov .tuile-sorte.s-entretien{--c:var(--c-entretien)}.ov .tuile-sorte.s-relance{--c:var(--c-relance)}.ov .tuile-sorte.s-offres{--c:var(--c-offres)}.ov .tuile-sorte.s-afaire{--c:var(--c-afaire)}
+.ov .tuile-sorte.choix:has(:checked){background:color-mix(in srgb,var(--c) 16%,transparent);border-color:color-mix(in srgb,var(--c) 65%,transparent);box-shadow:none;text-shadow:none}
+.ov .tuile-sorte.choix:not(:has(:checked)){background:none;border-color:rgba(255,255,255,.2)}
+.ov .tuile-sorte:not(:has(:checked)) :is(b,small){color:rgba(255,255,255,.72)}
+.ov .tuile-sorte:not(:has(:checked)) svg{opacity:.6}
+/* Activité large (rangée en bas ou élargie) : le bilan à gauche, le fil en grille, le plus récent en bas à droite. */
+.ov .echos[data-forme=large]{display:grid;grid-template-columns:228px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:16px}
+.ov .echos[data-forme=large]>.echos-tete{grid-area:1/1}
+.ov .echos[data-forme=large]>.tuiles-sortes{grid-area:2/1;align-self:start}
+.ov .echos[data-forme=large]>.fil-actions{grid-area:1/2/3/3;flex-direction:row-reverse;flex-wrap:wrap-reverse;align-content:flex-start;gap:8px 16px}
+.ov .echos[data-forme=large] .fil-actions>li{flex:0 0 190px}
+.ov .echos[data-forme=large] .fil-actions>li.jour{flex:0 0 100%}
+
+/* Fenêtres flottantes classiques : au-dessus de la page, déplacées par leur barre, fermées par leur croix. */
+.ov .f-hote{display:contents}
+.ov .flottante{position:absolute;z-index:8;display:flex;flex-direction:column;max-height:calc(100% - 96px);background:rgb(14 14 18 / .62);-webkit-backdrop-filter:blur(26px) saturate(150%);backdrop-filter:blur(26px) saturate(150%);border:1px solid rgb(255 255 255 / .18);box-shadow:0 24px 64px rgb(0 0 0 / .4)}
+.ov .f-barre{flex:none;display:flex;align-items:center;gap:10px;height:38px;padding:0 4px 0 12px;border-bottom:1px solid rgb(255 255 255 / .1);cursor:move;user-select:none}
+.ov .f-poignee{flex:none;width:10px;height:14px;background:radial-gradient(circle,rgb(255 255 255 / .5) 1px,transparent 1.6px) 0 0/5px 5px}
+.ov .f-titre{flex:1;min-width:0;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov .f-btn{flex:none;display:grid;place-items:center;width:30px;height:30px;color:rgb(255 255 255 / .7);cursor:pointer;transition:color .2s,background .2s}
+.ov .f-btn:hover{color:#fff;background:rgb(255 255 255 / .08)}
+.ov .f-btn svg{width:12px;height:12px}
+.ov .f-corps{flex:1;min-height:0;overflow:auto;padding:16px;scrollbar-width:none}
+.ov .f-corps::-webkit-scrollbar{display:none}
+.ov .f-pied{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:22px;padding:10px 16px;border-top:1px solid rgb(255 255 255 / .1)}
+.ov .f-pied .gauche{margin-right:auto}
+.ov .f-coin{position:absolute;right:3px;bottom:3px;width:9px;height:9px;border-right:1px solid rgb(255 255 255 / .45);border-bottom:1px solid rgb(255 255 255 / .45);cursor:nwse-resize}
+
+/* Contenu des fenêtres : sections, champs au libellé en capitales, interrupteurs carrés. */
+.ov .section-f+.section-f{margin-top:14px;padding-top:14px;border-top:1px solid rgb(255 255 255 / .08)}
+.ov .section-f h3{margin:0 0 12px;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff}
+.ov .champ{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.ov .champ:last-child{margin-bottom:0}
+.ov .champ>label,.ov .lib-champ{font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgb(255 255 255 / .62)}
+.ov .saisie{width:100%;height:32px;padding:0 10px;border:1px solid rgb(255 255 255 / .16);background:rgb(0 0 0 / .25);font:inherit;font-size:12.5px;color:#fff}
+.ov .saisie:focus{outline:none;border-color:#fff}
+.ov textarea.saisie{height:auto;min-height:70px;padding:8px 10px;resize:vertical;line-height:1.45}
+.ov select.saisie{cursor:pointer}
+.ov .aide-champ{font-size:11px;line-height:1.4;color:rgb(255 255 255 / .5)}
+.ov .grille-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.ov .inter{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:32px;font-size:12.5px;color:rgb(255 255 255 / .88);cursor:pointer}
+.ov .inter input{appearance:none;flex:none;width:32px;height:18px;margin:0;border:1px solid rgb(255 255 255 / .4);background:linear-gradient(rgb(255 255 255 / .5),rgb(255 255 255 / .5)) 3px 50%/10px 10px no-repeat;cursor:pointer;transition:background-position .2s,border-color .2s}
+.ov .inter input:checked{border-color:#fff;background:linear-gradient(#fff,#fff) calc(100% - 3px) 50%/10px 10px no-repeat;box-shadow:0 0 8px rgb(255 255 255 / .3)}
+.ov .reglage{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:36px;font-size:12.5px;color:rgb(255 255 255 / .88)}
+.ov .reglage>.saisie{flex:none;width:84px;height:30px;text-align:right}
+.ov .reglage>select.saisie{width:200px;text-align:left}
+.ov .liste-f{display:flex;flex-direction:column}
+.ov .liste-f>li{display:flex;align-items:center;gap:12px;min-height:34px;border-top:1px solid rgb(255 255 255 / .07);font-size:12.5px}
+.ov .liste-f>li:first-child{border-top:0}
+.ov .liste-f .d{margin-left:auto}
+.ov .texte-f{margin-bottom:10px !important;font-size:12.5px;line-height:1.45;color:rgb(255 255 255 / .82)}
+.ov .lien{color:#fff;text-decoration:underline;text-decoration-color:rgb(255 255 255 / .3);text-underline-offset:3px}
+.ov .lien-d{font-size:11.5px;font-weight:600;color:rgb(255 255 255 / .68);text-decoration:underline;text-decoration-color:rgb(255 255 255 / .25);text-underline-offset:3px;transition:color .2s}
+.ov .lien-d:hover{color:#fff}
+/* Petit carré d'état : bleu « en process », cyan « en cours », vert « finie ». */
+.ov .carre{display:inline-block;flex:none;width:8px;height:8px;margin-right:7px;background:currentColor;vertical-align:1px}
+.ov .carre.bleu{color:#8FB4FF}.ov .carre.finie{color:#93FFB3}
+.ov .carre.cours{color:var(--accent);box-shadow:0 0 6px var(--accent);animation:ov-pouls 1.4s infinite}
+/* Puces : un trait fin à plat ; « + » range une compétence manquante, pointillé pour une exigence sous-entendue. */
+.ov .puces{display:flex;flex-wrap:wrap;gap:4px}
+.ov .puce{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border:1px solid rgb(255 255 255 / .22);font-size:11.5px;color:rgb(255 255 255 / .88);white-space:nowrap}
+.ov .puce button{font-size:13px;font-weight:700;line-height:1;color:inherit;opacity:.75}
+.ov .puce button:hover{opacity:1}
+.ov .puce.manque{border-color:rgb(255 192 138 / .5);color:#FFC08A}
+.ov .puce.implicite{border-style:dashed;color:rgb(255 255 255 / .7)}
+.ov .puce.incomplet{border-color:rgb(255 176 176 / .55);color:#ffb0b0}
+.ov .puce.ajout{border-style:dashed;color:rgb(255 255 255 / .7);cursor:pointer}
+/* Tête d'une fiche, champs clés en trois colonnes, lignes libellé-valeur, blocs repliés. */
+.ov .f-tete{margin-bottom:14px}
+.ov .f-tete h3{font-size:15px;font-weight:600;line-height:1.3}
+.ov .f-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:6px !important;font-size:12px;color:rgb(255 255 255 / .72)}
+.ov .grille-fiche{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 14px}
+.ov .grille-fiche>div{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:12.5px;line-height:1.35;overflow-wrap:anywhere}
+.ov .grille-fiche small{font-size:11px;color:rgb(255 255 255 / .55)}
+.ov .def{display:grid;grid-template-columns:132px minmax(0,1fr);margin:0}
+.ov .def>dt,.ov .def>dd{margin:0;padding:7px 0;border-top:1px solid rgb(255 255 255 / .07);line-height:17px}
+.ov .def>dt{padding-right:12px}
+.ov .def>dd{font-size:12.5px;overflow-wrap:anywhere}
+.ov .def>:nth-child(-n+2){border-top:0}
+.ov .bloc-f{border-top:1px solid rgb(255 255 255 / .08)}
+.ov .section-f+.bloc-f{margin-top:14px}
+.ov .bloc-f>summary{display:flex;align-items:center;gap:10px;height:38px;list-style:none;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff}
+.ov .bloc-f>summary::-webkit-details-marker{display:none}
+.ov .bloc-f>summary svg{width:12px;height:12px;margin-left:auto;transition:transform .2s}
+.ov .bloc-f[open]>summary svg{transform:rotate(180deg)}
+.ov .bloc-f>div{padding:0 0 12px;font-size:12.5px;color:rgb(255 255 255 / .82)}
+
+/* Panneau intégré : un onglet par sous-fenêtre de la page, l'ouvert en blanc lumineux ; la croix le referme. */
+.ov .panneau{min-width:0;display:flex;flex-direction:column}
+.ov .p-tete{flex:none;display:flex;align-items:center;gap:6px;height:44px;padding:0 4px 0 16px;border-bottom:1px solid rgb(255 255 255 / .1)}
+.ov .p-onglets{flex:1;min-width:0;display:flex;gap:16px;overflow:hidden}
+.ov .p-onglet{position:relative;display:flex;align-items:center;height:44px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;color:rgb(255 255 255 / .5);cursor:pointer;transition:color .2s}
+.ov .p-onglet:hover{color:rgb(255 255 255 / .85)}
+.ov .p-onglet.actif{color:#fff;text-shadow:0 0 6px rgb(255 255 255 / .5)}
+.ov .p-onglet.actif::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#fff;box-shadow:0 0 6px #fff}
+.ov .p-vue{display:none;flex:1;min-height:0;flex-direction:column}
+.ov .p-vue.ouverte{display:flex}
+.ov .p-vue>.f-corps{padding:16px}
+
+/* Mécanique des fenêtres : chaque fenêtre est une case d'un partage en lignes et colonnes, posée par le moteur, qui glisse vers sa place en 0,3 s. */
+.ov .coquille.dock{display:block}
+.ov .dock [data-fen]{position:absolute;box-sizing:border-box;margin:0;transition:left .3s cubic-bezier(.2,.8,.2,1),top .3s cubic-bezier(.2,.8,.2,1),width .3s cubic-bezier(.2,.8,.2,1),height .3s cubic-bezier(.2,.8,.2,1)}
+.ov.sans-anim .dock [data-fen]{transition:none}
+/* Avant la première pose (rendu serveur, hydratation), les fenêtres restent invisibles. */
+.ov .dock:not([data-pret]) [data-fen]{visibility:hidden}
+/* Fenêtre flottante : au-dessus des autres, un liseré clair à l'intérieur ; elle suit la main sans délai. */
+.ov .dock [data-flot]{transition:none;box-shadow:inset 0 0 0 1px rgb(255 255 255 / .38)}
+.ov.glisse-en-cours,.ov.glisse-en-cours *{user-select:none;cursor:grabbing !important}
+.ov.tire-en-cours,.ov.tire-en-cours *{user-select:none}
+/* Place visée : après la pause, un cadre clair et lumineux borde la case que la fenêtre prendra. */
+.ov .place-entiere{position:absolute;z-index:2;pointer-events:none;box-sizing:border-box;border:1px solid rgb(255 255 255 / .55);background:rgb(255 255 255 / .05);box-shadow:inset 0 0 36px rgb(255 255 255 / .08),0 0 12px rgb(255 255 255 / .18);opacity:0;transition:opacity .2s}
+.ov .place-entiere.vu{opacity:1}
+.ov .fentes{display:contents}
+/* Remise en place : une icône discrète en haut à droite, visible quand la disposition a changé. */
+.ov .remise{position:absolute;top:22px;right:24px;z-index:30;display:grid;place-items:center;width:32px;height:32px;color:rgb(255 255 255 / .6);opacity:0;pointer-events:none;transition:opacity .25s,color .2s,filter .2s}
+.ov .remise.vu{opacity:1;pointer-events:auto}
+.ov .remise:hover{color:#fff;filter:drop-shadow(0 0 4px rgb(255 255 255 / .6))}
+.ov .remise svg{width:18px;height:18px}
+/* Prise : une rangée de points en haut de chaque fenêtre ; une place vide de sa tête l'attrape aussi. */
+.ov .prise{position:absolute;top:3px;left:50%;z-index:3;width:30px;height:7px;margin-left:-15px;cursor:grab;touch-action:none;background:radial-gradient(circle,rgb(255 255 255 / .6) 1px,transparent 1.5px) 0 0/6px 3.5px;opacity:.35;transition:opacity .2s}
+.ov [data-fen]:hover>.prise{opacity:1}
+.ov .dock :is(.tete,.echos-tete,.p-tete,.outils){cursor:grab;touch-action:none}
+.ov .dock :is(.tete,.echos-tete,.p-tete,.outils) :is(a,button,label,input,select){cursor:pointer}
+/* Fentes : la place entre deux fenêtres rangées se tire ; un trait blanc s'allume au survol. */
+.ov .separateur{position:absolute;z-index:5;touch-action:none}
+.ov .separateur.ligne{cursor:col-resize}
+.ov .separateur.colonne{cursor:row-resize}
+.ov .separateur::after{content:"";position:absolute;inset:0;margin:auto;background:#fff;opacity:0;transition:opacity .2s}
+.ov .separateur.ligne::after{width:1px}
+.ov .separateur.colonne::after{height:1px}
+.ov .separateur:hover::after,.ov .separateur.actif::after{opacity:.6;box-shadow:0 0 6px #fff}
+.ov.glisse-en-cours .separateur{display:none}
+/* Taille d'une fenêtre flottante : bord droit, bord bas et coin se tirent. */
+.ov .taille{position:absolute;z-index:4;display:none;touch-action:none}
+.ov [data-flot] .taille{display:block}
+.ov .taille.d{top:0;right:0;width:8px;height:100%;cursor:ew-resize}
+.ov .taille.b{left:0;bottom:0;width:100%;height:8px;cursor:ns-resize}
+.ov .taille.c{right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 60%,rgb(255 255 255 / .45) 60% 66%,transparent 66% 76%,rgb(255 255 255 / .45) 76% 82%,transparent 82%)}
+
+/* Tous les angles droits, voyants compris. */
+.ov .verre{--verre-rayon:0px}
+.ov *,.ov *::before,.ov *::after{border-radius:0 !important}

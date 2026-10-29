@@ -1,0 +1,79 @@
+/* Page LAPIS : ce que la veille LinkedIn a trouvé, en galerie de cartes, puis son panneau ; jamais de contact automatique. */
+
+/* Panneau de 360 px jusqu'à 1366 px de large, pour garder deux colonnes de cartes ; ses onglets passent à la ligne plutôt que de se couper. */
+@media (max-width:1366px){.ov:has([data-fen=galerie].lapis){--panneau:360px}}
+.ov:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete{height:auto;min-height:44px;align-items:flex-start}
+.ov:has([data-fen=galerie].lapis) [data-fen=panneau] .p-onglets{flex-wrap:wrap;column-gap:16px;row-gap:0}
+.ov:has([data-fen=galerie].lapis) [data-fen=panneau] .p-onglet{flex:none;height:42px}
+.ov:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete .f-btn{margin-top:7px}
+
+/* Onglets en filtres de texte, sans chevron : l'ouvert s'allume en blanc ; son nombre suit en chiffres fins. */
+.ov .lapis .outils{container:outils-l/inline-size}
+.ov .lapis .onglets-l{flex:none;display:flex;align-items:center}
+.ov .lapis .onglets-l .compteur{margin-left:-1px}
+.ov .lapis .onglets-l .filtre.actif .compteur{color:#fff}
+/* Ce que la passe cherche, sur deux lignes à côté des onglets. */
+.ov .lapis .resume{display:flex;flex-direction:column;justify-content:center;min-width:0;margin-left:28px;padding-left:18px;border-left:1px solid rgba(255,255,255,.14);font-size:11.5px;line-height:1.35;color:rgba(255,255,255,.7);white-space:nowrap}
+.ov .lapis .resume b{font-weight:500;color:#fff}
+@media (max-width:1366px){.ov .lapis .resume{margin-left:16px;padding-left:12px}.ov .lapis .onglets-l .filtre+.filtre{margin-left:14px}}
+/* Fenêtre resserrée : ce que la passe cherche se retire (Réglages le montre) ; les onglets et les actions restent. */
+@container outils-l (max-width:900px){.ov .lapis .resume{display:none}}
+@container outils-l (max-width:640px){.ov .lapis .onglets-l .filtre+.filtre{margin-left:12px}.ov .lapis .outils .actions{gap:12px}}
+
+/* Galerie : autant de rangées que la hauteur en tient, les cartes en trop attendent la page suivante. */
+.ov .lapis .galerie{flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));grid-template-rows:repeat(auto-fill,minmax(112px,1fr));grid-auto-rows:0;gap:12px;padding:6px 20px 12px;align-content:start}
+.ov .lapis .galerie.haute{grid-template-rows:repeat(auto-fill,minmax(146px,1fr))}
+/* Un nombre de cartes choisi : la galerie défile, sa barre masquée. */
+.ov .lapis .galerie:not(.ajuste){grid-template-rows:none;grid-auto-rows:minmax(112px,auto);overflow-y:auto;scrollbar-width:none}
+.ov .lapis .galerie.haute:not(.ajuste){grid-auto-rows:minmax(146px,auto)}
+.ov .lapis .galerie::-webkit-scrollbar{display:none}
+/* Carte : un trait fin, sans verre ; initiales dans un carré, puis le texte ligne à ligne. */
+.ov .lapis .personne{min-width:0;min-height:0;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);transition:box-shadow .2s,background .2s}
+.ov .lapis .galerie.ajuste .personne{container-type:size}
+@container (max-height:1px){.ov .lapis .personne>div{visibility:hidden}}
+.ov .lapis .personne:hover{background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.ov .lapis .personne.cliquable{cursor:pointer}
+.ov .lapis .personne.ouverte{background:rgb(255 255 255 / .1);box-shadow:inset 0 0 0 1px #fff}
+.ov .lapis .personne>div{display:flex;align-items:center;gap:12px;height:100%;padding:12px 14px}
+.ov :is(.lapis,.lapis-offre) .initiales{position:relative;flex:none;display:grid;place-items:center;width:40px;height:40px;overflow:hidden;border:1px solid rgba(255,255,255,.3);font-size:13px;font-weight:600;letter-spacing:.06em}
+.ov :is(.lapis,.lapis-offre) .initiales img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ov .lapis .qui{min-width:0;display:flex;flex-direction:column;line-height:17px}
+.ov .lapis .qui>*{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov .lapis .qui b{font-size:13px;font-weight:600}
+.ov .lapis .qui .titre-c{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-weight:600;text-align:left;color:#fff}
+.ov .lapis .qui .titre-c:hover{text-decoration:underline;text-decoration-color:rgba(255,255,255,.4);text-underline-offset:3px}
+.ov .lapis .qui .titre-p{font-size:12px;color:rgba(255,255,255,.75)}
+.ov .lapis .qui .poste{font-size:11.5px;color:rgba(255,255,255,.9)}
+.ov .lapis .qui .poste i{font-style:normal;color:rgba(255,255,255,.55)}
+.ov .lapis .qui .nature{margin-right:6px;padding:0 5px;border:1px solid rgba(255,255,255,.22);font-size:10.5px}
+.ov .lapis .qui .lien{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;font-size:11.5px;font-weight:600;text-decoration:none;color:rgba(255,255,255,.88)}
+.ov .lapis .qui .lien:hover{color:#fff}
+.ov .lapis .qui .lien svg{width:10px;height:10px}
+.ov .lapis .qui .liens{display:flex;gap:14px}
+.ov .lapis .qui .origine{font-size:11px;color:rgba(255,255,255,.55)}
+.ov .lapis .qui .origine :is(a,button){font:inherit;color:rgba(255,255,255,.8);text-decoration:underline;text-decoration-color:rgba(255,255,255,.3);text-underline-offset:2px}
+.ov .lapis .qui .origine :is(a,button):hover{color:#fff}
+/* Le résumé d'un événement ou d'un post tient sur deux lignes ; la carte le donne entier au survol. */
+.ov .lapis .qui .resume-c{display:-webkit-box;margin-top:3px;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;font-size:11.5px;line-height:16px;color:rgba(255,255,255,.7)}
+.ov .lapis .vide-l{grid-column:1/-1;align-self:start;padding:12px 0;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.62)}
+.ov .lapis .vide-l.erreur{color:#ffd0d0}
+.ov .lapis .pages .numero{display:contents}
+.ov .lapis .pagination .trou{min-width:16px;text-align:center;line-height:28px}
+.ov .lapis .pagination .compteur{white-space:nowrap}
+/* L'avis d'un geste : posé en bas à droite de la fenêtre, au-dessus de la pagination ; un clic le ferme. */
+.ov .lapis .avis-l{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(560px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
+.ov .lapis .avis-l.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+
+/* Offre repérée : l'auteur du post en tête, le résumé, puis le détail en lignes. */
+.ov .lapis-offre .auteur{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ov .lapis-offre .auteur p{min-width:0;font-size:12px;line-height:1.4;color:rgba(255,255,255,.75)}
+.ov .lapis-offre .auteur p b{display:block;font-size:13px;font-weight:600;color:#fff}
+.ov .lapis-offre .resume-offre{margin-bottom:10px !important;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.88)}
+.ov .lapis-offre .liste-f>li{flex-wrap:wrap;row-gap:2px;padding:6px 0}
+.ov .lapis-offre .liste-f .d{display:inline-flex;align-items:center;gap:5px;text-align:right;overflow-wrap:anywhere}
+.ov .lapis-offre .liste-f a.d{color:rgba(255,255,255,.75);transition:color .2s}
+.ov .lapis-offre .liste-f a.d:hover{color:#fff}
+.ov .lapis-offre .liste-f a.d svg{flex:none;width:10px;height:10px}
+.ov .lapis-reglages .erreur-f{margin-top:10px !important;padding:8px 10px;border-left:2px solid #ff8a8a;background:rgb(255 138 138 / .08);font-size:12px;line-height:1.4;color:#ffd0d0;overflow-wrap:anywhere}
+.ov .lapis-reglages .champ>label .marque-admin{margin-left:8px}
+.ov .lapis-reglages .champ+.aide-champ{margin:-6px 0 12px !important}

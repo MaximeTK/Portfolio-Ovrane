@@ -1,0 +1,134 @@
+/* Page Workflows : l'arbre appris d'un site, page par page, puis le panneau du rejeu et de la vérification. */
+
+/* Panneau de 480 px, la place que demandent les deux tableaux de la Vérification ; 540 px sur les grands écrans. */
+.ov:has([data-fen=arbre].workflows){--panneau:480px}
+@media (min-width:1700px){.ov:has([data-fen=arbre].workflows){--panneau:540px}}
+/* Ses onglets passent à la ligne plutôt que de se couper. */
+.ov:has([data-fen=arbre].workflows) [data-fen=panneau] .p-tete{height:auto;min-height:44px;align-items:flex-start}
+.ov:has([data-fen=arbre].workflows) [data-fen=panneau] .p-onglets{flex-wrap:wrap;column-gap:16px;row-gap:0}
+.ov:has([data-fen=arbre].workflows) [data-fen=panneau] .p-onglet{flex:none;height:42px}
+.ov:has([data-fen=arbre].workflows) [data-fen=panneau] .p-tete .f-btn{margin-top:7px}
+
+/* Recherche en texte seul, une loupe devant, sans cadre ; un trait fin paraît sous le texte quand on écrit. */
+.ov .workflows .outils{position:relative}
+.ov .workflows .cherche{display:inline-flex;align-items:center;gap:8px;min-width:0;height:34px;color:rgba(255,255,255,.7)}
+.ov .workflows .cherche .loupe{display:grid;place-items:center;height:34px;color:inherit}
+.ov .workflows .cherche svg{width:14px;height:14px}
+.ov .workflows .cherche input{width:262px;height:26px;border:0;border-bottom:1px solid transparent;background:none;padding:0;font:inherit;font-size:12.5px;color:#fff}
+.ov .workflows .cherche input::placeholder{color:rgba(255,255,255,.6)}
+.ov .workflows .cherche input:focus{outline:none;border-bottom-color:rgba(255,255,255,.6)}
+/* Résumé du site sur deux lignes : son nom, puis ses pages et ses candidatures apprises. */
+.ov .workflows .resume{display:flex;flex-direction:column;justify-content:center;margin:0 26px 0 18px;padding-left:18px;border-left:1px solid rgba(255,255,255,.14);font-size:12px;line-height:1.3;white-space:nowrap}
+.ov .workflows .resume b{font-weight:600}
+.ov .workflows .resume span{font-size:11px;color:rgba(255,255,255,.62)}
+.ov .workflows .action .compteur{margin-left:-2px}
+/* Le menu des pages s'ouvre sous la rangée d'outils, dans le verre ; une clé de page longue passe à la ligne. */
+.ov .workflows .filtre-hote{position:static}
+.ov .workflows .filtre-hote .menu{left:14px;right:auto;top:calc(100% + 2px);max-width:calc(100% - 28px);max-height:min(360px,calc(100vh - 260px));overflow-y:auto;scrollbar-width:none}
+.ov .workflows .menu-option{height:auto;min-height:32px;padding:6px 16px;white-space:normal;text-align:left}
+.ov .workflows .menu-option .num{flex:none;width:14px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.55)}
+.ov .workflows .menu-option .adr{min-width:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11.5px;overflow-wrap:anywhere}
+.ov .workflows .menu-option .compteur{margin-left:auto;padding-left:16px}
+/* Fenêtre resserrée : la recherche se replie sur sa loupe et s'ouvre à la place du résumé ; le résumé se rapproche. */
+.ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .cherche:not(.ouverte) input{display:none}
+.ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .outils:has(.cherche.ouverte) :is(.resume,.filtre-hote){display:none}
+.ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .cherche input{width:220px}
+.ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .resume{margin:0 12px 0 8px;padding-left:10px}
+.ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .outils .actions{gap:14px}
+
+/* L'arbre d'une page : une ligne par geste ; rang, geste, libellé et marques à gauche, cible et source calées à droite à toute profondeur. */
+.ov .workflows .arbre{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 16px 0 20px;--h-l:28px;container:arbre/inline-size}
+.ov .workflows .arbre-defile{flex:1;min-height:0;overflow-y:auto;padding-bottom:12px;scrollbar-width:none}
+.ov .workflows .arbre-defile::-webkit-scrollbar{display:none}
+.ov .workflows :is(.arbre-tete,.l){display:grid;grid-template-columns:22px 70px minmax(0,1fr) 146px 186px;column-gap:14px;align-items:center}
+.ov .workflows .arbre-tete{flex:none;height:30px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:rgba(255,255,255,.72);white-space:nowrap}
+.ov .workflows .l{min-height:var(--h-l);border-top:1px solid rgba(255,255,255,.08);font-size:12.5px}
+.ov .workflows .l>*{min-width:0}
+.ov .workflows .l:hover{background:rgba(255,255,255,.04)}
+.ov .workflows :is(.rg,.ge,.ci){font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px}
+.ov .workflows .rg{color:rgba(255,255,255,.5)}
+.ov .workflows .ge{color:rgba(255,255,255,.82);overflow-wrap:anywhere}
+.ov .workflows .ci{padding:3px 0;color:rgba(255,255,255,.66);overflow-wrap:anywhere}
+.ov .workflows .so{padding:3px 0;color:rgba(255,255,255,.78);overflow-wrap:anywhere}
+.ov .workflows .so i{font-style:normal;color:rgba(255,255,255,.5)}
+.ov .workflows .lb{display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;padding:3px 0}
+.ov .workflows .lb b{font-weight:600;overflow-wrap:anywhere}
+.ov .workflows .lb b em{font-style:normal;margin-left:3px;color:rgba(255,255,255,.6)}
+/* Marques d'une ligne (si…, facultatif, pour chaque…, →) : de petites étiquettes au trait fin ; le changement de page plus clair. */
+.ov .workflows .mq{max-width:100%;min-height:18px;padding:0 6px;border:1px solid rgba(255,255,255,.22);font-size:10.5px;line-height:16px;color:rgba(255,255,255,.75)}
+.ov .workflows .mq.vers{border-color:rgba(255,255,255,.6);color:#fff}
+/* Section du formulaire : un titre en capitales espacées au-dessus de ses lignes. */
+.ov .workflows .arbre-l>li.sec{display:flex;align-items:flex-end;height:30px;padding:0 0 6px 36px;border-top:1px solid rgba(255,255,255,.08);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.62)}
+/* Ce qu'un geste ouvre et les voies d'un aiguillage : en retrait sous la ligne, un fil vertical les relie à elle. */
+.ov .workflows .sous{margin-left:11px;padding-left:25px;border-left:1px solid rgba(255,255,255,.16)}
+.ov .workflows .portee>summary{display:block;min-height:var(--h-l);padding:6px 0 5px;border-top:1px solid rgba(255,255,255,.08);list-style:none;cursor:pointer;font-size:11.5px;line-height:16px;color:rgba(255,255,255,.66)}
+.ov .workflows .portee>summary::-webkit-details-marker{display:none}
+.ov .workflows .portee>summary:hover{color:#fff}
+.ov .workflows .portee>summary svg{display:inline-block;width:11px;height:11px;margin-right:8px;vertical-align:-1px;transform:rotate(-90deg);transition:transform .2s}
+.ov .workflows .portee[open]>summary svg{transform:none}
+.ov .workflows .morte{color:#FFF58D}
+.ov .workflows .retirer{margin-left:6px;font-size:11.5px;font-weight:600;color:#ffb0b0}
+.ov .workflows .retirer:hover{color:#ffd0d0}
+@media (min-height:900px){.ov .workflows .arbre{--h-l:34px}.ov .workflows .arbre-l>li.sec{height:38px}}
+@media (max-height:780px){.ov .workflows .arbre{--h-l:26px}.ov .workflows .arbre-l>li.sec{height:26px}}
+/* Arbre resserré : Cible et Source se retirent, le libellé prend leur place. */
+@container arbre (max-width:880px){
+  .ov .workflows :is(.arbre-tete,.l)>:is(:nth-child(4),:nth-child(5)){display:none}
+  .ov .workflows :is(.arbre-tete,.l){grid-template-columns:22px 70px minmax(0,1fr)}
+}
+.ov .workflows .vide-wf{padding:18px 4px;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.62)}
+.ov .workflows .vide-wf b{font-weight:600;color:#fff}
+/* L'avis d'un geste : posé en bas à droite de la fenêtre ; un clic le ferme. */
+.ov .workflows .avis-wf{position:absolute;right:14px;bottom:14px;z-index:3;max-width:min(560px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
+.ov .workflows .avis-wf.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+
+/* Tableaux du panneau : largeurs au contenu, les textes longs passent à la ligne au lieu d'être coupés. */
+.ov .wf-p .tab-wf{table-layout:auto;font-size:12px}
+.ov .wf-p .tab-wf th{height:28px;padding:0 12px 0 0;letter-spacing:.14em}
+.ov .wf-p .tab-wf td{height:auto;padding:6px 12px 6px 0;white-space:normal;overflow:visible;line-height:1.35;vertical-align:top;overflow-wrap:break-word}
+.ov .wf-p .tab-wf code{overflow-wrap:anywhere}
+.ov .wf-p .tab-wf :is(th,td):first-child{padding-left:0}
+.ov .wf-p .tab-wf :is(th,td):last-child{padding-right:0;text-align:right}
+.ov .wf-p .tab-wf tbody tr{cursor:default}
+.ov .wf-p .tab-wf tbody tr:hover td{background:none}
+.ov .wf-p .saisi thead th:nth-child(1){width:36%}
+.ov .wf-p .saisi thead th:nth-child(2){width:25%}
+.ov .wf-p code{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.62)}
+.ov .wf-p .src.att{color:#FFF58D}
+/* Petits boutons de texte dans les lignes (Signaler, Valider…, Rejeter, Ajouter au profil…). */
+.ov .wf-p .btn-l{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.85);text-align:right}
+.ov .wf-p .btn-l:hover{color:#fff}
+.ov .wf-p .btn-l:disabled{opacity:.45;cursor:default}
+.ov .wf-p .pile .btn-l{display:block;margin:0 0 4px auto}
+.ov .wf-p .btn-l.gris{font-weight:500;color:rgba(255,255,255,.6)}
+.ov .wf-p .signalee{font-size:11px;color:#FFF58D}
+.ov .wf-p .inter{margin-bottom:10px}
+.ov .wf-p .erreur-f{margin-top:10px !important;padding:8px 10px;border-left:2px solid #ff8a8a;background:rgb(255 138 138 / .08);font-size:12px;line-height:1.4;color:#ffd0d0;overflow-wrap:anywhere}
+.ov .wf-verif .erreur-f{margin:0 0 12px !important}
+
+/* Rejeu : l'état allumé en cyan tant qu'il tourne, l'offre rejouée dessous, puis le journal pas à pas. */
+.ov .wf-rejeu .etat-rejeu{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:12.5px;line-height:1.4}
+.ov .wf-rejeu .etat-rejeu b{font-weight:600}
+.ov .wf-rejeu .etat-rejeu .on{color:var(--accent)}
+.ov .wf-rejeu .voyant{flex:none;align-self:center;width:7px;height:7px;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:ov-pouls 1.4s infinite}
+.ov .wf-rejeu .adresse{margin-top:4px !important;padding-left:15px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.55);overflow-wrap:anywhere}
+.ov .wf-rejeu .journal{display:flex;align-items:center;gap:6px;margin-top:4px !important;padding-left:15px;font-size:11.5px;color:rgba(255,255,255,.7)}
+.ov .wf-rejeu .journal .pl{min-width:18px;height:22px}
+.ov .wf-rejeu .lignes-journal{margin-top:8px}
+.ov .wf-rejeu .lignes-journal pre{max-height:180px;margin:0;padding:8px 10px;overflow:auto;background:rgb(0 0 0 / .25);font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;color:rgba(255,255,255,.75);scrollbar-width:none}
+/* Lot à jouer : les gestes du prochain envoi à gauche, la capture de la page à droite. */
+.ov .wf-rejeu .lot{display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:14px;align-items:start}
+.ov .wf-rejeu .lot-page{margin-bottom:6px !important;font-size:11px;color:rgba(255,255,255,.55);overflow-wrap:anywhere}
+.ov .wf-rejeu .gestes{display:flex;flex-direction:column;gap:5px;font-size:12px;line-height:1.35}
+.ov .wf-rejeu .gestes li{display:flex;gap:8px}
+.ov .wf-rejeu .gestes li>span:first-child{flex:none;min-width:46px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.82)}
+.ov .wf-rejeu .gestes li>span:last-child{min-width:0;overflow-wrap:anywhere}
+.ov .wf-rejeu .gestes small{font-size:10px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.55)}
+.ov .wf-rejeu .capture{display:block;width:132px;height:96px;object-fit:cover;object-position:top;border:1px solid rgba(255,255,255,.22);background:rgb(255 255 255 / .06)}
+
+/* Comparaison : chaque page du refait, ses lignes identiques, nouvelles et absentes. */
+.ov .wf-p .comparaison+.comparaison{margin-top:14px}
+.ov .wf-p .page-c{margin-bottom:6px !important;overflow-wrap:anywhere}
+.ov .wf-p .comparaison .def{grid-template-columns:150px minmax(0,1fr)}
+.ov .wf-p .comparaison dt{font-size:11.5px;color:rgba(255,255,255,.7)}
+.ov .wf-p .comparaison dd{display:flex;flex-wrap:wrap;gap:4px 8px}

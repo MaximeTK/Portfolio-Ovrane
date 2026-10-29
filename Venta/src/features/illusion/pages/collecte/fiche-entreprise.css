@@ -1,0 +1,69 @@
+/* La fiche d'une entreprise, partagée par toutes les pages qui en montrent une : marques des canaux, état, champs, audit, offres, historique. */
+
+/* Canaux d'une fiche (tableau et fiche) : Mail, Tél, Spontanée, Jobboard, blancs si présents, éteints sinon. */
+.ov .marques{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
+.ov .marques i{display:grid;place-items:center}
+.ov .marques svg{width:13px;height:13px;opacity:.2}
+.ov .marques .on svg{opacity:1;filter:drop-shadow(0 0 3px rgb(255 255 255 / .45))}
+.ov .siren{display:block;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10px;color:rgba(255,255,255,.5)}
+/* Offres d'une fiche : un compte en pastille neutre, le cyan restant aux états. */
+.ov .nb{display:inline-block;min-width:20px;padding:0 6px;background:rgb(255 255 255 / .1);font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;line-height:18px;text-align:center;color:#fff}
+.ov .nb.zero{background:none;color:rgba(255,255,255,.4)}
+/* État d'une fiche : Collecter neutre, Parser lilas, Audit orangé, Compléter vert, Écarter en pointillé. */
+.ov .eo.f-par{color:#B9A8FF}.ov .eo.f-aud{color:#FFC08A}.ov .eo.f-comp{color:#93FFB3}
+.ov .eo:is(.f-par,.f-aud,.f-comp)::before{opacity:1;box-shadow:0 0 6px currentColor}
+
+/* La fiche : état, canaux et SIREN en tête, puis les champs, l'audit à côté dès que la place le permet. */
+.ov .fiche-ent{container-type:inline-size}
+.ov .fiche-ent .f-meta{margin:0 0 12px !important;gap:6px 14px}
+.ov .fiche-ent .f-meta .siren{display:inline;font-size:11px}
+.ov .fiche-ent .f-meta .d{margin-left:auto;font-size:11.5px}
+.ov .fiche-ent .fiche-2{display:grid;grid-template-columns:minmax(0,1fr);row-gap:14px;align-items:start}
+@container (min-width:500px){.ov .fiche-ent .fiche-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}}
+.ov .fiche-ent .fiche-2 .liste-f>li{min-height:32px}
+.ov .fiche-ent .fiche-2+:is(.section-f,details){margin-top:14px;padding-top:14px;border-top:1px solid rgb(255 255 255 / .08)}
+.ov .fiche-ent .liste-f .lib-champ{flex:none}
+.ov .fiche-ent .liste-f .d{min-width:0;text-align:right;overflow-wrap:anywhere}
+.ov .fiche-ent .liste-f .d.pile{display:flex;flex-direction:column;align-items:flex-end}
+.ov .fiche-ent .inter.large{flex:1}
+.ov .fiche-ent .couleurs{display:inline-flex;gap:4px;vertical-align:middle}
+.ov .fiche-ent .couleurs i{width:14px;height:14px;border:1px solid rgb(255 255 255 / .3)}
+.ov .fiche-ent .audit-f section+section{margin-top:10px}
+.ov .fiche-ent .audit-f h4{margin:0 0 3px;font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+.ov .fiche-ent .audit-f p{font-size:12px;line-height:1.42;color:rgba(255,255,255,.88);overflow-wrap:anywhere}
+.ov .fiche-ent .audit-f p+p{margin-top:4px}
+.ov .fiche-ent .audit-f small{color:rgba(255,255,255,.55)}
+/* Dépliants (commande du parser, correction) et gestes posés sous un bloc. */
+.ov .fiche-ent .cmd>summary{cursor:pointer;list-style:none}
+.ov .fiche-ent .cmd>summary::-webkit-details-marker{display:none}
+.ov .fiche-ent .cmd>summary::after{content:" +";color:rgba(255,255,255,.5)}
+.ov .fiche-ent .cmd[open]>summary{margin-bottom:10px}
+.ov .fiche-ent .cmd[open]>summary::after{content:" −"}
+.ov .fiche-ent .cmd code{display:block;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.7);white-space:pre-wrap;overflow-wrap:anywhere}
+.ov .fiche-ent .geste-f{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 22px;margin-top:8px}
+.ov .fiche-ent .section-f h3 .compteur{margin-left:8px;letter-spacing:0}
+.ov .fiche-ent .section-f h3 .marque-admin{letter-spacing:.16em}
+/* Offres : date, intitulé, lieu et contrat, « postuler » ; sur deux étages quand la fiche est étroite. */
+.ov .fiche-ent .offres-f>li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"titre titre lien" "date lieu lien";gap:0 10px;align-items:center;padding:6px 0;cursor:pointer}
+.ov .fiche-ent .offres-f .o-titre{grid-area:titre;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ov .fiche-ent .offres-f .o-date{grid-area:date;font-size:11px;color:rgb(255 255 255 / .55)}
+.ov .fiche-ent .offres-f .o-lieu{grid-area:lieu;font-size:11px;color:rgb(255 255 255 / .55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ov .fiche-ent .offres-f .lien-f{grid-area:lien}
+@container (min-width:500px){
+  .ov .fiche-ent .offres-f>li{grid-template-columns:52px minmax(0,1fr) auto auto;grid-template-areas:"date titre lieu lien";gap:14px;padding:0}
+  .ov .fiche-ent .offres-f .o-titre{font-weight:400}
+  .ov .fiche-ent .offres-f :is(.o-date,.o-lieu){font-size:12.5px;color:rgba(255,255,255,.75)}
+}
+.ov .fiche-ent .offres-f>li:hover .o-titre{text-decoration:underline;text-decoration-color:rgb(255 255 255 / .35);text-underline-offset:3px}
+.ov .fiche-ent .lien-f{font-size:12px;text-decoration:underline;text-decoration-color:rgba(255,255,255,.3);text-underline-offset:3px}
+/* Avis de la fiche, et question posée dans la fiche quand la page n'a pas de rangée d'outils pour elle. */
+.ov .fiche-ent .avis-f{margin:0 0 12px !important;padding-left:10px;border-left:2px solid rgba(255,255,255,.5);font-size:12px;line-height:1.45;color:rgba(255,255,255,.85)}
+.ov .fiche-ent .avis-f.erreur{border-color:#ff8a8a;color:#ffb0b0}
+.ov .fiche-ent .question-f{margin-bottom:14px;padding:10px 12px;border-left:2px solid #ff8a8a;background:rgb(255 138 138 / .08)}
+.ov .fiche-ent .question-f .confirmer{height:auto;flex-wrap:wrap;justify-content:flex-end;gap:8px 20px;margin:0;padding:0;border:0;background:none;white-space:normal}
+.ov .fiche-ent .question-f .confirmer p{flex:1 1 100%;overflow:visible;line-height:1.45}
+.ov .fiche-ent .note-f{margin-bottom:12px !important;padding-left:10px;border-left:2px solid rgba(255,255,255,.25);font-size:12px;line-height:1.45;color:rgba(255,255,255,.65)}
+.ov .fiche-ent .texte-f:last-child{margin-bottom:0 !important}
+/* Pied de la fiche : ses gestes passent à la ligne plutôt que d'être coupés. */
+.ov .pied-fiche{flex:1;min-width:0;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 20px}
+.ov .pied-fiche .gauche{margin-right:auto}

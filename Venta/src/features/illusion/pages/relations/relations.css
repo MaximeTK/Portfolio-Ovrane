@@ -1,0 +1,68 @@
+/* Page Relations : le nuage de l'entourage, un point carré par personne, et sa fiche dans le panneau. */
+
+/* Recherche en texte seul, première dans la rangée des outils : une loupe, puis la saisie sans cadre. */
+.ov [data-fen=nuage] .recherche{display:inline-flex;align-items:center;gap:8px;min-width:0;height:34px;color:rgba(255,255,255,.6);cursor:text}
+.ov [data-fen=nuage] .recherche svg{flex:none;width:13px;height:13px}
+.ov [data-fen=nuage] .recherche input{width:190px;min-width:0;height:28px;border:0;background:none;padding:0;font-size:12.5px;color:#fff}
+.ov [data-fen=nuage] .recherche input::placeholder{color:rgba(255,255,255,.6)}
+.ov [data-fen=nuage] .recherche input:focus{outline:none}
+.ov [data-fen=nuage] .recherche:focus-within{color:#fff}
+/* Les trouvées en puces sous les outils : un clic ouvre leur fiche. */
+.ov [data-fen=nuage] .trouvees-r{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:4px;max-height:56px;overflow:auto;scrollbar-width:none;padding:0 14px 6px}
+.ov [data-fen=nuage] .trouvees-r::-webkit-scrollbar{display:none}
+.ov [data-fen=nuage] .trouvees-r .puce{cursor:pointer;transition:border-color .2s,color .2s}
+.ov [data-fen=nuage] .trouvees-r .puce:hover{border-color:#fff;color:#fff}
+/* Le nuage remplit la fenêtre sous les outils, à l'échelle, sans défilement. */
+.ov [data-fen=nuage] .nuage-r{position:relative;flex:1;min-height:0;padding:0 14px 6px}
+.ov [data-fen=nuage] .nuage-r svg{display:block;width:100%;height:100%;cursor:grab;touch-action:none;user-select:none}
+.ov [data-fen=nuage] .nuage-r svg.glisse{cursor:grabbing}
+/* Points carrés de la couleur de leur première étiquette, grossis par les échanges ; la personne ouverte s'allume en blanc dans un carré fin. */
+.ov [data-fen=nuage] .point-r{fill:oklch(76% .14 var(--t));stroke:rgb(10 10 14 / .55);stroke-width:1.5;cursor:pointer;transition:opacity .2s}
+.ov [data-fen=nuage] .point-r:hover,.ov [data-fen=nuage] .point-r:focus-visible{stroke:#fff;outline:none}
+.ov [data-fen=nuage] .point-r.choisi{fill:#fff;filter:drop-shadow(0 0 6px #fff)}
+.ov [data-fen=nuage] .anneau-r{fill:none;stroke:#fff;stroke-width:1;opacity:.75;pointer-events:none}
+.ov [data-fen=nuage] .trait-r{stroke:rgb(255 255 255 / .3);stroke-width:1;vector-effect:non-scaling-stroke}
+.ov [data-fen=nuage] .trait-r.implicite{stroke-dasharray:3 3;opacity:.6}
+.ov [data-fen=nuage] :is(.point-r,.trait-r).eteint{opacity:.12}
+.ov [data-fen=nuage] .nom-r{fill:rgba(255,255,255,.78);pointer-events:none}
+.ov [data-fen=nuage] .nom-r.choisi{fill:#fff;font-weight:600}
+.ov [data-fen=nuage] .vide-r{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:0 40px;margin:0;text-align:center;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6)}
+.ov [data-fen=nuage] .vide-r b{color:#fff;font-weight:600}
+/* Légende en bas, à la place de la pagination : une pastille par étiquette et son nombre, puis le total. */
+.ov [data-fen=nuage] .legende-r{flex:none;min-height:44px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 18px;border-top:1px solid rgba(255,255,255,.08);padding:8px 14px;font-size:12px}
+.ov [data-fen=nuage] .cle-r{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;color:rgba(255,255,255,.82)}
+.ov [data-fen=nuage] .cle-r i{flex:none;width:8px;height:8px;background:oklch(76% .14 var(--t))}
+.ov [data-fen=nuage] .note-r{font-size:11px;color:rgba(255,255,255,.45);white-space:nowrap}
+.ov [data-fen=nuage] .total-r{font-weight:600;color:#fff;white-space:nowrap}
+.ov [data-fen=nuage]:not([data-l=l]) .legende-r .note-r{display:none}
+.ov [data-fen=nuage]:not([data-l=l]) .legende-r{gap:4px 12px}
+/* Panneau ouvert, le détail de la confirmation passe en infobulle faute de place. */
+.ov [data-fen=nuage]:not([data-l=l]) .confirmer .detail-r{display:none}
+/* L'avis d'un geste : en bas à droite, au-dessus de la légende ; un clic le ferme. */
+.ov [data-fen=nuage] .avis-r{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(520px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
+.ov [data-fen=nuage] .avis-r.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+
+/* Fiche : ce qu'on sait en tête, les sujets en puces de texte, les faits datés. */
+.ov .rel-f .meta-f{margin-bottom:12px !important;font-size:12px;color:rgba(255,255,255,.7)}
+.ov .rel-f .resume-r{font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.92)}
+.ov .rel-f .sujets-r{margin-top:8px !important;font-size:12px;color:rgba(255,255,255,.75)}
+.ov .rel-f .sujets-r .lib-champ{margin-right:8px}
+.ov .rel-f .faits-r{margin-top:8px}
+.ov .rel-f .faits-r li{position:relative;padding-left:14px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.82)}
+.ov .rel-f .faits-r li::before{content:"";position:absolute;left:2px;top:.62em;width:4px;height:4px;background:rgba(255,255,255,.5)}
+.ov .rel-f .faits-r small{margin-left:6px;font-size:10.5px;color:rgba(255,255,255,.45)}
+/* Liens et échanges : une ligne par lien avec sa croix, puis la saisie et son bouton sur une rangée. */
+.ov .rel-f .lien-r{font-weight:600;color:#fff;text-align:left;text-decoration:underline;text-decoration-color:rgb(255 255 255 / .25);text-underline-offset:3px}
+.ov .rel-f .liste-f .x-r{display:grid;place-items:center;width:22px;height:22px;font-size:15px;color:rgba(255,255,255,.55)}
+.ov .rel-f .liste-f .x-r:hover{color:#ffb0b0}
+.ov .rel-f .liste-f .d{color:rgba(255,255,255,.65)}
+.ov .rel-f .rangee-r{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:10px}
+.ov .rel-f .rangee-r.deux{grid-template-columns:minmax(0,1fr) auto}
+.ov .rel-f .rangee-r .action{height:32px}
+.ov .rel-f .rangee-r textarea.saisie{min-height:52px}
+.ov .rel-f .chrono-r{margin-top:10px}
+.ov .rel-f .chrono-r li{display:grid;grid-template-columns:44px 52px minmax(0,1fr);gap:8px;align-items:baseline;min-height:30px;padding:6px 0;border-top:1px solid rgb(255 255 255 / .07);font-size:12px;overflow-wrap:anywhere}
+.ov .rel-f .chrono-r time{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.5)}
+.ov .rel-f .chrono-r .genre{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.ov .rel-f .chrono-r summary{cursor:pointer;color:#fff}
+.ov .rel-f .chrono-r details p{margin-top:6px !important;white-space:pre-line;line-height:1.45;color:rgba(255,255,255,.75)}

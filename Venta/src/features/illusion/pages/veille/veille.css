@@ -1,0 +1,88 @@
+/* Page Veille : son état écrit à gauche des outils, le bandeau d'échec, les plateformes en cartes, les jobboards fouillés ; le panneau qui la suit porte plateforme, réglages et jobboard. */
+
+/* État de la veille : cyan tant qu'elle écoute ou tourne. */
+.ov [data-fen=veille] .etat-v{cursor:default}
+.ov [data-fen=veille] .etat-v .onde{font-size:12.5px}
+.ov [data-fen=veille] .etat-v>.d{margin-left:4px;font-size:12px}
+.ov [data-fen=veille] .outils .etat-v .lib{display:inline}
+/* Vider les offres reste rouge sans sélection : il porte sur tout le stock. */
+.ov [data-fen=veille] .action.alerte{color:#ffb0b0}
+.ov [data-fen=veille] .action.alerte:hover{color:#ffd0d0}
+/* Rangée d'outils : sa largeur décide, d'abord Profils de veille et Réglages puis les gestes sur le stock se replient sur leur icône. */
+.ov [data-fen=veille] .outils{container-type:inline-size}
+@container (max-width:1199px){.ov [data-fen=veille] .outils .repli-1 .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
+@container (max-width:979px){.ov [data-fen=veille] .outils .repli-2 .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.ov [data-fen=veille] .outils .actions{gap:16px}}
+@container (max-width:679px){.ov [data-fen=veille] .outils .etat-v .lib{display:none}}
+@container (max-width:619px){.ov [data-fen=veille] .etat-v .prochain{display:none}}
+@container (max-width:479px){.ov [data-fen=veille] .etat-v>.d{display:none}.ov [data-fen=veille][data-l] .outils .actions .action.plein .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
+
+/* Corps de la veille : le bandeau d'échec, puis les plateformes, puis les jobboards ; lui seul défile. */
+.ov [data-fen=veille] .veille-corps{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;overflow:auto;padding:4px 14px 14px;scrollbar-width:none;container-type:inline-size}
+.ov [data-fen=veille] .veille-corps::-webkit-scrollbar{display:none}
+.ov [data-fen=veille] .bandeau-echec{position:relative;z-index:3;flex:none;display:flex;align-items:center;gap:16px;min-height:36px;padding:0 12px;border-left:2px solid #ffb0b0;background:rgb(255 176 176 / .08);font-size:12.5px}
+.ov [data-fen=veille] .bandeau-echec p{flex:1;min-width:0;color:rgba(255,255,255,.88)}
+.ov [data-fen=veille] .bandeau-echec b{font-weight:600;color:#ffb0b0}
+/* Sortie de la brique : un dépliant qui s'ouvre par-dessus, sans pousser la page. */
+.ov [data-fen=veille] .sortie>summary{display:inline-flex;align-items:center;gap:6px;list-style:none;cursor:pointer;font-size:12px;font-weight:600;color:rgba(255,255,255,.8);white-space:nowrap}
+.ov [data-fen=veille] .sortie>summary::-webkit-details-marker{display:none}
+.ov [data-fen=veille] .sortie>summary:hover{color:#fff}
+.ov [data-fen=veille] .sortie>summary svg{transition:transform .2s}
+.ov [data-fen=veille] .sortie[open]>summary svg{transform:rotate(180deg)}
+.ov [data-fen=veille] .sortie pre{position:absolute;top:calc(100% + 4px);right:0;width:min(520px,100%);max-height:260px;overflow:auto;margin:0;padding:12px 14px;background:rgb(14 14 18 / .92);border:1px solid rgb(255 255 255 / .18);font:11px/1.6 var(--font-geist-mono),ui-monospace,monospace;color:rgba(255,255,255,.8);white-space:pre-wrap;scrollbar-width:none}
+/* Têtes des blocs : le titre à gauche, le compte ou les gestes à droite. */
+.ov [data-fen=veille] .bloc-v{flex:none}
+.ov [data-fen=veille] .bloc-tete{display:flex;align-items:center;justify-content:space-between;gap:12px;height:28px;margin-bottom:8px}
+.ov [data-fen=veille] .bloc-tete .compteur{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Une carte par plateforme : voyant et nom, compteur du dernier cycle, motif, état des clés ; la carte ouverte s'allume en blanc ; autant de colonnes que la plus large le permet, quatre au plus. */
+.ov [data-fen=veille] .grille-pf{display:grid;grid-template-columns:repeat(auto-fill,minmax(max(208px,(100% - 24px) / 4),1fr));gap:8px}
+.ov [data-fen=veille] .carte-pf{display:flex;flex-direction:column;gap:3px;min-width:0;padding:9px 12px 10px;text-align:left;color:#fff}
+.ov [data-fen=veille] .pf-tete{display:flex;align-items:center;gap:8px}
+.ov [data-fen=veille] .pf-nom{flex:1;min-width:0;font-size:12.5px;font-weight:600;white-space:nowrap}
+.ov [data-fen=veille] .pf-nb{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
+.ov [data-fen=veille] .pf-motif{font-size:11.5px;color:rgba(255,255,255,.72);white-space:nowrap}
+.ov [data-fen=veille] .pf-cles{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);white-space:nowrap}
+.ov [data-fen=veille] .carte-pf.actif .pf-motif{color:rgba(255,255,255,.9)}
+.ov [data-fen=veille] .carte-pf:focus-visible{outline:1px solid #fff;outline-offset:2px}
+/* Fenêtre étroite : les cartes ne gardent que voyant, nom et compte ; le motif reste dans l'infobulle du voyant. */
+@container (max-width:659px){.ov [data-fen=veille] .carte-pf :is(.pf-motif,.pf-cles){display:none}.ov [data-fen=veille] .carte-pf{padding:6px 12px 7px}}
+/* Voyant d'une source : vert elle rend des offres, jaune une clé ou une erreur, rouge muette au dernier cycle, violet elle répond sans offre, gris jamais interrogée ou éteinte. */
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .voyant{flex:none;display:inline-block;width:8px;height:8px;background:rgba(255,255,255,.3)}
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-verte{background:#93FFB3;box-shadow:0 0 6px #93FFB3}
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-jaune{background:#FFF58D;box-shadow:0 0 6px #FFF58D}
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-rouge{background:#ff8a8a;box-shadow:0 0 6px #ff8a8a}
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-violette{background:#B9A8FF;box-shadow:0 0 6px #B9A8FF}
+/* Jobboards fouillés : nom, adresse, moment de la récolte, interrupteur ; une ligne ouvre son jobboard. */
+.ov [data-fen=veille] .jobboards-l>li{display:grid;grid-template-columns:minmax(150px,1fr) minmax(250px,2fr) minmax(150px,1fr) 32px;align-items:center;gap:16px;height:34px;border-top:1px solid rgba(255,255,255,.08);font-size:12.5px;white-space:nowrap;cursor:pointer}
+.ov [data-fen=veille] .jobboards-l>li>*{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ov [data-fen=veille] .jobboards-l>li:hover,.ov [data-fen=veille] .jobboards-l>li.actif{background:rgba(255,255,255,.05)}
+.ov [data-fen=veille] .jobboards-l>li.actif{box-shadow:inset 2px 0 0 #fff}
+.ov [data-fen=veille] .jobboards-l>li:focus-visible{outline:1px solid #fff;outline-offset:-1px}
+.ov [data-fen=veille] .jobboards-l>li.vide{display:block;cursor:default;color:rgba(255,255,255,.6)}
+.ov [data-fen=veille] .jobboards-l b{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.ov [data-fen=veille] .jobboards-l .eteint{color:rgba(255,255,255,.5)}
+.ov [data-fen=veille] .jobboards-l .eteint b{color:rgba(255,255,255,.6)}
+.ov [data-fen=veille] .jobboards-l .inter{justify-content:flex-end;overflow:visible}
+.ov [data-fen=veille] .tag-f{padding:2px 6px;border:1px solid rgb(255 255 255 / .2);font-size:8.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);white-space:nowrap}
+@container (max-width:659px){.ov [data-fen=veille] .jobboards-l>li:not(.vide){grid-template-columns:minmax(110px,1fr) minmax(200px,2fr) 32px}.ov [data-fen=veille] .jobboards-l>li>:nth-child(3){display:none}}
+
+/* Panneau : le voyant et le dernier passage d'une plateforme en tête ; un secret jamais réaffiché, « Effacer » le retire. */
+.ov [data-fen=veille]~[data-fen=panneau] .voyant-l{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:12.5px}
+.ov [data-fen=veille]~[data-fen=panneau] .voyant-l .d{margin-left:auto;font-size:11.5px}
+.ov [data-fen=veille]~[data-fen=panneau] .secret{position:relative;display:block}
+.ov [data-fen=veille]~[data-fen=panneau] .secret .lien-d{position:absolute;top:50%;right:10px;transform:translateY(-50%)}
+.ov [data-fen=veille]~[data-fen=panneau] .section-f .aide-champ{margin-top:10px}
+.ov [data-fen=veille]~[data-fen=panneau] .grille-2.bas{align-items:end}
+/* Sélecteur de catalogue : les puces choisies et la recherche dans le même champ, chaque puce avec sa croix ; les résultats en menu dessous. */
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue-hote{position:relative}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue{display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-height:32px;padding:4px;border:1px solid rgb(255 255 255 / .16);background:rgb(0 0 0 / .25)}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue:focus-within{border-color:#fff}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue input{flex:1;min-width:90px;height:22px;border:0;background:none;padding:0 6px;font-size:12.5px;color:#fff}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue input::placeholder{color:rgba(255,255,255,.45)}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue input:focus{outline:none}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce{padding:0 0 0 8px;font-size:12px;color:#fff}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce b{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;font-weight:500;color:rgba(255,255,255,.65)}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce button{display:grid;place-items:center;width:20px;height:20px;color:rgba(255,255,255,.55)}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce button:hover{color:#fff}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce svg{width:9px;height:9px}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue-hote .menu{top:calc(100% + 4px);left:0;right:0;min-width:0}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue-hote .menu-option b{min-width:28px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;font-weight:500;color:rgba(255,255,255,.65)}

@@ -1,0 +1,103 @@
+/* Page Profil : les cartes des profils en colonne étroite à gauche, l'éditeur du profil ouvert à droite. */
+.ov [data-fen=profils]{--cartes:220px;display:flex;flex-direction:column}
+/* Panneau ouvert : les cartes se resserrent, leur fichier passe en infobulle. */
+.ov [data-fen=profils].resserre{--cartes:180px}
+.ov [data-fen=profils].resserre .profil .chemin{display:none}
+.ov [data-fen=profils].resserre .profil{min-height:48px}
+.ov [data-fen=profils] .titre-page{display:flex;align-items:baseline;gap:10px}
+.ov [data-fen=profils] .corps-p{flex:1;min-height:0;display:flex;gap:16px;padding:6px 14px 14px}
+.ov [data-fen=profils] .profils{flex:0 0 var(--cartes);min-width:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto;scrollbar-width:none}
+.ov [data-fen=profils] .profils::-webkit-scrollbar{display:none}
+.ov [data-fen=profils] .profil{flex:none;min-height:62px;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:10px 14px;text-align:left;cursor:pointer}
+.ov [data-fen=profils] .profil .l1{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.ov [data-fen=profils] .profil .nom-p{font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.ov [data-fen=profils] .profil .chemin{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgb(255 255 255 / .6);overflow-wrap:anywhere}
+.ov [data-fen=profils] .profil.neuf{flex-direction:row;align-items:center;justify-content:space-between;border:1px dashed rgb(255 255 255 / .3);font-size:12.5px;font-weight:600;color:rgb(255 255 255 / .88);transition:border-color .2s,color .2s}
+.ov [data-fen=profils] .profil.neuf:hover,.ov [data-fen=profils] .profil.neuf.allume{border-color:#fff;color:#fff}
+.ov [data-fen=profils] .profil.neuf .ico{display:grid;place-items:center;width:20px;height:20px;background:#fff;color:#0a0a0e}
+.ov [data-fen=profils] .profil.neuf .ico svg{width:11px;height:11px}
+.ov [data-fen=profils] .editeur{flex:1;min-width:0;display:flex;flex-direction:column;border-left:1px solid rgb(255 255 255 / .08)}
+.ov [data-fen=profils] .editeur>.f-corps{padding:0 0 0 16px}
+.ov [data-fen=profils] .editeur.vide{padding:4px 0 0 16px}
+
+/* Profil incomplet : un bandeau d'alerte au trait rouge en haut de la fenêtre ; Fermer le replie. */
+.ov [data-fen=profils] .bandeau{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;margin:12px 14px 0;padding:8px 12px;border-left:2px solid #ffb0b0;background:rgb(255 176 176 / .06)}
+.ov [data-fen=profils] .bandeau>.f-corps{flex:1 1 360px;min-width:0;padding:0;overflow:visible}
+.ov [data-fen=profils] .bandeau .texte-f{margin:0 0 2px !important;font-weight:600;color:#fff}
+.ov [data-fen=profils] .bandeau :is(.liste-f,.liste-f>li,.aide-champ){display:inline;border:0}
+.ov [data-fen=profils] .bandeau .liste-f>li+li::before{content:" · "}
+.ov [data-fen=profils] .bandeau .liste-f .d{margin:0 8px}
+.ov [data-fen=profils] .bandeau>.f-pied{flex-wrap:wrap;margin-left:auto;padding:0;border:0}
+
+/* Dupliquer : une barre à la place des outils, au trait blanc ; le nom de la copie s'y saisit. */
+.ov [data-fen=profils] .confirmer.copie{border-left-color:#fff;background:rgb(255 255 255 / .06)}
+.ov [data-fen=profils] .confirmer.copie .saisie{flex:none;width:170px;height:28px}
+.ov [data-fen=profils] .confirmer.copie .lib-champ{margin-right:-10px}
+/* Fenêtre étroite : les barres passent sur deux lignes plutôt que de couper leur question. */
+.ov [data-fen=profils]:not([data-l=l]) .confirmer{flex-wrap:wrap;height:auto;min-height:36px;row-gap:4px;padding:6px 12px}
+.ov [data-fen=profils]:not([data-l=l]) .confirmer p{flex:1 1 100%;white-space:normal}
+
+/* L'avis du dernier geste, posé au bas de la fenêtre ; un clic le ferme. */
+.ov [data-fen=profils] .avis{position:absolute;left:14px;right:14px;bottom:14px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid #fff;background:rgb(14 14 18 / .92);font-size:12.5px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
+.ov [data-fen=profils] .avis.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+
+/* Éditeur de profil : deux colonnes quand la place le permet, sections repliables au titre en capitales ; fermées, elles se rangent en étiquettes à la suite. */
+.ov .ed-profil .nom-profil{margin-bottom:10px}
+.ov .ed-profil .colonnes-p{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;align-items:start}
+.ov .ed-profil .champ{margin-bottom:10px}
+.ov .ed-profil .large{grid-column:1/-1}
+.ov .ed-profil .requis{margin-left:4px;text-decoration:none;color:#ffb0b0}
+.ov .ed-profil .secs{display:flex;flex-wrap:wrap;gap:6px;container-type:inline-size}
+.ov .ed-profil .sec{min-width:0}
+.ov .ed-profil .sec[open]{flex-basis:100%;margin-bottom:6px}
+.ov .ed-profil .sec>summary{display:flex;align-items:center;gap:10px;height:30px;list-style:none;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;white-space:nowrap}
+.ov .ed-profil .sec>summary::-webkit-details-marker{display:none}
+.ov .ed-profil :is(.poignee,.poignee-b){letter-spacing:0;color:rgb(255 255 255 / .45);cursor:grab;user-select:none}
+.ov .ed-profil :is(.poignee,.poignee-b):hover{color:#fff}
+.ov .ed-profil .sec>summary .chevron{flex:none;width:12px;height:12px;margin-left:auto;transition:transform .2s}
+.ov .ed-profil .sec[open]>summary{margin-bottom:10px;border-bottom:1px solid rgb(255 255 255 / .1)}
+.ov .ed-profil .sec[open]>summary .chevron{transform:rotate(180deg)}
+.ov .ed-profil .sec:not([open])>summary{gap:6px;height:24px;padding:0 7px;border:1px solid rgb(255 255 255 / .18);font-size:9px;letter-spacing:.12em;color:rgb(255 255 255 / .8)}
+.ov .ed-profil .sec:not([open])>summary:hover{border-color:rgb(255 255 255 / .4);color:#fff}
+.ov .ed-profil .sec:not([open])>summary .chevron{margin-left:0;width:10px;height:10px}
+.ov .ed-profil .en-vol{opacity:.45}
+
+/* Encarts : « À compléter » au trait jaune des choses à faire, profil inutilisable au trait rouge. */
+.ov .ed-profil .encart{margin-bottom:12px;padding:10px 12px;border-left:2px solid var(--c-afaire);background:rgb(255 245 141 / .05)}
+.ov .ed-profil .encart.rouge{border-left-color:#ffb0b0;background:rgb(255 176 176 / .06)}
+.ov .ed-profil .encart h3{margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff}
+.ov .ed-profil .encart>p{margin-bottom:10px !important;font-size:11.5px;line-height:1.4;color:rgb(255 255 255 / .7)}
+.ov .ed-profil .encart .champ:last-child{margin-bottom:0}
+.ov .ed-profil .encart .liens{display:flex;flex-wrap:wrap;gap:6px 16px;margin-bottom:0 !important;font-size:12.5px}
+.ov .ed-profil .ligne-saisie{display:flex;align-items:center;gap:14px}
+
+/* Éditeur riche : une barre de gestes au-dessus de la zone. */
+.ov .ed-profil .barre-r{display:flex;flex-wrap:wrap;align-items:center;gap:2px;min-height:30px;padding:0 4px;border:1px solid rgb(255 255 255 / .16);border-bottom:0;background:rgb(0 0 0 / .35)}
+.ov .ed-profil .outil-r{position:relative;display:grid;place-items:center;min-width:24px;height:24px;font-size:12px;font-weight:700;color:rgb(255 255 255 / .82);cursor:pointer;transition:color .2s,background .2s}
+.ov .ed-profil .outil-r:hover{color:#fff;background:rgb(255 255 255 / .08)}
+.ov .ed-profil .outil-r.i{font-style:italic}
+.ov .ed-profil .outil-r.s{text-decoration:underline}
+.ov .ed-profil .outil-r.coul{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.ov .ed-profil .outil-r.coul i{width:12px;height:2px}
+.ov .ed-profil .barre-r select{width:auto;max-width:132px;height:24px;margin-left:4px;border:0;background:none;font-size:11.5px;color:rgb(255 255 255 / .82);cursor:pointer}
+.ov .ed-profil .sep-r{width:1px;height:16px;margin:0 4px;background:rgb(255 255 255 / .16)}
+.ov .ed-profil .zone-r{min-height:58px;padding:7px 10px;border:1px solid rgb(255 255 255 / .16);background:rgb(0 0 0 / .25);font-size:12.5px;line-height:1.45;color:#fff;overflow-wrap:anywhere}
+.ov .ed-profil .zone-r:focus{outline:none;border-color:#fff}
+.ov .ed-profil .zone-r:empty::before{content:attr(data-exemple);color:rgb(255 255 255 / .4)}
+.ov .ed-profil .zone-r ul{margin-top:4px;padding-left:16px;list-style:disc}
+
+/* Entrées répétables : une carte chacune, sa poignée à gauche ; deux par deux quand la section a la place. */
+.ov .ed-profil .bloc{position:relative;margin-bottom:10px;padding:12px 12px 8px 30px;border:1px solid rgb(255 255 255 / .12);background:rgb(0 0 0 / .18)}
+.ov .ed-profil .bloc .poignee-b{position:absolute;left:10px;top:12px}
+.ov .ed-profil .grille-6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 12px}
+.ov .ed-profil .pied-bloc{display:flex;justify-content:flex-end}
+.ov .ed-profil .corps-sec>.action.ajout{margin-bottom:4px}
+@container (min-width:740px){.ov .ed-profil .sec[open]>.corps-sec.blocs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;align-items:start}.ov .ed-profil .corps-sec.blocs>.action{grid-column:1/-1;justify-self:start}}
+
+/* Un lieu se choisit dans la liste de référence qui s'ouvre sous le champ. */
+.ov .ed-profil .champ-lieu{position:relative}
+.ov .ed-profil .lieux{left:0;right:0;top:calc(100% + 2px);min-width:0;max-height:240px;overflow-y:auto}
+.ov .ed-profil .lieux .menu-option{height:auto;min-height:32px;padding:6px 14px;white-space:normal;text-align:left}
+
+/* Ajouter un champ au profil, dans le panneau de l'admin. */
+.ov .champ-profil .inter{margin-top:4px}
