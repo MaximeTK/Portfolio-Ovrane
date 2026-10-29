@@ -8,7 +8,8 @@ const csp = [
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
   "font-src 'self'",
-  "connect-src 'self'",
+  // Le flux de transcription des appels d'Illusion (RUBY) s'ouvre du navigateur vers AssemblyAI
+  "connect-src 'self' wss://streaming.assemblyai.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -26,7 +27,8 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // Le micro est permis au site seul : l'enregistrement des appels d'Illusion en a besoin
+          { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
         ],
       },
     ];

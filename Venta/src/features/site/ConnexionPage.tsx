@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
+import Link from 'next/link';
 import { ETIQUETTE, Verre } from './ProjectPage';
 import type { useChatController } from '@/features/chat/useChatController';
 import { INDISPONIBLE } from '@/lib/messages';
@@ -167,7 +168,9 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
               <dd className="mt-1 break-all">{compte.email}</dd>
             </div>
           </dl>
-          <p className="text-sm leading-relaxed text-white/70">Illusion s&apos;ouvrira ici dès sa mise en ligne.</p>
+          <Link href="/illusion" prefetch={false} className="block w-full rounded-xl bg-white py-3 text-center text-sm font-semibold text-black transition hover:bg-white/85">
+            Ouvrir Illusion
+          </Link>
           {alerte}
           <button
             type="button"
