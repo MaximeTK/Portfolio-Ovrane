@@ -13,6 +13,7 @@ import { setupPreferencesRoutes } from './routes/preferences.js';
 import { setupTrackingRoutes } from './routes/tracking.js';
 import { setupTTSRoutes } from './routes/tts.js';
 import { setupIllusionRoutes } from './routes/illusion.js';
+import { setupIllusionAppRoutes } from './routes/illusionApp.js';
 
 export function createApp({ openai }) {
   const app = express();
@@ -23,6 +24,8 @@ export function createApp({ openai }) {
 
   // Avant la limite et le secret : la sonde de Render passe toujours
   setupHealthRoute(app);
+  // Avant la limite globale et le lecteur JSON : les pages d'Illusion interrogent toutes les quelques secondes, et leur corps passe brut
+  setupIllusionAppRoutes(app);
   app.use(limite(15 * 60 * 1000, config.production ? 300 : 5000));
   app.use(requireService);
   app.use(express.json());
@@ -33,7 +36,6 @@ export function createApp({ openai }) {
   setupTrackingRoutes(app);
   setupTTSRoutes(app, openai);
   setupIllusionRoutes(app);
-  // Illusion derrière la connexion se montera ici : app.use('/api/illusion', requireSession, ...)
 
   app.use((req, res) => sendError(res, 404, ERROR_MESSAGES.notFound));
   app.use(sendInternalError);

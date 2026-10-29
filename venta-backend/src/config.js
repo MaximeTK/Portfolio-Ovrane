@@ -29,6 +29,13 @@ export const config = {
   // Adresse publique du site pour les liens des e-mails, jamais déduite de la requête (en-tête Host falsifiable)
   siteUrl: (env.SITE_URL || (production ? '' : 'http://localhost:3000')).replace(/\/+$/, ''),
   mails: { resendKey: env.RESEND_API_KEY, expediteur: env.MAIL_FROM },
+  // Pages d'Illusion intégrées au site : son serveur et le secret qu'il attend de ce backend ; sans secret, le relais est coupé
+  illusion: {
+    url: (env.ILLUSION_URL || 'http://127.0.0.1:8000').replace(/\/+$/, ''),
+    secret: env.ILLUSION_SERVICE_SECRET || '',
+    // Sans un octet d'Illusion pendant ce délai, la requête est abandonnée : un CV bâti ou l'essai d'un modèle y tiennent
+    delai: 120_000,
+  },
   mongodbUri: env.MONGODB_URI,
   mongodbDb: env.MONGODB_DB,
   openaiApiKey: env.OPENAI_API_KEY,

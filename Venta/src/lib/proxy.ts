@@ -13,8 +13,14 @@ function backendUrl(): string {
   return process.env.BACKEND_URL || 'http://127.0.0.1:3001';
 }
 
+// Une route relaie sa requête, une page serveur ses en-têtes et ses cookies (next/headers) : les deux suffisent
+type Source = Pick<NextRequest, 'headers'> & { cookies: { get(nom: string): { value: string } | undefined } };
+
+// Seuls ces en-têtes d'une réponse d'Illusion reviennent au navigateur ; sa CSP isole le HTML d'un mail reçu
+const RENDUS_ILLUSION = ['content-type', 'content-disposition', 'content-length', 'content-security-policy'];
+
 /** En-têtes de tout appel au backend ; null en production sans SERVICE_SECRET. */
-function enTetes(request: NextRequest): Record<string, string> | null {
+function enTetes(request: Source): Record<string, string> | null {
   const secret = process.env.SERVICE_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-ovrane-service');
   if (!secret) return null;
   const h = request.headers;
@@ -38,7 +44,7 @@ export function sessionJeton(request: NextRequest): string | undefined {
 type ForwardInit = { method?: string; body?: unknown; timeout?: number };
 
 /** Appel brut : null sans secret en production, exception si le backend est injoignable. */
-export async function forward(request: NextRequest, path: string, init: ForwardInit = {}): Promise<Response | null> {
+export async function forward(request: Source, path: string, init: ForwardInit = {}): Promise<Response | null> {
   const headers = enTetes(request);
   if (!headers) return null;
   return fetch(`${backendUrl()}${path}`, {
@@ -48,6 +54,36 @@ export async function forward(request: NextRequest, path: string, init: ForwardI
     // 30 s couvrent le réveil d'un service Render endormi
     signal: AbortSignal.timeout(init.timeout ?? 30_000),
   });
+}
+
+/** Relai des pages d'Illusion : méthode, corps brut et son type tels quels, réponse en flux (téléversements et téléchargements compris). */
+export async function relayerIllusion(request: NextRequest, path: string): Promise<Response> {
+  const headers = enTetes(request);
+  if (headers) {
+    const type = request.headers.get('content-type');
+    if (type) headers['Content-Type'] = type;
+    else delete headers['Content-Type'];
+    try {
+      const response = await fetch(`${backendUrl()}${path}`, {
+        method: request.method,
+        headers,
+        body: request.body,
+        // Node exige ce mode pour envoyer un corps en flux sans le lire d'abord
+        duplex: 'half',
+        // Au-delà des 120 s du backend vers Illusion : c'est lui qui répond le premier ; un navigateur parti coupe la chaîne
+        signal: AbortSignal.any([request.signal, AbortSignal.timeout(130_000)]),
+      } as RequestInit);
+      const rendus = new Headers({ 'Cache-Control': 'no-store' });
+      for (const nom of RENDUS_ILLUSION) {
+        const valeur = response.headers.get(nom);
+        if (valeur) rendus.set(nom, valeur);
+      }
+      return new Response(response.body, { status: response.status, headers: rendus });
+    } catch (error) {
+      console.error(`[relai] ${path} injoignable :`, error);
+    }
+  }
+  return NextResponse.json({ error: INDISPONIBLE }, { status: 503 });
 }
 
 /**

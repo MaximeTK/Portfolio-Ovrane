@@ -107,6 +107,10 @@ export const ERROR_MESSAGES = {
 
   illusionCvNotFound: 'CV introuvable',
   illusionNotFound: 'Candidature introuvable',
+  illusionAccountRequired: 'Connectez-vous avec votre compte Ovrane pour ouvrir Illusion.',
+  illusionTooLarge: 'Fichier trop lourd : 15 Mo au plus.',
+  illusionUnavailable: 'Illusion ne répond pas pour le moment. Réessayez dans un instant.',
+  illusionBadGateway: 'Illusion a interrompu sa réponse. Réessayez dans un instant.',
 
   limitReached: 'Vous avez beaucoup discuté ! J\'espère que la démonstration vous a plu. Pour aller plus loin ou discuter d\'un projet, je vous invite à me contacter directement.',
 };
