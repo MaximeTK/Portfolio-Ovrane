@@ -3,6 +3,7 @@
 import './fiches.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { cleBrouillon } from '../../stockage';
 import { Fenetre, usePanneau, type ArbreDepart } from '../../dock/Dock';
 import { ECART } from '../../dock/moteur';
 import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
@@ -631,7 +632,7 @@ const LIBELLES_FICHE: Record<string, string> = { url: 'Site officiel', nom: 'Ent
 export const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 const lireRetenues = (nom: string): Valeurs => {
   try {
-    return JSON.parse(localStorage.getItem(`illusion:atelier:${nom}`) ?? '{}');
+    return JSON.parse(localStorage.getItem(cleBrouillon(`atelier:${nom}`)) ?? '{}');
   } catch {
     return {};
   }
@@ -665,7 +666,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
   useEffect(() => {
     if (!Object.keys(valeurs).length) return;
     try {
-      localStorage.setItem(`illusion:atelier:${nom}`, JSON.stringify(valeurs));
+      localStorage.setItem(cleBrouillon(`atelier:${nom}`), JSON.stringify(valeurs));
     } catch {
       // Navigation privée ou stockage plein : rien n'est retenu
     }

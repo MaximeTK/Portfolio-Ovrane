@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-// En observation seulement : les écarts sont signalés dans la console sans rien bloquer
+// Appliquée : ce qui sort de cette liste est bloqué. Polices auto-hébergées par next/font, aucune image ni script tiers,
+// seule connexion externe : la transcription des appels d'Illusion. 'unsafe-inline' reste pour les scripts que Next injecte
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
@@ -22,7 +23,7 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "Content-Security-Policy-Report-Only", value: csp },
+          { key: "Content-Security-Policy", value: csp },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Content-Type-Options", value: "nosniff" },

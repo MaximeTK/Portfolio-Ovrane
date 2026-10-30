@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import { ETIQUETTE, Verre } from './ProjectPage';
 import type { useChatController } from '@/features/chat/useChatController';
 import { PAGE_DEPART } from '@/features/illusion/pages/liste';
+import { effacerBrouillons } from '@/features/illusion/stockage';
 import { INDISPONIBLE } from '@/lib/messages';
 import { useUIStore } from '@/lib/uiStore';
 
@@ -122,6 +123,8 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
   const deconnecter = () =>
     agir(async () => {
       await poster('/api/auth/logout');
+      // Rien de ce compte ne reste dans le navigateur : les brouillons d'Illusion partent avec la session
+      effacerBrouillons();
       await sendAuth('visitor', {});
     });
 

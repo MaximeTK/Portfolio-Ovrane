@@ -4,6 +4,7 @@
 import './documents.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler, telecharger } from '../../api';
+import { cleBrouillon } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { useSondage } from '../../activite/sondage';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
@@ -50,7 +51,7 @@ export const quand = (iso: string) => (iso ? new Date(/(Z|[+-]\d{2}:?\d{2})$/.te
 // Ce qu'on a tapé dans un formulaire de fabrication reste d'une visite à l'autre, comme dans l'ancien dashboard
 const lireMemoire = (nom: NomAtelier): Partial<Formulaire> => {
   try {
-    return JSON.parse(localStorage.getItem(`illusion:documents:${nom}`) ?? '{}');
+    return JSON.parse(localStorage.getItem(cleBrouillon(`documents:${nom}`)) ?? '{}');
   } catch {
     return {};
   }
@@ -137,7 +138,7 @@ function useDocuments(admin: boolean) {
   const changerFormulaire = useCallback((nom: NomAtelier, champs: Partial<Formulaire>) => setFormulaires((fs) => {
     const neuf = { ...fs[nom], ...champs };
     try {
-      localStorage.setItem(`illusion:documents:${nom}`, JSON.stringify(neuf));
+      localStorage.setItem(cleBrouillon(`documents:${nom}`), JSON.stringify(neuf));
     } catch { /* stockage refusé : le formulaire ne vaut que pour la visite */ }
     return { ...fs, [nom]: neuf };
   }), []);

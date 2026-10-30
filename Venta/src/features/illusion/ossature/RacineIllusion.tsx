@@ -6,6 +6,7 @@ import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { useApparence } from '../apparence';
 import type { Compte } from '../api';
 import { REGISTRE } from '../pages/registre';
+import { poserCompte } from '../stockage';
 
 type ProprietesRacine = {
   compte: Compte;
@@ -19,6 +20,8 @@ type ProprietesRacine = {
 // Racine des écrans d'Illusion, sous l'en-tête du site : fond, matière, puis le dock de la page
 export function RacineIllusion({ compte, page, palette, children }: ProprietesRacine) {
   const matiere = useApparence((s) => s.matiere);
+  // Au rendu, avant les pages : leurs brouillons se lisent sous ce compte dès leur premier effet
+  poserCompte(compte.email);
 
   useEffect(() => {
     if (palette) useBackgroundStore.getState().setBackground(palette);
