@@ -51,10 +51,11 @@ async function preparer(req, res) {
 }
 
 export function setupChatRoutes(app, openai) {
-  // Par session, comptée sur son utilisateur
+  // Par session, comptée sur son utilisateur ; par IP, tous ses visiteurs ensemble : en créer d'autres n'ouvre pas plus de réponses
   const parSession = limite(60 * 1000, 10, (req) => req.user.id);
+  const parIp = limite(60 * 60 * 1000, 120);
 
-  app.post('/api/chat', requireSession, parSession, async (req, res, next) => {
+  app.post('/api/chat', requireSession, parIp, parSession, async (req, res, next) => {
     try {
       const user = await preparer(req, res);
       if (!user) return;
@@ -72,7 +73,7 @@ export function setupChatRoutes(app, openai) {
   });
 
   // Même réponse en flux SSE : morceaux de texte, audio PCM de Cartesia dès les premiers mots, puis la réponse complète
-  app.post('/api/chat/flux', requireSession, parSession, async (req, res, next) => {
+  app.post('/api/chat/flux', requireSession, parIp, parSession, async (req, res, next) => {
     let user;
     try {
       user = await preparer(req, res);

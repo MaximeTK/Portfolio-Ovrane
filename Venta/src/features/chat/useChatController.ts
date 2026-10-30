@@ -5,6 +5,7 @@ import type { ChatStatus, Command, Message, MessageRole, TexteSigne, TTSData } f
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { useUIStore } from '@/lib/uiStore';
 import { CHAT_UI, INDISPONIBLE } from '@/lib/messages';
+import { resoudreDefi } from '@/lib/defi';
 
 const HISTORY_LIMIT = 20;
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
@@ -19,6 +20,9 @@ interface Reponse {
   tts?: TTSData;
   activeUserId?: string;
   userProfile?: { isNewUser?: boolean };
+  // Refus d'une création de visiteur : la preuve de travail à fournir
+  defi?: string;
+  difficulte?: number;
 }
 
 type HistoryItem = { role: MessageRole; content: string; timestamp?: string | number; commands?: Command[] };
@@ -173,12 +177,20 @@ export function useChatController() {
     setCurrentTranscript('');
     setCurrentTTS(null);
     setCurrentVoix(null);
-    const res = await fetch(`/api/auth/${mode}`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) })
+    const envoyer = (corps: Record<string, string>) => fetch(`/api/auth/${mode}`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(corps) })
       .catch((err) => {
         console.error(`[auth] ${mode} :`, err);
         return null;
       });
-    const data: Reponse | null = await res?.json().catch(() => null);
+    let res = await envoyer(body);
+    let data: Reponse | null = await res?.json().catch(() => null);
+    // Nouveau visiteur : le serveur demande d'abord une courte preuve de travail, jointe à son refus
+    if (mode === 'visitor' && res?.status === 403 && data?.defi) {
+      const { defi, difficulte = 0 } = data;
+      const solution = await resoudreDefi(defi, difficulte).catch(() => '');
+      res = solution ? await envoyer({ ...body, defi, solution }) : null;
+      data = await res?.json().catch(() => null);
+    }
     if (!res?.ok || !data) {
       setStatus('idle');
       throw new Error(data?.error || INDISPONIBLE);

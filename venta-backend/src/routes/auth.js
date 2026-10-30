@@ -9,6 +9,7 @@ import { demanderReinitialisation, reinitialiser } from '../services/reinitialis
 import { demanderVerification, verifier } from '../services/verification.js';
 import { compterVisite, profilPublic } from '../services/utilisateurs.js';
 import { signerVoix } from '../services/voix.js';
+import { defiResolu, nouveauDefi } from '../services/defi.js';
 import { sendError, egal, limite, requireSession } from '../http.js';
 import { config } from '../config.js';
 import { ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
@@ -54,6 +55,17 @@ async function reprendreVisiteur(req, res, next) {
   }
 }
 
+// Un nouveau visiteur se paie d'une preuve de travail ; le refus porte le défi, sans aller-retour de plus
+async function exigerDefi(req, res, next) {
+  try {
+    const { defi, solution } = req.body || {};
+    if (await defiResolu(defi, solution)) return next();
+    res.status(403).json({ error: ERROR_MESSAGES.defiRequis, ...nouveauDefi() });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function creerVisiteur(req, res, next) {
   try {
     // Né avec sa session : son identifiant, affiché au client, ne s'échange jamais contre une autre
@@ -69,8 +81,8 @@ export function setupAuthRoutes(app) {
   const parIp = limite(QUINZE_MINUTES, 10);
   const parIdentifiant = limite(QUINZE_MINUTES, 10, (req) => identifiant(req.body?.identifier));
 
-  // Seule la création compte dans la limite des visiteurs, pas la reprise
-  app.post('/api/auth/visitor', reprendreVisiteur, limite(60 * 60 * 1000, 30), creerVisiteur);
+  // Seule la création compte dans la limite des visiteurs, pas la reprise, et seulement défi résolu
+  app.post('/api/auth/visitor', reprendreVisiteur, exigerDefi, limite(60 * 60 * 1000, 10), creerVisiteur);
 
   app.post('/api/auth/register', parIp, async (req, res, next) => {
     try {

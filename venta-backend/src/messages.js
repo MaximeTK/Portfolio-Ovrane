@@ -80,6 +80,7 @@ export const ERROR_MESSAGES = {
   serviceUnauthorized: 'Accès non autorisé',
   sessionRequired: 'Session requise',
   tooManyRequests: 'Trop de requêtes, réessayez plus tard.',
+  defiRequis: 'Vérification du navigateur requise avant l\'arrivée.',
   userNotFound: 'Utilisateur non trouvé',
   missingParams: 'Paramètres manquants',
   notFound: 'Ressource introuvable',

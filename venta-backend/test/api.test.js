@@ -1,7 +1,7 @@
 /**
  * Tests hors ligne de l'API : secret de service, sessions, identifiants du client ignorés, limites, concurrence et erreurs
  */
-import { base, appeler, visiteur, fermer, modele, appelsOpenAI, REPONSE, SECRET } from './simulation.js';
+import { base, appeler, creerVisiteur, resoudre, visiteur, fermer, modele, appelsOpenAI, REPONSE, SECRET } from './simulation.js';
 import { test, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'crypto';
@@ -134,7 +134,7 @@ test('session requise : 401 sans session, ou avec un jeton inconnu, expiré ou m
 });
 
 test('visiteur : jeton opaque stocké haché, valable 30 jours, repris sans nouvelle session', async () => {
-  const cree = await appeler('/api/auth/visitor', { method: 'POST', body: {} });
+  const cree = await creerVisiteur();
   assert.equal(cree.status, 200);
   const { jeton, expireLe } = cree.json.session;
   assert.match(jeton, /^[A-Za-z0-9_-]{43}$/);
@@ -151,6 +151,53 @@ test('visiteur : jeton opaque stocké haché, valable 30 jours, repris sans nouv
   assert.equal('session' in repris.json, false);
   assert.equal(repris.json.userProfile.isNewUser, false);
   assert.equal(repris.json.reply, MISC_MESSAGES.welcomeBack());
+});
+
+test('visiteur : créé seulement contre une preuve de travail, signée, à temps, résolue et jamais resservie', async () => {
+  const ip = '198.51.104.1';
+  const refus = await appeler('/api/auth/visitor', { method: 'POST', body: {}, ip });
+  assert.equal(refus.status, 403);
+  assert.deepEqual([refus.json.error, refus.json.difficulte], [ERROR_MESSAGES.defiRequis, 4]);
+  const { defi } = refus.json;
+  const solution = resoudre(refus.json);
+  const [sel, echeance, difficulte, signature] = defi.split('.');
+  // Un nombre dont l'empreinte n'a pas ses 4 premiers bits à zéro
+  const fausse = String(Array.from({ length: 1000 }, (_, n) => n).find((n) => crypto.createHash('sha256').update(`${defi}:${n}`).digest()[0] >= 16));
+  const autre = `${sel}.${Number(echeance) + 60_000}.${difficulte}.${signature}`;
+  const facile = `${sel}.${echeance}.0.${signature}`;
+  for (const body of [{ defi, solution: fausse }, { defi: autre, solution: resoudre({ defi: autre, difficulte: 4 }) },
+    { defi: facile, solution: '0' }, { defi, solution: Number(solution) }, { defi: [defi], solution }]) {
+    const res = await appeler('/api/auth/visitor', { method: 'POST', body, ip });
+    assert.equal(res.status, 403, JSON.stringify(body));
+    assert.ok(res.json.defi && res.json.defi !== defi, 'un nouveau défi part avec chaque refus');
+  }
+  const cree = await appeler('/api/auth/visitor', { method: 'POST', body: { defi, solution }, ip });
+  assert.equal(cree.status, 200);
+  assert.equal((await appeler('/api/auth/visitor', { method: 'POST', body: { defi, solution }, ip })).status, 403, 'un défi, un visiteur');
+  assert.equal(base.defis.find((d) => d._id === sel).usages, 2);
+
+  // Échu : refusé même résolu
+  const vieux = await appeler('/api/auth/visitor', { method: 'POST', body: {}, ip });
+  const reel = Date.now;
+  Date.now = () => reel() + 6 * 60 * 1000;
+  try {
+    assert.equal((await appeler('/api/auth/visitor', { method: 'POST', body: { defi: vieux.json.defi, solution: resoudre(vieux.json) }, ip })).status, 403);
+  } finally {
+    Date.now = reel;
+  }
+});
+
+test('front : la preuve de travail résolue par le navigateur ouvre la création', async () => {
+  const { resoudreDefi } = await import(new URL('../../Venta/src/lib/defi.ts', import.meta.url).href);
+  const refus = await appeler('/api/auth/visitor', { method: 'POST', body: {} });
+  const solution = await resoudreDefi(refus.json.defi, refus.json.difficulte);
+  assert.equal(solution, resoudre(refus.json), 'le plus petit nombre qui convient, comme le serveur l\'attend');
+  assert.equal((await appeler('/api/auth/visitor', { method: 'POST', body: { defi: refus.json.defi, solution } })).status, 200);
+  assert.equal(await resoudreDefi('peu-importe', 0), '0', 'sans difficulté, aucun calcul');
+  // Son SHA-256 écrit à la main donne le même nombre que celui de Node, sur des défis de toutes longueurs
+  for (const defi of ['a', 'x'.repeat(54), 'y'.repeat(55), 'z'.repeat(120), refus.json.defi]) {
+    assert.equal(await resoudreDefi(defi, 10), resoudre({ defi, difficulte: 10 }), defi);
+  }
 });
 
 test('session : prolongée au plus une fois par jour à l\'usage', async () => {
@@ -182,7 +229,7 @@ test('migration ancienId : un ancien visiteur repris une seule fois, jamais un c
   base.users.push({ id: '0123456789abcdef', visitCount: 2 });
   const refuses = [ancien, recent.id, compte('Max', 'mot-de-passe-de-max').id, compteV, mailV, nommeV, '0123456789abcdef', [ancien], { $ne: null }];
   for (const ancienId of refuses) {
-    const res = await appeler('/api/auth/visitor', { method: 'POST', body: { ancienId } });
+    const res = await creerVisiteur({ body: { ancienId } });
     assert.equal(res.status, 200);
     assert.notEqual(res.json.activeUserId, typeof ancienId === 'string' ? ancienId : ancien, JSON.stringify(ancienId));
     assert.equal(res.json.userProfile.isNewUser, true, JSON.stringify(ancienId));
@@ -324,11 +371,11 @@ test('limite de connexion : 10 essais par IP et 10 par identifiant sur 15 minute
   assert.equal((await essai(' VICTIME', '198.51.102.1')).status, 429, 'même identifiant depuis une nouvelle IP');
 });
 
-test('visiteurs : 30 créations par heure et par IP, la reprise par session ne compte pas', async () => {
+test('visiteurs : 10 créations par heure et par IP, la reprise par session ne compte pas', async () => {
   const ip = '198.51.103.1';
-  const premier = await appeler('/api/auth/visitor', { method: 'POST', body: {}, ip });
-  for (let i = 1; i < 30; i += 1) assert.equal((await appeler('/api/auth/visitor', { method: 'POST', body: {}, ip })).status, 200);
-  assert.equal((await appeler('/api/auth/visitor', { method: 'POST', body: {}, ip })).status, 429);
+  const premier = await creerVisiteur({ ip });
+  for (let i = 1; i < 10; i += 1) assert.equal((await creerVisiteur({ ip })).status, 200);
+  assert.equal((await creerVisiteur({ ip })).status, 429);
   const repris = await appeler('/api/auth/visitor', { method: 'POST', body: {}, ip, session: premier.json.session.jeton });
   assert.equal(repris.status, 200);
   assert.equal(repris.json.activeUserId, premier.json.activeUserId);
@@ -486,7 +533,7 @@ test('TTS : texte de 1 000 caractères au plus, audio du fournisseur sans Markdo
 });
 
 test('TTS : seul un passage d\'un texte signé par le serveur part chez un fournisseur', async () => {
-  const { json: arrivee } = await appeler('/api/auth/visitor', { method: 'POST', body: {} });
+  const { json: arrivee } = await creerVisiteur();
   const session = arrivee.session.jeton;
   const dire = (body) => appeler('/api/tts', { method: 'POST', session, body });
   assert.equal(arrivee.voix, signerVoix(arrivee.reply), 'l\'accueil part signé');

@@ -9,6 +9,8 @@ Object.assign(process.env, {
   CARTESIA_API_KEY: '',
   ELEVEN_API_KEY: '',
   TTS_DEFAULT: 'false',
+  // Un défi de 4 bits : la création d'un visiteur reste instantanée dans les tests
+  DEFI_DIFFICULTE: '4',
   LOG_VERBOSE: 'false',
   MONGODB_URI: 'mongodb://127.0.0.1:1/jamais',
   MONGODB_DB: 'jamais',

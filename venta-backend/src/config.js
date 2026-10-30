@@ -40,6 +40,9 @@ export const config = {
     chat: Number(env.BUDGET_CHAT_PAR_JOUR) || 0,
     tts: Number(env.BUDGET_TTS_PAR_JOUR) || 0,
   },
+  // Preuve de travail demandée à la création d'un visiteur, en bits à zéro : 14 ≈ 16 000 empreintes, moins d'un dixième
+  // de seconde sur un ordinateur ; chaque bit de plus double le temps, pour le visiteur comme pour un robot
+  defi: { difficulte: env.DEFI_DIFFICULTE ? Math.min(24, Math.max(0, Math.trunc(Number(env.DEFI_DIFFICULTE)) || 0)) : 14 },
   trustProxy: production || env.TRUST_PROXY === 'true',
   logVerbose: env.LOG_VERBOSE === 'true',
   serviceSecret: env.SERVICE_SECRET || (production ? '' : 'dev-ovrane-service'),

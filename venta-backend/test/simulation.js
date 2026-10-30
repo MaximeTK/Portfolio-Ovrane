@@ -3,6 +3,7 @@
  */
 import './env.js';
 import { once } from 'node:events';
+import crypto from 'node:crypto';
 import { User } from '../src/models/User.js';
 import { Session } from '../src/models/Session.js';
 import { Reinitialisation } from '../src/models/Reinitialisation.js';
@@ -11,6 +12,8 @@ import { IllusionFichier } from '../src/models/IllusionFichier.js';
 import { RedirectLog } from '../src/models/RedirectLog.js';
 import { Budget } from '../src/models/Budget.js';
 import { Verification } from '../src/models/Verification.js';
+import { Defi } from '../src/models/Defi.js';
+import { zerosEnTete } from '../src/services/defi.js';
 import { createApp } from '../src/app.js';
 
 const valeur = (doc, chemin) => chemin.split('.').reduce((v, cle) => v?.[cle], doc);
@@ -156,6 +159,7 @@ export const base = {
   logs: simuler(RedirectLog),
   budgets: simuler(Budget),
   verifications: simuler(Verification),
+  defis: simuler(Defi),
 };
 
 // Le modèle simulé répond par modele.repondre, que chaque test peut remplacer
@@ -213,8 +217,22 @@ export async function appeler(chemin, { method = 'GET', body, session, secret = 
   return { status: res.status, json, bytes, headers: res.headers };
 }
 
+// Le plus petit nombre dont l'empreinte avec le défi commence par assez de zéros, comme le front le cherche
+export function resoudre({ defi, difficulte }) {
+  for (let n = 0; ; n += 1) {
+    if (zerosEnTete(crypto.createHash('sha256').update(`${defi}:${n}`).digest()) >= difficulte) return String(n);
+  }
+}
+
+// Arrivée d'un nouveau visiteur : le refus porte le défi, la seconde demande sa solution
+export async function creerVisiteur(options = {}) {
+  const refus = await appeler('/api/auth/visitor', { method: 'POST', body: {}, ...options });
+  if (refus.status !== 403 || !refus.json?.defi) return refus;
+  return appeler('/api/auth/visitor', { method: 'POST', ...options, body: { ...options.body, defi: refus.json.defi, solution: resoudre(refus.json) } });
+}
+
 // Nouveau visiteur et sa session
 export async function visiteur() {
-  const { json } = await appeler('/api/auth/visitor', { method: 'POST', body: {} });
+  const { json } = await creerVisiteur();
   return { id: json.activeUserId, session: json.session.jeton };
 }
