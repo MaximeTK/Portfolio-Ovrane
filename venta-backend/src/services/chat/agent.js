@@ -10,7 +10,7 @@ const CLE_CACHE = 'ovrane-chat';
 
 // Texte du modèle, tous tours réunis, vide si les tours sont épuisés ; chaque morceau part aussi dans surTexte dès qu'il arrive
 export async function callOpenAI(openai, messages, outils, ctx, surTexte = () => {}) {
-  const { model, verbosity, maxTours } = config.openai;
+  const { model, verbosity, maxTours, maxOutputTokens } = config.openai;
   const effort = outils.length ? config.openai.effortOutils : config.openai.effort;
   let input = messages;
   const textes = [];
@@ -20,6 +20,8 @@ export async function callOpenAI(openai, messages, outils, ctx, surTexte = () =>
       input,
       reasoning: { effort },
       text: { verbosity },
+      // Borne le coût d'un appel : une réponse ne peut pas filer indéfiniment
+      max_output_tokens: maxOutputTokens,
       prompt_cache_key: CLE_CACHE,
       stream: true,
       ...(outils.length ? { tools: outils } : {}),

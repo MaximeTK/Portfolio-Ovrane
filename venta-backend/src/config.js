@@ -22,6 +22,11 @@ export const config = {
   port: Number(env.PORT) || 3001,
   // Visiteurs, conversations et clics : rien n'est gardé au-delà de ce délai sans activité
   conservationJours: 90,
+  // Plafonds de dépense par jour, tous visiteurs confondus : 0 = aucune limite. Au-delà, le chat et la voix se mettent en veille.
+  budget: {
+    chat: Number(env.BUDGET_CHAT_PAR_JOUR) || 0,
+    tts: Number(env.BUDGET_TTS_PAR_JOUR) || 0,
+  },
   trustProxy: production || env.TRUST_PROXY === 'true',
   logVerbose: env.LOG_VERBOSE === 'true',
   serviceSecret: env.SERVICE_SECRET || (production ? '' : 'dev-ovrane-service'),
@@ -47,6 +52,8 @@ export const config = {
     effortOutils: 'medium',
     verbosity: env.OPENAI_TEXT_VERBOSITY || 'low',
     maxTours: 5,
+    // Plafond de sortie par appel (raisonnement compris) : borne le coût d'une réponse, même sur une question piégée
+    maxOutputTokens: Number(env.OPENAI_MAX_OUTPUT_TOKENS) || 1500,
   },
   tts: {
     // Vrai : la voix du navigateur lit tout, aucun fournisseur appelé

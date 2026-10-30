@@ -663,3 +663,25 @@ test('chat en flux avec Cartesia : mots complets en continuation d\'un même con
     config.tts.cartesiaKey = '';
   }
 });
+
+test('plafond du jour : au-delà, le chat répond sans appeler le modèle et la voix passe au navigateur', async () => {
+  const avant = { ...config.budget };
+  Object.assign(config.budget, { chat: 2, tts: 1 });
+  try {
+    const { session } = await visiteur();
+    const appels = appelsOpenAI.length;
+    for (const question of ['première', 'deuxième']) assert.equal((await chat(session, question)).json.reply, REPONSE);
+    const bloque = await chat(session, 'troisième');
+    assert.equal(bloque.json.reply, ERROR_MESSAGES.budgetReached);
+    assert.equal(appelsOpenAI.length, appels + 2, 'le modèle n\'est plus appelé une fois le plafond du jour atteint');
+    const dire = (text) => appeler('/api/tts', { method: 'POST', session, body: { text } });
+    assert.equal((await dire('Bonjour')).headers.get('x-tts-provider'), 'openai');
+    assert.deepEqual((await dire('Encore')).json, { useClientTTS: true, text: 'Encore' });
+    const jour = base.budgets.find((b) => b._id === new Date().toISOString().slice(0, 10));
+    assert.equal(jour.chat, 3);
+    assert.equal(jour.tts, 2);
+  } finally {
+    Object.assign(config.budget, avant);
+    base.budgets.length = 0;
+  }
+});

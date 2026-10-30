@@ -113,6 +113,7 @@ export const ERROR_MESSAGES = {
   illusionBadGateway: 'Illusion a interrompu sa réponse. Réessayez dans un instant.',
 
   limitReached: 'Vous avez beaucoup discuté ! J\'espère que la démonstration vous a plu. Pour aller plus loin ou discuter d\'un projet, je vous invite à me contacter directement.',
+  budgetReached: 'La démonstration reçoit beaucoup de monde en ce moment et fait une pause pour aujourd\'hui. Revenez demain, ou écrivez directement à Maxime pour échanger sans attendre.',
 };
 
 const echapper = (texte) => String(texte ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);

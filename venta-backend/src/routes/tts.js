@@ -4,6 +4,7 @@
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { generateTTS } from '../services/tts.js';
+import { consommer } from '../services/budget.js';
 import { sendError, requireSession, limite } from '../http.js';
 import { ERROR_MESSAGES } from '../messages.js';
 import * as log from '../log.js';
@@ -20,6 +21,8 @@ export function setupTTSRoutes(app, openai) {
       if (typeof text !== 'string' || !text) return sendError(res, 400, ERROR_MESSAGES.ttsTextRequired);
       if (text.length > MAX_TEXTE) return sendError(res, 413, ERROR_MESSAGES.ttsTextTooLong);
 
+      // Plafond de voix du jour atteint : la voix du navigateur lit le texte, aucun fournisseur payant n'est appelé
+      if (!(await consommer('tts'))) return res.json({ useClientTTS: true, text });
       const audio = await generateTTS(text, openai);
       // Sans audio, la voix du navigateur lit le texte
       if (!audio) return res.json({ useClientTTS: true, text });

@@ -9,6 +9,7 @@ import { Reinitialisation } from '../src/models/Reinitialisation.js';
 import { IllusionCandidature } from '../src/models/IllusionCandidature.js';
 import { IllusionFichier } from '../src/models/IllusionFichier.js';
 import { RedirectLog } from '../src/models/RedirectLog.js';
+import { Budget } from '../src/models/Budget.js';
 import { createApp } from '../src/app.js';
 
 const valeur = (doc, chemin) => chemin.split('.').reduce((v, cle) => v?.[cle], doc);
@@ -69,6 +70,7 @@ function appliquer(doc, maj) {
   for (const [op, champs] of Object.entries(maj)) {
     for (const [chemin, v] of Object.entries(champs)) {
       if (op === '$set') ecrire(doc, chemin, v);
+      else if (op === '$inc') ecrire(doc, chemin, (valeur(doc, chemin) ?? 0) + v);
       else if (op === '$addToSet') ecrire(doc, chemin, [...new Set([...(valeur(doc, chemin) ?? []), v])]);
       else if (op === '$push') ecrire(doc, chemin, [...(valeur(doc, chemin) ?? []), ...v.$each].slice(v.$slice ?? 0));
       else if (op === '$max') { if (valeur(doc, chemin) == null || v > valeur(doc, chemin)) ecrire(doc, chemin, v); }
@@ -104,7 +106,13 @@ function simuler(Modele) {
       return doc;
     },
     findOneAndUpdate: (filtre, maj, options = {}) => {
-      const doc = trouver(filtre);
+      let doc = trouver(filtre);
+      if (!doc && options.upsert) {
+        // Comme Mongo : le document naît des égalités du filtre, puis la mise à jour s'applique
+        doc = {};
+        for (const [cle, v] of Object.entries(filtre)) if (cle !== '$or' && v?.constructor !== Object) ecrire(doc, cle, v);
+        docs.push(doc);
+      }
       if (doc) appliquer(doc, maj);
       return requete(projeter(doc, options.projection));
     },
@@ -145,6 +153,7 @@ export const base = {
   candidatures: simuler(IllusionCandidature),
   fichiers: simuler(IllusionFichier),
   logs: simuler(RedirectLog),
+  budgets: simuler(Budget),
 };
 
 // Le modèle simulé répond par modele.repondre, que chaque test peut remplacer

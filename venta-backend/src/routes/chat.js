@@ -5,6 +5,7 @@ import { IllusionCandidature } from '../models/IllusionCandidature.js';
 import { getUserProfile, historique, profilPublic, MAX_MESSAGES } from '../services/utilisateurs.js';
 import { generateResponse } from '../services/chat/generer.js';
 import { processResponse } from '../services/chat/reponse.js';
+import { consommer } from '../services/budget.js';
 import { ouvrirVoixFlux } from '../services/tts.js';
 import { sendError, requireSession, ipClient, limite } from '../http.js';
 import { ERROR_MESSAGES } from '../messages.js';
@@ -32,6 +33,14 @@ const limiteAtteinte = (user) => ({
   tts: { isStaticFile: true, staticUrl: '/endmessage.mp3' },
 });
 
+// Plafond de dépense du jour atteint : une réponse fixe, sans appeler le modèle ni la voix
+const budgetDepasse = (user) => ({
+  reply: ERROR_MESSAGES.budgetReached,
+  userProfile: profilPublic(user),
+  activeUserId: user.id,
+  tts: { useClientTTS: true, text: ERROR_MESSAGES.budgetReached },
+});
+
 // Question valide et profil de la session, le message comptant avant l'appel au modèle ; null si une erreur est déjà partie
 async function preparer(req, res) {
   const { prompt } = req.body || {};
@@ -50,6 +59,8 @@ export function setupChatRoutes(app, openai) {
       const user = await preparer(req, res);
       if (!user) return;
       if (user.messageCount > MAX_MESSAGES) return res.json(limiteAtteinte(user));
+      // Avant tout appel payant : le plafond du jour, tous visiteurs confondus
+      if (!(await consommer('chat'))) return res.json(budgetDepasse(user));
 
       const { prompt, isEphemeral, jeton } = req.body;
       const ctx = { uiCommands: [] };
@@ -74,6 +85,10 @@ export function setupChatRoutes(app, openai) {
     const envoyer = (type, donnees) => res.write(`event: ${type}\ndata: ${JSON.stringify(donnees)}\n\n`);
     if (user.messageCount > MAX_MESSAGES) {
       envoyer('fin', limiteAtteinte(user));
+      return res.end();
+    }
+    if (!(await consommer('chat'))) {
+      envoyer('fin', budgetDepasse(user));
       return res.end();
     }
 
