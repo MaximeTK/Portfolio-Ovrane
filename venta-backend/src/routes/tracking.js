@@ -4,7 +4,7 @@
 import { RedirectLog, REDIRECT_CIBLES } from '../models/RedirectLog.js';
 import { saveVisitedLink } from '../services/utilisateurs.js';
 import { noterActivite } from '../services/conservation.js';
-import { sendError, requireSession, ipClient, ipTronquee } from '../http.js';
+import { sendError, requireSession } from '../http.js';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../messages.js';
 import { isNonEmptyString, isValidJeton, isRobotUserAgent } from '../validators.js';
 import * as log from '../log.js';
@@ -12,7 +12,8 @@ import * as log from '../log.js';
 const MAX_LIEN = 2048;
 
 export function setupTrackingRoutes(app) {
-  // Cible et jeton viennent du middleware de Next ; robot est toujours calculé ici, jamais reçu
+  // Cible et jeton viennent du middleware de Next ; robot est toujours calculé ici, jamais reçu. Ni l'IP ni le navigateur
+  // du recruteur ne sont gardés : la date, la cible et la candidature suffisent à savoir si elle a été lue
   app.post('/api/tracking/redirect', async (req, res, next) => {
     try {
       const { path, target, userAgent, cible, jeton } = req.body || {};
@@ -21,9 +22,6 @@ export function setupTrackingRoutes(app) {
       await RedirectLog.create({
         path: path.slice(0, MAX_LIEN),
         target: target.slice(0, MAX_LIEN),
-        // Tronquée : assez pour repérer un abus, jamais de quoi désigner la machine du recruteur
-        ip: ipTronquee(ipClient(req)),
-        userAgent: typeof userAgent === 'string' && userAgent ? userAgent.slice(0, 512) : 'unknown',
         cible: REDIRECT_CIBLES.includes(cible) ? cible : undefined,
         jeton: isValidJeton(jeton) ? jeton : undefined,
         robot,

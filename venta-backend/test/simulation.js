@@ -78,6 +78,7 @@ function appliquer(doc, maj) {
       else if (op === '$addToSet') ecrire(doc, chemin, [...new Set([...(valeur(doc, chemin) ?? []), v])]);
       else if (op === '$push') ecrire(doc, chemin, [...(valeur(doc, chemin) ?? []), ...v.$each].slice(v.$slice ?? 0));
       else if (op === '$max') { if (valeur(doc, chemin) == null || v > valeur(doc, chemin)) ecrire(doc, chemin, v); }
+      else if (op === '$unset') delete doc[chemin];
       else throw new Error(`Mise à jour non simulée : ${op}`);
     }
   }

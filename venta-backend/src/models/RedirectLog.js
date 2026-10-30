@@ -17,14 +17,6 @@ const redirectLogSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  ip: {
-    type: String,
-    default: 'unknown'
-  },
-  userAgent: {
-    type: String,
-    default: 'unknown'
-  },
   // Liens d'Illusion : jeton de la candidature, absent sur les anciens liens
   jeton: {
     type: String,
@@ -35,7 +27,7 @@ const redirectLogSchema = new mongoose.Schema({
     type: String,
     enum: REDIRECT_CIBLES
   },
-  // Déduit du user-agent par le serveur : scanner de messagerie, aperçu, crawler...
+  // Déduit du user-agent par le serveur, qui ne garde que ce verdict : scanner de messagerie, aperçu, crawler...
   robot: {
     type: Boolean
   },

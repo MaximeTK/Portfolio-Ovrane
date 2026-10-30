@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 import { Session } from '../src/models/Session.js';
 import { MAX_MESSAGES } from '../src/services/utilisateurs.js';
 import { purger } from '../src/services/conservation.js';
-import { ipClient, ipTronquee } from '../src/http.js';
+import { ipClient } from '../src/http.js';
 import { config } from '../src/config.js';
 import { preparerPourVoix } from '../src/services/tts.js';
 import { signerVoix } from '../src/services/voix.js';
@@ -789,19 +789,13 @@ test('plafond du jour : au-delà, le chat répond sans appeler le modèle et la 
   }
 });
 
-test('IP tronquée pour les clics : /24 en IPv4, /48 en IPv6, IPv4 encapsulée comprise, rien pour une non-IP', () => {
-  assert.equal(ipTronquee('203.0.113.7'), '203.0.113.0');
-  assert.equal(ipTronquee('::ffff:198.51.100.42'), '198.51.100.0');
-  assert.equal(ipTronquee('2001:db8:abcd:12:3456::1'), '2001:db8:abcd::');
-  assert.equal(ipTronquee('2001:db8::1'), '2001:db8:0::');
-  assert.equal(ipTronquee('pas-une-ip'), undefined);
-  assert.equal(ipTronquee(undefined), undefined);
-});
-
-test('purge : les empreintes d\'IP d\'avant s\'effacent aussi des comptes actifs', async () => {
+test('purge : les empreintes d\'IP d\'avant s\'effacent aussi des comptes actifs, l\'IP et le navigateur des clics aussi', async () => {
   base.users.push({ id: 'cactif-ip', email: 'actif-ip@exemple.fr', lastVisit: new Date(), ipHashes: ['ancienne'] });
+  base.logs.push({ path: '/redirectcv', target: '/cv.pdf', ip: '203.0.113.0', userAgent: 'Mozilla/5.0', robot: false, timestamp: new Date() });
   await purger();
   assert.deepEqual(profil('cactif-ip').ipHashes, []);
+  const clic = base.logs.at(-1);
+  assert.deepEqual([clic.path, 'ip' in clic, 'userAgent' in clic, clic.robot], ['/redirectcv', false, false, false]);
 });
 
 test('vérification de l\'adresse : lien envoyé à l\'inscription, à usage unique, dit par le compte', async () => {

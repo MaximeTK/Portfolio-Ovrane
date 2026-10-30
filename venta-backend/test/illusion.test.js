@@ -294,7 +294,7 @@ test('GET cv : sans fichier ou jeton inconnu en 404, jeton mal formé sans lectu
   assert.equal(lectures.length, avant);
 });
 
-test('suivi de redirection : cible, jeton et robot calculés par le serveur, IP du visiteur relayée', async () => {
+test('suivi de redirection : cible, jeton et robot calculés par le serveur, ni IP ni navigateur gardés', async () => {
   const avant = base.logs.length;
   const envoyer = (body, ip) => appeler('/api/tracking/redirect', { method: 'POST', body, ip });
   const linkedin = 'https://www.linkedin.com/in/maxime-thiong-kay/';
@@ -303,7 +303,8 @@ test('suivi de redirection : cible, jeton et robot calculés par le serveur, IP 
   assert.equal((await envoyer({ path: '/redirectcv-orange', target: '/assets/cv.pdf', userAgent: CHROME })).status, 200);
   assert.equal((await envoyer({ path: '/redirectx', target: '/', cible: 'evil', jeton: 'ABC', userAgent: 'curl/8.9.1', robot: false })).status, 200);
   const [office, chrome, ancien, force] = base.logs.slice(avant);
-  assert.deepEqual([office.cible, office.jeton, office.robot, office.ip], ['linkedin', JETON, true, '203.0.113.0']);
+  assert.deepEqual([office.cible, office.jeton, office.robot], ['linkedin', JETON, true]);
+  for (const clic of [office, chrome]) assert.deepEqual(['ip' in clic, 'userAgent' in clic], [false, false]);
   assert.deepEqual([chrome.cible, chrome.jeton, chrome.robot], ['linkedin', JETON, false]);
   assert.deepEqual([ancien.cible, ancien.jeton, ancien.robot, ancien.target], [undefined, undefined, false, '/assets/cv.pdf']);
   assert.deepEqual([force.cible, force.jeton, force.robot], [undefined, undefined, true]);

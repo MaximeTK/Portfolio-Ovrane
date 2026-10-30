@@ -18,6 +18,8 @@ export async function purger(maintenant = Date.now()) {
   const comptes = await User.updateMany({ email: { $exists: true }, lastVisit: { $lt: limite } }, { $set: { conversations: [], visitedLinks: [], ipHashes: [] } });
   // Les empreintes d'IP ne sont plus collectées : celles d'avant s'effacent partout, actifs compris
   await User.updateMany({ 'ipHashes.0': { $exists: true } }, { $set: { ipHashes: [] } });
+  // Ni l'IP ni le navigateur des clics : ceux d'avant s'effacent aussi (hors du schéma, d'où strict: false)
+  await RedirectLog.updateMany({ $or: [{ ip: { $exists: true } }, { userAgent: { $exists: true } }] }, { $unset: { ip: '', userAgent: '' } }, { strict: false });
   // Les clics d'une candidature vivent tant qu'elle est active ; ceux sans candidature n'ont que leur propre date
   const jetons = await RedirectLog.distinct('jeton', { jeton: { $exists: true } });
   const actifs = new Set(await IllusionCandidature.distinct('jeton', {

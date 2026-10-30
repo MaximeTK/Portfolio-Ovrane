@@ -517,6 +517,9 @@ function EnDirect() {
       <p className="live-tete"><span className="voyant-live" aria-hidden="true" /><span className="live-titre">{appel.titre || 'Appel'} — transcription en cours</span>
         <time aria-label="Durée de l'appel">{minutes(Math.max(0, maintenant - direct.debut))}</time></p>
       <p className="meta-f">{[mode === 'pc' ? "Sur le PC · micro et son de l'appel" : 'Téléphone en haut-parleur · micro seul, voix séparées', appel.offre].filter(Boolean).join(' · ')}</p>
+      {/* Dite à voix haute, l'annonce entre dans la transcription avec la réponse : prévenu, l'interlocuteur qui ne s'y oppose pas
+          est présumé d'accord (C. pén., art. 226-1) ; s'il refuse, on termine l'appel et on le supprime */}
+      <p className="aide-champ">À dire en premier : « Je prends des notes avec un outil de transcription, cela vous convient ? » S&apos;il refuse, terminez l&apos;appel puis supprimez-le.</p>
       <ol className="tours-direct" ref={liste} aria-live="polite">
         {direct.tours.map((t) => (
           <li key={`${t.piste}-${t.ordre}`}><b className={mode === 'pc' && t.piste === 'micro' ? 'v-moi' : 'v-autre'}>{nomEnDirect(t.piste, t.locuteur, mode)}</b>{t.texte}</li>

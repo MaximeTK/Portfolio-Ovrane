@@ -43,9 +43,9 @@ const TRAITEMENTS = [
   },
   {
     titre: 'Les liens de mes candidatures',
-    donnees: "Quand vous ouvrez un lien envoyé avec une de mes candidatures (CV, LinkedIn, GitHub, portfolio) : le lien, sa destination, l'adresse IP tronquée (sans ses derniers chiffres, qui désigneraient votre machine), le navigateur, la date et la référence de la candidature.",
+    donnees: "Quand vous ouvrez un lien envoyé avec une de mes candidatures (CV, lettre, LinkedIn, GitHub, portfolio) : le lien, sa destination, la date, la référence de la candidature, et si l'ouverture vient d'un robot (scanner de messagerie, aperçu de lien). Ni votre adresse IP ni votre navigateur ne sont gardés.",
     pourquoi: 'Savoir si ma candidature a été consultée.',
-    base: 'Intérêt légitime : suivre mes propres candidatures.',
+    base: "Intérêt légitime : suivre mes propres candidatures. Vous pouvez vous y opposer : les adresses affichées sur le CV et la lettre s'ouvrent aussi en les tapant, sans passer par ce site, et vos clics s'effacent sur simple demande à l'adresse de contact.",
     duree: "90 jours après la dernière activité liée à la candidature (visite, clic, réponse reçue), puis suppression automatique.",
   },
   {
