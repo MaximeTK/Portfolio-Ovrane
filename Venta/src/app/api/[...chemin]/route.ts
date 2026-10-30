@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { relayerJson, sessionJeton } from '@/lib/proxy';
+import { corpsJson } from '@/lib/origine';
 
 // Liste blanche « méthode chemin » des routes relayées telles quelles au backend
 const ROUTES = new Set([
@@ -26,6 +27,7 @@ async function relayer(request: NextRequest, { params }: { params: Promise<{ che
   }
   let body: Record<string, unknown> | undefined;
   if (request.method === 'POST') {
+    if (!corpsJson(request.headers)) return NextResponse.json({ error: 'Requête invalide' }, { status: 415 });
     body = await request.json().catch(() => ({}));
     // Le jeton du recruteur vient du cookie posé par le middleware, jamais du corps
     if (chemin === 'chat') body = { ...body, jeton: sessionJeton(request) };

@@ -9,8 +9,12 @@ import { JETON_COOKIE, isValidJeton } from '@/lib/redirections';
 
 const SESSION_COOKIE = 'ovrane_session';
 
+// En production, le secret de service et les sessions ne partent qu'en https, sauf vers la machine elle-même ; vide sinon
 function backendUrl(): string {
-  return process.env.BACKEND_URL || 'http://127.0.0.1:3001';
+  const url = process.env.BACKEND_URL || 'http://127.0.0.1:3001';
+  if (process.env.NODE_ENV !== 'production' || /^https:\/\//i.test(url) || /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/i.test(url)) return url;
+  console.error('[relai] BACKEND_URL refusé : en production, le backend se joint en https');
+  return '';
 }
 
 // Une route relaie sa requête, une page serveur ses en-têtes et ses cookies (next/headers) : les deux suffisent
@@ -46,8 +50,9 @@ type ForwardInit = { method?: string; body?: unknown; timeout?: number };
 /** Appel brut : null sans secret en production, exception si le backend est injoignable. */
 export async function forward(request: Source, path: string, init: ForwardInit = {}): Promise<Response | null> {
   const headers = enTetes(request);
-  if (!headers) return null;
-  return fetch(`${backendUrl()}${path}`, {
+  const base = backendUrl();
+  if (!headers || !base) return null;
+  return fetch(`${base}${path}`, {
     method: init.method ?? 'GET',
     headers,
     ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
@@ -59,12 +64,13 @@ export async function forward(request: Source, path: string, init: ForwardInit =
 /** Relai des pages d'Illusion : méthode, corps brut et son type tels quels, réponse en flux (téléversements et téléchargements compris). */
 export async function relayerIllusion(request: NextRequest, path: string): Promise<Response> {
   const headers = enTetes(request);
-  if (headers) {
+  const base = backendUrl();
+  if (headers && base) {
     const type = request.headers.get('content-type');
     if (type) headers['Content-Type'] = type;
     else delete headers['Content-Type'];
     try {
-      const response = await fetch(`${backendUrl()}${path}`, {
+      const response = await fetch(`${base}${path}`, {
         method: request.method,
         headers,
         body: request.body,

@@ -68,6 +68,24 @@ test('front : destinations, anciennes inchangées, GitHub et accueil ajoutés', 
   assert.equal(REDIRECT_TARGETS.portfolio, '/');
 });
 
+test('front : seules les mutations venues du site passent, et les relais JSON n\'acceptent que du JSON', async () => {
+  const { requeteDuSite, corpsJson } = await front('origine.ts');
+  const site = 'https://www.ovrane.net';
+  const h = (entetes) => new Headers(entetes);
+  assert.equal(requeteDuSite('POST', h({ 'sec-fetch-site': 'same-origin', origin: site }), site), true);
+  assert.equal(requeteDuSite('POST', h({}), site), true, 'client hors navigateur, sans session de navigateur');
+  assert.equal(requeteDuSite('GET', h({ 'sec-fetch-site': 'cross-site', origin: 'https://autre.example' }), site), true, 'une lecture passe');
+  for (const entetes of [{ 'sec-fetch-site': 'cross-site' }, { 'sec-fetch-site': 'same-site' }, { origin: 'https://autre.example' }, { origin: 'null' },
+    { 'sec-fetch-site': 'same-origin', origin: 'https://www.ovrane.net.autre.example' }]) {
+    for (const methode of ['POST', 'put', 'PATCH', 'DELETE']) assert.equal(requeteDuSite(methode, h(entetes), site), false, `${methode} ${JSON.stringify(entetes)}`);
+  }
+  assert.equal(corpsJson(h({ 'content-type': 'application/json' })), true);
+  assert.equal(corpsJson(h({ 'content-type': 'application/json; charset=utf-8' })), true);
+  for (const type of ['text/plain', 'application/x-www-form-urlencoded', 'multipart/form-data; boundary=x', 'application/jsonp', '']) {
+    assert.equal(corpsJson(h(type ? { 'content-type': type } : {})), false, type);
+  }
+});
+
 test('format du jeton identique côté front et backend', async () => {
   const { isValidJeton: isValidJetonFront } = await front('redirections.ts');
   const cases = [[JETON, true], ['0123456789', true], ['K3F9A0X2M1', false], ['k3f9a0x2m', false],

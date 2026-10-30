@@ -2,10 +2,18 @@ import { NextResponse } from 'next/server';
 import type { NextRequest, NextFetchEvent } from 'next/server';
 import { forward } from '@/lib/proxy';
 import { JETON_COOKIE, REDIRECT_TARGETS, parseRedirectPath } from '@/lib/redirections';
+import { requeteDuSite } from '@/lib/origine';
 
 export function middleware(request: NextRequest, event: NextFetchEvent) {
   const url = request.nextUrl;
   const path = url.pathname.toLowerCase();
+
+  // L'API n'accepte de mutation que du site lui-même
+  if (path.startsWith('/api/')) {
+    return requeteDuSite(request.method, request.headers, url.origin)
+      ? NextResponse.next()
+      : NextResponse.json({ error: 'Requête refusée' }, { status: 403 });
+  }
 
   // Mots-clés redirectcvdesign, redirectcv, redirectlinkedin, redirectgithub, redirectportfolio, avec jeton éventuel
   const link = parseRedirectPath(path);
@@ -35,7 +43,7 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   return response;
 }
 
-// Ni les routes d'API, ni les fichiers statiques, ni les images : seulement les pages, où vivent les liens suivis
+// Les routes d'API pour leur garde, et les pages, où vivent les liens suivis ; ni les fichiers statiques, ni les images
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|assets).*)'],
+  matcher: ['/api/:path*', '/((?!api|_next/static|_next/image|favicon.ico|assets).*)'],
 };
