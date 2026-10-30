@@ -4,7 +4,7 @@
 import { RedirectLog, REDIRECT_CIBLES } from '../models/RedirectLog.js';
 import { saveVisitedLink } from '../services/utilisateurs.js';
 import { noterActivite } from '../services/conservation.js';
-import { sendError, requireSession, ipClient } from '../http.js';
+import { sendError, requireSession, ipClient, ipTronquee } from '../http.js';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../messages.js';
 import { isNonEmptyString, isValidJeton, isRobotUserAgent } from '../validators.js';
 import * as log from '../log.js';
@@ -21,7 +21,8 @@ export function setupTrackingRoutes(app) {
       await RedirectLog.create({
         path: path.slice(0, MAX_LIEN),
         target: target.slice(0, MAX_LIEN),
-        ip: ipClient(req),
+        // Tronquée : assez pour repérer un abus, jamais de quoi désigner la machine du recruteur
+        ip: ipTronquee(ipClient(req)),
         userAgent: typeof userAgent === 'string' && userAgent ? userAgent.slice(0, 512) : 'unknown',
         cible: REDIRECT_CIBLES.includes(cible) ? cible : undefined,
         jeton: isValidJeton(jeton) ? jeton : undefined,

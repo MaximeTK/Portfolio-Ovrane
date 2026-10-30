@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 import { Session } from '../src/models/Session.js';
 import { MAX_MESSAGES } from '../src/services/utilisateurs.js';
 import { purger } from '../src/services/conservation.js';
-import { ipClient } from '../src/http.js';
+import { ipClient, ipTronquee } from '../src/http.js';
 import { config } from '../src/config.js';
 import { preparerPourVoix } from '../src/services/tts.js';
 import { ERROR_MESSAGES, MAILS, MISC_MESSAGES } from '../src/messages.js';
@@ -402,7 +402,7 @@ test('chat : message compté avant le modèle, éphémère compris ; au-delà de
   assert.equal(user.messageCount, MAX_MESSAGES + 1, 'compteur plafonné');
 });
 
-test('chat : visite comptée une fois par heure, IP gardée en empreinte seulement', async () => {
+test('chat : visite comptée une fois par heure, IP jamais gardée, même en empreinte', async () => {
   const { id, session } = await visiteur();
   const user = profil(id);
   await appeler('/api/chat', { method: 'POST', session, ip: '203.0.113.50', body: { prompt: 'Bonjour' } });
@@ -411,7 +411,7 @@ test('chat : visite comptée une fois par heure, IP gardée en empreinte seuleme
   const res = await appeler('/api/chat', { method: 'POST', session, ip: '203.0.113.50', body: { prompt: 'Rebonjour' } });
   assert.equal(user.visitCount, 2);
   assert.equal(res.json.userProfile.visitCount, 2);
-  assert.ok(user.ipHashes.includes(sha256('203.0.113.50').slice(0, 16)));
+  assert.deepEqual(user.ipHashes ?? [], [], 'plus aucune empreinte d\'IP');
   assert.ok(!JSON.stringify(user).includes('203.0.113.50'));
 });
 
@@ -572,7 +572,8 @@ test('connexion : pseudo aux espaces multiples, retrouvé comme à l\'inscriptio
 
 test('configuration : le serveur refuse de démarrer sans NODE_ENV connu ni secret en production', () => {
   const demarrer = (env) => spawnSync(process.execPath, ['src/server.js'], { cwd: new URL('..', import.meta.url), env: { ...process.env, ...env }, encoding: 'utf8', timeout: 20_000 });
-  for (const [env, attendu] of [[{ NODE_ENV: '' }, 'NODE_ENV'], [{ NODE_ENV: 'staging' }, 'NODE_ENV'], [{ NODE_ENV: 'production', SERVICE_SECRET: '' }, 'SERVICE_SECRET']]) {
+  for (const [env, attendu] of [[{ NODE_ENV: '' }, 'NODE_ENV'], [{ NODE_ENV: 'staging' }, 'NODE_ENV'], [{ NODE_ENV: 'production', SERVICE_SECRET: '' }, 'SERVICE_SECRET'],
+    [{ NODE_ENV: 'production', ILLUSION_SERVICE_SECRET: 's', ILLUSION_URL: 'http://illusion.exemple.fr' }, 'ILLUSION_URL']]) {
     const { status, stderr } = demarrer(env);
     assert.equal(status, 1, JSON.stringify(env));
     assert.ok(stderr.includes(attendu), stderr);
@@ -684,4 +685,19 @@ test('plafond du jour : au-delà, le chat répond sans appeler le modèle et la 
     Object.assign(config.budget, avant);
     base.budgets.length = 0;
   }
+});
+
+test('IP tronquée pour les clics : /24 en IPv4, /48 en IPv6, IPv4 encapsulée comprise, rien pour une non-IP', () => {
+  assert.equal(ipTronquee('203.0.113.7'), '203.0.113.0');
+  assert.equal(ipTronquee('::ffff:198.51.100.42'), '198.51.100.0');
+  assert.equal(ipTronquee('2001:db8:abcd:12:3456::1'), '2001:db8:abcd::');
+  assert.equal(ipTronquee('2001:db8::1'), '2001:db8:0::');
+  assert.equal(ipTronquee('pas-une-ip'), undefined);
+  assert.equal(ipTronquee(undefined), undefined);
+});
+
+test('purge : les empreintes d\'IP d\'avant s\'effacent aussi des comptes actifs', async () => {
+  base.users.push({ id: 'cactif-ip', email: 'actif-ip@exemple.fr', lastVisit: new Date(), ipHashes: ['ancienne'] });
+  await purger();
+  assert.deepEqual(profil('cactif-ip').ipHashes, []);
 });

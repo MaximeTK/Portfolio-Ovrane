@@ -38,6 +38,20 @@ function clePourLimite(req) {
   return `${groupes.slice(0, 4).map((groupe) => parseInt(groupe || '0', 16).toString(16)).join(':')}::/64`;
 }
 
+// L'IP d'un clic sans ce qui désigne la machine : /24 en IPv4, /48 en IPv6 ; undefined si ce n'est pas une IP
+export function ipTronquee(ip) {
+  if (net.isIPv4(ip || '')) return `${ip.split('.').slice(0, 3).join('.')}.0`;
+  if (!net.isIPv6(ip || '')) return undefined;
+  // Une IPv4 encapsulée (::ffff:203.0.113.7) se tronque comme une IPv4
+  const encapsulee = ip.match(/:(\d+\.\d+\.\d+\.\d+)$/);
+  if (encapsulee) return ipTronquee(encapsulee[1]);
+  const [avant, apres] = ip.split('::');
+  const debut = avant ? avant.split(':') : [];
+  const fin = apres ? apres.split(':') : [];
+  const groupes = apres === undefined ? debut : [...debut, ...Array(8 - debut.length - fin.length).fill('0'), ...fin];
+  return `${groupes.slice(0, 3).map((groupe) => parseInt(groupe || '0', 16).toString(16)).join(':')}::`;
+}
+
 // Seul Next appelle le backend
 export function requireService(req, res, next) {
   if (serviceValide(req)) return next();

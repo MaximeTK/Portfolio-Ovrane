@@ -7,7 +7,7 @@ import { User } from '../models/User.js';
 import { creerSession, lireSession, revoquerSession } from '../services/sessions.js';
 import { demanderReinitialisation, reinitialiser } from '../services/reinitialisation.js';
 import { compterVisite, profilPublic } from '../services/utilisateurs.js';
-import { sendError, egal, ipClient, limite } from '../http.js';
+import { sendError, egal, limite } from '../http.js';
 import { config } from '../config.js';
 import { ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
 import * as log from '../log.js';
@@ -105,7 +105,7 @@ export function setupAuthRoutes(app) {
       const valide = await bcrypt.compare(String(password), compte?.passwordHash || HASH_FACTICE);
       if (!compte?.passwordHash || !valide) return sendError(res, 401, ERROR_MESSAGES.invalidCredentials);
 
-      const user = await compterVisite(compte.id, ipClient(req));
+      const user = await compterVisite(compte.id);
       res.json({ reply: MISC_MESSAGES.welcomeBack(user.name), userProfile: profilPublic(user, false), activeUserId: user.id, session: await ouvrirSession(req, user.id) });
     } catch (error) {
       next(error);

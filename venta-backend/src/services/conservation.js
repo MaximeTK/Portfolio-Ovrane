@@ -16,6 +16,8 @@ export async function purger(maintenant = Date.now()) {
   const visiteurs = await User.deleteMany({ email: { $exists: false }, lastVisit: { $lt: limite } });
   // Un compte inactif garde ses identifiants, pas ce qu'il a dit ni d'où il venait
   const comptes = await User.updateMany({ email: { $exists: true }, lastVisit: { $lt: limite } }, { $set: { conversations: [], visitedLinks: [], ipHashes: [] } });
+  // Les empreintes d'IP ne sont plus collectées : celles d'avant s'effacent partout, actifs compris
+  await User.updateMany({ 'ipHashes.0': { $exists: true } }, { $set: { ipHashes: [] } });
   // Les clics d'une candidature vivent tant qu'elle est active ; ceux sans candidature n'ont que leur propre date
   const jetons = await RedirectLog.distinct('jeton', { jeton: { $exists: true } });
   const actifs = new Set(await IllusionCandidature.distinct('jeton', {

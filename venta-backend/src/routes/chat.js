@@ -7,7 +7,7 @@ import { generateResponse } from '../services/chat/generer.js';
 import { processResponse } from '../services/chat/reponse.js';
 import { consommer } from '../services/budget.js';
 import { ouvrirVoixFlux } from '../services/tts.js';
-import { sendError, requireSession, ipClient, limite } from '../http.js';
+import { sendError, requireSession, limite } from '../http.js';
 import { ERROR_MESSAGES } from '../messages.js';
 import { isNonEmptyString, isValidJeton } from '../validators.js';
 import * as log from '../log.js';
@@ -45,7 +45,7 @@ const budgetDepasse = (user) => ({
 async function preparer(req, res) {
   const { prompt } = req.body || {};
   const refus = !isNonEmptyString(prompt) ? [400, ERROR_MESSAGES.promptRequired] : prompt.length > MAX_PROMPT ? [413, ERROR_MESSAGES.promptTooLong] : null;
-  const user = refus ? null : await getUserProfile(req.user.id, ipClient(req));
+  const user = refus ? null : await getUserProfile(req.user.id);
   if (!user) sendError(res, ...(refus ?? [401, ERROR_MESSAGES.sessionRequired]));
   return user;
 }

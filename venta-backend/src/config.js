@@ -15,6 +15,19 @@ if (!env.MONGODB_URI) erreurs.push('MONGODB_URI absent.');
 if (!env.MONGODB_DB) erreurs.push('MONGODB_DB absent.');
 if (!env.OPENAI_API_KEY) erreurs.push('OPENAI_API_KEY absent.');
 
+// Le relais vers Illusion porte son secret, l'e-mail du compte et des CV : en production, jamais en clair hors de la machine
+const illusionUrl = (env.ILLUSION_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+if (production && env.ILLUSION_SERVICE_SECRET) {
+  try {
+    const { protocol, hostname } = new URL(illusionUrl);
+    if (protocol !== 'https:' && !['localhost', '127.0.0.1', '[::1]'].includes(hostname)) {
+      erreurs.push('ILLUSION_URL doit être en https:// en production, sauf sur la machine elle-même.');
+    }
+  } catch {
+    erreurs.push('ILLUSION_URL invalide.');
+  }
+}
+
 export const config = {
   production,
   // Raisons de refuser le démarrage, vérifiées par server.js
@@ -36,7 +49,7 @@ export const config = {
   mails: { resendKey: env.RESEND_API_KEY, expediteur: env.MAIL_FROM },
   // Pages d'Illusion intégrées au site : son serveur et le secret qu'il attend de ce backend ; sans secret, le relais est coupé
   illusion: {
-    url: (env.ILLUSION_URL || 'http://127.0.0.1:8000').replace(/\/+$/, ''),
+    url: illusionUrl,
     secret: env.ILLUSION_SERVICE_SECRET || '',
     // Sans un octet d'Illusion pendant ce délai, la requête est abandonnée : un CV bâti ou l'essai d'un modèle y tiennent
     delai: 120_000,

@@ -1,7 +1,6 @@
 /**
  * Profils utilisateurs dans MongoDB : visites, messages, conversations, préférences et liens d'arrivée
  */
-import crypto from 'crypto';
 import { User } from '../models/User.js';
 
 export const MAX_MESSAGES = 50;
@@ -14,30 +13,29 @@ export function profilPublic(user, nouveau) {
   return { name: user.name ?? null, visitCount, isNewUser: nouveau ?? visitCount === 1, messageCount: user.messageCount || 0 };
 }
 
-// Une visite compte si la précédente date de plus d'une heure ; l'IP n'est gardée qu'en empreinte
-function visite(ip) {
+// Une visite compte si la précédente date de plus d'une heure ; l'IP ne sert qu'aux limites de débit, jamais gardée
+function visite() {
   const maintenant = new Date();
   const ecart = { $subtract: [maintenant, { $ifNull: ['$lastVisit', new Date(0)] }] };
   return {
     visitCount: { $cond: [{ $gt: [ecart, UNE_HEURE] }, { $add: [{ $ifNull: ['$visitCount', 0] }, 1] }, '$visitCount'] },
     lastVisit: maintenant,
-    ipHashes: { $setUnion: [{ $ifNull: ['$ipHashes', []] }, [crypto.createHash('sha256').update(String(ip)).digest('hex').slice(0, 16)]] },
   };
 }
 
 // Profil du chat : compte la visite et le message avant l'appel au modèle, avec les 8 derniers échanges
-export function getUserProfile(id, ip) {
+export function getUserProfile(id) {
   return User.findOneAndUpdate(
     { id },
-    [{ $set: { ...visite(ip), messageCount: { $min: [{ $add: [{ $ifNull: ['$messageCount', 0] }, 1] }, MAX_MESSAGES + 1] } } }],
+    [{ $set: { ...visite(), messageCount: { $min: [{ $add: [{ $ifNull: ['$messageCount', 0] }, 1] }, MAX_MESSAGES + 1] } } }],
     { returnDocument: 'after', updatePipeline: true, projection: { _id: 0, id: 1, name: 1, visitCount: 1, messageCount: 1, preferences: 1, conversations: { $slice: -8 } } },
   ).lean();
 }
 
-export function compterVisite(id, ip) {
+export function compterVisite(id) {
   return User.findOneAndUpdate(
     { id },
-    [{ $set: visite(ip) }],
+    [{ $set: visite() }],
     { returnDocument: 'after', updatePipeline: true, projection: { _id: 0, id: 1, name: 1, visitCount: 1, messageCount: 1 } },
   ).lean();
 }
