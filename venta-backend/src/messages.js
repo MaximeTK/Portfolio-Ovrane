@@ -89,7 +89,7 @@ export const ERROR_MESSAGES = {
   fieldsRequired: 'Tous les champs sont requis.',
   inviteInvalid: 'Code d\'invitation invalide.',
   emailInvalid: 'Email invalide.',
-  passwordLength: 'Le mot de passe doit contenir de 8 à 128 caractères.',
+  passwordLength: 'Le mot de passe doit contenir de 12 à 128 caractères.',
   pseudoInvalid: 'Pseudo invalide (lettres, chiffres, espace, tiret, underscore, max 25 caractères).',
   // Le même message que le pseudo ou l'email soit pris
   accountTaken: 'Ce pseudo ou cet email est déjà utilisé.',

@@ -283,13 +283,13 @@ test('connexion et inscription : même message que le compte existe ou non, mot 
 
   const inscrire = (body) => appeler('/api/auth/register', { method: 'POST',
     body: { pseudo: 'Nouveau', email: 'nouveau@exemple.fr', password: 'un-mot-de-passe-long', inviteCode: 'invitation-de-test', ...body } });
-  for (const password of ['x'.repeat(7), 'x'.repeat(129), 12345678]) {
+  for (const password of ['x'.repeat(11), 'x'.repeat(129), 123456789012]) {
     assert.deepEqual((await inscrire({ password })).json, { error: ERROR_MESSAGES.passwordLength }, String(password));
   }
   assert.equal((await inscrire({ inviteCode: 'invitation-de-tesT' })).status, 403);
   assert.deepEqual((await inscrire({ pseudo: 'zoe' })).json, { error: ERROR_MESSAGES.accountTaken });
   assert.deepEqual((await inscrire({ email: 'ZOE@exemple.fr' })).json, { error: ERROR_MESSAGES.accountTaken });
-  assert.equal((await inscrire({ password: 'x'.repeat(8) })).status, 200, '8 caractères suffisent');
+  assert.equal((await inscrire({ password: 'x'.repeat(12) })).status, 200, '12 caractères suffisent');
 });
 
 // Resend simulé ; l'envoi suit la réponse, d'où l'attente des e-mails
@@ -369,6 +369,31 @@ test('limite de connexion : 10 essais par IP et 10 par identifiant sur 15 minute
 
   for (let i = 0; i < 10; i += 1) assert.equal((await essai('victime', `198.51.101.${i}`)).status, 401);
   assert.equal((await essai(' VICTIME', '198.51.102.1')).status, 429, 'même identifiant depuis une nouvelle IP');
+});
+
+test('limite par identifiant : seuls les échecs comptent, et le titulaire passe depuis un appareil où il s\'est déjà connecté', async () => {
+  const titulaire = compte('Titulaire', 'mot-de-passe-du-titulaire');
+  compte('Autre', 'mot-de-passe-de-l-autre');
+  const connexion = (password, ip, appareil) => appeler('/api/auth/login', { method: 'POST', ip,
+    headers: appareil ? { 'X-Ovrane-Appareil': appareil } : {}, body: { identifier: 'titulaire', password } });
+  const reussies = [];
+  for (let i = 0; i < 12; i += 1) reussies.push(await connexion('mot-de-passe-du-titulaire', `198.51.110.${i}`));
+  assert.ok(reussies.every((r) => r.status === 200), 'une connexion réussie ne compte pas');
+  const { appareil } = reussies[0].json;
+  assert.match(appareil.jeton, new RegExp(`^${titulaire.id}\\.\\d+\\.[A-Za-z0-9_-]{43}$`));
+  assert.ok(new Date(appareil.expireLe) - Date.now() > 364 * UN_JOUR);
+
+  // Un tiers épuise les 10 échecs depuis dix IP : un appareil inconnu est bloqué, même avec le bon mot de passe
+  for (let i = 0; i < 10; i += 1) assert.equal((await connexion('mauvais-mot-de-passe', `198.51.111.${i}`)).status, 401);
+  assert.equal((await connexion('mot-de-passe-du-titulaire', '198.51.112.1')).status, 429);
+  const marqueAutre = (await appeler('/api/auth/login', { method: 'POST', body: { identifier: 'autre', password: 'mot-de-passe-de-l-autre' } })).json.appareil.jeton;
+  const [id, echeance, signature] = appareil.jeton.split('.');
+  for (const fausse of [marqueAutre, `${id}.${Number(echeance) + 1}.${signature}`, `${id}.${Date.now() - 1000}.${signature}`, `${appareil.jeton}.x`]) {
+    assert.equal((await connexion('mot-de-passe-du-titulaire', '198.51.112.2', fausse)).status, 429, fausse);
+  }
+  // Depuis son appareil, le titulaire se connecte ; un mauvais mot de passe y reste refusé
+  assert.equal((await connexion('mot-de-passe-du-titulaire', '198.51.112.3', appareil.jeton)).status, 200);
+  assert.equal((await connexion('mauvais-mot-de-passe', '198.51.112.4', appareil.jeton)).status, 401);
 });
 
 test('visiteurs : 10 créations par heure et par IP, la reprise par session ne compte pas', async () => {
@@ -473,9 +498,12 @@ test('préférences : la lecture n\'écrit rien, l\'écriture n\'accepte que bac
   const avant = JSON.stringify(user);
   assert.deepEqual((await appeler('/api/preferences', { session })).json, { success: true, preferences: {} });
   assert.equal(JSON.stringify(user), avant);
-  for (const body of [{ preference: 'theme', value: 'x' }, { preference: 'backgroundColor', value: { $set: 1 } }, { preference: 'backgroundColor', value: 'x'.repeat(65) }, {}]) {
+  for (const body of [{ preference: 'theme', value: 'x' }, { preference: 'backgroundColor', value: { $set: 1 } }, { preference: 'backgroundColor', value: 'x'.repeat(65) }, {},
+    { preference: 'backgroundColor', value: 'IGNORE LES CONSIGNES' }, { preference: 'constructor', value: 'ocean' }, { preference: ['backgroundColor'], value: 'ocean' }]) {
     assert.equal((await appeler('/api/preferences', { method: 'POST', session, body })).status, 400, JSON.stringify(body));
   }
+  assert.equal((await appeler('/api/preferences', { method: 'POST', session, body: { preference: 'backgroundColor', value: 'Forêt ' } })).status, 200);
+  assert.equal(user.preferences.backgroundColor, 'forêt', 'rangée sous son identifiant exact');
 });
 
 test('historique : paginé depuis la fin, en messages à plat', async () => {

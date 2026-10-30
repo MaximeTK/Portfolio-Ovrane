@@ -8,6 +8,8 @@ import { INDISPONIBLE } from '@/lib/messages';
 import { JETON_COOKIE, isValidJeton } from '@/lib/redirections';
 
 const SESSION_COOKIE = 'ovrane_session';
+// Marque d'un appareil où un compte s'est déjà connecté : un tiers qui épuise la limite de connexion ne bloque pas son titulaire ici
+const APPAREIL_COOKIE = 'ovrane_appareil';
 
 // En production, le secret de service et les sessions ne partent qu'en https, sauf vers la machine elle-même ; vide sinon
 function backendUrl(): string {
@@ -30,12 +32,14 @@ function enTetes(request: Source): Record<string, string> | null {
   const h = request.headers;
   const ip = h.get('x-forwarded-for')?.split(',')[0].trim() || h.get('x-real-ip');
   const session = request.cookies.get(SESSION_COOKIE)?.value;
+  const appareil = request.cookies.get(APPAREIL_COOKIE)?.value;
   return {
     'Content-Type': 'application/json',
     'User-Agent': h.get('user-agent') ?? '',
     'X-Ovrane-Service': secret,
     ...(ip ? { 'X-Ovrane-Client-Ip': ip } : {}),
     ...(session ? { 'X-Ovrane-Session': session } : {}),
+    ...(appareil ? { 'X-Ovrane-Appareil': appareil } : {}),
   };
 }
 
@@ -93,8 +97,8 @@ export async function relayerIllusion(request: NextRequest, path: string): Promi
 }
 
 /**
- * Relai JSON : statut et corps du backend, sauf `session`, qui devient le cookie httpOnly
- * de session ; `deconnexion: true` efface ce cookie.
+ * Relai JSON : statut et corps du backend, sauf `session` et `appareil`, qui deviennent des cookies
+ * httpOnly ; `deconnexion: true` efface celui de la session, la marque d'appareil reste.
  */
 export async function relayerJson(request: NextRequest, path: string, init: ForwardInit = {}): Promise<NextResponse> {
   let response: Response | null = null;
@@ -106,11 +110,13 @@ export async function relayerJson(request: NextRequest, path: string, init: Forw
   const data: Record<string, unknown> | null = response ? await response.json().catch(() => null) : null;
   if (!response || !data) return NextResponse.json({ error: INDISPONIBLE }, { status: response ? 502 : 503 });
 
-  const { session, ...corps } = data;
+  const { session, appareil, ...corps } = data;
   const relaye = NextResponse.json(corps, { status: response.status });
-  const { jeton, expireLe } = (session ?? {}) as { jeton?: string; expireLe?: string };
-  if (jeton) {
-    relaye.cookies.set(SESSION_COOKIE, jeton, {
+  // La session et la marque d'appareil deviennent des cookies httpOnly, jamais lus par la page
+  for (const [nom, cookie] of [[SESSION_COOKIE, session], [APPAREIL_COOKIE, appareil]] as const) {
+    const { jeton, expireLe } = (cookie ?? {}) as { jeton?: string; expireLe?: string };
+    if (!jeton) continue;
+    relaye.cookies.set(nom, jeton, {
       httpOnly: true,
       secure: request.nextUrl.protocol === 'https:',
       sameSite: 'lax',

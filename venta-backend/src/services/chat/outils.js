@@ -33,6 +33,15 @@ for (const ligne of lire('colors.txt')) {
   if (palette && ligne.startsWith('Description :')) palette.description = ligne.replace('Description :', '').trim();
 }
 
+// Identifiant exact d'une palette du catalogue, retrouvé sans tenir compte de la casse, des accents ni des espaces ;
+// null sinon : rien d'autre ne s'enregistre en préférence ni ne revient au modèle comme FOND ACTUEL
+const cleDePalette = (valeur) => String(valeur ?? '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s-]+/g, '_');
+export function paletteConnue(valeur) {
+  if (typeof valeur !== 'string' || valeur.length > 64) return null;
+  const cle = cleDePalette(valeur);
+  return PALETTES.find((palette) => cleDePalette(palette.id) === cle || (palette.nom && cleDePalette(palette.nom) === cle))?.id ?? null;
+}
+
 const resultat = (success, message) => JSON.stringify({ success, message });
 const SANS_PARAMETRE = { type: 'object', properties: {}, required: [] };
 
@@ -132,8 +141,9 @@ ${PALETTES.map((p) => `${p.id} — ${p.description || p.nom || ''}`).join('\n')}
       required: ['paletteId'],
     },
     executer({ paletteId }, ctx) {
-      const id = String(paletteId || '').trim();
-      if (!id) return resultat(false, 'paletteId manquant');
+      if (!String(paletteId || '').trim()) return resultat(false, 'paletteId manquant');
+      const id = paletteConnue(paletteId);
+      if (!id) return resultat(false, 'Palette inconnue : choisis un identifiant donné par getAvailableColors.');
       ctx.uiCommands.push({ command: 'SetBackground', parameter: id });
       return resultat(true, `Fond demandé: ${id}`);
     },

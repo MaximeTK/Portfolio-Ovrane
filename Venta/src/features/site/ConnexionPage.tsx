@@ -163,7 +163,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
         value={champs.password}
         onChange={changer('password')}
         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-        {...(mode === 'login' ? {} : { minLength: 8, maxLength: 128, aide: '8 caractères au moins.' })}
+        {...(mode === 'login' ? {} : { minLength: 12, maxLength: 128, aide: '12 caractères au moins.' })}
       />
       <label className="flex items-center gap-2.5 py-1 text-sm text-white/70">
         <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} className="h-4 w-4 accent-white" />

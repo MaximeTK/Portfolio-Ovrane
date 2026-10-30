@@ -154,6 +154,7 @@ export function LegalPage() {
           <ul className={`mt-4 list-disc space-y-2 pl-5 ${TEXTE}`}>
             <li>Un cookie de session, <code className="rounded bg-white/10 px-1 text-[0.9em]">ovrane_session</code>, illisible par les scripts de la page, garde votre visite : sans lui, la conversation ne peut pas reprendre.</li>
             <li>Un cookie de session, <code className="rounded bg-white/10 px-1 text-[0.9em]">ovrane_jeton</code>, n&apos;est posé que si vous arrivez par le lien d&apos;une de mes candidatures : il sert à vous accueillir en conséquence.</li>
+            <li>Un cookie de sécurité, <code className="rounded bg-white/10 px-1 text-[0.9em]">ovrane_appareil</code>, illisible par les scripts de la page, n&apos;est posé qu&apos;après une connexion à un compte et dure un an : il signale un appareil déjà connu, pour que des essais de mot de passe faits ailleurs ne bloquent pas votre connexion ici. Il ne contient que l&apos;identifiant interne du compte, signé.</li>
             <li>Le stockage local de votre navigateur garde vos réglages d&apos;affichage (voix coupée ou non, teinte des boîtes) et, si vous utilisez Illusion, les brouillons de ses formulaires, rangés sous votre compte et effacés à la déconnexion.</li>
             <li>Aucun cookie publicitaire, aucune mesure d&apos;audience tierce (ni Google Analytics, ni équivalent).</li>
           </ul>

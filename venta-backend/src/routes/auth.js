@@ -10,6 +10,7 @@ import { demanderVerification, verifier } from '../services/verification.js';
 import { compterVisite, profilPublic } from '../services/utilisateurs.js';
 import { signerVoix } from '../services/voix.js';
 import { defiResolu, nouveauDefi } from '../services/defi.js';
+import { appareilDe, marquerAppareil } from '../services/appareils.js';
 import { sendError, egal, limite, requireSession } from '../http.js';
 import { config } from '../config.js';
 import { ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
@@ -21,8 +22,8 @@ const HASH_FACTICE = '$2b$12$0L1gLi8C8ektlGfx8x6i3eeeWUWee6wpIA9Yn3PDcvG/i/M3lAC
 const PROFIL = { _id: 0, id: 1, name: 1, visitCount: 1, messageCount: 1 };
 
 const identifiant = (valeur) => String(valeur ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-// 8 caractères au moins, comme Illusion qui partage les comptes
-const motDePasseValide = (motDePasse) => typeof motDePasse === 'string' && motDePasse.length >= 8 && motDePasse.length <= 128;
+// 12 caractères au moins (CNIL, délibération 2022-100), comme Illusion qui partage les comptes
+const motDePasseValide = (motDePasse) => typeof motDePasse === 'string' && motDePasse.length >= 12 && motDePasse.length <= 128;
 const sessionRecue = (req) => req.get('x-ovrane-session');
 // L'accueil part signé : la voix du serveur ne lit que ses propres textes
 const dit = (reply) => ({ reply, voix: signerVoix(reply) });
@@ -66,6 +67,17 @@ async function exigerDefi(req, res, next) {
   }
 }
 
+// Le compte visé par une connexion, cherché une fois : la limite par identifiant et la vérification le lisent
+async function compteVise(req, res, next) {
+  try {
+    const ident = identifiant(req.body?.identifier);
+    req.compte = ident ? await User.findOne({ $or: [{ nameNormalized: ident }, { email: ident }] }, { _id: 0, id: 1, passwordHash: 1 }).lean() : null;
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function creerVisiteur(req, res, next) {
   try {
     // Né avec sa session : son identifiant, affiché au client, ne s'échange jamais contre une autre
@@ -79,7 +91,12 @@ async function creerVisiteur(req, res, next) {
 
 export function setupAuthRoutes(app) {
   const parIp = limite(QUINZE_MINUTES, 10);
-  const parIdentifiant = limite(QUINZE_MINUTES, 10, (req) => identifiant(req.body?.identifier));
+  // 10 échecs par identifiant, d'où qu'ils viennent ; un appareil où ce compte s'est déjà connecté n'y est pas soumis :
+  // un tiers qui les épuise ne bloque plus son titulaire chez lui
+  const parIdentifiant = limite(QUINZE_MINUTES, 10, (req) => identifiant(req.body?.identifier), {
+    skip: (req) => appareilDe(req.get('x-ovrane-appareil'), req.compte?.id),
+    skipSuccessfulRequests: true,
+  });
 
   // Seule la création compte dans la limite des visiteurs, pas la reprise, et seulement défi résolu
   app.post('/api/auth/visitor', reprendreVisiteur, exigerDefi, limite(60 * 60 * 1000, 10), creerVisiteur);
@@ -104,7 +121,7 @@ export function setupAuthRoutes(app) {
       const id = crypto.createHash('sha256').update(`name:${nameNormalized}`).digest('hex').slice(0, 16);
       const user = { name, nameNormalized, id, email: emailNorm, passwordHash, visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] };
       await User.create(user);
-      res.json({ ...dit(MISC_MESSAGES.welcomeNew(name)), userProfile: profilPublic(user), activeUserId: id, session: await ouvrirSession(req, id) });
+      res.json({ ...dit(MISC_MESSAGES.welcomeNew(name)), userProfile: profilPublic(user), activeUserId: id, session: await ouvrirSession(req, id), appareil: marquerAppareil(id) });
       // Après la réponse : l'adresse se prouve par le lien envoyé, avant toute ouverture d'Illusion
       demanderVerification({ id, name, email: emailNorm }).catch((error) => log.error('[AUTH] vérification :', error.message));
     } catch (error) {
@@ -113,18 +130,17 @@ export function setupAuthRoutes(app) {
     }
   });
 
-  app.post('/api/auth/login', parIp, parIdentifiant, async (req, res, next) => {
+  app.post('/api/auth/login', parIp, compteVise, parIdentifiant, async (req, res, next) => {
     try {
       const { identifier, password } = req.body || {};
       if (!identifier || !password) return sendError(res, 400, ERROR_MESSAGES.loginRequired);
 
-      const ident = identifiant(identifier);
-      const compte = await User.findOne({ $or: [{ nameNormalized: ident }, { email: ident }] }, { _id: 0, id: 1, passwordHash: 1 }).lean();
+      const { compte } = req;
       const valide = await bcrypt.compare(String(password), compte?.passwordHash || HASH_FACTICE);
       if (!compte?.passwordHash || !valide) return sendError(res, 401, ERROR_MESSAGES.invalidCredentials);
 
       const user = await compterVisite(compte.id);
-      res.json({ ...dit(MISC_MESSAGES.welcomeBack(user.name)), userProfile: profilPublic(user, false), activeUserId: user.id, session: await ouvrirSession(req, user.id) });
+      res.json({ ...dit(MISC_MESSAGES.welcomeBack(user.name)), userProfile: profilPublic(user, false), activeUserId: user.id, session: await ouvrirSession(req, user.id), appareil: marquerAppareil(user.id) });
     } catch (error) {
       next(error);
     }

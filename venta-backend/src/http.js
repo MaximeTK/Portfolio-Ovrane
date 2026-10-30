@@ -69,7 +69,7 @@ export async function requireSession(req, res, next) {
   }
 }
 
-export function limite(windowMs, limit, keyGenerator = clePourLimite) {
+export function limite(windowMs, limit, keyGenerator = clePourLimite, options = {}) {
   return rateLimit({
     windowMs,
     limit,
@@ -77,6 +77,7 @@ export function limite(windowMs, limit, keyGenerator = clePourLimite) {
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: ERROR_MESSAGES.tooManyRequests },
+    ...options,
   });
 }
 
