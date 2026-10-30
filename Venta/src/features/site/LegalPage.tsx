@@ -3,7 +3,7 @@
 import { ETIQUETTE, Verre, allerA } from './ProjectPage';
 
 const CONTACT = 'maxime.thiong-kay@proton.me';
-const MAJ = '15 octobre 2026';
+const MAJ = '30 octobre 2026';
 
 const SECTIONS = [
   { id: 'mentions', titre: 'Mentions légales' },
@@ -14,7 +14,7 @@ const SECTIONS = [
 ];
 
 const HEBERGEURS = [
-  { role: 'Site', nom: 'Vercel Inc.', adresse: '440 N Barranca Ave #4133, Covina, CA 91723, États-Unis', contact: 'vercel.com' },
+  { role: 'Site', nom: 'Vercel Inc.', adresse: '440 N Barranca Ave #4133, Covina, CA 91723, États-Unis', contact: '+1 559-288-7060' },
   { role: 'Serveur', nom: 'Render Services, Inc.', adresse: '525 Brannan St, Suite 300, San Francisco, CA 94107, États-Unis', contact: '+1 415-319-8186' },
   { role: 'Base de données', nom: 'MongoDB, Inc. (MongoDB Atlas)', adresse: '1633 Broadway, 38th Floor, New York, NY 10019, États-Unis', contact: '+1 646-727-4092' },
 ];
@@ -22,7 +22,7 @@ const HEBERGEURS = [
 const TRAITEMENTS = [
   {
     titre: 'Votre visite',
-    donnees: "Un jeton de session aléatoire gardé dans un cookie de votre navigateur, une empreinte non réversible de votre adresse IP, la date et le nombre de vos visites, les pages ouvertes, le fond choisi, le nombre de messages.",
+    donnees: "Un jeton de session aléatoire gardé dans un cookie de votre navigateur, la date et le nombre de vos visites, les pages ouvertes, le fond choisi, le nombre de messages. Votre adresse IP n'est pas conservée : elle ne sert qu'à limiter les abus, le temps de la requête.",
     pourquoi: 'Reprendre votre conversation et vos préférences quand vous revenez.',
     base: 'Intérêt légitime : faire fonctionner le service que vous utilisez.',
     duree: '90 jours après votre dernière visite, puis suppression automatique ; plus tôt sur simple demande.',
@@ -43,16 +43,26 @@ const TRAITEMENTS = [
   },
   {
     titre: 'Les liens de mes candidatures',
-    donnees: "Quand vous ouvrez un lien envoyé avec une de mes candidatures (CV, LinkedIn, GitHub, portfolio) : le lien, sa destination, l'adresse IP, le navigateur, la date et la référence de la candidature.",
+    donnees: "Quand vous ouvrez un lien envoyé avec une de mes candidatures (CV, LinkedIn, GitHub, portfolio) : le lien, sa destination, l'adresse IP tronquée (sans ses derniers chiffres, qui désigneraient votre machine), le navigateur, la date et la référence de la candidature.",
     pourquoi: 'Savoir si ma candidature a été consultée.',
     base: 'Intérêt légitime : suivre mes propres candidatures.',
     duree: "90 jours après la dernière activité liée à la candidature (visite, clic, réponse reçue), puis suppression automatique.",
   },
+  {
+    titre: 'Illusion (sur invitation)',
+    donnees: "Pour les comptes qui l'utilisent : le profil de candidature (identité, coordonnées, parcours, réponses types), les CV et lettres produits, les offres et entreprises suivies, les mails de candidature relevés et envoyés, les identifiants des plateformes, chiffrés, et les transcriptions des appels. Les questions sensibles (handicap, origine, casier judiciaire, statut d'ancien combattant) acceptent toujours « Je préfère ne pas répondre ».",
+    pourquoi: "Automatiser votre recherche d'emploi : trouver des offres, préparer et envoyer vos candidatures, suivre les réponses.",
+    base: "Exécution du service que vous demandez ; votre consentement explicite pour les réponses aux questions sensibles, que vous retirez en les effaçant.",
+    duree: "Jusqu'à la suppression du compte ; un dossier de candidature sans activité depuis 90 jours est effacé automatiquement.",
+  },
 ];
 
 const DESTINATAIRES = [
-  ['OpenAI', 'vos messages, pour générer les réponses et la voix'],
-  ['ElevenLabs', 'le texte des réponses, quand cette voix est utilisée'],
+  ['OpenAI', 'vos messages, pour générer les réponses, et la voix en dernier recours'],
+  ['Cartesia', 'le texte des réponses, pour la voix'],
+  ['ElevenLabs', 'le texte des réponses, quand cette voix prend le relais'],
+  ['AssemblyAI', "pour les comptes d'Illusion : le son des appels que vous choisissez de transcrire, en direct"],
+  ["Fournisseurs de modèles d'IA d'Illusion (OpenAI, Anthropic, Google…)", "pour les comptes d'Illusion : les données du profil et de l'offre nécessaires à chaque candidature"],
   ['Resend', 'votre adresse e-mail et votre pseudo, pour envoyer le lien « mot de passe oublié »'],
   ['Vercel, Render, MongoDB', 'l’hébergement du site, du serveur et de la base'],
 ];
@@ -144,7 +154,7 @@ export function LegalPage() {
           <ul className={`mt-4 list-disc space-y-2 pl-5 ${TEXTE}`}>
             <li>Un cookie de session, <code className="rounded bg-white/10 px-1 text-[0.9em]">ovrane_session</code>, illisible par les scripts de la page, garde votre visite : sans lui, la conversation ne peut pas reprendre.</li>
             <li>Un cookie de session, <code className="rounded bg-white/10 px-1 text-[0.9em]">ovrane_jeton</code>, n&apos;est posé que si vous arrivez par le lien d&apos;une de mes candidatures : il sert à vous accueillir en conséquence.</li>
-            <li>Le stockage local de votre navigateur garde seulement vos réglages d&apos;affichage : voix coupée ou non, teinte des boîtes.</li>
+            <li>Le stockage local de votre navigateur garde vos réglages d&apos;affichage (voix coupée ou non, teinte des boîtes) et, si vous utilisez Illusion, les brouillons de ses formulaires, rangés sous votre compte et effacés à la déconnexion.</li>
             <li>Aucun cookie publicitaire, aucune mesure d&apos;audience tierce (ni Google Analytics, ni équivalent).</li>
           </ul>
           <p className={`mt-4 ${TEXTE}`}>Pour tout effacer, supprimez les données de ce site dans les réglages de votre navigateur.</p>
@@ -156,6 +166,8 @@ export function LegalPage() {
             <li>Sur l&apos;accueil, vous échangez avec une intelligence artificielle, pas avec moi.</li>
             <li>Ses réponses sont générées automatiquement par un modèle d&apos;OpenAI à partir de mes contenus. Elles peuvent contenir des erreurs : les pages projets et mon CV font foi.</li>
             <li>La voix est une voix de synthèse, générée par IA.</li>
+            <li>Dans Illusion, l&apos;IA rédige les candidatures et remplit les formulaires à partir de votre profil. Une donnée absente du profil n&apos;est supposée que pour un champ obligatoire, et vous est signalée pour être complétée.</li>
+            <li>Un appel n&apos;est transcrit qu&apos;après en avoir prévenu votre interlocuteur ; seul le texte est gardé, jamais le son.</li>
             <li>Ne partagez pas d&apos;informations sensibles dans la conversation.</li>
           </ul>
         </section>
