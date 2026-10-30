@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import type { Compte } from '@/features/illusion/api';
 
 type ViewMode = 'dashboard' | 'messaging';
 type AppState = 'sleeping' | 'processing' | 'awake';
+type Cote = 'ovrane' | 'illusion';
 
 // Choix « voix coupée » et teinte des boîtes, gardés dans ce navigateur
 export const CLE_SON = 'ovrane:son-coupe';
@@ -22,7 +24,13 @@ export interface Fenetre {
 interface UIState {
   viewMode: ViewMode;
   appState: AppState;
+  // Vue ouverte ; une page d'Illusion s'écrit « illusion/<page>?<recherche> », comme son adresse
   page: string | null;
+  // Canaux montrés par l'en-tête : ceux d'Ovrane, ou ceux d'Illusion pour un compte qui y a accès
+  cote: Cote;
+  // Compte d'Illusion de la session : undefined tant qu'il n'est pas lu, null sans accès ; le message quand Illusion ne répond pas
+  compteIllusion: Compte | null | undefined;
+  erreurIllusion: string | null;
   isAppLocked: boolean;
   lockedMessage?: string;
   windows: Fenetre[];
@@ -35,6 +43,7 @@ interface UIState {
   reglerVerre: (opacite: number) => void;
   setAppState: (state: AppState) => void;
   setPage: (page: string | null) => void;
+  setCote: (cote: Cote) => void;
   setAppLocked: (locked: boolean, message?: string) => void;
   addWindow: (kind: Fenetre['kind'], content: string, position?: { x: number; y: number }) => string;
   // Texte d'une réponse qui s'allonge pendant qu'Ovrane la dit
@@ -49,6 +58,9 @@ export const useUIStore = create<UIState>((set) => ({
   viewMode: 'dashboard',
   appState: 'sleeping',
   page: null,
+  cote: 'ovrane',
+  compteIllusion: undefined,
+  erreurIllusion: null,
   isAppLocked: false,
   lockedMessage: undefined,
   windows: [],
@@ -56,7 +68,8 @@ export const useUIStore = create<UIState>((set) => ({
   sonCoupe: false,
   verreOpacite: VERRE_DEFAUT,
 
-  setViewMode: (mode) => set({ viewMode: mode }),
+  // Le chat est d'Ovrane : l'ouvrir ou le fermer remet ses canaux
+  setViewMode: (mode) => set({ viewMode: mode, cote: 'ovrane' }),
   // La variable CSS --verre-opacite teinte toutes les boîtes en verre (globals.css)
   reglerVerre: (opacite) => {
     document.documentElement.style.setProperty('--verre-opacite', String(opacite));
@@ -77,8 +90,9 @@ export const useUIStore = create<UIState>((set) => ({
       return { sonCoupe: !s.sonCoupe };
     }),
   setAppState: (state) => set({ appState: state }),
-  // Ouvrir ou fermer une page ramène au tableau de bord : on revient toujours à l'écran de l'œil
-  setPage: (page) => set({ page, viewMode: 'dashboard' }),
+  // Ouvrir ou fermer une page ramène au tableau de bord : on revient toujours à l'écran de l'œil ; l'en-tête montre les canaux du côté de la page
+  setPage: (page) => set({ page, viewMode: 'dashboard', cote: page?.startsWith('illusion/') ? 'illusion' : 'ovrane' }),
+  setCote: (cote) => set({ cote }),
   setAppLocked: (locked, message) => set({ isAppLocked: locked, lockedMessage: message }),
 
   // Sans position, près du centre avec un léger décalage pour ne pas couvrir exactement la précédente

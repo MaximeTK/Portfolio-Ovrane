@@ -44,26 +44,28 @@
 .ov:not(.admin) .admin-seul{display:none}
 .ov .marque-admin{margin-left:8px;padding:1px 5px;border:1px solid rgb(255 255 255 / .3);font-size:8.5px;font-weight:700;letter-spacing:.16em;color:rgb(255 255 255 / .75)}
 
-/* En-tête : canaux d'Illusion de part et d'autre du logo, qui garde le centre exact. */
-.ov .entete{position:relative;z-index:2;flex:none;display:flex;align-items:center;justify-content:center;gap:0;height:60px;padding:16px 24px 0}
+/* Sous l'en-tête du site, la place qu'il occupe, puis la scène de la page, qui entre comme une vue d'Ovrane. */
+.ov .place-entete{flex:none;height:60px}
+.ov .scene{flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* En-tête du site, côté Illusion : ses canaux par-dessus ceux d'Ovrane, sans la mise en page de la racine ; l'un s'efface pour l'autre en 0,2 s. */
+.ov.ov-barre{grid-area:1/1;justify-self:center;height:auto;min-height:0;display:block;overflow:visible;opacity:0;pointer-events:none;transition:opacity .2s}
+.ov.ov-barre.visible{opacity:1;pointer-events:auto}
+/* Canaux d'Illusion de part et d'autre du logo, qui garde le centre exact. */
 .ov .barre-canaux{display:inline-grid;grid-template-columns:1fr 64px 1fr;align-items:center;height:44px}
 .ov .barre-canaux .cote{display:flex;align-items:center;gap:28px}
 .ov .barre-canaux .gauche{justify-content:flex-end}
-.ov .jeu{display:contents}
-.ov .cote-ovrane .jeu-illusion,.ov .cote-illusion .jeu-ovrane{display:none}
 .ov .onglet{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;white-space:nowrap;color:rgb(255 255 255 / .6);transition:color .5s,filter .5s}
 .ov .onglet:hover{color:#fff}
 .ov .onglet.actif{color:#fff;filter:drop-shadow(0 0 3px rgb(255 255 255 / .5))}
 .ov .onglet .icone{width:16px;height:16px}
 .ov .onglet .chevron{width:11px;height:11px;transition:transform .2s}
 .ov .onglet[aria-expanded=true] .chevron{transform:rotate(180deg)}
-/* Logo au centre : Illusion ou Ovrane à la même place, l'un s'efface pour l'autre en 0,2 s. */
+/* Logo au centre, à la place de l'œil d'Ovrane ; plus lumineux sur l'accueil. */
 .ov .centre{display:grid;width:64px;height:44px}
-.ov .logo{grid-area:1/1;display:grid;place-items:center;width:64px;height:44px;transition:opacity .2s}
+.ov .logo{grid-area:1/1;display:grid;place-items:center;width:64px;height:44px}
 .ov .logo svg{overflow:visible;filter:drop-shadow(0 0 4px rgb(255 255 255 / .75));transition:filter .2s}
-.ov .cote-ovrane .logo-illusion,.ov .cote-illusion .logo-ovrane{opacity:0;pointer-events:none}
-.ov.vue-accueil .logo-illusion svg{filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 12px rgb(255 255 255 / .7))}
-.ov.vue-accueil .jeu-illusion .onglet.actif{color:rgb(255 255 255 / .6);filter:none}
+.ov.sur-accueil .logo svg{filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 12px rgb(255 255 255 / .7))}
 /* Accueil : la place du contenu reste vide, l'Activité seule à gauche. */
 .ov.vue-accueil .dock [data-fen]:not([data-fen=activite]){visibility:hidden}
 

@@ -1,7 +1,7 @@
 'use client';
 
 import './reglages.css';
-import Link from 'next/link';
+import { LienIllusion } from '../../partage/LienIllusion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler, televerser } from '../../api';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
@@ -392,7 +392,7 @@ function Reglages({ admin }: { admin: boolean }) {
             <button type="button" className={`rubrique${onglet === 'apparence' ? ' allume' : ''}`} aria-expanded={onglet === 'apparence'}
               onClick={() => (onglet === 'apparence' ? fermer() : ouvrir('apparence'))}>Apparence</button>
             {GROUPES.slice(0, 1).map((x) => <BoutonGroupe key={x.cle} g={x} courant={groupe} choisir={setGroupe} />)}
-            <Link href="/illusion/mails" prefetch={false} className="rubrique" title="Les réglages des mails vivent sur la page Mails">Mails</Link>
+            <LienIllusion vers="mails" className="rubrique" title="Les réglages des mails vivent sur la page Mails">Mails</LienIllusion>
             {GROUPES.slice(1).map((x) => <BoutonGroupe key={x.cle} g={x} courant={groupe} choisir={setGroupe} />)}
           </nav>
           <div className="groupe-contenu">

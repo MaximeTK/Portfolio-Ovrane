@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { LienIllusion } from '../../partage/LienIllusion';
 import { useEffect, useState } from 'react';
 import { appeler, televerser } from '../../api';
 import { useSondage } from '../../activite/sondage';
@@ -281,7 +281,7 @@ export function ongletProfilIncomplet(incomplet: Incomplet | null, fermer: () =>
       <>
         <button type="button" className="action" onClick={fermer}>Fermer</button>
         {incomplet?.profils.map((p) => (
-          <Link key={p.nom} href={`/illusion/profil?fiche=${encodeURIComponent(`${nomProfil(p.nom)}.json`)}`} prefetch={false} className="action plein">Compléter {nomProfil(p.nom)}{FLECHE}</Link>
+          <LienIllusion key={p.nom} vers={`profil?fiche=${encodeURIComponent(`${nomProfil(p.nom)}.json`)}`} className="action plein">Compléter {nomProfil(p.nom)}{FLECHE}</LienIllusion>
         ))}
       </>
     ),

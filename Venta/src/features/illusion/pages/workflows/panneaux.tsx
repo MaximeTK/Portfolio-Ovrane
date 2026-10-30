@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { LienIllusion } from '../../partage/LienIllusion';
 import { useEffect, useState } from 'react';
 import { appeler } from '../../api';
 import type { Onglet } from '../../dock/Panneau';
@@ -260,7 +260,7 @@ export function ongletVerification({ verif, erreur, occupe, valider, rejeter, fe
                 {(verif?.donnees ?? []).map((d) => (
                   <tr key={d.cle}>
                     <td><code>{d.cle}</code></td><td>{(d.libelles ?? []).join(' · ')}</td><td>{(d.sites ?? []).join(', ')}</td><td>{d.compte ?? 0} fois</td>
-                    <td><Link className="btn-l" prefetch={false} href={`/illusion/profil?${new URLSearchParams({ champ: d.cle, libelle: d.libelles?.[0] ?? d.cle })}`}>Ajouter au profil…</Link></td>
+                    <td><LienIllusion className="btn-l" vers={`profil?${new URLSearchParams({ champ: d.cle, libelle: d.libelles?.[0] ?? d.cle })}`}>Ajouter au profil…</LienIllusion></td>
                   </tr>
                 ))}
               </tbody>
@@ -361,7 +361,7 @@ export function ongletIncomplet(incomplet: Incomplet | null, fermer: () => void)
       <>
         <button type="button" className="action" onClick={fermer}>Fermer</button>
         {(incomplet?.profils ?? []).map((p) => (
-          <Link key={p.nom} href={`/illusion/profil?fiche=${encodeURIComponent(`${nomProfil(p.nom)}.json`)}`} prefetch={false} className="action plein">Compléter {nomProfil(p.nom)}{ico(ICONES.suivant)}</Link>
+          <LienIllusion key={p.nom} vers={`profil?fiche=${encodeURIComponent(`${nomProfil(p.nom)}.json`)}`} className="action plein">Compléter {nomProfil(p.nom)}{ico(ICONES.suivant)}</LienIllusion>
         ))}
       </>
     ),

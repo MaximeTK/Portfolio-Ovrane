@@ -3,10 +3,10 @@
 import './activite.css';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
 import { appeler } from '../api';
 import { Fenetre } from '../dock/Dock';
 import { MarqueAdmin } from '../dock/Panneau';
+import { ouvrirIllusion } from '../partage/LienIllusion';
 import { useSondage } from './sondage';
 import { adresseActivite, heure, nomDuJour, phrase, useActivite, type DonneesActivite, type Evenement, type ReponseActivite, type Sorte } from './useActivite';
 
@@ -55,7 +55,6 @@ function Tuiles({ bilan, masquees, basculer, label }: { bilan: Record<Sorte, num
 export function Activite({ donnees, surMaintenant, liens, cachees = [] }: ProprietesActivite) {
   const branchees = useActivite(!donnees);
   const [vue, setVue] = useState<'historique' | 'journal' | null>(null);
-  const router = useRouter();
   const { bilan, fil, enCours, erreur } = donnees ?? branchees;
   const toutVoir = donnees ? donnees.toutVoir : () => setVue('historique');
   const [masquees, setMasquees] = useState(cachees);
@@ -77,7 +76,7 @@ export function Activite({ donnees, surMaintenant, liens, cachees = [] }: Propri
         {enCours && (
           <li className="encours">
             <button type="button" className={`ouvre-li${surMaintenant ? '' : ' admin-seul'}`} aria-label="Ouvrir En direct" title="En direct"
-              onClick={surMaintenant ?? (() => router.push('/illusion/candidatures?panneau=direct'))} />
+              onClick={surMaintenant ?? (() => ouvrirIllusion('candidatures?panneau=direct'))} />
             <p className="etiquette">Maintenant</p>
             <p className="phrase">{enCours}</p>
           </li>
@@ -106,7 +105,8 @@ function Flottante({ titre, admin, fermer, children }: { titre: string; admin?: 
   const [hote, setHote] = useState<HTMLElement | null>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const boite = useRef<HTMLElement>(null);
-  useEffect(() => setHote(document.querySelector<HTMLElement>('.ov')), []);
+  // La racine de la page, pas les canaux d'Illusion de l'en-tête du site
+  useEffect(() => setHote(document.querySelector<HTMLElement>('.ov:not(.ov-barre)')), []);
   useEffect(() => {
     // En capture sur la fenêtre du navigateur : Échap ferme cette fenêtre avant le panneau de la page
     const echap = (e: KeyboardEvent) => {

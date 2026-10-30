@@ -2,7 +2,6 @@
 
 import './profil.css';
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { appeler } from '../../api';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer, Panneau, type Onglet } from '../../dock/Panneau';
@@ -31,8 +30,8 @@ const ico = (i: React.ReactNode) => <span className="ico">{i}</span>;
 // Un profil sans expérience est refusé par le constructeur : la carte vide le dit d'entrée
 const neuve = (): Profil => ({ experiences: [{}] });
 
-export default function PageProfil({ compte }: ProprietesPage) {
-  const params = useSearchParams();
+export default function PageProfil({ compte, recherche }: ProprietesPage) {
+  const params = new URLSearchParams(recherche);
   const depart = compte.admin && params.get('champ') !== null ? 'champ' : params.get('nouveau') ? 'nouveau' : null;
   return (
     <Dock id="profil" principal="profils" panneau={depart}

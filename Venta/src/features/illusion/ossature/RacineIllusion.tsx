@@ -2,27 +2,22 @@
 
 import '../styles/illusion.css';
 import { useEffect } from 'react';
-import { useSelectedLayoutSegment } from 'next/navigation';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { useApparence } from '../apparence';
 import type { Compte } from '../api';
-import { Entete } from './Entete';
+import { REGISTRE } from '../pages/registre';
 
 type ProprietesRacine = {
   compte: Compte;
-  // Début des liens des canaux : « /illusion/ », ou celui du banc d'essai
-  base?: string;
-  // Page courante quand l'adresse ne la porte pas (banc d'essai)
-  page?: string;
+  // Page affichée : l'accueil a son allure, et chaque page entre comme une vue d'Ovrane
+  page: string;
   // Palette imposée (banc d'essai), sinon celle choisie par l'utilisateur dans Ovrane
   palette?: string;
   children: React.ReactNode;
 };
 
-// Racine des écrans d'Illusion : fond, matière, en-tête, puis le dock de la page
-export function RacineIllusion({ compte, base = '/illusion/', page, palette, children }: ProprietesRacine) {
-  const segment = useSelectedLayoutSegment();
-  const courante = page ?? segment;
+// Racine des écrans d'Illusion, sous l'en-tête du site : fond, matière, puis le dock de la page
+export function RacineIllusion({ compte, page, palette, children }: ProprietesRacine) {
   const matiere = useApparence((s) => s.matiere);
 
   useEffect(() => {
@@ -31,10 +26,23 @@ export function RacineIllusion({ compte, base = '/illusion/', page, palette, chi
   }, [palette]);
 
   return (
-    <div className={`ov mat-${matiere}${compte.admin ? ' admin' : ''}${courante === 'accueil' ? ' vue-accueil' : ''}`}>
+    <div className={`ov mat-${matiere}${compte.admin ? ' admin' : ''}${page === 'accueil' ? ' vue-accueil' : ''}`}>
       <div className="fond" />
-      <Entete compte={compte} page={courante} base={base} />
-      {children}
+      <div className="place-entete" aria-hidden="true" />
+      {/* Même entrée qu'une page d'Ovrane : fondu et montée de 12 px en 0,5 s */}
+      <div key={page} className="scene apparition">
+        {children}
+      </div>
     </div>
+  );
+}
+
+// Une page d'Illusion ouverte dans le site ; ce module ne se charge qu'à la première ouverture
+export default function VueIllusion({ compte, page, recherche }: { compte: Compte; page: string; recherche: string }) {
+  const Composant = REGISTRE[page];
+  return (
+    <RacineIllusion compte={compte} page={page}>
+      <Composant compte={compte} recherche={recherche} />
+    </RacineIllusion>
   );
 }

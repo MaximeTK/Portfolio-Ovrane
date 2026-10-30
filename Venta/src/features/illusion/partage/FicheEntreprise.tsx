@@ -2,8 +2,8 @@
 
 import '../pages/collecte/fiche-entreprise.css';
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { create } from 'zustand';
+import { useUIStore } from '@/lib/uiStore';
 import { appeler, ErreurIllusion, lireCompte } from '../api';
 import { usePanneau } from '../dock/Dock';
 import { Confirmer, MarqueAdmin, type Onglet } from '../dock/Panneau';
@@ -200,7 +200,7 @@ function useAdmin() {
 
 // Sur une page d'administration, les gestes d'administration vont au pied comme sur la planche Audit ; ailleurs, dans une section marquée ADMIN
 function usePageAdmin() {
-  return estAdmin(usePathname()?.split('/').filter(Boolean).pop() ?? '');
+  return useUIStore((s) => estAdmin(s.page?.startsWith('illusion/') ? s.page.slice(9).split('?')[0] : ''));
 }
 
 function TitreFiche() {

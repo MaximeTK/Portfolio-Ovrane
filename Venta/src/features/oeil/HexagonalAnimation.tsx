@@ -49,10 +49,14 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
   const page = useUIStore((state) => state.page);
   const setPage = useUIStore((state) => state.setPage);
   const awake = useUIStore((state) => state.appState === 'awake');
+  const compteIllusion = useUIStore((state) => state.compteIllusion);
+  const cote = useUIStore((state) => state.cote);
+  const setCote = useUIStore((state) => state.setCote);
   const isSleep = mode === 'sleep';
-  const isInteractive = !isSleep && !isAppLocked;
   // Messagerie ou page ouverte : l'œil quitte le centre pour l'emplacement du header
   const enHaut = !isSleep && (viewMode === 'messaging' || page !== null);
+  // Les canaux d'Illusion montrés, leur logo prend la place de l'œil logé dans le header
+  const isInteractive = !isSleep && !isAppLocked && !(cote === 'illusion' && enHaut);
   // Endormi, l'œil respire entre deux gris ; éveillé, il est blanc, jaune pâle quand il réfléchit
   const hexColor = isSleep ? (isBreathingIn ? '#A9A9A9' : '#333333') : currentAnimation === 'thinking' ? '#fff9c4' : '#ffffff';
   const libelle = page ? "Revenir à l'accueil" : viewMode === 'messaging' ? 'Fermer la messagerie' : 'Ouvrir la messagerie';
@@ -123,6 +127,13 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
     // Depuis une page, l'œil ramène à l'écran de base, sans toucher à la session
     if (page) setPage(null);
     else setViewMode(viewMode === 'dashboard' ? 'messaging' : 'dashboard');
+  };
+
+  // Compte d'Illusion : le clic droit bascule l'en-tête entre les canaux d'Ovrane et ceux d'Illusion, comme sur le logo d'Illusion
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (!isInteractive || !compteIllusion) return;
+    e.preventDefault();
+    setCote(cote === 'illusion' ? 'ovrane' : 'illusion');
   };
 
   // Le regard suit la souris, sauf endormi, en réflexion ou en parole
@@ -270,6 +281,7 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
             enHaut ? 'inset-[30%] focus-visible:outline-[14px]' : 'inset-[18%] focus-visible:outline-2 focus-visible:outline-offset-4'
           } ${isInteractive ? 'cursor-pointer pointer-events-auto' : 'cursor-default pointer-events-none'}`}
           onClick={handleClick}
+          onContextMenu={handleContextMenu}
           onMouseEnter={() => isInteractive && setIsLogoHover(true)}
           onMouseLeave={() => setIsLogoHover(false)}
           onFocus={() => isInteractive && setIsLogoHover(true)}

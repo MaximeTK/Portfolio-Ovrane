@@ -2,6 +2,7 @@
 
 import './candidatures.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useUIStore } from '@/lib/uiStore';
 import { appeler } from '../../api';
 import { Activite } from '../../activite/Activite';
 import { useSondage } from '../../activite/sondage';
@@ -43,7 +44,7 @@ function chrono(iso: string, maintenant: number) {
   return `${Math.floor(s / 86400)}:${deux(Math.floor(s / 3600) % 24)}:${deux(Math.floor(s / 60) % 60)}:${deux(s % 60)}`;
 }
 
-export default function PageCandidatures({ compte }: ProprietesPage) {
+export default function PageCandidatures({ compte, recherche }: ProprietesPage) {
   const [file, setFile] = useState<EtatFile | null>(null);
   const [erreurFile, setErreurFile] = useState('');
   const [filtres, setFiltres] = useState<Filtres>({ etape: '', metier: '', langue: '' });
@@ -79,7 +80,7 @@ export default function PageCandidatures({ compte }: ProprietesPage) {
   return (
     <Dock id="candidatures" principal="tableau" panneau={null}>
       <ActiviteDePage admin={compte.admin} />
-      <Tableau admin={compte.admin} file={file} erreurFile={erreurFile} filtres={filtres} setFiltres={(f) => { setFiltres(f); setPage(1); }}
+      <Tableau admin={compte.admin} direct={new URLSearchParams(recherche).get('panneau') === 'direct'} file={file} erreurFile={erreurFile} filtres={filtres} setFiltres={(f) => { setFiltres(f); setPage(1); }}
         page={page} setPage={setPage} taille={taille} setTaille={(t) => { setTaille(t); setPage(1); }} auto={auto} setAuto={setAuto}
         selection={selection} setSelection={setSelection} cle={cle} setCle={setCle} setSiren={setSiren} avis={avis} setAvis={setAvis} relire={relire} />
       <PanneauDePage admin={compte.admin} cle={cle} setCle={setCle} siren={siren} setSiren={setSiren} incomplet={incomplet} setIncomplet={setIncomplet}
@@ -95,13 +96,13 @@ function ActiviteDePage({ admin }: { admin: boolean }) {
 }
 
 type ProprietesTableau = {
-  admin: boolean; file: EtatFile | null; erreurFile: string; filtres: Filtres; setFiltres: (f: Filtres) => void;
+  admin: boolean; direct: boolean; file: EtatFile | null; erreurFile: string; filtres: Filtres; setFiltres: (f: Filtres) => void;
   page: number; setPage: (p: number) => void; taille: number | 'auto'; setTaille: (t: number | 'auto') => void; auto: number; setAuto: (n: number) => void;
   selection: Set<string>; setSelection: (s: Set<string>) => void; cle: string | null; setCle: (c: string | null) => void; setSiren: (s: string) => void;
   avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void>;
 };
 
-function Tableau({ admin, file, erreurFile, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, cle, setCle, setSiren, avis, setAvis, relire }: ProprietesTableau) {
+function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, cle, setCle, setSiren, avis, setAvis, relire }: ProprietesTableau) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const [confirmation, setConfirmation] = useState<'supprimer' | 'vider' | null>(null);
   const [occupe, setOccupe] = useState(false);
@@ -117,12 +118,16 @@ function Tableau({ admin, file, erreurFile, filtres, setFiltres, page, setPage, 
   }, []);
   // « Maintenant » d'une autre page mène ici avec ?panneau=direct
   useEffect(() => {
-    const adresse = new URL(window.location.href);
-    if (adresse.searchParams.get('panneau') !== 'direct') return;
+    if (!direct) return;
     if (admin) ouvrir('direct');
-    adresse.searchParams.delete('panneau');
-    window.history.replaceState(null, '', adresse);
-  }, [admin, ouvrir]);
+    // Une fois l'entrée d'historique de la vue posée, la vue et son adresse oublient la demande
+    const minuteur = setTimeout(() => {
+      const vue = 'illusion/candidatures';
+      window.history.replaceState({ page: vue }, '', `/${vue}`);
+      useUIStore.setState({ page: vue });
+    });
+    return () => clearTimeout(minuteur);
+  }, [direct, admin, ouvrir]);
   // Échap ferme un menu, sinon la confirmation, sinon le panneau
   useEffect(() => {
     const echap = (e: KeyboardEvent) => {

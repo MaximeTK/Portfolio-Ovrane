@@ -1,6 +1,10 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useUIStore } from '@/lib/uiStore';
+
+// Canaux d'Illusion, chargés pour un compte qui y a accès
+const EnteteIllusion = dynamic(() => import('@/features/illusion/ossature/Entete').then((m) => m.Entete));
 
 // Hauteur et marge haute du header : l'œil d'Ovrane vise son centre quand il monte (HexagonalAnimation)
 export const CENTRE_HEADER_PX = 16 + 44 / 2;
@@ -45,6 +49,8 @@ export function SiteHeader() {
   const awake = useUIStore((s) => s.appState === 'awake');
   // L'emplacement central s'ouvre dès que l'œil quitte le centre de l'écran : page ou messagerie
   const ouvert = useUIStore((s) => s.page !== null || s.viewMode === 'messaging');
+  const compteIllusion = useUIStore((s) => s.compteIllusion);
+  const illusion = useUIStore((s) => s.cote === 'illusion');
 
   return (
     <header
@@ -53,24 +59,31 @@ export function SiteHeader() {
         awake ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'
       }`}
     >
-      {/* Colonnes latérales de même largeur : l'emplacement de l'œil reste au centre exact de l'écran */}
-      <nav
-        aria-label="Navigation principale"
-        className={`inline-grid h-11 grid-cols-[1fr_auto_1fr] items-center ${awake ? 'pointer-events-auto' : ''}`}
-      >
-        {/* Une icône à chaque bout : les deux colonnes gardent la même largeur sur mobile */}
-        <div className="flex items-center justify-end gap-4 sm:gap-7">
-          <Onglet page="reglages" label="Réglages" icone={ICONE_REGLAGES} />
-          <Onglet page="pico" label="Pico" />
-          <Onglet page="ovrane" label="Ovrane" />
-        </div>
-        <span aria-hidden="true" className={`block transition-[width] duration-500 ease-out ${ouvert ? 'w-12 sm:w-16' : 'w-2.5 sm:w-7'}`} />
-        <div className="flex items-center gap-4 sm:gap-7">
-          <Onglet page="illusion" label="Illusion" />
-          <Onglet page="hikup" label="Hikup" />
-          <Onglet page="connexion" label="Compte" icone={ICONE_COMPTE} />
-        </div>
-      </nav>
+      {/* Canaux d'Ovrane et d'Illusion à la même place : l'un s'efface pour l'autre, l'œil ou le logo d'Illusion au centre exact */}
+      <div className="grid">
+        {/* Colonnes latérales de même largeur : l'emplacement de l'œil reste au centre exact de l'écran */}
+        <nav
+          aria-label="Navigation principale"
+          inert={illusion}
+          className={`col-start-1 row-start-1 inline-grid h-11 grid-cols-[1fr_auto_1fr] items-center justify-self-center transition-opacity duration-200 ${
+            illusion ? 'opacity-0' : awake ? 'pointer-events-auto' : ''
+          }`}
+        >
+          {/* Une icône à chaque bout : les deux colonnes gardent la même largeur sur mobile */}
+          <div className="flex items-center justify-end gap-4 sm:gap-7">
+            <Onglet page="reglages" label="Réglages" icone={ICONE_REGLAGES} />
+            <Onglet page="pico" label="Pico" />
+            <Onglet page="ovrane" label="Ovrane" />
+          </div>
+          <span aria-hidden="true" className={`block transition-[width] duration-500 ease-out ${ouvert ? 'w-12 sm:w-16' : 'w-2.5 sm:w-7'}`} />
+          <div className="flex items-center gap-4 sm:gap-7">
+            <Onglet page="illusion" label="Illusion" />
+            <Onglet page="hikup" label="Hikup" />
+            <Onglet page="connexion" label="Compte" icone={ICONE_COMPTE} />
+          </div>
+        </nav>
+        {compteIllusion && <EnteteIllusion compte={compteIllusion} visible={illusion} />}
+      </div>
     </header>
   );
 }

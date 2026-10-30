@@ -17,10 +17,8 @@ export default async function BancIllusion({ searchParams }: Recherche) {
   const compte: Compte = { email: 'essai@exemple.fr', pseudo: 'Essai', admin: admin !== '0' };
   if (page && (!Object.hasOwn(REGISTRE, page) || (estAdmin(page) && !compte.admin))) notFound();
   const Composant = page ? REGISTRE[page] : null;
-  // Les liens des canaux restent dans le banc et gardent ses réglages
-  const garde = new URLSearchParams({ ...(admin && { admin }), ...(matiere && { matiere }), palette });
   return (
-    <RacineIllusion compte={compte} base={`/illusion-essai?${garde}&page=`} page={page ?? 'candidatures'} palette={palette}>
+    <RacineIllusion compte={compte} page={page ?? 'candidatures'} palette={palette}>
       <ReglerMatiere matiere={matiere === 'verre' || matiere === 'teinte' ? (matiere as Matiere) : undefined} />
       {Composant ? <Composant compte={compte} /> : <Planche />}
     </RacineIllusion>

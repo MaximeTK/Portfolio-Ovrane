@@ -1,7 +1,7 @@
 'use client';
 
 import './offres.css';
-import Link from 'next/link';
+import { LienIllusion } from '../../partage/LienIllusion';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler, televerser } from '../../api';
 import { Activite } from '../../activite/Activite';
@@ -372,7 +372,7 @@ const lireRecherche = (c: CarteRecherche): ProfilRecherche => ({
   nom: c.nom.trim(), actif: c.actif, langue: c.langue, mots_cles: liste(c.mots_cles), mots_bannis: liste(c.mots_bannis),
   departements: liste(c.departements), profils_candidature: c.profils_candidature,
 });
-const versProfil = (nom?: string) => `/illusion/profil?${nom ? `fiche=${encodeURIComponent(nom)}` : 'nouveau=1'}`;
+const versProfil = (nom?: string) => `profil?${nom ? `fiche=${encodeURIComponent(nom)}` : 'nouveau=1'}`;
 
 function useProfilsRecherche(parametres: Parametres | null, profils: ProfilDispo[], incomplets: Incomplets, enregistrer: (m: Partial<Parametres>) => Promise<boolean>) {
   const [cartes, setCartes] = useState<CarteRecherche[]>([]);
@@ -402,7 +402,7 @@ function useProfilsRecherche(parametres: Parametres | null, profils: ProfilDispo
               return (
                 <p key={ch} className="alerte-f">
                   ⚠ « {sansJson(nomFiche(ch))} » ne peut pas candidater : {manque.length} champ(s) obligatoire(s) vide(s) ({manque.map((m) => m.libelle).join(', ')}). Ses offres attendent.{' '}
-                  <Link className="lien-d" href={versProfil(nomFiche(ch))}>Compléter</Link>
+                  <LienIllusion className="lien-d" vers={versProfil(nomFiche(ch))}>Compléter</LienIllusion>
                 </p>
               );
             })}
@@ -421,12 +421,12 @@ function useProfilsRecherche(parametres: Parametres | null, profils: ProfilDispo
                   const manque = incomplets[nom];
                   return (
                     <span key={ch} className={`puce${manque ? ' incomplet' : ''}`} title={manque ? `Non exploitable : ${manque.map((m) => m.libelle).join(', ')}` : ch}>
-                      <Link href={versProfil(nom)} className="puce-lien">{manque ? '⚠ ' : ''}{sansJson(nom)}</Link>
+                      <LienIllusion vers={versProfil(nom)} className="puce-lien">{manque ? '⚠ ' : ''}{sansJson(nom)}</LienIllusion>
                       <button type="button" aria-label={`Retirer ${sansJson(nom)}`} onClick={() => modifier(c.id, { profils_candidature: c.profils_candidature.filter((x) => x !== ch) })}>×</button>
                     </span>
                   );
                 })}
-                <Link href={versProfil()} className="puce ajout" title="Ouvre un profil vierge sur la page Profil.">+ Nouveau profil</Link>
+                <LienIllusion vers={versProfil()} className="puce ajout" title="Ouvre un profil vierge sur la page Profil.">+ Nouveau profil</LienIllusion>
               </span>
               <span className="attacher">
                 <select className="saisie" aria-label="Profil à attacher" value={choix[c.id] ?? ''} onChange={(e) => setChoix((x) => ({ ...x, [c.id]: e.target.value }))}>

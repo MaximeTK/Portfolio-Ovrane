@@ -45,6 +45,8 @@ export default function HomeClient() {
   const setAppState = useUIStore((state) => state.setAppState);
   const viewMode = useUIStore((state) => state.viewMode);
   const page = useUIStore((state) => state.page);
+  // Les canaux d'Illusion montrés, l'œil logé dans le header leur laisse sa place ; au centre de l'accueil, il reste
+  const oeilEfface = useUIStore((state) => state.cote === 'illusion' && (state.page !== null || state.viewMode === 'messaging'));
   const isAppLocked = useUIStore((state) => state.isAppLocked);
   const sonCoupe = useUIStore((state) => state.sonCoupe);
   const inputVisible = appState === 'awake' && !isAppLocked && !page;
@@ -129,6 +131,8 @@ export default function HomeClient() {
       stopTTS();
       openWindow();
       onEnd();
+      // Arrivée sur une page (/connexion, une adresse d'Illusion) : l'accueil reçu réveille l'œil sans attendre
+      if (!isAnswer && useUIStore.getState().appState === 'processing') setAppState('awake');
       return;
     }
 
@@ -224,7 +228,8 @@ export default function HomeClient() {
         >
           <main className="flex items-center justify-center min-h-screen w-full relative z-30 pointer-events-none">
             {appState === 'awake' && (
-              <div>
+              // L'œil s'efface pour le logo d'Illusion en 0,2 s
+              <div className={`transition-opacity duration-200 ${oeilEfface ? 'opacity-0' : ''}`}>
                 <HexagonalAnimation ref={hexAnimationRef} currentAnimation={currentAnimation} isSpeaking={isSpeaking} getAudioLevel={getAudioLevel} />
               </div>
             )}

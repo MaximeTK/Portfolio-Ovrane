@@ -1,7 +1,7 @@
 import type { Compte } from '../api';
 
-// Ce que reçoit chaque page d'Illusion
-export type ProprietesPage = { compte: Compte };
+// Ce que reçoit chaque page d'Illusion, avec la recherche de son adresse (« fiche=… »)
+export type ProprietesPage = { compte: Compte; recherche?: string };
 
 export type InfoPage = { slug: string; titre: string };
 

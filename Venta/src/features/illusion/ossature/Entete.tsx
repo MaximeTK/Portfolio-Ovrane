@@ -1,9 +1,11 @@
 'use client';
 
-import Link from 'next/link';
+import '../styles/illusion.css';
 import { useEffect, useRef, useState } from 'react';
 import { useUIStore } from '@/lib/uiStore';
+import { useApparence } from '../apparence';
 import type { Compte } from '../api';
+import { LienIllusion } from '../partage/LienIllusion';
 import { ADMINISTRATION } from '../pages/liste';
 
 const TRAIT = { className: 'icone', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const;
@@ -22,87 +24,61 @@ const ICONES_ADMIN: Record<string, React.ReactNode> = {
   'parametres-serveur': <svg {...TRAIT}><rect x="3" y="4" width="18" height="7" /><rect x="3" y="13" width="18" height="7" /><path d="M7 7.5h.01M7 16.5h.01" /></svg>,
 };
 
-type ProprietesEntete = { compte: Compte; page: string | null; base: string };
+type ProprietesEntete = { compte: Compte; visible: boolean };
 
-// En-tête d'Illusion : ses canaux autour du logo ; clic droit sur le logo, les canaux d'Ovrane
-export function Entete({ compte, page, base }: ProprietesEntete) {
-  const [cote, setCote] = useState<'illusion' | 'ovrane'>('illusion');
-  const basculer = (e: React.MouseEvent) => {
+// Canaux d'Illusion dans l'en-tête du site, autour de son logo, à la place exacte de ceux d'Ovrane et de l'œil
+export function Entete({ compte, visible }: ProprietesEntete) {
+  const page = useUIStore((s) => (s.page?.startsWith('illusion/') ? s.page.slice(9).split('?')[0] : null));
+  const matiere = useApparence((s) => s.matiere);
+  // Clic droit sur le logo : les canaux d'Ovrane reviennent, l'œil au centre
+  const versOvrane = (e: React.MouseEvent) => {
     e.preventDefault();
-    setCote((c) => (c === 'ovrane' ? 'illusion' : 'ovrane'));
+    useUIStore.getState().setCote('ovrane');
   };
-  // Sans préchargement : chaque page d'Illusion relit la session auprès d'Ovrane, chaque lien préchargé la relirait
   const onglet = (slug: string, titre: string, icone?: React.ReactNode) => (
-    <Link
-      href={base + slug}
-      prefetch={false}
+    <LienIllusion
+      vers={slug}
       className={`onglet${page === slug ? ' actif' : ''}`}
       aria-current={page === slug ? 'page' : undefined}
       aria-label={icone ? titre : undefined}
       title={icone ? titre : undefined}
     >
       {icone ?? titre}
-    </Link>
-  );
-  // Une vue du portfolio ne s'ouvre que par son état : elle est choisie, puis l'accueil d'Ovrane l'affiche
-  const vue = (nom: string, titre: string, icone?: React.ReactNode) => (
-    <Link href="/" className="onglet" onClick={() => useUIStore.getState().setPage(nom)} aria-label={icone ? titre : undefined} title={icone ? titre : undefined}>
-      {icone ?? titre}
-    </Link>
+    </LienIllusion>
   );
 
   return (
-    <header className={`entete cote-${cote}`}>
-      <nav className="barre-canaux" aria-label="Canaux">
+    <div inert={!visible} className={`ov ov-barre mat-${matiere}${visible ? ' visible' : ''}${page === 'accueil' ? ' sur-accueil' : ''}`}>
+      <nav className="barre-canaux" aria-label="Canaux d'Illusion">
         <div className="cote gauche">
-          <span className="jeu jeu-illusion">
-            {onglet('reglages', 'Réglages', REGLAGES)}
-            {onglet('offres', 'Offres')}
-            {onglet('candidatures', 'Candidatures')}
-            {onglet('documents', 'Documents')}
-          </span>
-          <span className="jeu jeu-ovrane">
-            {vue('reglages', "Réglages d'Ovrane", REGLAGES)}
-            {vue('pico', 'Pico')}
-            {vue('ovrane', 'Ovrane')}
-          </span>
+          {onglet('reglages', 'Réglages', REGLAGES)}
+          {onglet('offres', 'Offres')}
+          {onglet('candidatures', 'Candidatures')}
+          {onglet('documents', 'Documents')}
         </div>
         <div className="centre">
-          <Link href={base + 'accueil'} prefetch={false} className="logo logo-illusion" onContextMenu={basculer} aria-label="Illusion : accueil" title="Illusion · clic : accueil · clic droit : canaux d'Ovrane">
+          <LienIllusion vers="accueil" className="logo" onContextMenu={versOvrane} aria-label="Illusion : accueil" title="Illusion · clic : accueil · clic droit : canaux d'Ovrane">
             <svg viewBox="0 0 325.934 274.525" width="34" height="29" fill="none" stroke="#fff" aria-hidden="true">
               <path d="M9.4632 262.426L112.954 181.479V19.5844" strokeWidth="30.72" />
               <path d="M316.471 262.426L212.98 181.479V19.5844" strokeWidth="30.72" />
               <path d="M163.063 262.272V161.894V0" strokeWidth="30.72" />
             </svg>
-          </Link>
-          <button type="button" className="logo logo-ovrane" onContextMenu={basculer} aria-label="Ovrane" title="Ovrane · clic droit : canaux d'Illusion">
-            <svg viewBox="-50 -60.3 100 120.6" width="24" height="29" aria-hidden="true">
-              <polygon points="0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6" fill="none" stroke="#fff" strokeWidth="13" strokeLinejoin="round" />
-              <polygon points="0,-67 42,-35 42,35 0,67 -42,35 -42,-35" fill="none" stroke="#fff" strokeWidth="40" transform="scale(0.25)" />
-            </svg>
-          </button>
+          </LienIllusion>
         </div>
         <div className="cote droite">
-          <span className="jeu jeu-illusion">
-            {onglet('mails', 'Mails')}
-            {onglet('appels', 'Appels')}
-            {onglet('relations', 'Relations')}
-            {onglet('profil', 'Profil', PERSONNE)}
-            {compte.admin && <MenuAdministration page={page} base={base} />}
-          </span>
-          <span className="jeu jeu-ovrane">
-            <button type="button" className="onglet actif" aria-current="page" onClick={basculer} title="Revenir aux canaux d'Illusion">Illusion</button>
-            {vue('hikup', 'Hikup')}
-            <Link href="/connexion" className="onglet" aria-label="Compte" title="Compte">{PERSONNE}</Link>
-          </span>
+          {onglet('mails', 'Mails')}
+          {onglet('appels', 'Appels')}
+          {onglet('relations', 'Relations')}
+          {onglet('profil', 'Profil', PERSONNE)}
+          {compte.admin && <MenuAdministration page={page} />}
         </div>
       </nav>
-    </header>
+    </div>
   );
 }
 
 // Menu des pages d'administration, au bout de droite pour un compte admin
-function MenuAdministration({ page, base }: { page: string | null; base: string }) {
+function MenuAdministration({ page }: { page: string | null }) {
   const [ouvert, setOuvert] = useState(false);
   const hote = useRef<HTMLDivElement>(null);
   const actif = ADMINISTRATION.some((p) => p.slug === page);
@@ -134,18 +110,17 @@ function MenuAdministration({ page, base }: { page: string | null; base: string 
         <div className="menu verre" role="menu" aria-label="Administration">
           <span className="verre-halos" aria-hidden="true" />
           {ADMINISTRATION.map((p) => (
-            <Link
+            <LienIllusion
               key={p.slug}
               role="menuitem"
-              href={base + p.slug}
-              prefetch={false}
+              vers={p.slug}
               className={`menu-option${page === p.slug ? ' actif' : ''}`}
               aria-current={page === p.slug ? 'page' : undefined}
               onClick={() => setOuvert(false)}
             >
               {ICONES_ADMIN[p.slug]}
               {p.titre}
-            </Link>
+            </LienIllusion>
           ))}
         </div>
       )}

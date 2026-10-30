@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import Link from 'next/link';
 import { ETIQUETTE, Verre } from './ProjectPage';
 import type { useChatController } from '@/features/chat/useChatController';
+import { PAGE_DEPART } from '@/features/illusion/pages/liste';
 import { INDISPONIBLE } from '@/lib/messages';
+import { useUIStore } from '@/lib/uiStore';
 
 type Mode = 'login' | 'register' | 'oubli' | 'reinit';
 type Compte = { pseudo: string; email: string };
@@ -168,9 +169,13 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
               <dd className="mt-1 break-all">{compte.email}</dd>
             </div>
           </dl>
-          <Link href="/illusion" prefetch={false} className="block w-full rounded-xl bg-white py-3 text-center text-sm font-semibold text-black transition hover:bg-white/85">
+          <button
+            type="button"
+            onClick={() => useUIStore.getState().setPage(`illusion/${PAGE_DEPART}`)}
+            className="block w-full rounded-xl bg-white py-3 text-center text-sm font-semibold text-black transition hover:bg-white/85"
+          >
             Ouvrir Illusion
-          </Link>
+          </button>
           {alerte}
           <button
             type="button"
