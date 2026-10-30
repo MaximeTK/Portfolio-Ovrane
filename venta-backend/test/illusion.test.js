@@ -81,11 +81,11 @@ test('front : message d\'accueil du recruteur en français, en anglais, ou vide'
   const { CHAT_UI } = await front('messages.ts');
   assert.equal(
     CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: 'Développeur React', langue: 'fr' }),
-    'Oh, bienvenue ! Vous êtes de chez Orange, je présume, pour le poste « Développeur React ». Je suis Ovrane, et je suis chargée de vous accompagner sur ce portfolio.',
+    'Oh, bienvenue ! Vous êtes de chez Orange, je présume, pour le poste « Développeur React ». Je suis Ovrane, une intelligence artificielle chargée de vous accompagner sur ce portfolio.',
   );
   assert.equal(
     CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: 'React Developer', langue: 'en' }),
-    "Oh, welcome! You're from Orange, I presume, here about the React Developer position. I'm Ovrane, and I'll be guiding you through this portfolio.",
+    "Oh, welcome! You're from Orange, I presume, here about the React Developer position. I'm Ovrane, an AI assistant, and I'll be guiding you through this portfolio.",
   );
   assert.match(CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: '', langue: '' }), /Vous êtes de chez Orange, je présume\. Je suis Ovrane/);
   assert.match(CHAT_UI.recruiterWelcome({ entreprise: '', poste: 'Développeur React', langue: 'fr' }), /Vous venez pour le poste « Développeur React », je présume\./);
@@ -168,11 +168,11 @@ const CANDIDATURE = {
   lettre: 'Madame, Monsieur, votre poste React correspond à mon parcours.',
 };
 
-test('accueil du backend : avec nom inchangé, sans nom pour un visiteur', () => {
-  assert.equal(MISC_MESSAGES.welcomeNew('Max'), 'Bienvenue Max, enchantée de faire votre connaissance. En quoi puis-je vous aider ?');
-  assert.equal(MISC_MESSAGES.welcomeBack('Max'), 'Ravie de vous revoir Max, en quoi puis-je vous aider ?');
-  assert.equal(MISC_MESSAGES.welcomeNew(), 'Bienvenue, enchantée de faire votre connaissance. En quoi puis-je vous aider ?');
-  assert.equal(MISC_MESSAGES.welcomeBack(null), 'Ravie de vous revoir, en quoi puis-je vous aider ?');
+test('accueil du backend : avec nom inchangé, sans nom pour un visiteur, et toujours annoncé comme une IA', () => {
+  assert.equal(MISC_MESSAGES.welcomeNew('Max'), 'Bienvenue Max ! Je suis Ovrane, une intelligence artificielle qui présente le portfolio de Maxime. En quoi puis-je vous aider ?');
+  assert.equal(MISC_MESSAGES.welcomeBack('Max'), 'Ravie de vous revoir Max ! Je suis Ovrane, l\'intelligence artificielle de ce portfolio. En quoi puis-je vous aider ?');
+  assert.equal(MISC_MESSAGES.welcomeNew(), 'Bienvenue ! Je suis Ovrane, une intelligence artificielle qui présente le portfolio de Maxime. En quoi puis-je vous aider ?');
+  assert.equal(MISC_MESSAGES.welcomeBack(null), 'Ravie de vous revoir ! Je suis Ovrane, l\'intelligence artificielle de ce portfolio. En quoi puis-je vous aider ?');
 });
 
 test('bloc de contexte : entreprise, poste, pièces, consignes, champs vides omis', () => {

@@ -8,7 +8,8 @@ export const INDISPONIBLE = 'Ovrane ne répond pas pour le moment. Réessayez da
 
 export const CHAT_UI = {
   youLabel: 'Vous',
-  assistantLabel: 'Ovrane',
+  // Chaque réponse se signe comme une IA : le visiteur le sait dès le premier message (AI Act, art. 50)
+  assistantLabel: 'Ovrane · IA',
   noMessagesYet: 'Aucun message pour le moment…',
   viewingOldMessages: "Vous consultez d'anciens messages",
   backToLatest: 'Revenir aux messages les plus récents',
@@ -25,9 +26,9 @@ export const CHAT_UI = {
     if (!e && !p) return '';
     if (langue === 'en') {
       const who = e ? `You're from ${e}, I presume${p ? `, here about the ${p} position` : ''}.` : `You're here about the ${p} position, I presume.`;
-      return `Oh, welcome! ${who} I'm Ovrane, and I'll be guiding you through this portfolio.`;
+      return `Oh, welcome! ${who} I'm Ovrane, an AI assistant, and I'll be guiding you through this portfolio.`;
     }
     const qui = e ? `Vous êtes de chez ${e}, je présume${p ? `, pour le poste « ${p} »` : ''}.` : `Vous venez pour le poste « ${p} », je présume.`;
-    return `Oh, bienvenue ! ${qui} Je suis Ovrane, et je suis chargée de vous accompagner sur ce portfolio.`;
+    return `Oh, bienvenue ! ${qui} Je suis Ovrane, une intelligence artificielle chargée de vous accompagner sur ce portfolio.`;
   },
 } as const;

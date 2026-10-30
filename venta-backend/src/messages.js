@@ -152,9 +152,9 @@ export const SUCCESS_MESSAGES = {
 export const MISC_MESSAGES = {
   defaultResponse: 'Voilà.',
 
-  // Messages d'accueil standardisés (TTS + UI), sans nom pour un profil visiteur
-  welcomeNew: (name) => `Bienvenue${name ? ` ${name}` : ''}, enchantée de faire votre connaissance. En quoi puis-je vous aider ?`,
-  welcomeBack: (name) => `Ravie de vous revoir${name ? ` ${name}` : ''}, en quoi puis-je vous aider ?`,
+  // Messages d'accueil standardisés (TTS + UI), sans nom pour un profil visiteur ; le premier mot dit qu'on parle à une IA (AI Act, art. 50)
+  welcomeNew: (name) => `Bienvenue${name ? ` ${name}` : ''} ! Je suis Ovrane, une intelligence artificielle qui présente le portfolio de Maxime. En quoi puis-je vous aider ?`,
+  welcomeBack: (name) => `Ravie de vous revoir${name ? ` ${name}` : ''} ! Je suis Ovrane, l'intelligence artificielle de ce portfolio. En quoi puis-je vous aider ?`,
 };
 
 export function formatUserInfo(name, visitCount) {
