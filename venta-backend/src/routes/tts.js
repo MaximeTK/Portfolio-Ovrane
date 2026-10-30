@@ -5,6 +5,7 @@ import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { generateTTS } from '../services/tts.js';
 import { consommer } from '../services/budget.js';
+import { voixPermise } from '../services/voix.js';
 import { sendError, requireSession, limite } from '../http.js';
 import { ERROR_MESSAGES } from '../messages.js';
 import * as log from '../log.js';
@@ -17,10 +18,12 @@ export function setupTTSRoutes(app, openai) {
 
   app.post('/api/tts', requireSession, parSession, async (req, res, next) => {
     try {
-      const { text } = req.body || {};
+      const { text, source, voix } = req.body || {};
       if (typeof text !== 'string' || !text) return sendError(res, 400, ERROR_MESSAGES.ttsTextRequired);
       if (text.length > MAX_TEXTE) return sendError(res, 413, ERROR_MESSAGES.ttsTextTooLong);
 
+      // Seul un passage d'un texte signé par le serveur part chez un fournisseur : le site n'est pas un service de voix ouvert
+      if (!voixPermise(text, source, voix)) return res.json({ useClientTTS: true, text });
       // Plafond de voix du jour atteint : la voix du navigateur lit le texte, aucun fournisseur payant n'est appelé
       if (!(await consommer('tts'))) return res.json({ useClientTTS: true, text });
       const audio = await generateTTS(text, openai);

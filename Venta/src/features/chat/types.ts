@@ -24,9 +24,17 @@ export interface TTSData {
 
 export type ChatStatus = 'idle' | 'streaming';
 
-/** Accueil public d'une candidature Illusion (GET /api/illusion/accueil?jeton=). */
+/** Accueil public d'une candidature Illusion (GET /api/illusion/accueil?jeton=) : son texte, écrit et signé par le serveur. */
 export interface IllusionAccueil {
   entreprise: string;
   poste: string;
   langue: string;
+  texte?: string;
+  voix?: string;
+}
+
+/** Un texte à dire et sa signature : la voix du serveur ne lit que les textes qu'il a signés. */
+export interface TexteSigne {
+  texte: string;
+  voix: string;
 }

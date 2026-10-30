@@ -6,6 +6,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { isValidJeton, isRobotUserAgent } from '../src/validators.js';
 import { formatCandidatureContext, MISC_MESSAGES } from '../src/messages.js';
+import { signerVoix } from '../src/services/voix.js';
 import { buildVisitorContext } from '../src/services/chat/generer.js';
 import { IllusionCandidature } from '../src/models/IllusionCandidature.js';
 import { IllusionFichier } from '../src/models/IllusionFichier.js';
@@ -77,19 +78,18 @@ test('format du jeton identique côté front et backend', async () => {
   }
 });
 
-test('front : message d\'accueil du recruteur en français, en anglais, ou vide', async () => {
-  const { CHAT_UI } = await front('messages.ts');
+test('accueil du recruteur en français, en anglais, ou vide, écrit par le serveur', () => {
   assert.equal(
-    CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: 'Développeur React', langue: 'fr' }),
+    MISC_MESSAGES.recruiterWelcome({ entreprise: 'Orange', poste: 'Développeur React', langue: 'fr' }),
     'Oh, bienvenue ! Vous êtes de chez Orange, je présume, pour le poste « Développeur React ». Je suis Ovrane, une intelligence artificielle chargée de vous accompagner sur ce portfolio.',
   );
   assert.equal(
-    CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: 'React Developer', langue: 'en' }),
+    MISC_MESSAGES.recruiterWelcome({ entreprise: 'Orange', poste: 'React Developer', langue: 'en' }),
     "Oh, welcome! You're from Orange, I presume, here about the React Developer position. I'm Ovrane, an AI assistant, and I'll be guiding you through this portfolio.",
   );
-  assert.match(CHAT_UI.recruiterWelcome({ entreprise: 'Orange', poste: '', langue: '' }), /Vous êtes de chez Orange, je présume\. Je suis Ovrane/);
-  assert.match(CHAT_UI.recruiterWelcome({ entreprise: '', poste: 'Développeur React', langue: 'fr' }), /Vous venez pour le poste « Développeur React », je présume\./);
-  assert.equal(CHAT_UI.recruiterWelcome({ entreprise: ' ', poste: '', langue: 'fr' }), '');
+  assert.match(MISC_MESSAGES.recruiterWelcome({ entreprise: 'Orange', poste: '', langue: '' }), /Vous êtes de chez Orange, je présume\. Je suis Ovrane/);
+  assert.match(MISC_MESSAGES.recruiterWelcome({ entreprise: '', poste: 'Développeur React', langue: 'fr' }), /Vous venez pour le poste « Développeur React », je présume\./);
+  assert.equal(MISC_MESSAGES.recruiterWelcome({ entreprise: ' ', poste: '', langue: 'fr' }), '');
 });
 
 test('front : la voix découpe en blocs de 4 phrases et de 900 caractères au plus, entre deux phrases', async () => {
@@ -235,7 +235,9 @@ base.fichiers.push({ _id: FICHIER_CV, donnees: { buffer: PDF }, type: 'applicati
 test('GET accueil : entreprise, poste et langue seulement, 404 pour un jeton inconnu ou mal formé', async () => {
   const res = await appeler(`/api/illusion/accueil?jeton=${JETON}`);
   assert.equal(res.status, 200);
-  assert.deepEqual(res.json, { entreprise: 'Orange', poste: 'Développeur React', langue: 'fr' });
+  const accueil = { entreprise: 'Orange', poste: 'Développeur React', langue: 'fr' };
+  const texte = MISC_MESSAGES.recruiterWelcome(accueil);
+  assert.deepEqual(res.json, { ...accueil, texte, voix: signerVoix(texte) }, 'le texte part écrit et signé par le serveur');
   for (const cache of ['lettre', 'cv', 'offre.description', 'cv.texte']) assert.equal(cache in lectures.at(-1).projection, false, cache);
   for (const jeton of ['K3F9A0X2M1', 'zzzzzzzzzz', 'trop-long-pour-un-jeton', '']) {
     assert.equal((await appeler(`/api/illusion/accueil?jeton=${jeton}`)).status, 404, jeton);
@@ -245,7 +247,8 @@ test('GET accueil : entreprise, poste et langue seulement, 404 pour un jeton inc
 
 test('GET accueil : entreprise de l\'offre si la fiche est vide', async () => {
   const res = await appeler('/api/illusion/accueil?jeton=a1b2c3d4e5');
-  assert.deepEqual(res.json, { entreprise: 'Orange SA', poste: 'Développeur React', langue: 'en' });
+  assert.deepEqual({ ...res.json, texte: undefined, voix: undefined }, { entreprise: 'Orange SA', poste: 'Développeur React', langue: 'en', texte: undefined, voix: undefined });
+  assert.match(res.json.texte, /^Oh, welcome! You're from Orange SA/);
 });
 
 test('GET cv : le PDF rangé avec la candidature, servi en ligne et jamais mis en cache', async () => {

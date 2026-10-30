@@ -167,6 +167,19 @@ export const MISC_MESSAGES = {
   // Messages d'accueil standardisés (TTS + UI), sans nom pour un profil visiteur ; le premier mot dit qu'on parle à une IA (AI Act, art. 50)
   welcomeNew: (name) => `Bienvenue${name ? ` ${name}` : ''} ! Je suis Ovrane, une intelligence artificielle qui présente le portfolio de Maxime. En quoi puis-je vous aider ?`,
   welcomeBack: (name) => `Ravie de vous revoir${name ? ` ${name}` : ''} ! Je suis Ovrane, l'intelligence artificielle de ce portfolio. En quoi puis-je vous aider ?`,
+
+  // Accueil du recruteur venu par un lien d'Illusion, écrit ici pour partir signé vers la voix ; vide si ni poste ni entreprise
+  recruiterWelcome: ({ entreprise, poste, langue }) => {
+    const e = String(entreprise ?? '').trim();
+    const p = String(poste ?? '').trim();
+    if (!e && !p) return '';
+    if (langue === 'en') {
+      const who = e ? `You're from ${e}, I presume${p ? `, here about the ${p} position` : ''}.` : `You're here about the ${p} position, I presume.`;
+      return `Oh, welcome! ${who} I'm Ovrane, an AI assistant, and I'll be guiding you through this portfolio.`;
+    }
+    const qui = e ? `Vous êtes de chez ${e}, je présume${p ? `, pour le poste « ${p} »` : ''}.` : `Vous venez pour le poste « ${p} », je présume.`;
+    return `Oh, bienvenue ! ${qui} Je suis Ovrane, une intelligence artificielle chargée de vous accompagner sur ce portfolio.`;
+  },
 };
 
 export function formatUserInfo(name, visitCount) {

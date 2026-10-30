@@ -8,6 +8,7 @@ import { creerSession, lireSession, revoquerSession } from '../services/sessions
 import { demanderReinitialisation, reinitialiser } from '../services/reinitialisation.js';
 import { demanderVerification, verifier } from '../services/verification.js';
 import { compterVisite, profilPublic } from '../services/utilisateurs.js';
+import { signerVoix } from '../services/voix.js';
 import { sendError, egal, limite, requireSession } from '../http.js';
 import { config } from '../config.js';
 import { ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
@@ -22,7 +23,9 @@ const identifiant = (valeur) => String(valeur ?? '').trim().toLowerCase().replac
 // 8 caractères au moins, comme Illusion qui partage les comptes
 const motDePasseValide = (motDePasse) => typeof motDePasse === 'string' && motDePasse.length >= 8 && motDePasse.length <= 128;
 const sessionRecue = (req) => req.get('x-ovrane-session');
-const accueil = (user) => ({ reply: MISC_MESSAGES.welcomeBack(user.name), userProfile: profilPublic(user, false), activeUserId: user.id });
+// L'accueil part signé : la voix du serveur ne lit que ses propres textes
+const dit = (reply) => ({ reply, voix: signerVoix(reply) });
+const accueil = (user) => ({ ...dit(MISC_MESSAGES.welcomeBack(user.name)), userProfile: profilPublic(user, false), activeUserId: user.id });
 
 // Nouvelle session ; celle reçue est révoquée (rotation)
 async function ouvrirSession(req, utilisateur) {
@@ -56,7 +59,7 @@ async function creerVisiteur(req, res, next) {
     // Né avec sa session : son identifiant, affiché au client, ne s'échange jamais contre une autre
     const user = { id: `v${crypto.randomBytes(12).toString('hex')}`, migreLe: new Date(), visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] };
     await User.create(user);
-    res.json({ reply: MISC_MESSAGES.welcomeNew(), userProfile: profilPublic(user), activeUserId: user.id, session: await creerSession(user.id) });
+    res.json({ ...dit(MISC_MESSAGES.welcomeNew()), userProfile: profilPublic(user), activeUserId: user.id, session: await creerSession(user.id) });
   } catch (error) {
     next(error);
   }
@@ -89,7 +92,7 @@ export function setupAuthRoutes(app) {
       const id = crypto.createHash('sha256').update(`name:${nameNormalized}`).digest('hex').slice(0, 16);
       const user = { name, nameNormalized, id, email: emailNorm, passwordHash, visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] };
       await User.create(user);
-      res.json({ reply: MISC_MESSAGES.welcomeNew(name), userProfile: profilPublic(user), activeUserId: id, session: await ouvrirSession(req, id) });
+      res.json({ ...dit(MISC_MESSAGES.welcomeNew(name)), userProfile: profilPublic(user), activeUserId: id, session: await ouvrirSession(req, id) });
       // Après la réponse : l'adresse se prouve par le lien envoyé, avant toute ouverture d'Illusion
       demanderVerification({ id, name, email: emailNorm }).catch((error) => log.error('[AUTH] vérification :', error.message));
     } catch (error) {
@@ -109,7 +112,7 @@ export function setupAuthRoutes(app) {
       if (!compte?.passwordHash || !valide) return sendError(res, 401, ERROR_MESSAGES.invalidCredentials);
 
       const user = await compterVisite(compte.id);
-      res.json({ reply: MISC_MESSAGES.welcomeBack(user.name), userProfile: profilPublic(user, false), activeUserId: user.id, session: await ouvrirSession(req, user.id) });
+      res.json({ ...dit(MISC_MESSAGES.welcomeBack(user.name)), userProfile: profilPublic(user, false), activeUserId: user.id, session: await ouvrirSession(req, user.id) });
     } catch (error) {
       next(error);
     }

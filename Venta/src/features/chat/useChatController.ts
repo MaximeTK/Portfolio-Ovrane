@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import type { ChatStatus, Command, Message, MessageRole, TTSData } from './types';
+import type { ChatStatus, Command, Message, MessageRole, TexteSigne, TTSData } from './types';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { useUIStore } from '@/lib/uiStore';
 import { CHAT_UI, INDISPONIBLE } from '@/lib/messages';
@@ -12,6 +12,8 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' };
 /** Réponse du chat ou de l'arrivée ; activeUserId ne sert qu'à l'affichage, la session est un cookie. */
 interface Reponse {
   reply?: string;
+  // Signature de la réponse par le serveur, sans laquelle sa voix ne la lit pas
+  voix?: string;
   error?: string;
   commands?: Command[];
   tts?: TTSData;
@@ -68,6 +70,7 @@ export function useChatController() {
   const [status, setStatus] = useState<ChatStatus>('idle');
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [currentTTS, setCurrentTTS] = useState<TTSData | null>(null);
+  const [currentVoix, setCurrentVoix] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isNewProfile, setIsNewProfile] = useState(false);
   const [historySkip, setHistorySkip] = useState(0);
@@ -123,6 +126,8 @@ export function useChatController() {
     }
 
     setCurrentTTS(data.tts ?? null);
+    // Un texte écrit ici (indisponibilité, repli) n'a pas de signature : le navigateur le dit lui-même
+    setCurrentVoix(data.voix && text === data.reply?.trim() ? data.voix : null);
     setCurrentTranscript(text);
     setStatus('idle');
   }, [currentUserId]);
@@ -134,6 +139,7 @@ export function useChatController() {
     setStatus('streaming');
     setCurrentTranscript('');
     setCurrentTTS(null);
+    setCurrentVoix(null);
 
     // Texte et voix arrivent pendant que le modèle écrit ; la réponse complète clôt le flux
     let data: Reponse = {};
@@ -162,10 +168,11 @@ export function useChatController() {
     applyResponse(data, text || INDISPONIBLE);
   }, [status, applyResponse]);
 
-  const sendAuth = useCallback(async (mode: 'register' | 'login' | 'visitor', body: Record<string, string>, welcome?: Promise<string>) => {
+  const sendAuth = useCallback(async (mode: 'register' | 'login' | 'visitor', body: Record<string, string>, welcome?: Promise<TexteSigne | null>) => {
     setStatus('streaming');
     setCurrentTranscript('');
     setCurrentTTS(null);
+    setCurrentVoix(null);
     const res = await fetch(`/api/auth/${mode}`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) })
       .catch((err) => {
         console.error(`[auth] ${mode} :`, err);
@@ -176,9 +183,9 @@ export function useChatController() {
       setStatus('idle');
       throw new Error(data?.error || INDISPONIBLE);
     }
-    // L'accueil du recruteur, s'il est fourni, remplace celui du backend
+    // L'accueil du recruteur, s'il est fourni, remplace celui du backend, avec sa signature
     const recruteur = await welcome;
-    applyResponse(data, recruteur || data.reply || '');
+    applyResponse(recruteur ? { ...data, reply: recruteur.texte, voix: recruteur.voix } : data, recruteur?.texte || data.reply || '');
   }, [applyResponse]);
 
   const loadMoreMessages = useCallback(async () => {
@@ -200,6 +207,7 @@ export function useChatController() {
     sendAuth,
     currentTranscript,
     currentTTS,
+    currentVoix,
     currentUserId,
     isNewProfile,
     loadMoreMessages,

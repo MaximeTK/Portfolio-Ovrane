@@ -45,11 +45,12 @@ export function splitTextIntoTTSBlocks(text: string, sentencesPerBlock = 4): str
   return blocks;
 }
 
-async function fetchChunk(text: string, signal: AbortSignal, enFlux: boolean): Promise<PreparedChunk> {
+// Le passage part avec le texte entier et sa signature : le serveur ne lit que ce qu'il a lui-même écrit
+async function fetchChunk(text: string, source: string, voix: string, signal: AbortSignal, enFlux: boolean): Promise<PreparedChunk> {
   const response = await fetch('/api/tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, source, voix }),
     signal,
   });
   const isAudio = response.ok && response.headers.get('Content-Type')?.startsWith('audio/');
@@ -290,6 +291,7 @@ export function useTTS() {
     setupVisualization: SetupVisualizationFn,
     onEnd: () => void,
     onStart?: () => void,
+    voix?: string | null,
   ) => {
     stop();
     const runId = activeRunIdRef.current;
@@ -302,14 +304,15 @@ export function useTTS() {
     const limit = pLimit(2);
     const pending = blocks.map((block, index) =>
       limit(async (): Promise<PreparedChunk> => {
-        if (isStale()) return { type: 'client', text: block };
+        // Sans signature, le serveur refuserait : la voix du navigateur le dit tout de suite
+        if (isStale() || !voix) return { type: 'client', text: block };
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), TTS_TIMEOUT_MS);
         abortControllersRef.current.add(ctrl);
         let chunk: PreparedChunk = { type: 'client', text: block };
         try {
           // Le premier bloc se lit pendant qu'il arrive ; les suivants arrivent entiers pendant sa lecture
-          chunk = await fetchChunk(block, ctrl.signal, enFlux && index === 0);
+          chunk = await fetchChunk(block, fullText, voix, ctrl.signal, enFlux && index === 0);
         } catch {
           // Serveur injoignable ou trop lent : voix du navigateur
         } finally {

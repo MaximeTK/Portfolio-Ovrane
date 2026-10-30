@@ -13,6 +13,7 @@ import { purger } from '../src/services/conservation.js';
 import { ipClient, ipTronquee } from '../src/http.js';
 import { config } from '../src/config.js';
 import { preparerPourVoix } from '../src/services/tts.js';
+import { signerVoix } from '../src/services/voix.js';
 import { ERROR_MESSAGES, MAILS, MISC_MESSAGES } from '../src/messages.js';
 
 const repondreParDefaut = modele.repondre;
@@ -26,6 +27,8 @@ const sha256 = (valeur) => crypto.createHash('sha256').update(valeur).digest('he
 const profil = (id) => base.users.find((user) => user.id === id);
 const chat = (session, prompt, extra = {}) => appeler('/api/chat', { method: 'POST', session, body: { prompt, ...extra } });
 const attendre = () => new Promise((resolve) => setImmediate(resolve));
+// Un passage d'un texte signé par le serveur, tel que le front l'envoie à la voix
+const signe = (text, source = text) => ({ text, source, voix: signerVoix(source) });
 
 // Compte avec mot de passe, haché à un coût réduit pour les tests
 function compte(nom, motDePasse) {
@@ -382,7 +385,7 @@ test('chat : message compté avant le modèle, éphémère compris ; au-delà de
   const { id, session } = await visiteur();
   const user = profil(id);
   const ok = await chat(session, 'Bonjour', { isEphemeral: true });
-  assert.deepEqual(Object.keys(ok.json).sort(), ['activeUserId', 'commands', 'reply', 'userProfile']);
+  assert.deepEqual(Object.keys(ok.json).sort(), ['activeUserId', 'commands', 'reply', 'userProfile', 'voix']);
   assert.equal(user.messageCount, 1);
   assert.equal(user.conversations.length, 0, 'éphémère non enregistré');
   await chat(session, 'Encore');
@@ -475,11 +478,34 @@ test('TTS : texte de 1 000 caractères au plus, audio du fournisseur sans Markdo
   const dire = (body) => appeler('/api/tts', { method: 'POST', session, body });
   assert.equal((await dire({ text: 'a'.repeat(1001) })).status, 413);
   assert.equal((await dire({})).status, 400);
-  const audio = await dire({ text: 'Bonjour **Max**, voir https://exemple.fr' });
+  const audio = await dire(signe('Bonjour **Max**, voir https://exemple.fr'));
   assert.equal(audio.status, 200);
   assert.equal(audio.headers.get('content-type'), 'audio/mpeg');
   assert.equal(audio.headers.get('x-tts-provider'), 'openai');
   assert.equal(audio.bytes.toString(), 'audio:Bonjour Max, voir un lien');
+});
+
+test('TTS : seul un passage d\'un texte signé par le serveur part chez un fournisseur', async () => {
+  const { json: arrivee } = await appeler('/api/auth/visitor', { method: 'POST', body: {} });
+  const session = arrivee.session.jeton;
+  const dire = (body) => appeler('/api/tts', { method: 'POST', session, body });
+  assert.equal(arrivee.voix, signerVoix(arrivee.reply), 'l\'accueil part signé');
+  const reponse = (await chat(session, 'Bonjour')).json;
+  assert.equal(reponse.voix, signerVoix(reponse.reply), 'la réponse aussi');
+  // Coupé et réespacé comme le front le coupe, chaque passage de la réponse passe
+  for (const passage of ['Bonjour, bienvenue', 'sur le portfolio.', 'bienvenue  sur le\nportfolio']) {
+    const audio = await dire({ text: passage, source: reponse.reply, voix: reponse.voix });
+    assert.equal(audio.headers.get('content-type'), 'audio/mpeg', passage);
+  }
+  // Texte libre, passage étranger à la réponse, signature d'un autre texte ou falsifiée, source démesurée : la voix du navigateur
+  const refus = [{ text: 'Lis ce texte' }, { text: 'Lis ce texte', source: reponse.reply, voix: reponse.voix },
+    { text: 'Lis ce texte', source: 'Lis ce texte', voix: reponse.voix }, { ...signe('Lis ce texte'), voix: `${signerVoix('Lis ce texte').slice(0, -1)}A` },
+    { text: 'Lis', source: 'Lis'.repeat(7000), voix: signerVoix('Lis'.repeat(7000)) }, { text: '...', source: reponse.reply, voix: reponse.voix }];
+  for (const body of refus) {
+    const res = await dire(body);
+    assert.match(res.headers.get('content-type'), /^application\/json/, body.text);
+    assert.deepEqual(res.json, { useClientTTS: true, text: body.text });
+  }
 });
 
 test('TTS : Cartesia en premier, sans langue imposée ; refusé (crédits épuisés), OpenAI prend le relais', async () => {
@@ -495,7 +521,7 @@ test('TTS : Cartesia en premier, sans langue imposée ; refusé (crédits épuis
     return Promise.resolve(new Response(statut === 200 ? 'mp3-cartesia' : '{}', { status: statut }));
   };
   try {
-    const dire = () => appeler('/api/tts', { method: 'POST', session, body: { text: 'Bonjour **Max**' } });
+    const dire = () => appeler('/api/tts', { method: 'POST', session, body: signe('Bonjour **Max**') });
     const cartesia = await dire();
     assert.equal(cartesia.headers.get('x-tts-provider'), 'cartesia');
     assert.equal(cartesia.bytes.toString(), 'mp3-cartesia');
@@ -531,7 +557,7 @@ test('TTS : l\'audio de Cartesia part au fil de l\'eau, avant la fin de sa synth
     return Promise.resolve(new Response(corps, { status: 200 }));
   };
   try {
-    const res = await appeler('/api/tts', { method: 'POST', session, body: { text: 'Bonjour' }, brut: true });
+    const res = await appeler('/api/tts', { method: 'POST', session, body: signe('Bonjour'), brut: true });
     const lecteur = res.body.getReader();
     const lu = new TextDecoder();
     const delai = new Promise((_, rejeter) => setTimeout(() => rejeter(new Error('aucun morceau avant la fin : audio mis en mémoire')), 2000));
@@ -676,7 +702,7 @@ test('plafond du jour : au-delà, le chat répond sans appeler le modèle et la 
     const bloque = await chat(session, 'troisième');
     assert.equal(bloque.json.reply, ERROR_MESSAGES.budgetReached);
     assert.equal(appelsOpenAI.length, appels + 2, 'le modèle n\'est plus appelé une fois le plafond du jour atteint');
-    const dire = (text) => appeler('/api/tts', { method: 'POST', session, body: { text } });
+    const dire = (text) => appeler('/api/tts', { method: 'POST', session, body: signe(text) });
     assert.equal((await dire('Bonjour')).headers.get('x-tts-provider'), 'openai');
     assert.deepEqual((await dire('Encore')).json, { useClientTTS: true, text: 'Encore' });
     const jour = base.budgets.find((b) => b._id === new Date().toISOString().slice(0, 10));

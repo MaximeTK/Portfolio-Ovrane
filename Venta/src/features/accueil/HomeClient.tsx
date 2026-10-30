@@ -36,7 +36,7 @@ export default function HomeClient() {
   const reponseRef = useRef<ReponseEnFlux | null>(null);
 
   const { setupAudioVisualization } = useAudioVisualization();
-  const { send, sendAuth, status, currentTranscript, currentTTS, currentUserId, isNewProfile, messages, loadMoreMessages, hasMoreMessages } =
+  const { send, sendAuth, status, currentTranscript, currentTTS, currentVoix, currentUserId, isNewProfile, messages, loadMoreMessages, hasMoreMessages } =
     useChatController();
   const { isSpeaking, getAudioLevel, speakWithQueue, speakWithUrl, ouvrirFlux, stop: stopTTS } = useTTS();
   const addWindow = useUIStore((state) => state.addWindow);
@@ -167,8 +167,8 @@ export default function HomeClient() {
 
     const staticUrl = currentTTS?.isStaticFile ? currentTTS.staticUrl : undefined;
     if (staticUrl) speakWithUrl(staticUrl, setupAudioVisualization, onEnd, onStart);
-    else speakWithQueue(currentTranscript, setupAudioVisualization, onEnd, onStart);
-  }, [status, currentTranscript, lastProcessedTranscript, currentTTS, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addWindow, setWindowContent, montrerAstuce, setAppState, viewMode, page, sonCoupe]);
+    else speakWithQueue(currentTranscript, setupAudioVisualization, onEnd, onStart, currentVoix);
+  }, [status, currentTranscript, lastProcessedTranscript, currentTTS, currentVoix, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addWindow, setWindowContent, montrerAstuce, setAppState, viewMode, page, sonCoupe]);
 
   const handleSubmit = (text: string) => {
     setLastProcessedTranscript('');

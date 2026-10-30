@@ -5,6 +5,7 @@ import { addConversation, saveUserPreference, profilPublic } from '../utilisateu
 import { normaliser } from '../rag/recherche.js';
 import { PALETTES } from './outils.js';
 import { MISC_MESSAGES } from '../../messages.js';
+import { signerVoix } from '../voix.js';
 import { normalizeAssetParamToFilename } from '../../validators.js';
 import * as log from '../../log.js';
 
@@ -72,5 +73,5 @@ export async function processResponse(texte, prompt, user, ctx, isEphemeral) {
       .catch((error) => log.error('[CHAT] Échange non enregistré :', error.message));
   }
 
-  return { reply, commands, userProfile: profilPublic(user), activeUserId: user.id };
+  return { reply, voix: signerVoix(reply), commands, userProfile: profilPublic(user), activeUserId: user.id };
 }

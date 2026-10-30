@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useUIStore } from '@/lib/uiStore';
 import { HexagonalAnimation } from '@/features/oeil/HexagonalAnimation';
-import type { IllusionAccueil, Message } from '@/features/chat/types';
+import type { IllusionAccueil, Message, TexteSigne } from '@/features/chat/types';
 import type { useChatController } from '@/features/chat/useChatController';
 import { CHAT_UI, INDISPONIBLE } from '@/lib/messages';
 
@@ -29,11 +29,11 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
   const startVisit = useCallback(async () => {
     setAppState('processing');
     setVisitError(false);
-    // En parallèle de l'arrivée : l'accueil du recruteur ne dépend pas de la session
+    // En parallèle de l'arrivée : l'accueil du recruteur ne dépend pas de la session ; le serveur l'écrit et le signe
     const welcome = fetch('/api/illusion/accueil')
       .then((res) => (res.ok ? res.json() : null))
-      .then((accueil: IllusionAccueil | null) => (accueil ? CHAT_UI.recruiterWelcome(accueil) : ''))
-      .catch(() => '');
+      .then((accueil: IllusionAccueil | null): TexteSigne | null => (accueil?.texte ? { texte: accueil.texte, voix: accueil.voix ?? '' } : null))
+      .catch(() => null);
     // L'ancien identifiant est confié une seule fois au backend, puis oublié
     let ancienId: string | null = null;
     try {

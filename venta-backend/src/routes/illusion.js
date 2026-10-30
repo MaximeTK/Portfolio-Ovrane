@@ -6,7 +6,8 @@ import { IllusionFichier } from '../models/IllusionFichier.js';
 import { noterActivite } from '../services/conservation.js';
 import { sendError } from '../http.js';
 import * as log from '../log.js';
-import { ERROR_MESSAGES } from '../messages.js';
+import { ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
+import { signerVoix } from '../services/voix.js';
 import { isValidJeton } from '../validators.js';
 
 // Contenu binaire d'un document lu en lean : Binary du pilote MongoDB ou Buffer
@@ -25,11 +26,13 @@ export function setupIllusionRoutes(app) {
         ? await IllusionCandidature.findOne({ jeton }, { _id: 0, langue: 1, 'offre.titre': 1, 'offre.entreprise': 1, 'entreprise.nom': 1 }).lean()
         : null;
       if (!candidature) return sendError(res, 404, ERROR_MESSAGES.illusionNotFound);
-      res.json({
+      const accueil = {
         entreprise: candidature.entreprise?.nom || candidature.offre?.entreprise || '',
         poste: candidature.offre?.titre || '',
         langue: candidature.langue || '',
-      });
+      };
+      const texte = MISC_MESSAGES.recruiterWelcome(accueil);
+      res.json({ ...accueil, texte, voix: texte ? signerVoix(texte) : '' });
       // Après la réponse : le recruteur n'attend pas l'écriture qui garde sa candidature active
       noterActivite(jeton).catch((error) => log.error('[ILLUSION] Activité non notée :', error.message));
     } catch (error) {
