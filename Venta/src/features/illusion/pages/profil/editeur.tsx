@@ -410,7 +410,8 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
 
   // Un champ obligatoire vide mène à sa saisie : sa section s'ouvre, le curseur s'y pose
   const aller = (cle: string) => {
-    const g = GROUPES.find((x) => champsDe(x.cle, x.champs, schema).some((c) => c.cle === cle));
+    const sections = [...GROUPES, { cle: 'recherche', champs: CHAMPS_RECHERCHE }, { cle: 'divers', champs: CHAMPS_DIVERS }];
+    const g = sections.find((x) => champsDe(x.cle, x.champs, schema).some((c) => c.cle === cle));
     if (!g) return;
     setOuvertes((o) => new Set(o).add(g.cle));
     requestAnimationFrame(() => {
@@ -483,7 +484,8 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
   const corps = (cle: string) => {
     const g = GROUPES.find((x) => x.cle === cle);
     if (g || cle === 'recherche' || cle === 'divers') {
-      const champs = g ? champsDe(cle, g.champs, schema) : cle === 'recherche' ? CHAMPS_RECHERCHE : CHAMPS_DIVERS;
+      // La recherche et le savoir-être passent aussi par le schéma : obligatoires pour tous, ils le disent
+      const champs = champsDe(cle, g ? g.champs : cle === 'recherche' ? CHAMPS_RECHERCHE : CHAMPS_DIVERS, schema);
       const quoi = cle === 'recherche' ? 'recherche' : 'plats';
       return <div className="grille-2">{champs.map((c) => champ(cle, c, saisie[quoi][c.cle] ?? '', (v) => poser(quoi, c.cle, v)))}</div>;
     }

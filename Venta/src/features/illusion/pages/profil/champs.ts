@@ -15,6 +15,9 @@ export type Champ = {
   large?: boolean;
 };
 
+// La réponse qui ne dit rien d'une question sensible : JADE la rend par l'option « Prefer not to say » du formulaire
+export const SANS_REPONSE = 'Je préfère ne pas répondre';
+
 export const CHAMPS_IDENTITE: Champ[] = [
   { cle: 'civilite', libelle: 'Civilité', type: 'choix', choix: ['Madame', 'Monsieur'] },
   { cle: 'prenom', libelle: 'Prénom', exemple: 'Prénom' },
@@ -29,7 +32,10 @@ export const CHAMPS_IDENTITE: Champ[] = [
   { cle: 'code_postal', libelle: 'Code postal', exemple: '69000' },
   { cle: 'pays', libelle: 'Pays', type: 'lieu', portee: 'pays', exemple: 'France' },
   { cle: 'nationalite', libelle: 'Nationalité', exemple: 'Française' },
-  { cle: 'genre', libelle: 'Genre (facultatif)', type: 'choix', choix: ['Homme', 'Femme', 'Ne pas préciser'] },
+  { cle: 'genre', libelle: 'Genre', type: 'choix', choix: ['Homme', 'Femme', 'Ne pas préciser'] },
+  // Les formulaires américains la demandent : « Je préfère ne pas répondre » leur suffit
+  { cle: 'origine', libelle: 'Origine (formulaires américains)', type: 'choix', choix: [SANS_REPONSE, 'Hispanique ou latino', 'Blanc',
+    'Noir ou afro-américain', 'Asiatique', 'Océanien (Hawaï, îles du Pacifique)', "Amérindien ou natif d'Alaska", 'Plusieurs origines'] },
   { cle: 'linkedin', libelle: 'LinkedIn', repli: 'identite.linkedin', exemple: 'linkedin.com/in/prenomnom' },
   { cle: 'github', libelle: 'GitHub', repli: 'identite.github' },
   { cle: 'portfolio', libelle: 'Portfolio', repli: 'identite.site' },
@@ -52,10 +58,14 @@ export const CHAMPS_SITUATION: Champ[] = [
   { cle: 'demenagement', libelle: 'Prêt(e) à déménager', type: 'choix', choix: ['oui', 'non'] },
   { cle: 'permis', libelle: 'Permis', exemple: 'B' },
   { cle: 'mobilite', libelle: 'Mobilité', exemple: 'Lyon et alentours' },
+  { cle: 'rqth', libelle: 'Reconnaissance de travailleur handicapé (RQTH)', type: 'choix', choix: [SANS_REPONSE, 'non', 'oui'] },
+  { cle: 'casier_judiciaire', libelle: 'Casier judiciaire vierge', type: 'choix', choix: ['oui', 'non', SANS_REPONSE] },
+  { cle: 'ancien_combattant', libelle: 'Ancien combattant (formulaires américains)', type: 'choix', choix: ['non', 'oui', SANS_REPONSE] },
 ];
 
 // Le salaire en chiffres : un formulaire demande un nombre, une lettre une phrase
 export const CHAMPS_REMUNERATION: Champ[] = [
+  { cle: 'salaire_actuel', libelle: 'Salaire actuel', type: 'nombre', exemple: '34000' },
   { cle: 'salaire_minimum', libelle: 'Salaire minimum', type: 'nombre', exemple: '36000' },
   { cle: 'salaire_cible', libelle: 'Salaire visé', type: 'nombre', exemple: '40000' },
   { cle: 'salaire_base', libelle: 'Brut ou net', type: 'choix', choix: ['brut', 'net'] },
