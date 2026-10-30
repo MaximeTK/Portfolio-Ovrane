@@ -96,6 +96,7 @@ export const ERROR_MESSAGES = {
   // Le même message que le compte existe ou non
   invalidCredentials: 'Identifiant ou mot de passe incorrect.',
   reinitInvalide: 'Ce lien est invalide, déjà utilisé ou expiré. Demandez-en un nouveau.',
+  verificationInvalide: 'Ce lien de vérification est invalide, déjà utilisé ou expiré. Demandez-en un nouveau depuis la page de connexion.',
 
   // Chat et TTS
   promptRequired: 'Prompt requis',
@@ -108,6 +109,7 @@ export const ERROR_MESSAGES = {
   illusionCvNotFound: 'CV introuvable',
   illusionNotFound: 'Candidature introuvable',
   illusionAccountRequired: 'Connectez-vous avec votre compte Ovrane pour ouvrir Illusion.',
+  illusionEmailNonVerifie: 'Vérifiez d\'abord votre adresse e-mail : le lien est à demander depuis la page de connexion.',
   illusionTooLarge: 'Fichier trop lourd : 15 Mo au plus.',
   illusionUnavailable: 'Illusion ne répond pas pour le moment. Réessayez dans un instant.',
   illusionBadGateway: 'Illusion a interrompu sa réponse. Réessayez dans un instant.',
@@ -129,6 +131,16 @@ export const MAILS = {
       'Pour choisir un nouveau mot de passe, ouvrez ce lien dans les 30 minutes :',
       `<a href="${echapper(lien)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#0a0a0e;color:#ffffff;text-decoration:none;font-weight:600">Choisir un nouveau mot de passe</a>`,
       '<span style="color:#666666;font-size:13px">Si vous n\'avez rien demandé, ignorez cet e-mail : votre mot de passe ne change pas.</span>',
+    ]),
+  }),
+  verification: (nom, lien) => ({
+    sujet: 'Confirmez votre adresse e-mail Ovrane',
+    texte: `Bonjour ${nom},\n\nPour confirmer que cette adresse est bien la vôtre, ouvrez ce lien dans les 24 heures :\n${lien}\n\nSi vous n'avez pas créé de compte Ovrane, ignorez cet e-mail.`,
+    html: paragraphes([
+      `Bonjour ${echapper(nom)},`,
+      'Pour confirmer que cette adresse est bien la vôtre, ouvrez ce lien dans les 24 heures :',
+      `<a href="${echapper(lien)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#0a0a0e;color:#ffffff;text-decoration:none;font-weight:600">Confirmer mon adresse</a>`,
+      '<span style="color:#666666;font-size:13px">Si vous n\'avez pas créé de compte Ovrane, ignorez cet e-mail.</span>',
     ]),
   }),
   motDePasseChange: (nom) => ({

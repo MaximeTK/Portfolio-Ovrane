@@ -219,7 +219,7 @@ test('compte : pseudo et e-mail du compte de la session, null pour un visiteur, 
   assert.deepEqual((await appeler('/api/auth/compte')).json, { compte: null });
   compte('Anna', 'mot-de-passe-d-anna');
   const { jeton } = (await appeler('/api/auth/login', { method: 'POST', body: { identifier: 'anna', password: 'mot-de-passe-d-anna' } })).json.session;
-  assert.deepEqual((await appeler('/api/auth/compte', { session: jeton })).json, { compte: { pseudo: 'Anna', email: 'anna@exemple.fr' } });
+  assert.deepEqual((await appeler('/api/auth/compte', { session: jeton })).json, { compte: { pseudo: 'Anna', email: 'anna@exemple.fr', emailVerifie: false } });
   await appeler('/api/auth/logout', { method: 'POST', session: jeton });
   assert.deepEqual((await appeler('/api/auth/compte', { session: jeton })).json, { compte: null });
 });
@@ -294,6 +294,7 @@ test('mot de passe oublié : même réponse, lien par Resend à usage unique, le
     assert.equal((await login('ancien-mot-de-passe')).status, 401);
     assert.equal((await login('nouveau-mot-de-passe')).status, 200);
     assert.ok(profil(marc.id).motDePasseChangeLe instanceof Date);
+    assert.ok(profil(marc.id).emailVerifieLe instanceof Date, 'le lien reçu à cette adresse la prouve');
   });
 });
 
@@ -700,4 +701,28 @@ test('purge : les empreintes d\'IP d\'avant s\'effacent aussi des comptes actifs
   base.users.push({ id: 'cactif-ip', email: 'actif-ip@exemple.fr', lastVisit: new Date(), ipHashes: ['ancienne'] });
   await purger();
   assert.deepEqual(profil('cactif-ip').ipHashes, []);
+});
+
+test('vérification de l\'adresse : lien envoyé à l\'inscription, à usage unique, dit par le compte', async () => {
+  await avecResend(async (mails) => {
+    const inscrit = await appeler('/api/auth/register', { method: 'POST',
+      body: { pseudo: 'Verif', email: 'verif@exemple.fr', password: 'un-mot-de-passe-long', inviteCode: 'invitation-de-test' } });
+    const session = inscrit.json.session.jeton;
+    const compteDe = async () => (await appeler('/api/auth/compte', { session })).json.compte;
+    assert.equal((await compteDe()).emailVerifie, false);
+    const [mail] = await mails(1);
+    assert.deepEqual([mail.to, mail.subject], [['verif@exemple.fr'], MAILS.verification('Verif', '').sujet]);
+    const jeton = /#verif=([A-Za-z0-9_-]{43})/.exec(mail.text)?.[1];
+    assert.ok(mail.html.includes(`${config.siteUrl}/connexion#verif=${jeton}`), 'jeton dans le fragment');
+    const demandes = base.verifications.filter((v) => v.email === 'verif@exemple.fr');
+    assert.deepEqual(demandes.map((v) => v._id), [sha256(jeton)], 'seule l\'empreinte est gardée');
+    const verifier = (j) => appeler('/api/auth/verifier', { method: 'POST', body: { jeton: j } });
+    assert.deepEqual((await verifier('mauvais')).json, { error: ERROR_MESSAGES.verificationInvalide });
+    assert.deepEqual((await verifier(jeton)).json, { verifie: true });
+    assert.deepEqual((await verifier(jeton)).json, { error: ERROR_MESSAGES.verificationInvalide }, 'usage unique');
+    assert.equal((await compteDe()).emailVerifie, true);
+    // Déjà vérifiée : même réponse, aucun nouvel e-mail
+    assert.deepEqual((await appeler('/api/auth/verification', { method: 'POST', session })).json, { envoye: true });
+    assert.equal((await mails(2)).length, 1);
+  });
 });

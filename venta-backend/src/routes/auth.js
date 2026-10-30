@@ -6,8 +6,9 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { creerSession, lireSession, revoquerSession } from '../services/sessions.js';
 import { demanderReinitialisation, reinitialiser } from '../services/reinitialisation.js';
+import { demanderVerification, verifier } from '../services/verification.js';
 import { compterVisite, profilPublic } from '../services/utilisateurs.js';
-import { sendError, egal, limite } from '../http.js';
+import { sendError, egal, limite, requireSession } from '../http.js';
 import { config } from '../config.js';
 import { ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
 import * as log from '../log.js';
@@ -89,6 +90,8 @@ export function setupAuthRoutes(app) {
       const user = { name, nameNormalized, id, email: emailNorm, passwordHash, visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] };
       await User.create(user);
       res.json({ reply: MISC_MESSAGES.welcomeNew(name), userProfile: profilPublic(user), activeUserId: id, session: await ouvrirSession(req, id) });
+      // Après la réponse : l'adresse se prouve par le lien envoyé, avant toute ouverture d'Illusion
+      demanderVerification({ id, name, email: emailNorm }).catch((error) => log.error('[AUTH] vérification :', error.message));
     } catch (error) {
       if (error.code === 11000) return sendError(res, 409, ERROR_MESSAGES.accountTaken);
       next(error);
@@ -137,8 +140,30 @@ export function setupAuthRoutes(app) {
   app.get('/api/auth/compte', async (req, res, next) => {
     try {
       const session = await lireSession(sessionRecue(req));
-      const user = session && await User.findOne({ id: session.utilisateur }, { _id: 0, name: 1, email: 1 }).lean();
-      res.json({ compte: user?.email ? { pseudo: user.name, email: user.email } : null });
+      const user = session && await User.findOne({ id: session.utilisateur }, { _id: 0, name: 1, email: 1, emailVerifieLe: 1 }).lean();
+      res.json({ compte: user?.email ? { pseudo: user.name, email: user.email, emailVerifie: Boolean(user.emailVerifieLe) } : null });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Un nouveau lien pour l'adresse du compte de la session, 3 par heure ; même réponse si elle est déjà vérifiée
+  const parCompte = limite(60 * 60 * 1000, 3, (req) => req.user.id);
+  app.post('/api/auth/verification', requireSession, parCompte, async (req, res, next) => {
+    try {
+      const user = await User.findOne({ id: req.user.id }, { _id: 0, id: 1, name: 1, email: 1, emailVerifieLe: 1 }).lean();
+      if (!user?.email) return sendError(res, 400, ERROR_MESSAGES.illusionAccountRequired);
+      res.json({ envoye: true });
+      if (!user.emailVerifieLe) demanderVerification(user).catch((error) => log.error('[AUTH] vérification :', error.message));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/api/auth/verifier', parIp, async (req, res, next) => {
+    try {
+      if (!(await verifier(req.body?.jeton))) return sendError(res, 400, ERROR_MESSAGES.verificationInvalide);
+      res.json({ verifie: true });
     } catch (error) {
       next(error);
     }

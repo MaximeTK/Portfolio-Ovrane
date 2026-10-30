@@ -39,7 +39,8 @@ export async function reinitialiser(jeton, motDePasse) {
   // motDePasseChangeLe : de quoi invalider aussi les sessions signées d'Illusion, qui partage les comptes
   const compte = await User.findOneAndUpdate(
     { id: demande.utilisateur },
-    { $set: { passwordHash, motDePasseChangeLe: new Date() } },
+    // Un lien reçu à cette adresse prouve qu'elle est la sienne : elle vaut aussi vérification
+    { $set: { passwordHash, motDePasseChangeLe: new Date(), emailVerifieLe: new Date() } },
     { projection: { _id: 0, name: 1, email: 1 } },
   ).lean();
   if (!compte) return false;

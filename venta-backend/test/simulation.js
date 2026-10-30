@@ -10,6 +10,7 @@ import { IllusionCandidature } from '../src/models/IllusionCandidature.js';
 import { IllusionFichier } from '../src/models/IllusionFichier.js';
 import { RedirectLog } from '../src/models/RedirectLog.js';
 import { Budget } from '../src/models/Budget.js';
+import { Verification } from '../src/models/Verification.js';
 import { createApp } from '../src/app.js';
 
 const valeur = (doc, chemin) => chemin.split('.').reduce((v, cle) => v?.[cle], doc);
@@ -154,6 +155,7 @@ export const base = {
   fichiers: simuler(IllusionFichier),
   logs: simuler(RedirectLog),
   budgets: simuler(Budget),
+  verifications: simuler(Verification),
 };
 
 // Le modèle simulé répond par modele.repondre, que chaque test peut remplacer

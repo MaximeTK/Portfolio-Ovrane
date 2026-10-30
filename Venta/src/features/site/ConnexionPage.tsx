@@ -9,7 +9,7 @@ import { INDISPONIBLE } from '@/lib/messages';
 import { useUIStore } from '@/lib/uiStore';
 
 type Mode = 'login' | 'register' | 'oubli' | 'reinit';
-type Compte = { pseudo: string; email: string };
+type Compte = { pseudo: string; email: string; emailVerifie?: boolean };
 
 const VIDES = { identifier: '', pseudo: '', email: '', password: '', inviteCode: '' };
 const TITRES: Record<Mode, string> = { login: 'Connexion', register: 'Créer un compte', oubli: 'Mot de passe oublié', reinit: 'Nouveau mot de passe' };
@@ -59,6 +59,8 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const [info, setInfo] = useState('');
+  // Relit le compte après une confirmation d'adresse
+  const [relu, setRelu] = useState(0);
 
   useEffect(() => {
     let actif = true;
@@ -69,7 +71,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
     return () => {
       actif = false;
     };
-  }, [utilisateur]);
+  }, [utilisateur, relu]);
 
   const changer = (cle: keyof typeof VIDES) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setChamps((c) => ({ ...c, [cle]: e.target.value }));
@@ -98,6 +100,27 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
     }
   };
 
+  // Le lien reçu par e-mail : le fragment quitte l'URL (et l'historique) dès l'arrivée ; une confirmation d'adresse se consomme aussitôt
+  useEffect(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    if (fragment.has('verif') || fragment.has('reinit')) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    const verif = fragment.get('verif');
+    if (!verif) return;
+    agir(async () => {
+      await poster('/api/auth/verifier', { jeton: verif });
+      setInfo('Adresse confirmée : Illusion vous est ouvert.');
+      setRelu((n) => n + 1);
+    });
+    // Une seule fois, à l'arrivée sur la page
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const demanderVerification = () =>
+    agir(async () => {
+      await poster('/api/auth/verification');
+      setInfo(`Un lien de confirmation vient de partir vers ${compte?.email}. Il reste valable 24 heures.`);
+    });
+
   const envoyer = (e: React.FormEvent) => {
     e.preventDefault();
     const { identifier, pseudo, email, password, inviteCode } = champs;
@@ -114,6 +137,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
         setInfo('Mot de passe changé. Connectez-vous avec le nouveau.');
       } else {
         await sendAuth(mode, mode === 'login' ? { identifier, password } : { pseudo, email, password, inviteCode });
+        if (mode === 'register') setInfo('Compte créé. Confirmez votre adresse avec le lien reçu par e-mail pour ouvrir Illusion.');
       }
       setChamps(VIDES);
     });
@@ -172,14 +196,22 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
               <dd className="mt-1 break-all">{compte.email}</dd>
             </div>
           </dl>
+          {compte.emailVerifie === false && (
+            <div className="space-y-3 rounded-xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm leading-relaxed text-amber-100">
+              <p>Adresse à confirmer : Illusion s&apos;ouvre une fois le lien reçu par e-mail ouvert.</p>
+              <button type="button" onClick={demanderVerification} disabled={envoi} className={LIEN}>Recevoir le lien de confirmation</button>
+            </div>
+          )}
           <button
             type="button"
+            disabled={compte.emailVerifie === false}
             onClick={() => useUIStore.getState().setPage(`illusion/${PAGE_DEPART}`)}
-            className="block w-full rounded-xl bg-white py-3 text-center text-sm font-semibold text-black transition hover:bg-white/85"
+            className="block w-full rounded-xl bg-white py-3 text-center text-sm font-semibold text-black transition hover:bg-white/85 disabled:opacity-40"
           >
             Ouvrir Illusion
           </button>
           {alerte}
+          {info && <p role="status" className="text-sm text-emerald-300">{info}</p>}
           <button
             type="button"
             onClick={deconnecter}

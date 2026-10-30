@@ -62,7 +62,7 @@ after(() => {
 
 // Un compte avec e-mail et sa session
 const SESSION = crypto.randomBytes(32).toString('base64url');
-base.users.push({ id: 'cillusion01', name: 'Essai', nameNormalized: 'essai', email: 'essai@exemple.test', visitCount: 1, conversations: [] });
+base.users.push({ id: 'cillusion01', name: 'Essai', nameNormalized: 'essai', email: 'essai@exemple.test', emailVerifieLe: new Date(), visitCount: 1, conversations: [] });
 base.sessions.push({ _id: crypto.createHash('sha256').update(SESSION).digest('hex'), utilisateur: 'cillusion01',
   creeLe: new Date(), vuLe: new Date(), expireLe: new Date(Date.now() + 3600 * 1000) });
 
@@ -204,4 +204,27 @@ test('relais Illusion : sa propre limite, hors de la limite globale des autres r
     assert.equal(res.headers['ratelimit-limit'], '60000');
   }
   assert.equal(await restant(), avant - 1, 'les requêtes d\'Illusion ne comptent pas dans la limite globale');
+});
+
+test('relais Illusion : une adresse non vérifiée n\'ouvre rien, sans rien demander à Illusion', async () => {
+  const avant = recues.length;
+  const jeton = crypto.randomBytes(32).toString('base64url');
+  base.users.push({ id: 'cnonverifie', name: 'Non', nameNormalized: 'non', email: 'non@exemple.test', visitCount: 1, conversations: [] });
+  base.sessions.push({ _id: crypto.createHash('sha256').update(jeton).digest('hex'), utilisateur: 'cnonverifie',
+    creeLe: new Date(), vuLe: new Date(), expireLe: new Date(Date.now() + 3600 * 1000) });
+  const refus = await envoyer('/api/illusion/app/candidatures', { session: jeton });
+  assert.deepEqual([refus.status, refus.json], [403, { error: ERROR_MESSAGES.illusionEmailNonVerifie }]);
+  assert.equal(recues.length, avant);
+});
+
+test('relais Illusion : ni connexion, ni inscription, ni canal du logiciel de bureau ; la lecture du compte passe', async () => {
+  const avant = recues.length;
+  for (const [methode, chemin] of [['POST', '/api/illusion/app/session'], ['POST', '/api/illusion/app/inscription'],
+    ['GET', '/api/illusion/app/inscription'], ['POST', '/api/illusion/app/mains/tour'], ['POST', '/api/illusion/app/mains%2Fordre']]) {
+    const corps = methode === 'GET' ? {} : { entetes: { 'Content-Type': 'application/json' }, corps: '{}' };
+    assert.equal((await envoyer(chemin, { methode, ...corps })).status, 404, `${methode} ${chemin}`);
+  }
+  assert.equal(recues.length, avant, 'rien n\'atteint Illusion');
+  assert.equal((await envoyer('/api/illusion/app/session')).status, 200);
+  assert.equal(recues.at(-1).url, '/api/session');
 });

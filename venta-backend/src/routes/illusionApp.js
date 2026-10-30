@@ -16,14 +16,25 @@ const TAILLE_MAX = 21 * 1024 * 1024;
 const RENDUS = ['content-type', 'content-disposition', 'content-length', 'content-security-policy'];
 // Servi sur le domaine du site, un document actif sans CSP d'Illusion y exécuterait ses scripts
 const ACTIF = /^\s*(text\/html|image\/svg\+xml|application\/xhtml\+xml|text\/xml|application\/xml)/i;
+// Jamais relayés : la connexion et l'inscription d'Illusion (Ovrane a les siennes, limitées), et le canal du logiciel de bureau
+const INTERDITS = [/^POST \/api\/session\/?$/, /^[A-Z]+ \/api\/inscription\/?$/, /^[A-Z]+ \/api\/mains\/(tour|ordre)\/?$/];
+// Le chemin comme Illusion le route : %2F y redevient « / » ; un encodage malformé reste tel quel, comme chez lui
+const decode = (chemin) => {
+  try {
+    return decodeURIComponent(chemin);
+  } catch {
+    return chemin;
+  }
+};
 // Illusion injoignable plutôt qu'en erreur : 503, comme un service à l'arrêt
 const INJOIGNABLE = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'EHOSTUNREACH', 'ENETUNREACH', 'ETIMEDOUT']);
 
-// L'e-mail du compte de la session : Illusion connaît ses comptes par leur adresse
+// L'e-mail du compte de la session, prouvé par son lien : Illusion connaît ses comptes par leur adresse
 async function compte(req, res, next) {
   try {
-    const user = await User.findOne({ id: req.user.id }, { _id: 0, email: 1 }).lean();
+    const user = await User.findOne({ id: req.user.id }, { _id: 0, email: 1, emailVerifieLe: 1 }).lean();
     if (!user?.email) return sendError(res, 401, ERROR_MESSAGES.illusionAccountRequired);
+    if (!user.emailVerifieLe) return sendError(res, 403, ERROR_MESSAGES.illusionEmailNonVerifie);
     req.user.email = user.email;
     next();
   } catch (error) {
@@ -36,6 +47,7 @@ function relayer(req, res) {
   // L'URL résout les `..` : rien ne sort de l'API d'Illusion
   const cible = new URL(`/api${req.url}`, config.illusion.url);
   if (!cible.pathname.startsWith('/api/')) return sendError(res, 404, ERROR_MESSAGES.notFound);
+  if (INTERDITS.some((motif) => motif.test(`${req.method} ${decode(cible.pathname)}`))) return sendError(res, 404, ERROR_MESSAGES.notFound);
   if (Number(req.get('content-length')) > TAILLE_MAX) return sendError(res, 413, ERROR_MESSAGES.illusionTooLarge);
 
   // Liste blanche : ni cookie, ni Origin, ni Sec-Fetch-*, ni session, ni en-tête du relais venu du client

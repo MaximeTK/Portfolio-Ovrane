@@ -10,6 +10,8 @@ const ROUTES = new Set([
   'GET auth/compte',
   'POST auth/oubli',
   'POST auth/reinitialiser',
+  'POST auth/verification',
+  'POST auth/verifier',
   'POST chat',
   'GET chat/history',
   'GET preferences',
