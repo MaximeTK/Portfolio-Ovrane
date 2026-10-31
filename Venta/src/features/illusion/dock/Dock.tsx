@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ECART, PRISES, installerDock, type ArbreDepart, type DefFenetre, type Moteur } from './moteur';
+import { DUREES, ecrire, effacer, fondu, mouvementReduit, voiler, type Controle } from '../partage/glyphes';
+import { DUREE_RANGEMENT, ECART, PRISES, installerDock, type ArbreDepart, type DefFenetre, type Moteur, type OptionsRangement } from './moteur';
 
 export type { Arbre, ArbreDepart, DefFenetre, Taille, Zone } from './moteur';
 
@@ -21,8 +22,20 @@ export const arbreDePage = (principal: string, miniPrincipal = TAILLES_PRINCIPAL
   };
 };
 
-type ContexteDock = { ranger: (anime?: boolean) => void; onglet: string | null; ouvrir: (cle: string) => void; fermer: () => void };
+type ContexteDock = {
+  ranger: (anime?: boolean, options?: OptionsRangement) => void;
+  // Lancé une fois les fenêtres posées : tout de suite, ou juste après la première pose du dock qui arrive
+  quandPose: (f: () => void) => void;
+  // Fenêtres visibles sur la page quittée ; null à l'arrivée dans Illusion
+  avant: Record<string, boolean> | null;
+  onglet: string | null;
+  ouvrir: (cle: string) => void;
+  fermer: () => void;
+};
 const Contexte = createContext<ContexteDock | null>(null);
+
+// Fenêtres visibles du dock monté : celui de la page suivante les lit au premier rendu, quand l'ancien est encore là
+const DOCK = { visibles: {} as Record<string, boolean> };
 
 function useContexte() {
   const c = useContext(Contexte);
@@ -57,6 +70,8 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
   const fentes = useRef<HTMLDivElement>(null);
   const remise = useRef<HTMLButtonElement>(null);
   const moteur = useRef<Moteur | null>(null);
+  const attente = useRef<(() => void)[]>([]);
+  const [avant] = useState(() => (Object.keys(DOCK.visibles).length ? { ...DOCK.visibles } : null));
   const [onglet, setOnglet] = useState(panneau);
   // Le moteur relit toujours les dernières propriétés sans se réinstaller ; les tailles données complètent celles par défaut
   const proprietes = useRef({ principal, arbre, prises, tailles: {} as Record<string, DefFenetre> });
@@ -79,14 +94,65 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
       remise: remise.current!,
     });
     moteur.current = m;
+    const enAttente = attente.current;
+    attente.current = [];
+    enAttente.forEach((f) => f());
     return () => {
       m.detruire();
       moteur.current = null;
+      DOCK.visibles = {};
     };
   }, [id]);
 
-  const ranger = useCallback((anime = true) => moteur.current?.ranger(anime), []);
-  const valeur = useMemo(() => ({ ranger, onglet, ouvrir: setOnglet, fermer: () => setOnglet(null) }), [ranger, onglet]);
+  const ranger = useCallback((anime = true, options?: OptionsRangement) => moteur.current?.ranger(anime, options), []);
+  const quandPose = useCallback((f: () => void) => {
+    if (moteur.current) f();
+    else attente.current.push(f);
+  }, []);
+
+  // Autre onglet du panneau ouvert : la fenêtre reste, sa vue s'efface puis la nouvelle s'écrit ; rien ne change de taille
+  const ongletPose = useRef(onglet);
+  const echange = useRef<{ efface: Controle | null; ecrit: Controle | null; minuteur: number; aEcrire: boolean }>({ efface: null, ecrit: null, minuteur: 0, aEcrire: false });
+  const arreterEchange = useCallback(() => {
+    const e = echange.current;
+    clearTimeout(e.minuteur);
+    e.efface?.annuler();
+    e.ecrit?.annuler();
+    Object.assign(e, { efface: null, ecrit: null, aEcrire: false });
+  }, []);
+  const ouvrir = useCallback((cle: string) => {
+    arreterEchange();
+    const actuel = ongletPose.current;
+    const vue = actuel !== null && actuel !== cle && !mouvementReduit() ? coquille.current?.querySelector('.panneau:not([hidden]) .p-vue.ouverte') : null;
+    if (!vue) {
+      setOnglet(cle);
+      return;
+    }
+    const e = echange.current;
+    e.efface = effacer(vue, { duree: DUREES.effacer });
+    e.minuteur = window.setTimeout(() => {
+      e.aEcrire = true;
+      setOnglet(cle);
+    }, DUREES.effacer);
+  }, [arreterEchange]);
+  const fermer = useCallback(() => {
+    arreterEchange();
+    setOnglet(null);
+  }, [arreterEchange]);
+  useLayoutEffect(() => {
+    ongletPose.current = onglet;
+    const e = echange.current;
+    if (!e.aEcrire) return;
+    e.aEcrire = false;
+    // L'ancienne vue, cachée maintenant, retrouve son texte avant d'être peinte
+    e.efface?.annuler();
+    e.efface = null;
+    const vue = coquille.current?.querySelector('.panneau .p-vue.ouverte');
+    if (vue) e.ecrit = ecrire(vue, { duree: DUREES.contenu });
+  }, [onglet]);
+  useLayoutEffect(() => arreterEchange, [arreterEchange]);
+
+  const valeur = useMemo(() => ({ ranger, quandPose, avant, onglet, ouvrir, fermer }), [ranger, quandPose, avant, onglet, ouvrir, fermer]);
 
   return (
     <Contexte.Provider value={valeur}>
@@ -108,26 +174,141 @@ type ProprietesFenetre = Omit<React.HTMLAttributes<HTMLElement>, 'id'> & {
   // Infobulle de la prise, « Glisser pour détacher … »
   titrePrise?: string;
   hidden?: boolean;
+  // Gardée d'une page à l'autre : rien ne bouge (Activité), son contenu entre en fondu (par défaut), ou il s'écrit en glyphes (panneau)
+  passage?: 'fixe' | 'fondu' | 'ecrit';
 };
 
-// Une fenêtre du dock : verre, prise, poignées de taille ; cachée, elle garde sa place dans l'arbre pour la retrouver
-export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'Glisser pour détacher la fenêtre', hidden, children, ...reste }: ProprietesFenetre) {
-  const { ranger } = useContexte();
-  // Montrée : rangée avant d'être peinte ; retirée : rangée une fois sortie de la page
+type EnCours = { tour: number; anims: Controle[]; minuteurs: number[]; sortie: 'non' | 'efface' | 'replie' };
+
+// Une fenêtre du dock : verre, prise, poignées de taille ; cachée, elle garde sa place dans l'arbre pour la retrouver.
+// Fermée, ses éléments s'effacent puis elle se replie vers son bord pendant que sa voisine la suit ; ouverte, l'inverse, puis son texte s'écrit.
+export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'Glisser pour détacher la fenêtre', hidden = false, passage = 'fondu', children, ...reste }: ProprietesFenetre) {
+  const { ranger, quandPose, avant } = useContexte();
+  const el = useRef<HTMLElement | null>(null);
+  const poserEl = useCallback((n: HTMLElement | null) => {
+    el.current = n;
+  }, []);
+  // D'une page à l'autre, elle part de ce qu'on voyait : ouverte avant et fermée ici, elle se replie ; l'inverse, elle se déplie
+  const [cachee, setCachee] = useState(() => (avant && id in avant && passage !== 'fixe' ? !avant[id] : hidden));
+  // État au montage ; `change` : `hidden` a bougé depuis, ce n'est plus l'arrivée sur la page
+  const depart = useRef({ avant, cachee, hidden, change: false });
+  const cacheeVue = useRef(cachee);
+  const entrante = useRef(false);
+  const enCours = useRef<EnCours>({ tour: 0, anims: [], minuteurs: [], sortie: 'non' });
+
+  // Arrête le passage en cours : textes rendus, minuteurs oubliés ; le tour suivant ne laisse finir que les siens
+  const arreter = useCallback(() => {
+    const e = enCours.current;
+    e.anims.forEach((c) => c.annuler());
+    e.minuteurs.forEach((m) => clearTimeout(m));
+    Object.assign(e, { tour: e.tour + 1, anims: [], minuteurs: [], sortie: 'non' });
+    if (el.current) el.current.inert = false;
+    return e.tour;
+  }, []);
+  const plus = useCallback((tour: number, f: () => void, apres: number) => {
+    const e = enCours.current;
+    e.minuteurs.push(window.setTimeout(() => { if (e.tour === tour) f(); }, apres));
+  }, []);
+
+  // Arrivée d'une autre page, la fenêtre restée ouverte : le verre ne bouge pas, seul son contenu change
   useLayoutEffect(() => {
-    ranger();
+    const d = depart.current;
+    if (!d.avant || d.cachee || d.hidden || passage === 'fixe') return;
+    const tour = enCours.current.tour;
+    quandPose(() => {
+      if (enCours.current.tour !== tour || !el.current) return;
+      enCours.current.anims.push(passage === 'ecrit' ? ecrire(el.current, { duree: DUREES.contenu }) : fondu(el.current, DUREES.fondu));
+    });
+  }, [passage, quandPose]);
+
+  useLayoutEffect(() => {
+    const e = enCours.current;
+    if (hidden !== depart.current.hidden) depart.current.change = true;
+    if (hidden) {
+      if (cacheeVue.current || e.sortie !== 'non') return;
+      if (mouvementReduit()) {
+        setCachee(true);
+        return;
+      }
+      // Arrivée sur une page où elle est fermée : rien à effacer, ce contenu-là n'a pas été vu
+      const arrivee = !depart.current.change;
+      const tour = arreter();
+      e.sortie = 'efface';
+      quandPose(() => {
+        if (e.tour !== tour || !el.current) return;
+        el.current.inert = true;
+        const replier = () => {
+          e.sortie = 'replie';
+          ranger(true, { sortie: id });
+          plus(tour, () => {
+            e.sortie = 'non';
+            setCachee(true);
+          }, DUREE_RANGEMENT + 20);
+        };
+        if (arrivee) {
+          e.anims.push(voiler(el.current, DUREE_RANGEMENT + 60));
+          replier();
+        } else {
+          e.anims.push(effacer(el.current, { duree: DUREES.effacer }));
+          plus(tour, replier, DUREES.effacer);
+        }
+      });
+      return;
+    }
+    if (cacheeVue.current) {
+      arreter();
+      entrante.current = !mouvementReduit();
+      setCachee(false);
+      return;
+    }
+    if (e.sortie === 'non') return;
+    // Rouverte pendant qu'elle se fermait : elle revient de là où elle en est, son contenu se réécrit
+    const replie = e.sortie === 'replie';
+    arreter();
+    if (replie) ranger(true, { entrees: [id] });
+    if (el.current) e.anims.push(ecrire(el.current, { duree: DUREES.contenu, delai: replie ? DUREE_RANGEMENT : 0 }));
+  }, [hidden, id, ranger, quandPose, arreter, plus]);
+
+  // Montrée : rangée avant d'être peinte, en se dépliant si elle vient de s'ouvrir ; retirée : rangée une fois sortie de la page
+  useLayoutEffect(() => {
+    cacheeVue.current = cachee;
+    DOCK.visibles[id] = !cachee;
+    if (cachee || !entrante.current) ranger();
+    else {
+      entrante.current = false;
+      const e = enCours.current, tour = arreter();
+      quandPose(() => {
+        if (e.tour !== tour || !el.current) return;
+        ranger(true, { entrees: [id] });
+        e.anims.push(voiler(el.current, DUREE_RANGEMENT + 60));
+        plus(tour, () => {
+          if (!el.current) return;
+          e.anims.forEach((c) => c.annuler());
+          e.anims = [ecrire(el.current, { duree: DUREES.contenu })];
+        }, DUREE_RANGEMENT);
+      });
+    }
     return () => {
       requestAnimationFrame(() => ranger());
     };
-  }, [hidden, ranger]);
+  }, [cachee, id, ranger, quandPose, arreter, plus]);
+
+  useLayoutEffect(() => () => {
+    arreter();
+    delete DOCK.visibles[id];
+  }, [arreter, id]);
+
   return (
-    <Balise data-fen={id} className={`verre${className ? ' ' + className : ''}`} hidden={hidden} {...reste}>
+    <Balise ref={poserEl} data-fen={id} className={`verre${className ? ' ' + className : ''}`} hidden={cachee} {...reste}>
       <span className="verre-halos" aria-hidden="true" />
       <span className="prise" title={titrePrise} aria-hidden="true" />
       {children}
       <span className="taille d" data-taille="d" aria-hidden="true" />
       <span className="taille b" data-taille="b" aria-hidden="true" />
       <span className="taille c" data-taille="c" aria-hidden="true" />
+      {/* Ouverture : deux lignes nées au milieu, qui s'étirent puis s'écartent vers le haut et le bas */}
+      <span className="ouv-ligne" aria-hidden="true" />
+      <span className="ouv-ligne" aria-hidden="true" />
     </Balise>
   );
 }

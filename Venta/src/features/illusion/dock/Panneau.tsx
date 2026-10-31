@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Fenetre, usePanneau } from './Dock';
 
 export function MarqueAdmin() {
@@ -21,8 +22,12 @@ export type Onglet = {
 export function Panneau({ onglets, id = 'panneau', label = 'Panneau de la page' }: { onglets: Onglet[]; id?: string; label?: string }) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const ouvert = onglets.some((o) => o.cle === onglet);
+  // Fermé, il garde sa dernière vue le temps qu'elle s'efface et que la fenêtre se replie
+  const [derniere, setDerniere] = useState(onglet);
+  if (ouvert && derniere !== onglet) setDerniere(onglet);
+  const montree = ouvert ? onglet : derniere;
   return (
-    <Fenetre id={id} as="aside" className="panneau" hidden={!ouvert} aria-label={label} titrePrise="Glisser pour détacher le panneau"
+    <Fenetre id={id} as="aside" className="panneau" hidden={!ouvert} passage="ecrit" aria-label={label} titrePrise="Glisser pour détacher le panneau"
       onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented) fermer(); }}>
       <header className="p-tete">
         <div className="p-onglets" role="tablist" aria-label="Sous-fenêtres">
@@ -48,7 +53,7 @@ export function Panneau({ onglets, id = 'panneau', label = 'Panneau de la page' 
         <section
           key={o.cle}
           role="tabpanel"
-          className={`p-vue${o.cle === onglet ? ' ouverte' : ''}`}
+          className={`p-vue${o.cle === montree ? ' ouverte' : ''}`}
           aria-label={o.label ?? (typeof o.titre === 'string' ? o.titre : undefined)}
         >
           <div className="f-corps">{o.corps}</div>

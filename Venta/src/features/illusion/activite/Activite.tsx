@@ -1,11 +1,12 @@
 'use client';
 
 import './activite.css';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { appeler } from '../api';
 import { Fenetre } from '../dock/Dock';
 import { MarqueAdmin } from '../dock/Panneau';
+import { DUREES, ecrire, type Controle } from '../partage/glyphes';
 import { ouvrirIllusion } from '../partage/LienIllusion';
 import { useSondage } from './sondage';
 import { adresseActivite, heure, nomDuJour, phrase, useActivite, type DonneesActivite, type Evenement, type ReponseActivite, type Sorte } from './useActivite';
@@ -43,7 +44,7 @@ function Tuiles({ bilan, masquees, basculer, label }: { bilan: Record<Sorte, num
       {SORTES.map((s) => (
         <label key={s.sorte} className={`choix tuile-sorte ${s.classes}`}>
           <input type="checkbox" checked={!masquees.includes(s.sorte)} onChange={() => basculer(s.sorte)} />
-          <span className="chiffre">{s.icone}<b>{bilan[s.sorte]}</b></span>
+          <span className="chiffre">{s.icone}<b data-sorte={s.sorte}>{bilan[s.sorte]}</b></span>
           <small>{s.tuile}</small>
         </label>
       ))}
@@ -51,17 +52,56 @@ function Tuiles({ bilan, masquees, basculer, label }: { bilan: Record<Sorte, num
   );
 }
 
+// Sortes cachées d'un clic sur leur tuile, gardées d'une page à l'autre comme le reste de l'Activité
+let masqueesGardees: Sorte[] | null = null;
+
 // L'Activité : les grosses actions, filtrées par les tuiles du bilan du jour, la plus récente en bas
 export function Activite({ donnees, surMaintenant, liens, cachees = [] }: ProprietesActivite) {
   const branchees = useActivite(!donnees);
   const [vue, setVue] = useState<'historique' | 'journal' | null>(null);
-  const { bilan, fil, enCours, erreur } = donnees ?? branchees;
+  const actuelles = donnees ?? branchees;
+  const { bilan, fil, enCours, erreur } = actuelles;
   const toutVoir = donnees ? donnees.toutVoir : () => setVue('historique');
-  const [masquees, setMasquees] = useState(cachees);
-  const basculer = (s: Sorte) => setMasquees((m) => (m.includes(s) ? m.filter((x) => x !== s) : [...m, s]));
+  const [masquees, setMasquees] = useState(() => (!donnees && masqueesGardees) || cachees);
+  const basculer = (s: Sorte) => setMasquees((m) => {
+    const n = m.includes(s) ? m.filter((x) => x !== s) : [...m, s];
+    if (!donnees) masqueesGardees = n;
+    return n;
+  });
+
+  // Seul ce qui change s'écrit en glyphes : le compteur d'une sorte, une action arrivée, la ligne « Maintenant » ; la première lecture se pose telle quelle
+  const filRef = useRef<HTMLOListElement>(null);
+  const vu = useRef<{ bilan: Record<Sorte, number>; ids: Set<string>; enCours: string | null } | null>(null);
+  const signaux = useRef<Controle[]>([]);
+  const couper = useCallback(() => {
+    signaux.current.forEach((c) => c.annuler());
+    signaux.current = [];
+  }, []);
+  useLayoutEffect(() => {
+    if (!actuelles.lu) return;
+    const avant = vu.current;
+    vu.current = { bilan: actuelles.bilan, ids: new Set(actuelles.fil.map((e) => e.id)), enCours: actuelles.enCours };
+    const ol = filRef.current, fen = ol?.closest('[data-fen]');
+    if (!avant || !ol || !fen) return;
+    const cibles: Element[] = [];
+    for (const { sorte } of SORTES) {
+      const b = actuelles.bilan[sorte] !== avant.bilan[sorte] && fen.querySelector(`.tuiles-sortes b[data-sorte="${sorte}"]`);
+      if (b) cibles.push(b);
+    }
+    for (const e of actuelles.fil) {
+      const li = !('jour' in e) && !avant.ids.has(e.id) && ol.querySelector(`li[data-id="${CSS.escape(e.id)}"]`);
+      if (li) cibles.push(li);
+    }
+    const maintenant = actuelles.enCours && actuelles.enCours !== avant.enCours && ol.querySelector('.encours .phrase');
+    if (maintenant) cibles.push(maintenant);
+    if (!cibles.length) return;
+    couper();
+    signaux.current = cibles.map((c) => ecrire(c, { duree: DUREES.signal, texte: true }));
+  }, [actuelles, couper]);
+  useLayoutEffect(() => couper, [couper]);
 
   return (
-    <Fenetre id="activite" className="echos" aria-label="Activité" titrePrise="Glisser pour détacher l'Activité">
+    <Fenetre id="activite" className="echos" passage="fixe" aria-label="Activité" titrePrise="Glisser pour détacher l'Activité">
       <div className="echos-tete">
         <span className="etiquette">Activité</span>
         <span className="liens-tete">
@@ -72,7 +112,7 @@ export function Activite({ donnees, surMaintenant, liens, cachees = [] }: Propri
       </div>
       <Tuiles bilan={bilan} masquees={masquees} basculer={basculer} label="Bilan du jour : chaque tuile montre ou cache sa sorte dans le fil" />
       {erreur && <p className="avis-activite" role="alert">{erreur}</p>}
-      <ol className="fil-actions" aria-label="Dernières actions, la plus récente en bas">
+      <ol ref={filRef} className="fil-actions" aria-label="Dernières actions, la plus récente en bas">
         {enCours && (
           <li className="encours">
             <button type="button" className={`ouvre-li${surMaintenant ? '' : ' admin-seul'}`} aria-label="Ouvrir En direct" title="En direct"
@@ -86,7 +126,7 @@ export function Activite({ donnees, surMaintenant, liens, cachees = [] }: Propri
             <li key={e.id} className="jour etiquette">{e.jour}</li>
           ) : (
             !masquees.includes(e.sorte) && (
-              <li key={e.id} className={e.sorte}>
+              <li key={e.id} data-id={e.id} className={e.sorte}>
                 <p className="etiquette">{e.heure} · {NOMS[e.sorte]}</p>
                 <p className="phrase">{e.phrase}</p>
               </li>

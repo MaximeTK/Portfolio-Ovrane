@@ -328,6 +328,18 @@
 .ov .dock:not([data-pret]) [data-fen]{visibility:hidden}
 /* Fenêtre flottante : au-dessus des autres, un liseré clair à l'intérieur ; elle suit la main sans délai. */
 .ov .dock [data-flot]{transition:none;box-shadow:inset 0 0 0 1px rgb(255 255 255 / .38)}
+/* Arrivée dans Illusion : chaque fenêtre naît d'une ligne au milieu qui s'étire à gauche et à droite, puis s'ouvre entre ses deux lignes,
+   qui montent et descendent, en 0,56 s ; son contenu attend d'être écrit. Lignes en blanc néon, à un quart de leur éclat. */
+.ov .ouv-ligne{display:none;position:absolute;left:0;right:0;top:calc(50% - 1px);z-index:4;height:1px;pointer-events:none;background:rgb(255 255 255 / .225);box-shadow:0 0 6px rgb(255 255 255 / .125),0 0 14px rgb(255 255 255 / .06);transform:scaleX(0)}
+.ov.ouverture .dock[data-pret] .ouv-ligne{display:block;animation:ov-ligne-haut .56s cubic-bezier(.6,0,.2,1) both,ov-eteint .42s ease-out .56s both}
+.ov.ouverture .dock[data-pret] .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-eteint}
+.ov.ouverture .dock[data-pret] [data-fen]{animation:ov-ouverture .56s cubic-bezier(.6,0,.2,1) both}
+.ov.ouverture .dock[data-pret] [data-fen]>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation:ov-voile .56s backwards}
+@keyframes ov-ouverture{0%{clip-path:inset(calc(50% - 1px) 50% calc(50% - 1px) 50%)}40%{clip-path:inset(calc(50% - 1px) 0 calc(50% - 1px) 0)}100%{clip-path:inset(0 0 0 0 round var(--verre-rayon,25px))}}
+@keyframes ov-ligne-haut{0%{top:calc(50% - 1px);transform:scaleX(0)}40%{top:calc(50% - 1px);transform:scaleX(1)}100%{top:0;transform:scaleX(1)}}
+@keyframes ov-ligne-bas{0%{top:50%;transform:scaleX(0)}40%{top:50%;transform:scaleX(1)}100%{top:calc(100% - 1px);transform:scaleX(1)}}
+@keyframes ov-eteint{to{opacity:0}}
+@keyframes ov-voile{from,to{visibility:hidden}}
 .ov.glisse-en-cours,.ov.glisse-en-cours *{user-select:none;cursor:grabbing !important}
 .ov.tire-en-cours,.ov.tire-en-cours *{user-select:none}
 /* Place visée : après la pause, un cadre clair et lumineux borde la case que la fenêtre prendra. */

@@ -8,6 +8,9 @@ export type Zone = { x: number; y: number; w: number; h: number };
 export type ArbreDepart = Arbre | ((zone: Zone, style: CSSStyleDeclaration) => Arbre);
 
 export const ECART = 16, SEUIL = 6, BORD = 26, MARGE = 0.3, ARMEMENT = 450, IMMOBILE = 10;
+// Glissement des fenêtres vers leur place, le même que celui de la feuille de style (0,3 s)
+export const DUREE_RANGEMENT = 300;
+const TRANSITION = ['left', 'top', 'width', 'height'].map((p) => `${p} ${DUREE_RANGEMENT}ms cubic-bezier(.2,.8,.2,1)`).join(',');
 const MINI_DEFAUT: Taille = [200, 160];
 const PREF_DEFAUT: Taille = [400, 300];
 // Têtes qui servent de prise, en plus de la rangée de points
@@ -16,7 +19,7 @@ const INTERACTIF = 'a,button,input,select,textarea,label,summary,[role=button]';
 
 type Cote = 'gauche' | 'droite' | 'haut' | 'bas';
 type Cible = { remplir?: boolean; bord?: boolean; id?: string; cote?: Cote };
-type Fente = { n: Partage; a: number; b: number; ta: number; tb: number; ma: number; mb: number; somme: number; total: number; ligne: boolean; ajoutA: number; ajoutB: number } & Zone;
+type Fente = { n: Partage; a: number; b: number; ta: number; tb: number; ma: number; mb: number; somme: number; total: number; ligne: boolean; ajoutA: number; ajoutB: number; libreA: number; libreB: number } & Zone;
 type Calcul = { res: Record<string, Zone>; fentes: Fente[] };
 type EtatFenetre = { flot: Zone | null; tailleFlot: Taille | null; z: string };
 // Disposition d'une page, gardée pendant la session : revenir sur la page la retrouve jusqu'à la remise
@@ -42,7 +45,9 @@ export type OptionsDock = {
   fentes: HTMLElement;
   remise: HTMLElement;
 };
-export type Moteur = { ranger: (anime: boolean) => void; detruire: () => void };
+// Fenêtres qui se déplient depuis leur bord, ou celle qui se replie vers le sien, pendant que les autres prennent ou rendent la place
+export type OptionsRangement = { entrees?: string[]; sortie?: string };
+export type Moteur = { ranger: (anime: boolean, options?: OptionsRangement) => void; detruire: () => void };
 
 const feuille = (n: Arbre): n is Feuille => (n as Feuille).id !== undefined;
 const copie = <T,>(n: T): T => JSON.parse(JSON.stringify(n));
@@ -76,9 +81,12 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   const etat = (id: string) => (fen[id] ??= { flot: null, tailleFlot: null, z: '' });
 
   let inclus: string | null = null;
+  // Fenêtres en train de se replier : encore peintes, déjà hors du partage ; oubliées une fois cachées
+  const sorties = new Set<string>();
   const affichee = (id: string) => {
     const el = els[id];
-    return !!el && (id === inclus || etat(id).flot === null) && getComputedStyle(el).display !== 'none';
+    if (!el || getComputedStyle(el).display === 'none') { sorties.delete(id); return false; }
+    return !sorties.has(id) && (id === inclus || etat(id).flot === null);
   };
   const visible = (n: Arbre): boolean => (feuille(n) ? affichee(n.id) : n.enfants.some(visible));
   const miniArbre = (n: Arbre, axe: 'w' | 'h'): number => {
@@ -163,29 +171,34 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       if (feuille(n)) { res[n.id] = r; return; }
       const idx = n.enfants.map((_, i) => i).filter((i) => visible(n.enfants[i]));
       if (!idx.length) return;
-      const ligne = n.dir === 'row', total = (ligne ? r.w : r.h) - ECART * (idx.length - 1);
-      // La part d'une fenêtre cachée (panneau fermé) revient à la fenêtre principale du partage : l'Activité garde sa largeur
+      const ligne = n.dir === 'row';
+      // La part d'une fenêtre cachée (panneau fermé) revient à la fenêtre principale du partage, avec l'écart qui la séparait :
+      // les autres (l'Activité) gardent leur largeur au pixel près
       const jp = idx.findIndex((i) => ids(n.enfants[i]).includes(o.principal()));
       const cachee = jp < 0 ? 0 : n.parts.reduce((s, p, i) => (idx.includes(i) ? s : s + p), 0);
+      const libres = jp < 0 ? 0 : ECART * (n.enfants.length - idx.length);
+      const total = (ligne ? r.w : r.h) - ECART * (idx.length - 1) - libres;
       const parts = idx.map((i, j) => n.parts[i] + (j === jp ? cachee : 0));
       const somme = parts.reduce((s, p) => s + p, 0);
       const mins = idx.map((i) => miniArbre(n.enfants[i], ligne ? 'w' : 'h'));
+      const minsPart = mins.map((m, j) => (j === jp ? Math.max(0, m - libres) : m));
       let t = parts.map((p) => (total * p) / somme);
       for (let k = 0; k < 4; k++) {
         let manque = 0;
-        t = t.map((v, j) => { if (v < mins[j]) { manque += mins[j] - v; return mins[j]; } return v; });
+        t = t.map((v, j) => { if (v < minsPart[j]) { manque += minsPart[j] - v; return minsPart[j]; } return v; });
         if (manque < 0.5) break;
-        const libre = t.map((v, j) => Math.max(0, v - mins[j])), sl = libre.reduce((a, b) => a + b, 0);
+        const libre = t.map((v, j) => Math.max(0, v - minsPart[j])), sl = libre.reduce((a, b) => a + b, 0);
         if (!sl) break;
         t = t.map((v, j) => v - (manque * libre[j]) / sl);
       }
+      if (jp >= 0) t[jp] += libres;
       let pos = ligne ? r.x : r.y;
       idx.forEach((i, j) => {
         rec(n.enfants[i], ligne ? { x: pos, y: r.y, w: t[j], h: r.h } : { x: r.x, y: pos, w: r.w, h: t[j] });
         pos += t[j];
         if (j < idx.length - 1) {
           fentes.push({ n, a: i, b: idx[j + 1], ta: t[j], tb: t[j + 1], ma: mins[j], mb: mins[j + 1], somme, total, ligne,
-            ajoutA: j === jp ? cachee : 0, ajoutB: j + 1 === jp ? cachee : 0,
+            ajoutA: j === jp ? cachee : 0, ajoutB: j + 1 === jp ? cachee : 0, libreA: j === jp ? libres : 0, libreB: j + 1 === jp ? libres : 0,
             x: ligne ? pos : r.x, y: ligne ? r.y : pos, w: ligne ? ECART : r.w, h: ligne ? r.h : ECART });
           pos += ECART;
         }
@@ -196,15 +209,17 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     return { res, fentes };
   }
 
-  function poser(el: HTMLElement, r: Zone) {
+  const placer = (el: HTMLElement, r: Zone) =>
     Object.assign(el.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px', right: 'auto', bottom: 'auto' });
+  function poser(el: HTMLElement, r: Zone) {
+    placer(el, r);
     el.dataset.forme = r.w > 520 && r.h < r.w * 0.6 ? 'large' : 'haute';
     // Paliers de largeur : chacun laisse au moins 8 px entre les colonnes qu'il garde
     el.dataset.l = r.w < 600 ? 'xs' : r.w < 720 ? 's' : r.w < 1000 ? 'm' : 'l';
   }
   // Applique un calcul aux fenêtres rangées (sauf celle en main) et place les fentes tirables
   function appliquer(calc: Calcul, sauf: string | null, avecFentes: boolean) {
-    for (const id in calc.res) { const el = els[id]; if (el && id !== sauf && etat(id).flot === null) poser(el, calc.res[id]); }
+    for (const id in calc.res) { const el = els[id]; if (el && id !== sauf && !sorties.has(id) && etat(id).flot === null) poser(el, calc.res[id]); }
     seps = avecFentes ? calc.fentes : [];
     while (sepEls.length < seps.length) {
       const s = document.createElement('div');
@@ -240,19 +255,80 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       el.dataset.flot = '1';
       poser(el, f.flot);
     });
-    for (const id in els) if (!vus.has(id)) els[id] = null;
+    for (const id in els) if (!vus.has(id)) { els[id] = null; sorties.delete(id); }
     const places = ids(memoire.racine);
     vus.forEach((id) => { if (!etat(id).flot && !places.includes(id)) memoire.racine = normaliser(inserer(memoire.racine, { bord: true, cote: 'droite' }, id)); });
   }
 
+  // Fenêtre repliée : réduite à un point sur le bord de son partage qu'elle occupe, un écart au-delà, pour que sa voisine la suive
+  // en gardant 16 px jusqu'au bout ; au milieu d'un partage ou flottante, vers son centre. En hauteur (ou en largeur), vers son milieu.
+  function pli(id: string, r: Zone): Zone {
+    const trouve: { dir: 'row' | 'col' | null; place: number } = { dir: null, place: 0 };
+    const rec = (n: Arbre): boolean => {
+      if (feuille(n)) return false;
+      const vis = n.enfants.filter(visible);
+      const i = vis.findIndex((c) => feuille(c) && c.id === id);
+      if (i < 0) return n.enfants.some(rec);
+      trouve.dir = n.dir;
+      trouve.place = vis.length < 2 ? 0 : i === 0 ? -1 : i === vis.length - 1 ? 1 : 0;
+      return true;
+    };
+    if (memoire.racine && etat(id).flot === null) rec(memoire.racine);
+    const cx = r.x + r.w / 2, cy = r.y + r.h / 2, bout = (debut: number, long: number, milieu: number) =>
+      trouve.place > 0 ? debut + long + ECART : trouve.place < 0 ? debut - ECART : milieu;
+    if (trouve.dir === 'row') return { x: bout(r.x, r.w, cx), y: cy, w: 0, h: 0 };
+    if (trouve.dir === 'col') return { x: cx, y: bout(r.y, r.h, cy), w: 0, h: 0 };
+    return { x: cx, y: cy, w: 0, h: 0 };
+  }
+
   let base: Calcul = { res: {}, fentes: [] };
-  const ranger = (anime: boolean) => {
+  // Fin du dernier glissement lancé : un rangement sans animation demandé d'ici là (taille de la page relue) ne le coupe pas
+  let finGlisse = 0;
+  const glisses = new Map<HTMLElement, number>();
+  // Le glissement porté par la fenêtre elle-même : il vaut aussi pour une flottante, qui n'en a pas d'ordinaire
+  const glisser = (el: HTMLElement) => {
+    el.style.transition = TRANSITION;
+    clearTimeout(glisses.get(el));
+    glisses.set(el, window.setTimeout(() => { el.style.transition = ''; glisses.delete(el); }, DUREE_RANGEMENT + 60));
+  };
+  const ranger = (anime: boolean, { entrees = [], sortie }: OptionsRangement = {}) => {
     scanner();
-    if (!anime) ov.classList.add('sans-anim');
+    const sans = !anime && performance.now() > finGlisse;
+    if (sans) ov.classList.add('sans-anim');
+    else if (!action && ov.classList.contains('sans-anim')) {
+      // Juste après une pose sans animation (arrivée sur la page) : la place posée est prise pour départ, puis tout glisse
+      void coq.offsetWidth;
+      ov.classList.remove('sans-anim');
+    }
+    if (anime && (entrees.length || sortie)) finGlisse = performance.now() + DUREE_RANGEMENT + 60;
+    // Celle qui sort se replie depuis sa place, pendant que les autres la prennent
+    const elSortie = sortie ? els[sortie] : null;
+    if (sortie && elSortie && !sorties.has(sortie) && getComputedStyle(elSortie).display !== 'none') {
+      const r = etat(sortie).flot ?? base.res[sortie];
+      if (r) {
+        const p = pli(sortie, r);
+        glisser(elSortie);
+        placer(elSortie, p);
+      }
+      sorties.add(sortie);
+    }
+    // Celle qui revient pendant qu'elle se repliait repart de là où elle en est ; une nouvelle part de son point replié
+    const revenues = entrees.filter((id) => sorties.delete(id));
     base = calculer(memoire.racine);
+    for (const id of entrees) {
+      const el = els[id], r = el && (etat(id).flot ?? base.res[id]);
+      if (!el || !r || !anime) continue;
+      if (!revenues.includes(id)) {
+        el.style.transition = 'none';
+        placer(el, pli(id, r));
+        void el.offsetWidth;
+      }
+      glisser(el);
+      if (etat(id).flot) poser(el, r);
+    }
     appliquer(base, null, !action);
     coq.dataset.pret = '1';
-    if (!anime) requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.remove('sans-anim')));
+    if (sans) requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.remove('sans-anim')));
   };
   // Icône de remise : visible et atteignable au clavier seulement quand la disposition a changé
   const montrerRemise = (vu: boolean) => {
@@ -322,8 +398,8 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       // Fente tirée : les deux cases voisines se partagent la place, chacune garde son minimum
       const f = a.f, d = f.ligne ? e.clientX - a.x0 : e.clientY - a.y0;
       const ta = Math.min(Math.max(f.ta + d, f.ma), f.ta + f.tb - f.mb);
-      f.n.parts[f.a] = (ta * f.somme) / f.total - f.ajoutA;
-      f.n.parts[f.b] = ((f.ta + f.tb - ta) * f.somme) / f.total - f.ajoutB;
+      f.n.parts[f.a] = ((ta - f.libreA) * f.somme) / f.total - f.ajoutA;
+      f.n.parts[f.b] = ((f.ta + f.tb - ta - f.libreB) * f.somme) / f.total - f.ajoutB;
       base = calculer(memoire.racine);
       appliquer(base, null, true);
       const nf = base.fentes.find((x) => x.n === f.n && x.a === f.a);
@@ -438,8 +514,14 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   window.addEventListener('pointerup', lacher);
   window.addEventListener('pointercancel', lacher);
   remise.addEventListener('click', remettre);
-  // La page qui change de taille : tout se range de nouveau
-  const observateur = new ResizeObserver(() => { if (!action) ranger(false); });
+  // La page qui change de taille : tout se range de nouveau ; la première mesure, celle de la pose, ne change rien
+  let mesure = `${coq.clientWidth}x${coq.clientHeight}`;
+  const observateur = new ResizeObserver(() => {
+    const m = `${coq.clientWidth}x${coq.clientHeight}`;
+    if (m === mesure || action) return;
+    mesure = m;
+    ranger(false);
+  });
   observateur.observe(coq);
   montrerRemise(memoire.change);
   ranger(false);
@@ -460,6 +542,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       window.removeEventListener('pointercancel', lacher);
       remise.removeEventListener('click', remettre);
       observateur.disconnect();
+      glisses.forEach((m, el) => { clearTimeout(m); el.style.transition = ''; });
       sepEls.forEach((s) => s.remove());
       ov.classList.remove('glisse-en-cours', 'tire-en-cours', 'sans-anim');
     },

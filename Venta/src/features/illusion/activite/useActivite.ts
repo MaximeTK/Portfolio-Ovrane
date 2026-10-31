@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { appeler } from '../api';
+import { cleBrouillon } from '../stockage';
 import { useSondage } from './sondage';
 
 // Données de l'Activité, lues sur /vues/activite d'Illusion
@@ -19,6 +20,8 @@ export type DonneesActivite = {
   toutVoir?: () => void;
   // Le refus d'Illusion, dit dans la fenêtre
   erreur?: string;
+  // Lue au moins une fois sur Illusion : ce qui change ensuite s'écrit en glyphes
+  lu?: boolean;
 };
 
 // Une grosse action telle que la route la rend, sa date en UTC
@@ -85,15 +88,22 @@ export function avecJours(evenements: Evenement[]): ElementFil[] {
 export const adresseActivite = (jours: number, limite: number) =>
   `/vues/activite?depuis=${encodeURIComponent(debutDuJour(jours).toISOString())}&jour=${encodeURIComponent(debutDuJour().toISOString())}&limite=${limite}`;
 
+// Dernière lecture, gardée d'une page à l'autre pour le même compte : l'Activité de la page suivante ne repart pas de rien
+let gardee: { cle: string; donnees: DonneesActivite } | null = null;
+
 // Hier et aujourd'hui, relus toutes les 5 s comme le bandeau de l'ancien dashboard
 export function useActivite(actif = true): DonneesActivite {
-  const [donnees, setDonnees] = useState(VIDE);
+  const [donnees, setDonnees] = useState(() => (gardee?.cle === cleBrouillon('activite') ? gardee.donnees : VIDE));
+  const garder = (d: DonneesActivite) => {
+    gardee = { cle: cleBrouillon('activite'), donnees: d };
+    return d;
+  };
   useSondage(async () => {
     try {
       const lu = await appeler<ReponseActivite>(adresseActivite(1, 60));
-      setDonnees({ bilan: lu.bilan, fil: avecJours(lu.fil), enCours: phraseEnCours(lu.en_cours) });
+      setDonnees(garder({ bilan: lu.bilan, fil: avecJours(lu.fil), enCours: phraseEnCours(lu.en_cours), lu: true }));
     } catch (e) {
-      setDonnees((d) => ({ ...d, erreur: (e as Error).message }));
+      setDonnees((d) => garder({ ...d, erreur: (e as Error).message }));
     }
   }, 5000, actif);
   return donnees;
