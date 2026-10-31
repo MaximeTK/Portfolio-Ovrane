@@ -11,11 +11,11 @@ const MORCEAUX =
   '.f-corps>:not(.section-f):not(.f-tete):not(.bloc-f),.detail-appel>*,.echos-tete>*,.tuiles-sortes>*,.fil-actions>li,.tete>*';
 // Textes jamais touchés : la valeur d'un champ et les dessins
 const HORS = 'textarea,select,option,svg,script,style';
-// Décor d'une fenêtre, laissé en place pendant un fondu
+// Décor d'une fenêtre, laissé en place pendant qu'elle se déplie
 const DECOR = ':scope>:not(.verre-halos):not(.prise):not(.taille):not(.ouv-ligne)';
 
-// Durées des passages, en ms : effacement avant repli, écriture à l'ouverture, contenu réécrit, fondu d'une page à l'autre, ce qui change
-export const DUREES = { effacer: 130, ouvrir: 560, ouverture: 700, contenu: 520, fondu: 120, signal: 380, canaux: 300 };
+// Durées des passages, en ms : effacement avant repli, ouverture et fermeture holographiques, écriture à l'ouverture, contenu réécrit, ce qui change
+export const DUREES = { effacer: 130, ouvrir: 560, fermer: 440, ouverture: 700, contenu: 520, signal: 380, canaux: 300 };
 
 export type Controle = { fini: Promise<void>; annuler: () => void };
 // `texte` : seul le texte s'écrit, avec un bref éclat blanc, sans que l'élément se déplie (un compteur, un nom de canal)
@@ -139,15 +139,6 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
 
 export const ecrire = (cible: Element, options: Options) => animer(cible, 'ecrire', options);
 export const effacer = (cible: Element, options: Options) => animer(cible, 'effacer', options);
-
-// Contenu d'une fenêtre qui reste en place mais change de page : un simple fondu, le verre ne bouge pas
-export function fondu(fenetre: Element, duree: number): Controle {
-  if (mouvementReduit()) return RIEN;
-  const anims = Array.from(fenetre.querySelectorAll<HTMLElement>(DECOR)).map((el) =>
-    el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: duree, easing: 'ease-out' }),
-  );
-  return { fini: Promise.all(anims.map((a) => a.finished.catch(() => {}))).then(() => {}), annuler: () => anims.forEach((a) => a.cancel()) };
-}
 
 // Contenu caché le temps qu'une fenêtre se déplie, avant d'être écrit
 export function voiler(fenetre: Element, duree: number): Controle {

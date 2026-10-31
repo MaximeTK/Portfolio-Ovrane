@@ -45,8 +45,9 @@ export type OptionsDock = {
   fentes: HTMLElement;
   remise: HTMLElement;
 };
-// Fenêtres qui se déplient depuis leur bord, ou celle qui se replie vers le sien, pendant que les autres prennent ou rendent la place
-export type OptionsRangement = { entrees?: string[]; sortie?: string };
+// Fenêtres qui se déplient depuis leur bord, ou celle qui se replie vers le sien, pendant que les autres prennent ou rendent la place ;
+// `depuis` : fenêtres gardées d'une page à l'autre, qui glissent de leur place sur la page quittée jusqu'à la leur
+export type OptionsRangement = { entrees?: string[]; sortie?: string; depuis?: Record<string, Zone> };
 export type Moteur = { ranger: (anime: boolean, options?: OptionsRangement) => void; detruire: () => void };
 
 const feuille = (n: Arbre): n is Feuille => (n as Feuille).id !== undefined;
@@ -291,7 +292,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     clearTimeout(glisses.get(el));
     glisses.set(el, window.setTimeout(() => { el.style.transition = ''; glisses.delete(el); }, DUREE_RANGEMENT + 60));
   };
-  const ranger = (anime: boolean, { entrees = [], sortie }: OptionsRangement = {}) => {
+  const ranger = (anime: boolean, { entrees = [], sortie, depuis = {} }: OptionsRangement = {}) => {
     scanner();
     const sans = !anime && performance.now() > finGlisse;
     if (sans) ov.classList.add('sans-anim');
@@ -300,7 +301,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       void coq.offsetWidth;
       ov.classList.remove('sans-anim');
     }
-    if (anime && (entrees.length || sortie)) finGlisse = performance.now() + DUREE_RANGEMENT + 60;
+    if (anime && (entrees.length || sortie || Object.keys(depuis).length)) finGlisse = performance.now() + DUREE_RANGEMENT + 60;
     // Celle qui sort se replie depuis sa place, pendant que les autres la prennent
     const elSortie = sortie ? els[sortie] : null;
     if (sortie && elSortie && !sorties.has(sortie) && getComputedStyle(elSortie).display !== 'none') {
@@ -323,6 +324,16 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
         placer(el, pli(id, r));
         void el.offsetWidth;
       }
+      glisser(el);
+      if (etat(id).flot) poser(el, r);
+    }
+    // Gardée d'une page à l'autre : elle repart de sa place d'avant, rangée ou détachée comme on l'a laissée ici
+    for (const id in depuis) {
+      const el = els[id], r = el && (etat(id).flot ?? base.res[id]);
+      if (!el || !r || !anime) continue;
+      el.style.transition = 'none';
+      placer(el, depuis[id]);
+      void el.offsetWidth;
       glisser(el);
       if (etat(id).flot) poser(el, r);
     }
@@ -542,7 +553,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       window.removeEventListener('pointercancel', lacher);
       remise.removeEventListener('click', remettre);
       observateur.disconnect();
-      glisses.forEach((m, el) => { clearTimeout(m); el.style.transition = ''; });
+      // Les glissements en cours finissent : le même dock remonté (mode strict) les laisse arriver, leur minuteur rend la transition
       sepEls.forEach((s) => s.remove());
       ov.classList.remove('glisse-en-cours', 'tire-en-cours', 'sans-anim');
     },

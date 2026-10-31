@@ -340,6 +340,18 @@
 @keyframes ov-ligne-bas{0%{top:50%;transform:scaleX(0)}40%{top:50%;transform:scaleX(1)}100%{top:calc(100% - 1px);transform:scaleX(1)}}
 @keyframes ov-eteint{to{opacity:0}}
 @keyframes ov-voile{from,to{visibility:hidden}}
+/* D'une page à l'autre, une fenêtre propre à la page s'ouvre de même, après la fermeture de celles de la page quittée (--holo-delai). */
+.ov .dock[data-pret] .holo-ouvre .ouv-ligne{display:block;animation:ov-ligne-haut .56s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) both,ov-eteint .42s ease-out calc(var(--holo-delai,0ms) + .56s) both}
+.ov .dock[data-pret] .holo-ouvre .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-eteint}
+.ov .dock[data-pret] [data-fen].holo-ouvre{animation:ov-ouverture .56s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) both}
+.ov .dock[data-pret] [data-fen].holo-ouvre>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation:ov-voile calc(var(--holo-delai,0ms) + .56s) backwards}
+/* Fermeture holographique : les fenêtres de la page quittée, copiées sous celles qui glissent (celles de la page arrivent après),
+   leurs éléments effacés, se referment entre leurs deux lignes jusqu'au trait du milieu, qui se résorbe, en 0,44 s. */
+.ov .fantomes{position:absolute;inset:0;z-index:0;pointer-events:none}
+.ov .fantomes>[data-fen]{animation:ov-ouverture .44s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) reverse both}
+.ov .fantomes .ouv-ligne{display:block;animation:ov-ligne-haut .44s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) reverse both,ov-allume 1ms var(--holo-delai,0ms) both}
+.ov .fantomes .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-allume}
+@keyframes ov-allume{from{opacity:0}to{opacity:1}}
 .ov.glisse-en-cours,.ov.glisse-en-cours *{user-select:none;cursor:grabbing !important}
 .ov.tire-en-cours,.ov.tire-en-cours *{user-select:none}
 /* Place visée : après la pause, un cadre clair et lumineux borde la case que la fenêtre prendra. */
