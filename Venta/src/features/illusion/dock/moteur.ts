@@ -10,7 +10,7 @@ export type ArbreDepart = Arbre | ((zone: Zone, style: CSSStyleDeclaration) => A
 export const ECART = 16, SEUIL = 6, BORD = 26, MARGE = 0.3, ARMEMENT = 450, IMMOBILE = 10;
 // Glissement des fenêtres vers leur place, le même que celui de la feuille de style (0,3 s)
 export const DUREE_RANGEMENT = 300;
-const TRANSITION = ['left', 'top', 'width', 'height'].map((p) => `${p} ${DUREE_RANGEMENT}ms cubic-bezier(.2,.8,.2,1)`).join(',');
+export const TRANSITION = ['left', 'top', 'width', 'height'].map((p) => `${p} ${DUREE_RANGEMENT}ms cubic-bezier(.2,.8,.2,1)`).join(',');
 const MINI_DEFAUT: Taille = [200, 160];
 const PREF_DEFAUT: Taille = [400, 300];
 // Têtes qui servent de prise, en plus de la rangée de points

@@ -345,12 +345,13 @@
 .ov .dock[data-pret] .holo-ouvre .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-eteint}
 .ov .dock[data-pret] [data-fen].holo-ouvre{animation:ov-ouverture .56s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) both}
 .ov .dock[data-pret] [data-fen].holo-ouvre>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation:ov-voile calc(var(--holo-delai,0ms) + .56s) backwards}
-/* Fermeture holographique : les fenêtres de la page quittée, copiées sous celles qui glissent (celles de la page arrivent après),
-   leurs éléments effacés, se referment entre leurs deux lignes jusqu'au trait du milieu, qui se résorbe, en 0,44 s. */
-.ov .fantomes{position:absolute;inset:0;z-index:0;pointer-events:none}
-.ov .fantomes>[data-fen]{animation:ov-ouverture .44s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) reverse both}
-.ov .fantomes .ouv-ligne{display:block;animation:ov-ligne-haut .44s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) reverse both,ov-allume 1ms var(--holo-delai,0ms) both}
-.ov .fantomes .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-allume}
+/* Fenêtres de la page quittée, copiées au premier plan, par-dessus celles de la page qui arrive. Fermeture holographique : leurs éléments
+   effacés, elles se referment entre leurs deux lignes jusqu'au trait du milieu, qui se résorbe, en 0,44 s. Repli organique : vidées, elles se replient. */
+.ov .fantomes{position:absolute;inset:0;z-index:2;pointer-events:none}
+.ov .fantomes>.holo-ferme{animation:ov-ouverture .44s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) reverse both}
+.ov .fantomes .holo-ferme .ouv-ligne{display:block;animation:ov-ligne-haut .44s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) reverse both,ov-allume 1ms var(--holo-delai,0ms) both}
+.ov .fantomes .holo-ferme .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-allume}
+.ov .fantomes>.replie>:not(.verre-halos,.prise,.taille,.ouv-ligne){visibility:hidden}
 @keyframes ov-allume{from{opacity:0}to{opacity:1}}
 .ov.glisse-en-cours,.ov.glisse-en-cours *{user-select:none;cursor:grabbing !important}
 .ov.tire-en-cours,.ov.tire-en-cours *{user-select:none}
