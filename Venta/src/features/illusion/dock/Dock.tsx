@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DUREES, ecrire, effacer, mouvementReduit, voiler, type Controle } from '../partage/glyphes';
+import { quitterSection } from '../api';
 import { aOublier } from '../stockage';
 import { DUREE_RANGEMENT, ECART, PRISES, TRANSITION_DE, delaiDepli, dureeRepli, installerDock, type ArbreDepart, type DefFenetre, type Moteur, type OptionsRangement, type Zone } from './moteur';
 export type { Arbre, ArbreDepart, DefFenetre, Taille, Zone } from './moteur';
@@ -260,6 +261,7 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
         return { id: el.dataset.fen!, passage: el.dataset.passage ?? 'fondu', vue: !el.hidden && s.display !== 'none' && s.visibility !== 'hidden', flot: el.dataset.flot === '1', rect: el.getBoundingClientRect(), el };
       });
       DOCK.sortants = { page: id, principal: p().principal, fenetres };
+      quitterSection();
       queueMicrotask(() => { DOCK.sortants = null; });
       m.detruire();
       moteur.current = null;

@@ -19,6 +19,17 @@ export type Methode = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 const RACINE = '/api/illusion/app';
 
+// Les lectures d'une section partent avec elle : celle qui arrive n'attend pas derrière (le navigateur n'en mène que quelques-unes à la fois)
+let lectures = new AbortController();
+const sections = new WeakSet<AbortSignal>([lectures.signal]);
+export function quitterSection() {
+  lectures.abort();
+  lectures = new AbortController();
+  sections.add(lectures.signal);
+}
+// Une lecture annulée avec sa section ne se termine jamais : aucune erreur ni aucun cache n'en garde trace
+const abandonnee = (signal: AbortSignal | null | undefined, error: unknown) => (error as Error)?.name === 'AbortError' && !!signal && sections.has(signal);
+
 /** L'erreur lisible d'une réponse refusée : `detail` d'Illusion (texte, liste de Pydantic ou objet), sinon `error` du site. */
 export async function lireErreur(reponse: Response): Promise<ErreurIllusion> {
   const corps = await reponse.json().catch(() => null);
@@ -34,6 +45,7 @@ async function demander(chemin: string, init: RequestInit): Promise<Response> {
   try {
     reponse = await fetch(`${RACINE}${chemin.startsWith('/') ? '' : '/'}${chemin}`, { credentials: 'same-origin', cache: 'no-store', ...init });
   } catch (error) {
+    if (abandonnee(init.signal, error)) return new Promise<never>(() => {});
     if ((error as Error).name === 'AbortError') throw error;
     throw new ErreurIllusion(INDISPONIBLE, 0);
   }
@@ -41,13 +53,21 @@ async function demander(chemin: string, init: RequestInit): Promise<Response> {
   return reponse;
 }
 
-export async function appeler<T = unknown>(chemin: string, init: { methode?: Methode; corps?: unknown; signal?: AbortSignal } = {}): Promise<T> {
+// Sans `signal`, une lecture (GET) part avec sa section ; `null` : une lecture de tout Illusion, jamais annulée ; une écriture ne l'est jamais
+export async function appeler<T = unknown>(chemin: string, init: { methode?: Methode; corps?: unknown; signal?: AbortSignal | null } = {}): Promise<T> {
+  const methode = init.methode ?? 'GET';
+  const signal = init.signal === undefined ? (methode === 'GET' ? lectures.signal : undefined) : init.signal ?? undefined;
   const reponse = await demander(chemin, {
-    method: init.methode ?? 'GET',
-    signal: init.signal,
+    method: methode,
+    signal,
     ...(init.corps === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(init.corps) }),
   });
-  return (reponse.headers.get('content-type')?.includes('json') ? reponse.json() : reponse.text()) as Promise<T>;
+  try {
+    return (await (reponse.headers.get('content-type')?.includes('json') ? reponse.json() : reponse.text())) as T;
+  } catch (error) {
+    if (abandonnee(signal, error)) return new Promise<never>(() => {});
+    throw error;
+  }
 }
 
 /** Le fichier lu en base64, comme l'ancien dashboard : Illusion en vérifie le nom, l'encodage et le poids. */
@@ -80,7 +100,7 @@ export async function telecharger(chemin: string): Promise<void> {
 
 export async function lireCompte(): Promise<Compte | null> {
   try {
-    const { email, serveur, pseudo } = await appeler<{ email: string; serveur: boolean; pseudo: string }>('/session');
+    const { email, serveur, pseudo } = await appeler<{ email: string; serveur: boolean; pseudo: string }>('/session', { signal: null });
     return { email, admin: serveur, ...(pseudo ? { pseudo } : {}) };
   } catch (error) {
     if (error instanceof ErreurIllusion && error.statut === 401) return null;

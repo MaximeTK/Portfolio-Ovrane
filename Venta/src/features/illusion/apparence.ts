@@ -29,7 +29,7 @@ const magasin = create<EtatApparence>((set) => ({
     enCours ??= (async () => {
       const avant = choix;
       try {
-        const { matiere } = await appeler<{ matiere?: Matiere }>('/parametres');
+        const { matiere } = await appeler<{ matiere?: Matiere }>('/parametres', { signal: null });
         if (matiere !== 'verre' && matiere !== 'teinte') return;
         set(avant === choix ? { matiere, enregistree: matiere } : { enregistree: matiere });
       } catch {
