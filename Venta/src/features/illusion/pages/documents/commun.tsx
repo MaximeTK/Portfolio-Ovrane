@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './commun.css';
 import { appeler, televerser } from '../../api';
+import { repris, useGarder } from '../../stockage';
 
 // Ce que Documents et Constructeur partagent : icônes, poids, menus de filtre, couleurs, gestionnaire de fichiers, avis
 
@@ -137,10 +138,11 @@ export function Couleurs({ valeurs, changer, libelle, grand }: { valeurs: string
   );
 }
 
-// Les fichiers qu'Illusion range lui-même derrière une route : chaque geste part aussitôt, sans « Enregistrer »
+// Les fichiers qu'Illusion range lui-même derrière une route : chaque geste part aussitôt, sans « Enregistrer » ; sous la `section` qui la monte, la liste lue reste d'une visite à l'autre
 export type Fichier = { nom: string; taille: number };
-export function useFichiers(route: string, dire: Dire, actif = true) {
-  const [fichiers, setFichiers] = useState<Fichier[] | null>(null);
+export function useFichiers(route: string, dire: Dire, actif = true, section = '') {
+  const [fichiers, setFichiers] = useState(() => (section ? repris<Fichier[] | null>(`${section}:fichiers:${route}`, null) : null));
+  useGarder(section, section ? { [`fichiers:${route}`]: fichiers } : {});
   const relire = useCallback(async () => {
     try {
       setFichiers(await appeler<Fichier[]>(route));

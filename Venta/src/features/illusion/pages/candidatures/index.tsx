@@ -4,6 +4,7 @@ import './candidatures.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useUIStore } from '@/lib/uiStore';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { useSondage } from '../../activite/sondage';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
@@ -45,12 +46,14 @@ function chrono(iso: string, maintenant: number) {
 }
 
 export default function PageCandidatures({ compte, recherche }: ProprietesPage) {
-  const [file, setFile] = useState<EtatFile | null>(null);
+  // La file lue et ce qui l'a choisie restent d'une visite à l'autre : en revenant, la file s'affiche aussitôt et se relit derrière
+  const [file, setFile] = useState(() => repris<EtatFile | null>('candidatures:file', null));
   const [erreurFile, setErreurFile] = useState('');
-  const [filtres, setFiltres] = useState<Filtres>({ etape: '', metier: '', langue: '' });
-  const [page, setPage] = useState(1);
-  const [taille, setTaille] = useState<number | 'auto'>('auto');
-  const [auto, setAuto] = useState(16);
+  const [filtres, setFiltres] = useState(() => repris<Filtres>('candidatures:filtres', { etape: '', metier: '', langue: '' }));
+  const [page, setPage] = useState(() => repris('candidatures:page', 1));
+  const [taille, setTaille] = useState(() => repris<number | 'auto'>('candidatures:taille', 'auto'));
+  const [auto, setAuto] = useState(() => repris('candidatures:auto', 16));
+  useGarder('candidatures', { file, filtres, page, taille, auto });
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
   const [incomplet, setIncomplet] = useState<Incomplet | null>(null);
   const [competence, setCompetence] = useState<DemandeAjout | null>(null);

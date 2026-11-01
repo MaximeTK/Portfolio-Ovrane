@@ -4,7 +4,7 @@
 import './documents.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler, telecharger } from '../../api';
-import { aOublier, cleBrouillon } from '../../stockage';
+import { aOublier, cleBrouillon, repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { useSondage } from '../../activite/sondage';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
@@ -62,15 +62,17 @@ const lireMemoire = (nom: NomAtelier): Partial<Formulaire> => {
 
 function useDocuments(admin: boolean) {
   const { dire, vue: avis } = useAvis();
-  const [genre, setGenre] = useState<Genre>('cv');
-  const [filtres, setFiltres] = useState<Filtres>(VIDES);
-  const [lot, setLot] = useState<Lot | null>(null);
-  const [total, setTotal] = useState<{ cv: number; lettre: number } | null>(null);
-  const [options, setOptions] = useState<Options>({ poste: [], entreprise: [], profil: [], fond_mode: [] });
+  // Ce qui a été lu et choisi reste d'une visite à l'autre : en revenant, la galerie et les fenêtres s'affichent aussitôt et se relisent derrière
+  const [genre, setGenre] = useState(() => repris<Genre>('documents:genre', 'cv'));
+  const [filtres, setFiltres] = useState(() => repris<Filtres>('documents:filtres', VIDES));
+  const [lot, setLot] = useState(() => repris<Lot | null>('documents:lot', null));
+  const [total, setTotal] = useState(() => repris<{ cv: number; lettre: number } | null>('documents:total', null));
+  const [options, setOptions] = useState(() => repris<Options>('documents:options', { poste: [], entreprise: [], profil: [], fond_mode: [] }));
+  const [parametres, setParametres] = useState(() => repris<Parametres | null>('documents:parametres', null));
+  const [profils, setProfils] = useState(() => repris<string[]>('documents:profils', []));
+  const [etats, setEtats] = useState(() => repris<Record<NomAtelier, EtatAtelier | null>>('documents:etats', { constructeur: null, lettre: null }));
+  useGarder('documents', { genre, filtres, lot, total, options, parametres, profils, etats });
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
-  const [parametres, setParametres] = useState<Parametres | null>(null);
-  const [profils, setProfils] = useState<string[]>([]);
-  const [etats, setEtats] = useState<Record<NomAtelier, EtatAtelier | null>>({ constructeur: null, lettre: null });
   const [formulaires, setFormulaires] = useState<Record<NomAtelier, Formulaire>>({ constructeur: FORMULAIRE_VIDE, lettre: FORMULAIRE_VIDE });
   // Rang du « Nouveau modèle » vierge : chaque clic sur le bouton en repart d'un neuf
   const [vierge, setVierge] = useState(0);
@@ -81,8 +83,8 @@ function useDocuments(admin: boolean) {
 
   const requete = useCallback((f: Filtres) => new URLSearchParams(Object.entries(f).filter(([, v]) => v)), []);
 
-  // Une tranche de plus à la suite de `depuis` ; sans lui, la galerie repart de zéro, comme à un filtre
-  const charger = useCallback(async (g: Genre, f: Filtres, depuis: Lot | null) => {
+  // Une tranche de plus à la suite de `depuis` ; sans lui, la galerie repart de zéro, comme à un filtre, sur `lignes` lignes
+  const charger = useCallback(async (g: Genre, f: Filtres, depuis: Lot | null, lignes = TRANCHE) => {
     if (g === 'spontanes' || (chargement.current && depuis)) return null;
     const n = depuis ? generation.current : ++generation.current;
     chargement.current = true;
@@ -90,7 +92,7 @@ function useDocuments(admin: boolean) {
       const params = requete(f);
       params.set('genre', g);
       params.set('depart', String(depuis?.suivant ?? 0));
-      params.set('taille', String(TRANCHE));
+      params.set('taille', String(lignes));
       const lu = await appeler<Lot>(`/productions?${params}`);
       if (n !== generation.current) return null;
       lu.lignes.forEach((p) => PIECES.set(clePiece(p), p));
@@ -105,18 +107,23 @@ function useDocuments(admin: boolean) {
     }
   }, [requete, dire]);
 
-  const relireTout = useCallback(async (g: Genre, f: Filtres) => {
+  // `lignes` à 0, la galerie se vide et relit sa première tranche ; sinon elle reste affichée et se relit sur autant de lignes, 200 au plus comme l'API
+  const relireTout = useCallback(async (g: Genre, f: Filtres, lignes = 0) => {
     setSelection(new Set());
     if (g === 'spontanes') return;
-    setLot(null);
+    if (!lignes) setLot(null);
     await Promise.all([
-      charger(g, f, null),
+      charger(g, f, null, Math.min(200, Math.max(TRANCHE, lignes))),
       appeler<{ cv: number; lettre: number }>(`/vues/documents/compte?${requete(f)}`).then(setTotal).catch((e) => dire(message(e), true)),
       appeler<Options>('/productions/filtres').then(setOptions).catch((e) => dire(message(e), true)),
     ]);
   }, [requete, charger, dire]);
+  // Au montage, la galerie gardée se relit en place ; comparés au passage d'avant (le double passage du mode strict aussi), un autre genre ou d'autres filtres la vident
+  const precedent = useRef({ genre, filtres, lignes: lot ? lot.suivant || TRANCHE : 0 });
   useEffect(() => {
-    void relireTout(genre, filtres);
+    const meme = precedent.current.genre === genre && precedent.current.filtres === filtres;
+    precedent.current = { ...precedent.current, genre, filtres };
+    void relireTout(genre, filtres, meme ? precedent.current.lignes : 0);
   }, [genre, filtres, relireTout]);
   const relire = useRef(() => relireTout(genre, filtres));
   useEffect(() => {

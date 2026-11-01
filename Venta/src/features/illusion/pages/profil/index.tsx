@@ -3,6 +3,7 @@
 import './profil.css';
 import { useCallback, useEffect, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer, Panneau, type Onglet } from '../../dock/Panneau';
 import { Activite } from '../../activite/Activite';
@@ -44,12 +45,14 @@ export default function PageProfil({ compte, recherche }: ProprietesPage) {
 
 function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: string | null; champ: string | null; libelle: string | null }) {
   const { onglet, ouvrir, fermer } = usePanneau();
-  const [profils, setProfils] = useState<ProfilDispo[] | null>(null);
-  const [incomplets, setIncomplets] = useState<Record<string, Manque[]>>({});
-  const [schema, setSchema] = useState<ChampSchema[]>([]);
-  const [choisi, setChoisi] = useState('');
-  const [origine, setOrigine] = useState<Profil>({});
-  const [etat, setEtat] = useState<EtatProfil>(SANS_ETAT);
+  // Les profils lus et celui qui était ouvert restent d'une visite à l'autre : en revenant, il s'affiche aussitôt et se relit derrière
+  const [profils, setProfils] = useState(() => repris<ProfilDispo[] | null>('profil:profils', null));
+  const [incomplets, setIncomplets] = useState(() => repris<Record<string, Manque[]>>('profil:incomplets', {}));
+  const [schema, setSchema] = useState(() => repris<ChampSchema[]>('profil:schema', []));
+  const [choisi, setChoisi] = useState(() => repris('profil:choisi', ''));
+  const [origine, setOrigine] = useState(() => repris<Profil>('profil:origine', {}));
+  const [etat, setEtat] = useState(() => repris<EtatProfil>('profil:etat', SANS_ETAT));
+  useGarder('profil', { profils, incomplets, schema, choisi, origine, etat });
   const [avis, setAvis] = useState<Avis>(null);
   const [confirmation, setConfirmation] = useState<'supprimer' | 'dupliquer' | null>(null);
   const [nomCopie, setNomCopie] = useState('');
@@ -90,14 +93,14 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
     }
   }, [dire]);
 
-  // Le profil demandé par l'adresse, sinon le premier
+  // Le profil demandé par l'adresse, sinon celui déjà ouvert (gardé de la visite d'avant), sinon le premier
   useEffect(() => {
     let vivant = true;
     relireListe().then((liste) => {
       if (!vivant) return;
       const voulu = fiche ? nomFichier(fiche) : '';
       if (voulu && !liste.some((p) => p.nom === voulu)) dire(`${voulu} : introuvable.`, true);
-      const nom = liste.some((p) => p.nom === voulu) ? voulu : liste[0]?.nom;
+      const nom = [voulu, repris('profil:choisi', '')].find((n) => n && liste.some((p) => p.nom === n)) ?? liste[0]?.nom;
       if (nom) void ouvrirProfil(nom);
     }).catch((e) => vivant && dire(message(e), true));
     return () => {

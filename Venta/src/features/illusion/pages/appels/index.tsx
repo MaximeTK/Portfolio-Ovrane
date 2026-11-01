@@ -3,6 +3,7 @@
 import './appels.css';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau, useVues, type ArbreDepart } from '../../dock/Dock';
 import { ECART } from '../../dock/moteur';
@@ -66,18 +67,18 @@ function parties(texte: string) {
   return lues.length ? lues : null;
 }
 
-// L'appel choisi, retrouvé au retour sur la page
-let dernierChoisi: number | null = null;
-
 export default function PageAppels({ compte }: ProprietesPage) {
   const direct = useDirect();
-  const [vue, setVue] = useState<Vue | null>(null);
+  // Les appels lus et celui choisi restent d'une visite à l'autre : en revenant, ils s'affichent aussitôt et se relisent derrière
+  const [vue, setVue] = useState(() => repris<Vue | null>('appels:vue', null));
   const [erreurVue, setErreurVue] = useState('');
-  const [choisi, setChoisiEtat] = useState<number | null>(dernierChoisi);
+  const [choisi, setChoisiEtat] = useState(() => repris<number | null>('appels:choisi', null));
+  useGarder('appels', { vue, choisi });
   const [avis, setAvis] = useState<Avis>(null);
   const [version, setVersion] = useState(0);
+  const dernierChoisi = useRef(choisi);
   const setChoisi = useCallback((id: number | null) => {
-    dernierChoisi = id;
+    dernierChoisi.current = id;
     setChoisiEtat(id);
   }, []);
   const relire = useCallback(async () => {
@@ -86,7 +87,7 @@ export default function PageAppels({ compte }: ProprietesPage) {
       setVue(lu);
       setErreurVue('');
       // Sans appel choisi, le plus récent des appels clos
-      if (dernierChoisi === null || !lu.appels.some((a) => a.id === dernierChoisi)) setChoisi((lu.appels.find((a) => a.fin) ?? lu.appels[0])?.id ?? null);
+      if (dernierChoisi.current === null || !lu.appels.some((a) => a.id === dernierChoisi.current)) setChoisi((lu.appels.find((a) => a.fin) ?? lu.appels[0])?.id ?? null);
     } catch (e) {
       setErreurVue(message(e));
     }
@@ -122,9 +123,11 @@ function Liste({ vue, erreurVue, choisi, setChoisi, avis, setAvis }: ProprietesL
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const { focus } = useVues();
   const direct = useDirect();
-  const [taille, setTaille] = useState<number | 'auto'>('auto');
-  const [auto, setAuto] = useState(8);
-  const [page, setPage] = useState(1);
+  // La pagination choisie reste d'une visite à l'autre, avec la mesure « auto »
+  const [taille, setTaille] = useState(() => repris<number | 'auto'>('appels:taille', 'auto'));
+  const [auto, setAuto] = useState(() => repris('appels:auto', 8));
+  const [page, setPage] = useState(() => repris('appels:page', 1));
+  useGarder('appels', { taille, auto, page });
   const defile = useRef<HTMLDivElement>(null);
 
   // Échap ferme le panneau, sauf celui qu'une confirmation a gardé pour elle
@@ -572,10 +575,12 @@ function PiedDirect() {
 
 // Réglages · Appels : la clé AssemblyAI et le modèle de transcription du compte ; le modèle de l'analyse, celui du serveur, pour l'admin
 function useOngletReglages(admin: boolean, actif: boolean, fermer: () => void, setAvis: (a: Avis) => void): Onglet {
-  const [lus, setLus] = useState<Parametres | null>(null);
+  // Les réglages lus restent d'une visite à l'autre : la saisie en repart aussitôt, puis ils se relisent à l'ouverture
+  const [lus, setLus] = useState(() => repris<Parametres | null>('appels:reglages', null));
   const [cle, setCle] = useState('');
-  const [parole, setParole] = useState('');
-  const [modele, setModele] = useState('');
+  const [parole, setParole] = useState(() => lus?.ruby_modele_parole ?? '');
+  const [modele, setModele] = useState(() => lus?.ruby_modele ?? '');
+  useGarder('appels', { reglages: lus });
   const [erreur, setErreur] = useState('');
   const [occupe, setOccupe] = useState(false);
   const prendre = (p: Parametres) => {

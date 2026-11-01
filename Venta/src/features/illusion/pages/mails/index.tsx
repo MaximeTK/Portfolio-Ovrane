@@ -3,6 +3,7 @@
 import './mails.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { useSondage } from '../../activite/sondage';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
@@ -26,12 +27,14 @@ const TAILLES = [25, 50];
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
 export default function PageMails({ compte }: ProprietesPage) {
-  const [etat, setEtat] = useState<EtatBoite | null>(null);
+  // La boîte lue et ce qui l'a choisie restent d'une visite à l'autre : en revenant, elle s'affiche aussitôt et se relit derrière
+  const [etat, setEtat] = useState(() => repris<EtatBoite | null>('mails:etat', null));
   const [erreurBoite, setErreurBoite] = useState('');
-  const [filtres, setFiltres] = useState<Filtres>({ etiquette: '', sens: '', recherche: '' });
-  const [page, setPage] = useState(1);
-  const [taille, setTaille] = useState<number | 'auto'>('auto');
-  const [auto, setAuto] = useState(15);
+  const [filtres, setFiltres] = useState(() => repris<Filtres>('mails:filtres', { etiquette: '', sens: '', recherche: '' }));
+  const [page, setPage] = useState(() => repris('mails:page', 1));
+  const [taille, setTaille] = useState(() => repris<number | 'auto'>('mails:taille', 'auto'));
+  const [auto, setAuto] = useState(() => repris('mails:auto', 15));
+  useGarder('mails', { etat, filtres, page, taille, auto });
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
   const [avis, setAvis] = useState<Avis>(null);
   // L'API lit au moins 10 lignes ; en « auto », le défileur garde celles qui ne tiennent pas

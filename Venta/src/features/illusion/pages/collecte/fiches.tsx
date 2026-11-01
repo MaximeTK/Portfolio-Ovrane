@@ -3,7 +3,7 @@
 import './fiches.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
-import { cleBrouillon } from '../../stockage';
+import { cleBrouillon, repris, useGarder } from '../../stockage';
 import { Fenetre, usePanneau, useVues, type ArbreDepart } from '../../dock/Dock';
 import { ECART } from '../../dock/moteur';
 import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
@@ -69,8 +69,9 @@ export function useAvis() {
 export type Dire = (texte: string, erreur?: boolean) => void;
 
 // Les briques qui tournent au nom du compte, lues comme le bandeau de l'ancien dashboard, toutes les 5 s
-export function useBriques() {
-  const [actives, setActives] = useState<Set<string>>(new Set());
+export function useBriques(section: string) {
+  const [actives, setActives] = useState(() => repris(`${section}:briques:actives`, new Set<string>()));
+  useGarder(`${section}:briques`, { actives });
   const lire = useCallback(async () => {
     try {
       const vu = await appeler<{ briques_en_cours: { nom: string }[] }>('/pipeline');
@@ -148,6 +149,8 @@ function numeros(page: number, pages: number): (number | null)[] {
 }
 
 type ProprietesTableau = {
+  // La section qui monte le tableau : ses choix et ses fiches sont gardés sous son nom
+  section: string;
   titre: string;
   actions: React.ReactNode;
   confirmation: Confirmation;
@@ -161,32 +164,36 @@ type ProprietesTableau = {
 };
 
 // Le tableau des fiches, le même dans Collecte, Parser et Audit : états filtrants, canaux, recherche, sélection, pagination
-export function TableauFiches({ titre, actions, confirmation, annuler, avis, note, version, selection, choisir }: ProprietesTableau) {
+export function TableauFiches({ section, titre, actions, confirmation, annuler, avis, note, version, selection, choisir }: ProprietesTableau) {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const question = useQuestionsFiche();
   const versionFiche = useFicheEntreprise((s) => s.version);
-  const [etat, setEtat] = useState('');
-  const [canal, setCanal] = useState('');
-  const [saisie, setSaisie] = useState('');
-  const [cherche, setCherche] = useState('');
-  const [page, setPage] = useState(1);
-  const [taille, setTaille] = useState<number | 'auto'>('auto');
-  const [auto, setAuto] = useState(16);
-  const [donnees, setDonnees] = useState<ReponseFiches | null>(null);
+  // Ce qui a été lu et choisi reste d'une visite à l'autre, sous le nom de la section : en revenant, tout s'affiche aussitôt et se relit derrière
+  const garde = `${section}:fiches`;
+  const [etat, setEtat] = useState(() => repris(`${garde}:etat`, ''));
+  const [canal, setCanal] = useState(() => repris(`${garde}:canal`, ''));
+  const [saisie, setSaisie] = useState(() => repris(`${garde}:saisie`, ''));
+  const [cherche, setCherche] = useState(() => repris(`${garde}:cherche`, ''));
+  const [page, setPage] = useState(() => repris(`${garde}:page`, 1));
+  const [taille, setTaille] = useState(() => repris<number | 'auto'>(`${garde}:taille`, 'auto'));
+  const [auto, setAuto] = useState(() => repris(`${garde}:auto`, 16));
+  const [donnees, setDonnees] = useState(() => repris<ReponseFiches | null>(`${garde}:donnees`, null));
+  useGarder(garde, { etat, canal, saisie, cherche, page, taille, auto, donnees });
   const [erreur, setErreur] = useState('');
   const [occupe, setOccupe] = useState(false);
   const defile = useRef<HTMLDivElement>(null);
   const rang = useRef(0);
   const parPage = taille === 'auto' ? auto : taille;
 
-  // La frappe se pose avant de partir : « developpement » ne lance pas douze requêtes
+  // La frappe se pose avant de partir : « developpement » ne lance pas douze requêtes, et une recherche déjà posée (celle gardée au retour) garde sa page
   useEffect(() => {
+    if (saisie.trim() === cherche) return;
     const minuteur = setTimeout(() => {
       setCherche(saisie.trim());
       setPage(1);
     }, 250);
     return () => clearTimeout(minuteur);
-  }, [saisie]);
+  }, [saisie, cherche]);
 
   // « auto » : autant de lignes que la hauteur de la fenêtre en tient, dix au moins comme le serveur l'exige ; remesuré quand les lignes arrivent
   const mesurer = useCallback(() => {
@@ -449,10 +456,12 @@ type Parametres = Record<string, unknown> & { modeles?: { nom: string }[] };
 const versSaisie = (champ: ChampReglage, valeur: unknown) => (champ.type === 'liste' ? ((valeur as string[] | undefined) ?? []).join(', ') : valeur);
 const versReglage = (champ: ChampReglage, valeur: unknown) => (champ.type === 'liste' ? String(valeur ?? '').split(',').map((v) => v.trim()).filter(Boolean) : valeur);
 
-export function useReglages(champs: ChampReglage[], dire: Dire, apres?: () => void) {
-  const [parametres, setParametres] = useState<Parametres | null>(null);
-  const [valeurs, setValeurs] = useState<Record<string, unknown>>({});
+export function useReglages(section: string, champs: ChampReglage[], dire: Dire, apres?: () => void) {
+  const [parametres, setParametres] = useState(() => repris<Parametres | null>(`${section}:reglages:parametres`, null));
+  useGarder(`${section}:reglages`, { parametres });
   const depuis = useCallback((p: Parametres) => Object.fromEntries(champs.map((c) => [c.cle, versSaisie(c, p[c.cle])])), [champs]);
+  // Les réglages gardés remplissent le formulaire dès l'arrivée, la lecture qui suit le remet à jour
+  const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => (parametres ? depuis(parametres) : {}));
   useEffect(() => {
     appeler<Parametres>('/parametres').then((p) => {
       setParametres(p);
@@ -627,13 +636,20 @@ const lireRetenues = (nom: string): Valeurs => {
     return {};
   }
 };
+// Ce qui avait été tapé la dernière fois, sinon ce que le serveur propose
+const valeursDe = (nom: string, b: BriqueAtelier): Valeurs => {
+  const retenues = lireRetenues(nom);
+  return Object.fromEntries(b.arguments.filter((a) => !a.parametre).map((a) => [a.cle, (retenues[a.cle] ?? a.valeur ?? '') as string | boolean]));
+};
 
 export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () => void) {
-  const [brique, setBrique] = useState<BriqueAtelier | null>(null);
-  const [valeurs, setValeurs] = useState<Valeurs>({});
+  // La brique, sa sortie et ce qu'elle a produit restent d'une visite à l'autre, sous le nom de la section
+  const [brique, setBrique] = useState(() => repris<BriqueAtelier | null>(`${nom}:atelier:brique`, null));
+  const [valeurs, setValeurs] = useState<Valeurs>(() => (brique ? valeursDe(nom, brique) : {}));
   const [test, setTest] = useState(true);
-  const [etat, setEtat] = useState<EtatAtelier | null>(null);
-  const [produit, setProduit] = useState<Produit | null>(null);
+  const [etat, setEtat] = useState(() => repris<EtatAtelier | null>(`${nom}:atelier:etat`, null));
+  const [produit, setProduit] = useState(() => repris<Produit | null>(`${nom}:atelier:produit`, null));
+  useGarder(`${nom}:atelier`, { brique, etat, produit });
   const [dejaBase, setDejaBase] = useState<{ fiche: VueFiche; reprises: { champ: string; fiche: string }[]; divergences: Divergence[]; choix: Record<string, 'fiche' | 'saisi'> } | null>(null);
   // Le lancement dont il reste à écrire le résultat, une fois la brique finie
   const garde = useRef<{ valeurs: Valeurs; test: boolean } | null>(null);
@@ -644,8 +660,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
       setBrique(b);
       if (!b) return;
       setEtat(b.etat);
-      // Ce qui avait été tapé la dernière fois, sinon ce que le serveur propose
-      setValeurs((v) => (Object.keys(v).length ? v : Object.fromEntries(b.arguments.filter((a) => !a.parametre).map((a) => [a.cle, (lireRetenues(nom)[a.cle] ?? a.valeur ?? '') as string | boolean]))));
+      setValeurs((v) => (Object.keys(v).length ? v : valeursDe(nom, b)));
     } catch (e) {
       dire(messageDe(e), true);
     }

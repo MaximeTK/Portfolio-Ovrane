@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Confirmer } from '../../dock/Panneau';
 
 // Ce que les pages Offres et Veille lisent d'Illusion
@@ -107,7 +108,9 @@ export function useAvis() {
 
 // L'état de la veille du compte, relu toutes les 5 s comme le bandeau de l'ancien dashboard ; une panne se dit une fois
 export function useEtatVeille(dire: (t: string, e?: boolean) => void) {
-  const [etat, setEtat] = useState<EtatVeille | null>(null);
+  // Gardé d'une visite à l'autre, pour Offres comme pour Veille : il s'affiche aussitôt et se relit derrière
+  const [etat, setEtat] = useState(() => repris<EtatVeille | null>('veille:etat', null));
+  useGarder('veille', { etat });
   const enPanne = useRef(false);
   const lire = useCallback(async () => {
     try {
@@ -306,7 +309,7 @@ export function ChoixLangue({ id, valeur, changer, label }: { id: string; valeur
 
 // L'éditeur des profils de veille, corps et pied d'un onglet du panneau
 export function useProfilsVeille(parametres: Parametres | null, enregistrer: (m: Partial<Parametres>) => Promise<boolean>) {
-  const [cartes, setCartes] = useState<CarteVeille[]>([]);
+  const [cartes, setCartes] = useState<CarteVeille[]>(() => (parametres?.profils_veille ?? []).map((v) => carteVeille(v, true)));
   const [retrait, setRetrait] = useState<number | null>(null);
   const [glisse, setGlisse] = useState<number | null>(null);
   const liste = useRef<HTMLDivElement>(null);

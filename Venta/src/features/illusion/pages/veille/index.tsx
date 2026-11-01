@@ -4,6 +4,7 @@ import '../offres/offres.css';
 import './veille.css';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { AuPied, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
@@ -69,7 +70,9 @@ function Veille() {
   const { dire, vue: avis } = useAvis();
   const [etat, relire] = useEtatVeille(dire);
   const gestes = useGestesStock(etat, relire, dire, () => {});
-  const [parametres, setParametres] = useState<Parametres | null>(null);
+  // Les réglages lus restent d'une visite à l'autre, comme l'état de la veille (gardé par son crochet)
+  const [parametres, setParametres] = useState(() => repris<Parametres | null>('veille:parametres', null));
+  useGarder('veille', { parametres });
   // L'onglet « Nouveau jobboard », de « Ajouter un jobboard » jusqu'à l'ajout
   const [ajoutJb, setAjoutJb] = useState(false);
 

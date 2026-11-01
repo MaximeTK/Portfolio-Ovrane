@@ -1,8 +1,9 @@
 'use client';
 
 import { LienIllusion } from '../../partage/LienIllusion';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { AuPied, type Onglet } from '../../dock/Panneau';
 import { jourMois, nomProfil } from '../../partage/FicheOffre';
 
@@ -57,21 +58,28 @@ function Source({ s }: { s?: { sorte?: string; donnee?: string } }) {
 
 // Rejouer : l'offre, le profil, lot par lot ou d'une traite, puis la sorte de passage ; rien n'est jamais envoyé
 export function useOngletRejouer({ actif, adresse, site, lancer }: { actif: boolean; adresse: string; site: string; lancer: (d: DemandeRejeu) => Promise<void> }): Onglet {
-  const [profils, setProfils] = useState<string[] | null>(null);
+  // Les profils lus restent d'une visite à l'autre ; ils se relisent à la première ouverture de chaque visite
+  const [profils, setProfils] = useState(() => repris<string[] | null>('workflows:profils', null));
+  useGarder('workflows', { profils });
+  const lus = useRef(false);
   const [url, setUrl] = useState('');
-  const [profil, setProfil] = useState('');
+  const [profil, setProfil] = useState(() => profils?.[0] ?? '');
   const [manuel, setManuel] = useState(true);
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
   // L'adresse d'une offre cherchée préremplit le passage
   useEffect(() => setUrl(/^https?:\/\//i.test(adresse) ? adresse : ''), [adresse]);
   useEffect(() => {
-    if (!actif || profils) return;
+    if (!actif || lus.current) return;
+    lus.current = true;
     appeler<{ nom: string }[]>('/profils-candidature').then((l) => {
       setProfils(l.map((p) => p.nom));
       setProfil((p) => p || l[0]?.nom || '');
-    }).catch((e) => setErreur(message(e)));
-  }, [actif, profils]);
+    }).catch((e) => {
+      lus.current = false;
+      setErreur(message(e));
+    });
+  }, [actif]);
   const partir = async (sorte: DemandeRejeu['sorte']) => {
     if (!url.trim()) return setErreur("Donnez l'adresse d'une offre du site.");
     setOccupe(true);

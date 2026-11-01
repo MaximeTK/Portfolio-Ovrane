@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Dock, usePanneau } from '../../dock/Dock';
 import { Activite } from '../../activite/Activite';
 import { messageDe } from '../../partage/FicheEntreprise';
@@ -28,8 +29,10 @@ type Candidat = { siren: string; nom: string; secteur: string | null; localisati
 
 // Importer une société nommément : par SIREN elle est créée, par nom Sirene propose des candidats
 function useImport(dire: Dire, relire: () => void) {
-  const [requete, setRequete] = useState('');
-  const [candidats, setCandidats] = useState<Candidat[] | null>(null);
+  // La recherche et ses candidats restent d'une visite à l'autre
+  const [requete, setRequete] = useState(() => repris('collecte:import:requete', ''));
+  const [candidats, setCandidats] = useState(() => repris<Candidat[] | null>('collecte:import:candidats', null));
+  useGarder('collecte:import', { requete, candidats });
   const [occupe, setOccupe] = useState(false);
   const chercher = async (q: string) => {
     if (!q.trim()) return dire('Indiquez un nom ou un SIREN.', true);
@@ -102,9 +105,10 @@ export default function PageCollecte(_: ProprietesPage) {
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
   const [version, setVersion] = useState(0);
-  const [curseur, setCurseur] = useState<Record<string, number> | null>(null);
+  const [curseur, setCurseur] = useState(() => repris<Record<string, number> | null>('collecte:curseur', null));
+  useGarder('collecte', { curseur });
   const relire = useCallback(() => setVersion((v) => v + 1), []);
-  const reglages = useReglages(CHAMPS, dire);
+  const reglages = useReglages('collecte', CHAMPS, dire);
   const imp = useImport(dire, relire);
 
   // Où en est la collecte, secteur par secteur
@@ -145,7 +149,7 @@ export default function PageCollecte(_: ProprietesPage) {
   return (
     <Dock id="collecte" principal="fiches" arbre={ARBRE} fenetres={{ fiches: { mini: [470, 220] } }} panneau="reglages">
       <Activite />
-      <TableauFiches titre="Fiches entreprises" avis={avis} note={prochaine} version={version} selection={selection} choisir={setSelection}
+      <TableauFiches section="collecte" titre="Fiches entreprises" avis={avis} note={prochaine} version={version} selection={selection} choisir={setSelection}
         confirmation={confirmation} annuler={() => setConfirmation(null)}
         actions={(
           <>

@@ -3,6 +3,7 @@
 import './parametres-serveur.css';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau, useVues } from '../../dock/Dock';
 import { AuPied, Confirmer, Panneau, type Onglet } from '../../dock/Panneau';
@@ -83,14 +84,17 @@ export default function PageParametresServeur(_: ProprietesPage) {
 function Serveur() {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const { fermerVue } = useVues();
-  const [lus, setLus] = useState<Parametres | null>(null);
+  // Les paramètres lus, le groupe, le filtre et les derniers essais restent d'une visite à l'autre ; le formulaire repart de ce qui est lu
+  const [lus, setLus] = useState(() => repris<Parametres | null>('parametres-serveur:lus', null));
   const [erreurLecture, setErreurLecture] = useState('');
-  const [valeurs, setValeurs] = useState<Record<string, unknown>>({});
+  const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
   const [secrets, setSecrets] = useState<Record<string, { saisie: string; effacer: boolean }>>({});
-  const [groupe, setGroupe] = useState('modeles');
-  const [filtre, setFiltre] = useState('');
+  const [groupe, setGroupe] = useState(() => repris('parametres-serveur:groupe', 'modeles'));
+  const [filtre, setFiltre] = useState(() => repris('parametres-serveur:filtre', ''));
   const [selection, setSelection] = useState<Set<string>>(new Set());
-  const [essais, setEssais] = useState<Record<string, Essai>>({});
+  const [essais, setEssais] = useState(() => repris<Record<string, Essai>>('parametres-serveur:essais', {}));
+  // Un essai encore en cours ne se garde pas : sa réponse arriverait sur une page quittée et le laisserait en cours
+  useGarder('parametres-serveur', { lus, groupe, filtre, essais: Object.fromEntries(Object.entries(essais).filter(([, e]) => e.etat !== 'encours')) });
   // Change à chaque ajout entamé : le formulaire d'ajout repart vierge
   const [ajout, setAjout] = useState(0);
   const [confirmation, setConfirmation] = useState(false);

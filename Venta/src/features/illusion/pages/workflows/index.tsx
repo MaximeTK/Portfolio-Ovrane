@@ -3,6 +3,7 @@
 import './workflows.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler, ErreurIllusion } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { useSondage } from '../../activite/sondage';
 import { Dock, Fenetre, usePanneau, useVues } from '../../dock/Dock';
@@ -57,15 +58,17 @@ const cible = (c: Record<string, unknown>) => Object.entries(c).map(([k, v]) => 
 
 export default function PageWorkflows({ compte }: ProprietesPage) {
   const admin = compte.admin;
-  const [recherche, setRecherche] = useState('');
-  const [adresse, setAdresse] = useState('');
-  const [carte, setCarte] = useState<Carte | null>(null);
+  // Ce qui a été lu et choisi reste d'une visite à l'autre : en revenant, tout s'affiche aussitôt et se relit derrière
+  const [recherche, setRecherche] = useState(() => repris('workflows:recherche', ''));
+  const [adresse, setAdresse] = useState(() => repris('workflows:adresse', ''));
+  const [carte, setCarte] = useState(() => repris<Carte | null>('workflows:carte', null));
   const [erreurCarte, setErreurCarte] = useState('');
-  const [rang, setRang] = useState(0);
-  const [rejeu, setRejeu] = useState<EtatRejeu>({ en_cours: false });
-  const [pasLu, setPasLu] = useState<number | null>(null);
-  const [signales, setSignales] = useState<Set<number>>(() => new Set());
-  const [verif, setVerif] = useState<Verification | null>(null);
+  const [rang, setRang] = useState(() => repris('workflows:rang', 0));
+  const [rejeu, setRejeu] = useState(() => repris<EtatRejeu>('workflows:rejeu', { en_cours: false }));
+  const [pasLu, setPasLu] = useState(() => repris<number | null>('workflows:pasLu', null));
+  const [signales, setSignales] = useState(() => repris('workflows:signales', new Set<number>()));
+  const [verif, setVerif] = useState(() => repris<Verification | null>('workflows:verif', null));
+  useGarder('workflows', { recherche, adresse, carte, rang, rejeu, pasLu, signales, verif });
   const [erreurVerif, setErreurVerif] = useState('');
   const [occupe, setOccupe] = useState(false);
   const [avis, setAvis] = useState<Avis>(null);
@@ -103,11 +106,14 @@ export default function PageWorkflows({ compte }: ProprietesPage) {
     }
   }, []);
 
-  // Un passage lancé avant d'avoir quitté la page se retrouve en y revenant, avec l'arbre de son site
+  // Au retour, l'arbre et l'étape du journal gardés se relisent sur place ; sans arbre gardé, un passage lancé avant se retrouve avec l'arbre de son site
+  const depart = useRef({ adresse, pas: pasLu });
   useEffect(() => {
-    appeler<EtatRejeu>('/workflows/rejeu').then((e) => {
+    const { adresse: gardee, pas } = depart.current;
+    if (gardee) void afficher(gardee, true);
+    appeler<EtatRejeu>(pas === null ? '/workflows/rejeu' : `/workflows/rejeu?pas=${pas}`).then((e) => {
       setRejeu(e);
-      if (e.url) void afficher(e.url);
+      if (e.url && !gardee) void afficher(e.url);
     }).catch(() => {});
     if (admin) void lireVerif();
   }, [admin, afficher, lireVerif]);
@@ -120,7 +126,12 @@ export default function PageWorkflows({ compte }: ProprietesPage) {
     }
   }, [pasLu]);
   useSondage(lireRejeu, PAS_REJEU_MS, rejeu.en_cours, pasLu);
-  useEffect(() => setSignales(new Set()), [rejeu.url]);
+  // Un autre passage efface les signalements marqués ; ceux du passage gardé restent au retour
+  const urlSignales = useRef(rejeu.url);
+  useEffect(() => {
+    if (urlSignales.current !== rejeu.url) setSignales(new Set());
+    urlSignales.current = rejeu.url;
+  }, [rejeu.url]);
 
   // Une étape du journal à la fois ; revenue à la dernière, elle suit de nouveau le passage
   const lirePas = async (sens: number) => {

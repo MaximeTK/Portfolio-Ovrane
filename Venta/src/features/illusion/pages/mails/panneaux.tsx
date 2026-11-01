@@ -5,7 +5,7 @@ import { appeler, telecharger, televerser } from '../../api';
 import { useSondage } from '../../activite/sondage';
 import { AuPied, MarqueAdmin, type Onglet } from '../../dock/Panneau';
 import { dateUtc } from '../../partage/FicheOffre';
-import { aOublier } from '../../stockage';
+import { aOublier, repris, useGarder } from '../../stockage';
 
 export type Avis = { texte: string; erreur?: boolean } | null;
 export type PieceJointe = { nom: string; type: string; taille: number; telechargeable: boolean };
@@ -507,9 +507,11 @@ type Parametres = Record<string, unknown> & { modeles?: { nom: string; modele?: 
 const texteMots = (mots?: Record<string, string[]>) => Object.fromEntries(MOTS_ETIQUETTES.map((t) => [t, (mots?.[t] ?? []).join(', ')]));
 
 export function useOngletReglages({ admin, actif, fermer, setAvis, relire }: { admin: boolean; actif: boolean; fermer: () => void; setAvis: (a: Avis) => void; relire: () => void }): Onglet {
-  const [lus, setLus] = useState<Parametres | null>(null);
-  const [valeurs, setValeurs] = useState<Record<string, unknown>>({});
-  const [mots, setMots] = useState<Record<string, string>>({});
+  // Les réglages lus restent d'une visite à l'autre : la saisie en repart aussitôt, puis ils se relisent à l'ouverture
+  const [lus, setLus] = useState(() => repris<Parametres | null>('mails:reglages', null));
+  const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
+  const [mots, setMots] = useState<Record<string, string>>(() => (lus ? texteMots(lus.mail_mots_etiquettes) : {}));
+  useGarder('mails', { reglages: lus });
   const [secret, setSecret] = useState<string | null>(null);
   const [erreur, setErreur] = useState('');
   const [occupe, setOccupe] = useState(false);
@@ -635,21 +637,29 @@ type Argument = { cle: string; libelle: string; type: string; aide: string; vale
 type Course = { en_cours: boolean; journal: string; ok: boolean | null; erreur: string; depuis_s: number; duree_s: number };
 
 export function useOngletExecuter({ actif, fermer, setAvis }: { actif: boolean; fermer: () => void; setAvis: (a: Avis) => void }): Onglet {
-  const [args, setArgs] = useState<Argument[] | null>(null);
-  const [valeurs, setValeurs] = useState<Record<string, unknown>>({});
+  // La brique lue et son lancement restent d'une visite à l'autre ; ils se relisent quand même à la première ouverture de chaque visite
+  const [args, setArgs] = useState(() => repris<Argument[] | null>('mails:arguments', null));
+  const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => Object.fromEntries((args ?? []).map((a) => [a.cle, a.valeur])));
   const [test, setTest] = useState(true);
-  const [course, setCourse] = useState<Course | null>(null);
+  const [course, setCourse] = useState(() => repris<Course | null>('mails:course', null));
+  useGarder('mails', { arguments: args, course });
   const [erreur, setErreur] = useState('');
+  const lue = useRef(false);
   useEffect(() => {
-    if (!actif || args) return;
+    if (!actif || lue.current) return;
+    lue.current = true;
     appeler<{ nom: string; arguments: Argument[]; etat: Course }[]>('/atelier').then((briques) => {
       const mail = briques.find((b) => b.nom === 'mail');
       if (!mail) throw new Error('Brique Mail absente du serveur.');
       setArgs(mail.arguments);
       setValeurs(Object.fromEntries(mail.arguments.map((a) => [a.cle, a.valeur])));
       setCourse(mail.etat);
-    }).catch((e) => setErreur(message(e)));
-  }, [actif, args]);
+    }).catch((e) => {
+      // Échouée, la lecture repart à la prochaine ouverture
+      lue.current = false;
+      setErreur(message(e));
+    });
+  }, [actif]);
   // Le lancement se suit toutes les 1,5 s tant qu'il tourne, comme l'atelier de l'ancien dashboard
   useSondage(async () => {
     try {

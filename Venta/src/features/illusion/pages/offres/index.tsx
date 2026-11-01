@@ -4,6 +4,7 @@ import './offres.css';
 import { LienIllusion } from '../../partage/LienIllusion';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler, televerser } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
@@ -69,17 +70,19 @@ export default function PageOffres({ compte }: ProprietesPage) {
 function Offres({ admin }: { admin: boolean }) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const { dire, vue: avis } = useAvis();
-  const [passe, setPasse] = useState('');
-  const [groupe, setGroupe] = useState({ langue: '', metier: '' });
+  // Ce qui a été lu et choisi reste d'une visite à l'autre : en revenant, tout s'affiche aussitôt et se relit derrière
+  const [passe, setPasse] = useState(() => repris('offres:passe', ''));
+  const [groupe, setGroupe] = useState(() => repris('offres:groupe', { langue: '', metier: '' }));
   // La page se tient par sa première ligne : une autre taille de page la garde affichée, d'une seule lecture
-  const [debut, setDebut] = useState(0);
-  const [taille, setTaille] = useState<Taille>('auto');
-  const [auto, setAuto] = useState(13);
-  const [file, setFile] = useState<ReponseFile | null>(null);
-  const [ecartees, setEcartees] = useState<ReponseEcartees | null>(null);
-  const [parametres, setParametres] = useState<Parametres | null>(null);
-  const [profils, setProfils] = useState<ProfilDispo[]>([]);
-  const [incomplets, setIncomplets] = useState<Incomplets>({});
+  const [debut, setDebut] = useState(() => repris('offres:debut', 0));
+  const [taille, setTaille] = useState(() => repris<Taille>('offres:taille', 'auto'));
+  const [auto, setAuto] = useState(() => repris('offres:auto', 13));
+  const [file, setFile] = useState(() => repris<ReponseFile | null>('offres:file', null));
+  const [ecartees, setEcartees] = useState(() => repris<ReponseEcartees | null>('offres:ecartees', null));
+  const [parametres, setParametres] = useState(() => repris<Parametres | null>('offres:parametres', null));
+  const [profils, setProfils] = useState(() => repris<ProfilDispo[]>('offres:profils', []));
+  const [incomplets, setIncomplets] = useState(() => repris<Incomplets>('offres:incomplets', {}));
+  useGarder('offres', { passe, groupe, debut, taille, auto, file, ecartees, parametres, profils, incomplets });
   const [ligne, setLigne] = useState<string | null>(null);
   const [tour, setTour] = useState(0);
   const defile = useRef<HTMLDivElement>(null);

@@ -3,6 +3,7 @@
 import './metriques.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { Panneau, type Onglet } from '../../dock/Panneau';
@@ -83,17 +84,19 @@ function useLignesQuiTiennent(cle: unknown) {
 
 function Metriques() {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
-  const [periode, setPeriode] = useState<Periode>(() => plage(30));
-  const [raccourci, setRaccourci] = useState<number | null>(30);
+  // La période choisie et ce qu'elle a lu restent d'une visite à l'autre : en revenant, tout s'affiche aussitôt et se relit derrière
+  const [periode, setPeriode] = useState(() => repris<Periode>('metriques:periode', plage(30)));
+  const [raccourci, setRaccourci] = useState(() => repris<number | null>('metriques:raccourci', 30));
   const [brouillon, setBrouillon] = useState<Periode>(periode);
   const [menuDate, setMenuDate] = useState<'debut' | 'fin' | null>(null);
   const [version, setVersion] = useState(0);
-  const [page, setPage] = useState<PageMetriques | null>(null);
+  const [page, setPage] = useState(() => repris<PageMetriques | null>('metriques:page', null));
   const [erreur, setErreur] = useState('');
-  const [suivi, setSuivi] = useState<Suivi | null>(null);
+  const [suivi, setSuivi] = useState(() => repris<Suivi | null>('metriques:suivi', null));
   const [erreurSuivi, setErreurSuivi] = useState('');
-  const [fantomes, setFantomes] = useState<Fantome[] | null>(null);
+  const [fantomes, setFantomes] = useState(() => repris<Fantome[] | null>('metriques:fantomes', null));
   const [erreurFantomes, setErreurFantomes] = useState('');
+  useGarder('metriques', { periode, raccourci, page, suivi, fantomes });
   const [avis, setAvis] = useState<Avis>(null);
   const [range, setRange] = useState(false);
   const boutonDebut = useRef<HTMLButtonElement>(null);

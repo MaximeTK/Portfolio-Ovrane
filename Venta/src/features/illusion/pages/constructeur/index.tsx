@@ -3,6 +3,7 @@
 import './constructeur.css';
 import { useEffect, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin } from '../../dock/Panneau';
@@ -37,15 +38,17 @@ export default function PageConstructeur(_: ProprietesPage) {
 function Elements() {
   const { dire, vue } = useAvis();
   const gestions: Record<Sorte, ReturnType<typeof useFichiers>> = {
-    background: useFichiers('/elements-cv/background', dire),
-    structure: useFichiers('/elements-cv/structure', dire),
-    title: useFichiers('/elements-cv/title', dire),
+    background: useFichiers('/elements-cv/background', dire, true, 'constructeur'),
+    structure: useFichiers('/elements-cv/structure', dire, true, 'constructeur'),
+    title: useFichiers('/elements-cv/title', dire, true, 'constructeur'),
   };
   const [aSupprimer, setASupprimer] = useState<{ sorte: Sorte; f: Fichier } | null>(null);
   const [occupe, setOccupe] = useState(false);
-  const [reglages, setReglages] = useState<Reglages | null>(null);
-  const [fond, setFond] = useState('');
-  const [palette, setPalette] = useState<string[]>([]);
+  // Le fond et la palette lus restent d'une visite à l'autre et le formulaire en repart, avant d'être relus
+  const [reglages, setReglages] = useState(() => repris<Reglages | null>('constructeur:reglages', null));
+  useGarder('constructeur', { reglages });
+  const [fond, setFond] = useState(reglages?.constructeur_fond ?? '');
+  const [palette, setPalette] = useState<string[]>(reglages?.constructeur_palette ?? []);
   const poser = (r: Reglages) => {
     setReglages(r);
     setFond(r.constructeur_fond);

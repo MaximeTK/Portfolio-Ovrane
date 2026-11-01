@@ -3,6 +3,7 @@
 import './relations.css';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { AuPied, Confirmer, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
@@ -72,7 +73,9 @@ function disposer(personnes: Personne[]) {
 }
 
 export default function PageRelations(_: ProprietesPage) {
-  const [donnees, setDonnees] = useState<Donnees | null>(null);
+  // Le nuage lu reste d'une visite à l'autre : en revenant, il s'affiche aussitôt et se relit derrière
+  const [donnees, setDonnees] = useState(() => repris<Donnees | null>('relations:donnees', null));
+  useGarder('relations', { donnees });
   const [erreur, setErreur] = useState('');
   const [avis, setAvis] = useState<Avis>(null);
   const relire = useCallback(async () => {
@@ -101,9 +104,11 @@ type ProprietesNuage = { donnees: Donnees | null; erreur: string; avis: Avis; se
 
 function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
-  const [recherche, setRecherche] = useState('');
+  // La recherche, le zoom et le déplacement choisis restent d'une visite à l'autre
+  const [recherche, setRecherche] = useState(() => repris('relations:recherche', ''));
+  const [vue, setVue] = useState(() => repris<Vue | null>('relations:vue', null));
+  useGarder('relations', { recherche, vue });
   const [occupe, setOccupe] = useState(false);
-  const [vue, setVue] = useState<Vue | null>(null);
   const [cadre, setCadre] = useState({ w: LARGEUR, h: HAUTEUR });
   const [glisse, setGlisse] = useState(false);
   const zone = useRef<HTMLDivElement>(null);

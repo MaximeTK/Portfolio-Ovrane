@@ -280,7 +280,7 @@ function useOngletReglages(d: Documents, actif: boolean): Onglet {
     prompt: p?.constructeur_prompt_lettre ?? '', notes: p?.constructeur_notes_lettre ?? '' });
   const [brouillon, setBrouillon] = useState(depart);
   const [aSupprimer, setASupprimer] = useState<Fichier | null>(null);
-  const pieces = useFichiers('/pieces-lettre', d.dire, actif);
+  const pieces = useFichiers('/pieces-lettre', d.dire, actif, 'documents');
   useEffect(() => {
     if (actif) setBrouillon(depart());
     // Le brouillon repart des réglages à l'ouverture de l'onglet et après chaque enregistrement

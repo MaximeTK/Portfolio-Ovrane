@@ -4,6 +4,7 @@ import './reglages.css';
 import { LienIllusion } from '../../partage/LienIllusion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler, televerser } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
 import { Activite } from '../../activite/Activite';
@@ -113,17 +114,19 @@ export default function PageReglages({ compte }: ProprietesPage) {
 
 function Reglages({ admin }: { admin: boolean }) {
   const { onglet, ouvrir, fermer } = usePanneau();
-  const [lus, setLus] = useState<Parametres | null>(null);
-  const [valeurs, setValeurs] = useState<Record<string, unknown>>({});
+  // Les réglages lus, le groupe et le filtre choisis, les tests et les pièces restent d'une visite à l'autre ; le formulaire repart de ce qui a été lu
+  const [lus, setLus] = useState(() => repris<Parametres | null>('reglages:lus', null));
+  const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
   const [secrets, setSecrets] = useState<Record<string, { saisie: string; effacer: boolean }>>({});
-  const [lignes, setLignes] = useState<Ligne[]>([]);
-  const [groupe, setGroupe] = useState('comptes');
-  const [filtre, setFiltre] = useState('tous');
+  const [lignes, setLignes] = useState<Ligne[]>(() => (lus ? lignesDe(lus.identifiants ?? []) : []));
+  const [groupe, setGroupe] = useState(() => repris('reglages:groupe', 'comptes'));
+  const [filtre, setFiltre] = useState(() => repris('reglages:filtre', 'tous'));
   const [selection, setSelection] = useState<Set<number>>(new Set());
-  const [essais, setEssais] = useState<Record<string, Essai>>({});
-  const [testEnCours, setTestEnCours] = useState('');
-  const [teste, setTeste] = useState('');
-  const [pieces, setPieces] = useState<Piece[] | null>(null);
+  const [essais, setEssais] = useState(() => repris<Record<string, Essai>>('reglages:essais', {}));
+  const [testEnCours, setTestEnCours] = useState(() => repris('reglages:testEnCours', ''));
+  const [teste, setTeste] = useState(() => repris('reglages:teste', ''));
+  const [pieces, setPieces] = useState(() => repris<Piece[] | null>('reglages:pieces', null));
+  useGarder('reglages', { lus, groupe, filtre, essais, testEnCours, teste, pieces });
   const [renomme, setRenomme] = useState<{ nom: string; nouveau: string } | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
   const [avis, setAvis] = useState<Avis>(null);

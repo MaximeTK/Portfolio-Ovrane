@@ -34,14 +34,14 @@ export default function PageAudit(_: ProprietesPage) {
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
   const [version, setVersion] = useState(0);
   const relire = useCallback(() => setVersion((v) => v + 1), []);
-  const briques = useBriques();
+  const briques = useBriques('audit');
   const atelier = useAtelier('audit', dire, relire);
-  const reglages = useReglages(CHAMPS, dire, atelier.recharger);
+  const reglages = useReglages('audit', CHAMPS, dire, atelier.recharger);
 
   return (
     <Dock id="audit" principal="fiches" arbre={ARBRE} fenetres={{ fiches: { mini: [470, 220] }, panneau: { pref: [560, 320], flot: [560, 600] } }} panneau={null}>
       <Activite />
-      <TableauFiches titre="Fiches entreprises" avis={avis} version={version} selection={selection} choisir={setSelection}
+      <TableauFiches section="audit" titre="Fiches entreprises" avis={avis} version={version} selection={selection} choisir={setSelection}
         confirmation={confirmation} annuler={() => setConfirmation(null)}
         actions={(
           <>

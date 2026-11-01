@@ -3,6 +3,7 @@
 import './lapis.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
@@ -68,7 +69,9 @@ function Photo({ url, nom }: { url?: string; nom: string }) {
 }
 
 export default function PageLapis({ compte }: ProprietesPage) {
-  const [donnees, setDonnees] = useState<Lapis | null>(null);
+  // Ce que LAPIS a trouvé reste d'une visite à l'autre : en revenant, la galerie s'affiche aussitôt et se relit derrière
+  const [donnees, setDonnees] = useState(() => repris<Lapis | null>('lapis:donnees', null));
+  useGarder('lapis', { donnees });
   const [erreur, setErreur] = useState('');
   const [avis, setAvis] = useState<Avis>(null);
   const lire = useCallback(async () => {
@@ -96,10 +99,11 @@ type ProprietesGalerie = { donnees: Lapis | null; erreur: string; avis: Avis; se
 // La fenêtre principale : les quatre onglets de ce que LAPIS a trouvé, ce que la passe cherche, la galerie paginée
 function Galerie({ donnees, erreur, avis, setAvis }: ProprietesGalerie) {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
-  const [sorte, setSorte] = useState<Sorte>('personnes');
-  const [page, setPage] = useState(1);
-  const [taille, setTaille] = useState<number | 'auto'>('auto');
-  const [auto, setAuto] = useState(12);
+  const [sorte, setSorte] = useState(() => repris<Sorte>('lapis:sorte', 'personnes'));
+  const [page, setPage] = useState(() => repris('lapis:page', 1));
+  const [taille, setTaille] = useState(() => repris<number | 'auto'>('lapis:taille', 'auto'));
+  const [auto, setAuto] = useState(() => repris('lapis:auto', 12));
+  useGarder('lapis', { sorte, page, taille, auto });
   const [occupe, setOccupe] = useState(false);
   const grille = useRef<HTMLDivElement>(null);
 
@@ -285,11 +289,14 @@ type Formulaire = { recherches: string; postes: string; posts: string; personnes
 function useOngletReglages({ admin, actif, fermer, setAvis, relire }: {
   admin: boolean; actif: boolean; fermer: () => void; setAvis: (a: Avis) => void; relire: () => Promise<void>;
 }): Onglet {
-  const [lu, setLu] = useState<Formulaire | null>(null);
-  const [f, setF] = useState<Formulaire | null>(null);
-  const [modeles, setModeles] = useState<string[]>([]);
+  // Les réglages lus restent d'une visite à l'autre et le formulaire en repart ; ils se relisent quand même à la première ouverture de chaque visite
+  const [lu, setLu] = useState(() => repris<Formulaire | null>('lapis:reglages', null));
+  const [f, setF] = useState<Formulaire | null>(lu);
+  const [modeles, setModeles] = useState(() => repris<string[]>('lapis:modeles', []));
+  useGarder('lapis', { reglages: lu, modeles });
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
+  const relu = useRef(false);
   const lire = useCallback(async () => {
     try {
       const p = await appeler<Parametres>('/parametres');
@@ -300,12 +307,16 @@ function useOngletReglages({ admin, actif, fermer, setAvis, relire }: {
       setModeles((p.modeles ?? []).map((m) => m.nom));
       setErreur('');
     } catch (e) {
+      // Une lecture ratée se retente à la prochaine ouverture
+      relu.current = false;
       setErreur(message(e));
     }
   }, []);
   useEffect(() => {
-    if (actif && !lu) void lire();
-  }, [actif, lu, lire]);
+    if (!actif || relu.current) return;
+    relu.current = true;
+    void lire();
+  }, [actif, lire]);
   const change = !!f && JSON.stringify(f) !== JSON.stringify(lu);
   const liste = (t: string) => t.split(',').map((v) => v.trim()).filter(Boolean);
   const enregistrer = async () => {
