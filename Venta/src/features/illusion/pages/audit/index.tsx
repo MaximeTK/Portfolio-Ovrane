@@ -30,8 +30,6 @@ const ARBRE = arbreFiches((l) => (l <= 1366 ? 480 : 560));
 
 export default function PageAudit(_: ProprietesPage) {
   const { avis, dire } = useAvis();
-  const [siren, setSiren] = useState<string | null>(null);
-  const [cleOffre, setCleOffre] = useState<string | null>(null);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
   const [version, setVersion] = useState(0);
@@ -44,7 +42,7 @@ export default function PageAudit(_: ProprietesPage) {
     <Dock id="audit" principal="fiches" arbre={ARBRE} fenetres={{ fiches: { mini: [470, 220] }, panneau: { pref: [560, 320], flot: [560, 600] } }} panneau={null}>
       <Activite />
       <TableauFiches titre="Fiches entreprises" avis={avis} version={version} selection={selection} choisir={setSelection}
-        siren={siren} ouvrirFiche={setSiren} confirmation={confirmation} annuler={() => setConfirmation(null)}
+        confirmation={confirmation} annuler={() => setConfirmation(null)}
         actions={(
           <>
             <Lots lots={LOTS} actives={briques.actives} selection={selection} dire={dire} relire={briques.lire} demander={setConfirmation} />
@@ -52,7 +50,7 @@ export default function PageAudit(_: ProprietesPage) {
             <ActionOnglet cle="reglages" libelle="Réglages" icone={ICONES.reglages} />
           </>
         )} />
-      <PanneauFiches siren={siren} choisirSiren={setSiren} cleOffre={cleOffre} choisirOffre={setCleOffre} apres={[
+      <PanneauFiches apres={[
         { cle: 'reglages', titre: 'Réglages', label: 'Réglages · Audit', corps: <CorpsReglages champs={CHAMPS} r={reglages} />, pied: <PiedReglages r={reglages} /> },
         { cle: 'executer', titre: 'Exécuter', label: 'Audit · exécuter', corps: <CorpsAtelier at={atelier} />, pied: <PiedAtelier at={atelier} /> },
       ]} />

@@ -196,7 +196,7 @@ export function CorpsFantomes({ page, fantomes, erreur, voir }: { page: PageMetr
           <thead><tr><th>Offre</th><th>Republiée</th><th>Candidature</th></tr></thead>
           <tbody>
             {fantomes.map((f) => (
-              <tr key={f.cle} tabIndex={0} onClick={() => voir(f.cle)} onKeyDown={(e) => e.key === 'Enter' && voir(f.cle)} title="Ouvrir la fiche de l'offre">
+              <tr key={f.cle} tabIndex={0} data-ouvre="fiche-offre" data-objet={f.cle} onClick={() => voir(f.cle)} onKeyDown={(e) => e.key === 'Enter' && voir(f.cle)} title="Ouvrir la fiche de l'offre">
                 <td><b>{f.entreprise}</b> <span className="d">{f.titre}</span></td><td>{f.republiee} fois</td><td>{STATUTS[f.statut] ?? '—'}</td>
               </tr>
             ))}
@@ -225,7 +225,7 @@ export function CorpsLiens({ page, voir }: { page: PageMetriques; voir: (cle: st
           <tbody>
             {l.recentes.map((v, i) => (
               <tr key={i} tabIndex={v.offre_cle ? 0 : undefined} className={v.offre_cle ? '' : 'inerte'} title={v.offre_cle ? "Ouvrir la fiche de l'offre" : 'Offre purgée'}
-                onClick={() => v.offre_cle && voir(v.offre_cle)} onKeyDown={(e) => e.key === 'Enter' && v.offre_cle && voir(v.offre_cle)}>
+                data-ouvre={v.offre_cle ? 'fiche-offre' : undefined} data-objet={v.offre_cle || undefined} onClick={() => v.offre_cle && voir(v.offre_cle)} onKeyDown={(e) => e.key === 'Enter' && v.offre_cle && voir(v.offre_cle)}>
                 <td>{quand(v.date)}</td><td>{nomCible(v.cible)}</td><td><b>{v.entreprise}</b> <span className="d">{v.titre}</span></td>
               </tr>
             ))}
@@ -253,7 +253,7 @@ export function CorpsPartage({ suivi, erreur, voir }: { suivi: Suivi | null; err
               const humaines = c.visites.filter((v) => !v.robot);
               return (
                 <tr key={c.jeton} tabIndex={c.offre_cle ? 0 : undefined} className={c.offre_cle ? '' : 'inerte'} title={c.offre_cle ? "Ouvrir la fiche de l'offre" : 'Offre purgée'}
-                  onClick={() => c.offre_cle && voir(c.offre_cle)} onKeyDown={(e) => e.key === 'Enter' && c.offre_cle && voir(c.offre_cle)}>
+                  data-ouvre={c.offre_cle ? 'fiche-offre' : undefined} data-objet={c.offre_cle || undefined} onClick={() => c.offre_cle && voir(c.offre_cle)} onKeyDown={(e) => e.key === 'Enter' && c.offre_cle && voir(c.offre_cle)}>
                   <td>{quand(c.envoyee_le)}</td><td><b>{c.entreprise}</b> <span className="d">{c.titre}</span></td><td>{c.cv ? 'oui' : '—'}</td>
                   <td>{humaines.length ? humaines.map((v) => `${nomCible(v.cible)} le ${quand(v.date)}`).join(', ') : 'pas encore ouverte'}
                     {c.visites.length > humaines.length && <span className="d"> +{c.visites.length - humaines.length} robot(s)</span>}</td>

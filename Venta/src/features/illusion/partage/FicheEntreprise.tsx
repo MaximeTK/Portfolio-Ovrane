@@ -1,13 +1,14 @@
 'use client';
 
 import '../pages/collecte/fiche-entreprise.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { create } from 'zustand';
 import { useUIStore } from '@/lib/uiStore';
 import { appeler, ErreurIllusion, lireCompte } from '../api';
 import { usePanneau } from '../dock/Dock';
 import { Confirmer, MarqueAdmin, type Onglet } from '../dock/Panneau';
 import { estAdmin } from '../pages/liste';
+import { aOublier } from '../stockage';
 
 // L'étape d'une fiche, telle qu'elle se lit : son nom et la couleur de son trait
 export const ETATS: { code: string; libelle: string; classe: string }[] = [
@@ -76,17 +77,16 @@ type Offre = { cle: string; titre: string; lieu: string; contrat: string; publie
 type Donnees = { e: Detail; historique: Historique; blocs: Bloc[]; offres: Offre[]; jobboard: boolean };
 type AuditEnBase = { quand: string; prealable: boolean; resume: string };
 
-// Une question qui attend son accord : la page la pose dans la rangée d'outils de sa fenêtre principale si elle en a une, sinon la fiche la pose en tête
-export type Question = { question: string; detail?: React.ReactNode; action: string; faire: (fermer: () => void) => Promise<void> };
+// Une question qui attend son accord, posée dans la rangée d'outils de la page si elle en a une, sinon en tête de la fiche qui la pose (`siren`)
+export type Question = { question: string; detail?: React.ReactNode; action: string; faire: (fermer: () => void) => Promise<void>; siren?: string };
 // Un audit existe déjà : « Déjà audité » le dit et propose de relancer quand même ; `retour` est l'onglet d'où la question vient
 export type Deja = AuditEnBase & { siren: string; nom: string; retour: string; lancer: () => Promise<void> };
 
+// Une fiche lue : plusieurs fenêtres en montrent côte à côte, chacune la sienne
+type Lue = { donnees: Donnees | null; erreur: string; avis: { texte: string; erreur: boolean } | null; notes: string };
 type EtatFiche = {
-  siren: string | null;
-  donnees: Donnees | null;
-  erreur: string;
-  avis: { texte: string; erreur: boolean } | null;
-  notes: string;
+  // Par siren
+  fiches: Record<string, Lue>;
   question: Question | null;
   deja: Deja | null;
   // Pages qui posent les questions de la fiche dans leur rangée d'outils
@@ -95,20 +95,22 @@ type EtatFiche = {
   version: number;
 };
 
-export const useFicheEntreprise = create<EtatFiche>(() => ({
-  siren: null, donnees: null, erreur: '', avis: null, notes: '', question: null, deja: null, hotes: 0, version: 0,
-}));
+export const useFicheEntreprise = create<EtatFiche>(() => ({ fiches: {}, question: null, deja: null, hotes: 0, version: 0 }));
 const poser = useFicheEntreprise.setState;
+aOublier(() => poser({ fiches: {}, question: null, deja: null }));
+const VIDE: Lue = { donnees: null, erreur: '', avis: null, notes: '' };
+const poserFiche = (siren: string, f: Partial<Lue>) => poser((s) => ({ fiches: { ...s.fiches, [siren]: { ...(s.fiches[siren] ?? VIDE), ...f } } }));
+const useLue = (siren: string | null) => useFicheEntreprise((s) => (siren ? s.fiches[siren] : undefined)) ?? VIDE;
 
-let minuteurAvis: ReturnType<typeof setTimeout> | undefined;
-function dire(texte: string, erreur = false) {
-  poser({ avis: { texte, erreur } });
-  clearTimeout(minuteurAvis);
-  minuteurAvis = setTimeout(() => poser({ avis: null }), erreur ? 6000 : 3500);
+const minuteursAvis = new Map<string, ReturnType<typeof setTimeout>>();
+function dire(siren: string, texte: string, erreur = false) {
+  poserFiche(siren, { avis: { texte, erreur } });
+  clearTimeout(minuteursAvis.get(siren));
+  minuteursAvis.set(siren, setTimeout(() => poserFiche(siren, { avis: null }), erreur ? 6000 : 3500));
 }
 
 async function charger(siren: string) {
-  if (useFicheEntreprise.getState().siren !== siren) poser({ siren, donnees: null, erreur: '', question: null });
+  poserFiche(siren, { erreur: '' });
   try {
     const [e, historique, blocs, offres, parametres] = await Promise.all([
       appeler<Detail>(`/entreprises/${siren}`),
@@ -117,21 +119,20 @@ async function charger(siren: string) {
       appeler<Offre[]>(`/entreprises/${siren}/offres`),
       appeler<{ jobboards?: { siren?: string }[] }>('/parametres'),
     ]);
-    if (useFicheEntreprise.getState().siren !== siren) return;
-    poser({ donnees: { e, historique, blocs, offres, jobboard: (parametres.jobboards ?? []).some((j) => j.siren === siren) }, notes: e.notes ?? '', erreur: '' });
+    poserFiche(siren, { donnees: { e, historique, blocs, offres, jobboard: (parametres.jobboards ?? []).some((j) => j.siren === siren) }, notes: e.notes ?? '', erreur: '' });
   } catch (erreur) {
-    if (useFicheEntreprise.getState().siren === siren) poser({ erreur: messageDe(erreur) });
+    poserFiche(siren, { erreur: messageDe(erreur) });
   }
 }
 
 // Un geste sur la fiche : son message, puis la fiche et les tableaux relus
 async function geste(siren: string, faire: () => Promise<string>) {
   try {
-    dire(await faire());
+    dire(siren, await faire());
     poser((s) => ({ version: s.version + 1 }));
     await charger(siren);
   } catch (erreur) {
-    dire(messageDe(erreur), true);
+    dire(siren, messageDe(erreur), true);
   }
 }
 
@@ -140,9 +141,9 @@ const NOMS_PHASES: Record<string, string> = { parser: 'Le parser', audit: "L'ana
 async function lancerPhase(siren: string, brique: string) {
   try {
     const r = await appeler<{ lancee: boolean }>(`/entreprises/${siren}/briques/${brique}`, { methode: 'POST' });
-    dire(r.lancee ? `${NOMS_PHASES[brique]} lancé sur cette fiche — le résultat apparaît ici une fois terminé.` : `${NOMS_PHASES[brique]} déjà en cours.`, !r.lancee);
+    dire(siren, r.lancee ? `${NOMS_PHASES[brique]} lancé sur cette fiche — le résultat apparaît ici une fois terminé.` : `${NOMS_PHASES[brique]} déjà en cours.`, !r.lancee);
   } catch (erreur) {
-    dire(messageDe(erreur), true);
+    dire(siren, messageDe(erreur), true);
   }
 }
 
@@ -154,7 +155,7 @@ async function nouvelAudit(e: Detail, ouvrir: (cle: string) => void, dejaEnOngle
     poser({ deja: { ...vu.base, siren: e.siren, nom: e.nom, retour: 'fiche-entreprise', lancer: () => lancerPhase(e.siren, 'audit-complet') } });
     if (dejaEnOnglet) ouvrir('deja-audit');
   } catch (erreur) {
-    dire(messageDe(erreur), true);
+    dire(e.siren, messageDe(erreur), true);
   }
 }
 
@@ -164,22 +165,27 @@ async function demanderSuppression(e: Detail) {
     const parts = ([[c.offres, 'offre(s)'], [c.candidatures, 'candidature(s)'], [c.dossiers, 'CV et lettre(s)'], [c.transitions, "ligne(s) d'historique qui te sont propres"]] as const)
       .filter(([n]) => n).map(([n, quoi]) => `${n} ${quoi}`);
     poser({ question: {
+      siren: e.siren,
       question: `Supprimer ${e.nom} ?`,
       detail: `${parts.length ? `Partent avec elle : ${parts.join(', ')}.` : "Elle n'a rien produit à effacer."} La fiche commune, son audit et son journal restent.${c.mails ? ` ${c.mails} mail(s) restent dans la boîte, détachés.` : ''}`,
       action: 'Supprimer',
       faire: async (fermer) => {
         try {
-          const r = await appeler<{ nom: string; offres: number; dossiers: number }>(`/entreprises/${e.siren}`, { methode: 'DELETE' });
+          await appeler(`/entreprises/${e.siren}`, { methode: 'DELETE' });
+          // Sa fenêtre se ferme, la fiche est oubliée
           fermer();
-          poser((s) => ({ version: s.version + 1, siren: null, donnees: null }));
-          dire(`${r.nom} supprimée — ${r.offres} offre(s), ${r.dossiers} fichier(s) effacé(s).`);
+          poser((s) => {
+            const fiches = { ...s.fiches };
+            delete fiches[e.siren];
+            return { version: s.version + 1, fiches };
+          });
         } catch (erreur) {
-          dire(messageDe(erreur), true);
+          dire(e.siren, messageDe(erreur), true);
         }
       },
     } });
   } catch (erreur) {
-    dire(messageDe(erreur), true);
+    dire(e.siren, messageDe(erreur), true);
   }
 }
 
@@ -203,18 +209,18 @@ function usePageAdmin() {
   return useUIStore((s) => estAdmin(s.page?.startsWith('illusion/') ? s.page.slice(9).split('?')[0] : ''));
 }
 
-function TitreFiche() {
-  const nom = useFicheEntreprise((s) => s.donnees?.e.nom);
+function TitreFiche({ siren }: { siren: string | null }) {
+  const nom = useLue(siren).donnees?.e.nom;
   return <>{nom ? `Entreprise · ${nom}` : 'Entreprise'}</>;
 }
 
-// Les questions de la fiche, posées en tête quand aucune page ne les prend dans sa rangée d'outils
-function QuestionEnTete() {
+// Les questions de la fiche, posées en tête de celle qui les pose quand aucune page ne les prend dans sa rangée d'outils
+function QuestionEnTete({ siren }: { siren: string }) {
   const question = useFicheEntreprise((s) => s.question);
   const hotes = useFicheEntreprise((s) => s.hotes);
   const { fermer } = usePanneau();
   const [occupe, setOccupe] = useState(false);
-  if (!question || hotes > 0) return null;
+  if (!question || hotes > 0 || (question.siren && question.siren !== siren)) return null;
   return (
     <div className="question-f">
       <Confirmer question={question.question} detail={question.detail} action={question.action} occupe={occupe}
@@ -268,10 +274,11 @@ const saisiesDe = (e: Detail) => Object.fromEntries(CHAMPS_CORRIGES.map((c) => [
 function Corriger({ e }: { e: Detail }) {
   const [saisis, setSaisis] = useState(() => saisiesDe(e));
   useEffect(() => setSaisis(saisiesDe(e)), [e]);
+  const id = useId();
   const enregistrer = () => {
     // Seul ce qui a changé part : le serveur laisse intact ce qu'il ne reçoit pas, et un champ vidé efface la valeur
     const change = Object.fromEntries(CHAMPS_CORRIGES.filter((c) => saisis[c.cle].trim() !== String(e[c.cle] ?? '')).map((c) => [c.cle, saisis[c.cle].trim()]));
-    if (!Object.keys(change).length) return dire("Rien n'a changé.");
+    if (!Object.keys(change).length) return dire(e.siren, "Rien n'a changé.");
     geste(e.siren, async () => {
       await appeler(`/entreprises/${e.siren}`, { methode: 'PATCH', corps: change });
       return `Fiche corrigée : ${Object.keys(change).join(', ')}.`;
@@ -283,8 +290,8 @@ function Corriger({ e }: { e: Detail }) {
       <div className="grille-2">
         {CHAMPS_CORRIGES.map((c) => (
           <div key={c.cle} className="champ">
-            <label htmlFor={`fe-${c.cle}`}>{c.libelle}</label>
-            <input id={`fe-${c.cle}`} className="saisie" type="text" value={saisis[c.cle]} placeholder={c.exemple}
+            <label htmlFor={`${id}-${c.cle}`}>{c.libelle}</label>
+            <input id={`${id}-${c.cle}`} className="saisie" type="text" value={saisis[c.cle]} placeholder={c.exemple}
               onChange={(ev) => setSaisis((s) => ({ ...s, [c.cle]: ev.target.value }))}
               onKeyDown={(ev) => ev.key === 'Enter' && enregistrer()} />
           </div>
@@ -302,6 +309,7 @@ function GestesAdmin({ e, dejaEnOnglet }: { e: Detail; dejaEnOnglet: boolean }) 
     <>
       <button type="button" className="action" title="Retour à zéro complet (historique conservé)"
         onClick={() => poser({ question: {
+          siren: e.siren,
           question: `Remettre ${e.nom} à zéro ?`,
           detail: "Elle repart en Collecter : site, mail, téléphone et résultats des briques effacés ; l'historique est conservé.",
           action: 'Reset',
@@ -321,16 +329,16 @@ function GestesAdmin({ e, dejaEnOnglet }: { e: Detail; dejaEnOnglet: boolean }) 
 }
 
 function CorpsFiche({ siren, ouvrirOffre, dejaEnOnglet }: { siren: string | null; ouvrirOffre?: (cle: string) => void; dejaEnOnglet: boolean }) {
-  const { donnees, erreur, avis, notes, deja } = useFicheEntreprise();
+  const { donnees, erreur, avis, notes } = useLue(siren);
+  const deja = useFicheEntreprise((s) => s.deja);
   const admin = useAdmin();
   const pageAdmin = usePageAdmin();
-  const { ouvrir } = usePanneau();
   useEffect(() => {
     if (siren) charger(siren);
   }, [siren]);
 
   if (!siren) return <p className="texte-f">Aucune entreprise choisie.</p>;
-  if (!donnees || donnees.e.siren !== siren) return <div className="fiche-ent"><p className={`avis-f${erreur ? ' erreur' : ''}`} role="status">{erreur || 'Chargement de la fiche…'}</p></div>;
+  if (!donnees) return <div className="fiche-ent"><p className={`avis-f${erreur ? ' erreur' : ''}`} role="status">{erreur || 'Chargement de la fiche…'}</p></div>;
   const { e, blocs, offres, historique } = donnees;
   const parser = blocs.find((b) => b.brique === 'parser');
   const audit = blocs.find((b) => b.brique === 'audit');
@@ -352,7 +360,7 @@ function CorpsFiche({ siren, ouvrirOffre, dejaEnOnglet }: { siren: string | null
   return (
     <div className="fiche-ent">
       {avis && <p className={`avis-f${avis.erreur ? ' erreur' : ''}`} role="status">{avis.texte}</p>}
-      <QuestionEnTete />
+      <QuestionEnTete siren={e.siren} />
       {deja && !dejaEnOnglet && deja.siren === e.siren && <div className="question-f"><CorpsDeja /><div className="geste-f"><PiedDeja /></div></div>}
       <div className="f-meta">
         <Etape etat={e.etat} />
@@ -405,12 +413,7 @@ function CorpsFiche({ siren, ouvrirOffre, dejaEnOnglet }: { siren: string | null
           <h3>Offres<span className="compteur">{offres.length}</span></h3>
           <ul className="liste-f offres-f">
             {offres.map((o) => (
-              <li key={o.cle} onClick={() => {
-                if (!ouvrirOffre) return;
-                // La page garde l'offre choisie, la fiche ouvre son onglet
-                ouvrirOffre(o.cle);
-                ouvrir('fiche-offre');
-              }}>
+              <li key={o.cle} data-ouvre={ouvrirOffre ? 'fiche-offre' : undefined} data-objet={ouvrirOffre ? o.cle : undefined} onClick={() => ouvrirOffre?.(o.cle)}>
                 <span className="o-date">{o.publiee_le ? dateCourte(o.publiee_le) : '—'}</span>
                 <span className="o-titre" title={o.titre}>{ouvrirOffre ? <a href={`#${o.cle}`} onClick={(ev) => ev.preventDefault()}>{o.titre}</a> : o.titre}</span>
                 <span className="o-lieu">{[o.lieu, o.contrat].filter(Boolean).join(' · ')}</span>
@@ -428,7 +431,7 @@ function CorpsFiche({ siren, ouvrirOffre, dejaEnOnglet }: { siren: string | null
       </div>
       <div className="section-f">
         <h3>Notes</h3>
-        <textarea className="saisie" aria-label="Notes" value={notes} onChange={(ev) => poser({ notes: ev.target.value })} />
+        <textarea className="saisie" aria-label="Notes" value={notes} onChange={(ev) => poserFiche(e.siren, { notes: ev.target.value })} />
         {pageAdmin && <div className="geste-f"><BoutonNotes siren={e.siren} /></div>}
       </div>
       {admin && <Corriger e={e} />}
@@ -446,7 +449,7 @@ function CorpsFiche({ siren, ouvrirOffre, dejaEnOnglet }: { siren: string | null
 }
 
 function BoutonNotes({ siren, plein }: { siren: string; plein?: boolean }) {
-  const notes = useFicheEntreprise((s) => s.notes);
+  const { notes } = useLue(siren);
   const enregistrer = () => geste(siren, async () => {
     await appeler(`/entreprises/${siren}/notes`, { methode: 'POST', corps: { notes } });
     return 'Notes enregistrées.';
@@ -455,10 +458,10 @@ function BoutonNotes({ siren, plein }: { siren: string; plein?: boolean }) {
 }
 
 function PiedFiche({ siren, dejaEnOnglet }: { siren: string | null; dejaEnOnglet: boolean }) {
-  const donnees = useFicheEntreprise((s) => s.donnees);
+  const { donnees } = useLue(siren);
   const admin = useAdmin();
   const pageAdmin = usePageAdmin();
-  if (!siren || !donnees || donnees.e.siren !== siren) return null;
+  if (!siren || !donnees) return null;
   const { e } = donnees;
   const auPied = pageAdmin && admin;
   // Écarter ne regarde que ce compte ; le même bouton le défait, la fiche retrouvant l'état d'avant
@@ -493,21 +496,18 @@ function CorpsDeja() {
   );
 }
 
-function PiedDeja({ voir }: { voir?: (siren: string) => void }) {
+function PiedDeja() {
   const deja = useFicheEntreprise((s) => s.deja);
   const { ouvrir } = usePanneau();
   if (!deja) return null;
-  const quitter = (cle: string) => {
-    ouvrir(cle);
+  const quitter = (cle: string, objet?: string) => {
+    ouvrir(cle, objet);
     poser({ deja: null });
   };
   return (
     <>
       <button type="button" className="action" onClick={() => quitter(deja.retour)}>Annuler</button>
-      <button type="button" className="action" onClick={() => {
-        voir?.(deja.siren);
-        quitter('fiche-entreprise');
-      }}>Voir l&apos;audit</button>
+      <button type="button" className="action" onClick={() => quitter('fiche-entreprise', deja.siren)}>Voir l&apos;audit</button>
       <button type="button" className="action plein" onClick={async () => {
         await deja.lancer();
         quitter(deja.retour);
@@ -521,16 +521,16 @@ export function ongletFicheEntreprise(siren: string | null, options: { ouvrirOff
   const dejaEnOnglet = !!options.dejaEnOnglet;
   return {
     cle: 'fiche-entreprise',
-    titre: <TitreFiche />,
+    titre: <TitreFiche siren={siren} />,
     label: 'Fiche entreprise',
     corps: <CorpsFiche siren={siren} ouvrirOffre={options.ouvrirOffre} dejaEnOnglet={dejaEnOnglet} />,
     pied: <PiedFiche siren={siren} dejaEnOnglet={dejaEnOnglet} />,
   };
 }
 
-// « Cette entreprise a déjà un audit » ; `voir` choisit la fiche dont l'audit existe, que l'onglet ouvre ensuite
-export function ongletDejaAudite(voir: (siren: string) => void): Onglet {
-  return { cle: 'deja-audit', titre: 'Déjà audité', label: 'Cette entreprise a déjà un audit', corps: <CorpsDeja />, pied: <PiedDeja voir={voir} /> };
+// « Cette entreprise a déjà un audit » ; « Voir l'audit » ouvre la fiche de cette entreprise
+export function ongletDejaAudite(): Onglet {
+  return { cle: 'deja-audit', titre: 'Déjà audité', label: 'Cette entreprise a déjà un audit', corps: <CorpsDeja />, pied: <PiedDeja /> };
 }
 
 // La page qui pose les questions de la fiche dans sa rangée d'outils s'annonce par ce crochet, et rend ce qu'il renvoie

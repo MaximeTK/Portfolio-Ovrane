@@ -340,7 +340,7 @@ export function useOngletDirect({ actif, ouvrirFiche }: { actif: boolean; ouvrir
       </>
     ),
     pied: (
-      <button type="button" className="action" aria-haspopup="dialog" disabled={!courante?.offre_cle} title={courante && !courante.offre_cle ? "L'offre de cette candidature n'est pas reconnue dans la file." : undefined}
+      <button type="button" className="action" aria-haspopup="dialog" disabled={!courante?.offre_cle} data-ouvre="fiche-offre" data-objet={courante?.offre_cle || undefined} title={courante && !courante.offre_cle ? "L'offre de cette candidature n'est pas reconnue dans la file." : undefined}
         onClick={() => courante?.offre_cle && ouvrirFiche(courante.offre_cle)}>Voir la fiche offre</button>
     ),
   };

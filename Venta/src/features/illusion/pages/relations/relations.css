@@ -36,8 +36,6 @@
 .ov [data-fen=nuage] .total-r{font-weight:600;color:#fff;white-space:nowrap}
 .ov [data-fen=nuage]:not([data-l=l]) .legende-r .note-r{display:none}
 .ov [data-fen=nuage]:not([data-l=l]) .legende-r{gap:4px 12px}
-/* Panneau ouvert, le détail de la confirmation passe en infobulle faute de place. */
-.ov [data-fen=nuage]:not([data-l=l]) .confirmer .detail-r{display:none}
 /* L'avis d'un geste : en bas à droite, au-dessus de la légende ; un clic le ferme. */
 .ov [data-fen=nuage] .avis-r{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(520px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
 .ov [data-fen=nuage] .avis-r.erreur{border-left-color:#ff8a8a;color:#ffd0d0}

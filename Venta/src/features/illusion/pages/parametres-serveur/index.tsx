@@ -1,11 +1,11 @@
 'use client';
 
 import './parametres-serveur.css';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { appeler } from '../../api';
 import { Activite } from '../../activite/Activite';
-import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
-import { Confirmer, Panneau, type Onglet } from '../../dock/Panneau';
+import { Dock, Fenetre, usePanneau, useVues } from '../../dock/Dock';
+import { AuPied, Confirmer, Panneau, type Onglet } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
 import {
   CorpsEffacer, FormModele, MenuFournisseur, NEUF, Voyant, nomCourt, totalApercu, versBrouillon,
@@ -81,7 +81,8 @@ export default function PageParametresServeur(_: ProprietesPage) {
 }
 
 function Serveur() {
-  const { onglet, ouvrir, fermer } = usePanneau();
+  const { onglet, objet, ouvrir, fermer } = usePanneau();
+  const { fermerVue } = useVues();
   const [lus, setLus] = useState<Parametres | null>(null);
   const [erreurLecture, setErreurLecture] = useState('');
   const [valeurs, setValeurs] = useState<Record<string, unknown>>({});
@@ -90,10 +91,8 @@ function Serveur() {
   const [filtre, setFiltre] = useState('');
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [essais, setEssais] = useState<Record<string, Essai>>({});
-  const [essaiForm, setEssaiForm] = useState<Essai | undefined>();
-  const [brouillon, setBrouillon] = useState<Brouillon>(NEUF);
-  const [edition, setEdition] = useState<string | null>(null);
-  const [erreurForm, setErreurForm] = useState('');
+  // Change à chaque ajout entamé : le formulaire d'ajout repart vierge
+  const [ajout, setAjout] = useState(0);
   const [confirmation, setConfirmation] = useState(false);
   const [apercu, setApercu] = useState<Apercu | null>(null);
   const [erreurApercu, setErreurApercu] = useState('');
@@ -169,6 +168,7 @@ function Serveur() {
       setLus(r);
       setValeurs((v) => ({ ...r, ...Object.fromEntries(changes.filter((c) => c.sorte !== 'secret').map((c) => [c.cle, v[c.cle]])) }));
       setEnregistre(heure());
+      setSelection(new Set());
       dire(texte);
       return true;
     } catch (e) {
@@ -202,39 +202,14 @@ function Serveur() {
   const briquesDe = (noms: string[]) => BRIQUES.filter(([cle]) => noms.includes(String(valeurs[cle] ?? ''))).map(([, lib]) => lib);
 
   const ajouter = () => {
-    if (edition !== null || onglet !== 'ajout') {
-      setBrouillon(NEUF);
-      setEdition(null);
-      setErreurForm('');
-      setEssaiForm(undefined);
-    }
+    if (onglet !== 'ajout') setAjout((n) => n + 1);
     ouvrir('ajout');
-  };
-  const modifier = (m: Modele) => {
-    setBrouillon(versBrouillon(m));
-    setEdition(m.nom);
-    setErreurForm('');
-    setEssaiForm(essais[m.nom]);
-    ouvrir('modifier');
-  };
-  const valider = async () => {
-    const nom = brouillon.nom.trim();
-    if (!nom) return setErreurForm('Donnez-lui un nom : les briques le choisissent par lui.');
-    if (modeles.some((m) => m.nom === nom && m.nom !== edition)) return setErreurForm(`Un modèle s'appelle déjà « ${nom} ».`);
-    setErreurForm('');
-    const neuf = versEnvoi(brouillon);
-    const liste = edition === null ? [...modeles.map(sansCle), neuf] : modeles.map((m) => (m.nom === edition ? neuf : sansCle(m)));
-    if (await enregistrerModeles(liste, edition === null ? `Modèle « ${nom} » ajouté au catalogue.` : `Modèle « ${nom} » enregistré.`)) {
-      setSelection(new Set());
-      fermer();
-    }
   };
   const supprimer = async () => {
     const partants = coches.map((m) => m.nom);
     if (await enregistrerModeles(modeles.filter((m) => !partants.includes(m.nom)).map(sansCle), `${partants.length} modèle(s) retiré(s) du catalogue.`)) {
-      setSelection(new Set());
       setConfirmation(false);
-      if (edition && partants.includes(edition) && onglet === 'modifier') fermer();
+      if (onglet === 'modele' && objet && partants.includes(objet)) fermerVue('panneau');
     }
   };
   const toutEffacer = async () => {
@@ -249,18 +224,7 @@ function Serveur() {
     setOccupe(false);
   };
 
-  const formulaire = (id: string) => (
-    <FormModele id={id} brouillon={brouillon} poser={setBrouillon} fournisseurs={fournisseurs} erreur={erreurForm} valider={valider}
-      autres={modeles.map((m) => m.nom).filter((n) => n !== edition && n !== brouillon.nom.trim())} />
-  );
-  const piedForm = (id: string, action: string, icone: React.ReactNode) => (
-    <>
-      <button type="button" className="action gauche tester-f" disabled={essaiForm?.etat === 'encours'} title="Un appel minuscule avec ce qui est saisi : seul un modèle qui appelle les outils a sa place dans Illusion."
-        onClick={() => tester(versEnvoi(brouillon), setEssaiForm)}><Voyant essai={essaiForm} />Tester</button>
-      <button type="button" className="action" onClick={fermer}>Annuler</button>
-      <button type="submit" form={id} className="action plein" disabled={occupe}>{action}{ico(icone)}</button>
-    </>
-  );
+  const edition = { modeles, fournisseurs, occupe, enregistrer: enregistrerModeles, tester };
   const total = totalApercu(apercu);
   const ongletEffacer: Onglet = {
     cle: 'effacer', titre: 'Effacer', label: total ? `Effacer ${total} enregistrement(s) ?` : 'Effacer',
@@ -272,11 +236,20 @@ function Serveur() {
       </>
     ) : <button type="button" className="action" onClick={fermer}>Fermer</button>,
   };
-  const onglets: Onglet[] = onglet === 'modifier'
-    ? [{ cle: 'modifier', titre: `Modifier « ${edition ?? ''} »`, corps: <div className="serveur-f">{formulaire('modifier-modele')}</div>,
-      pied: piedForm('modifier-modele', 'Enregistrer', ICONES.valider) }]
-    : [{ cle: 'ajout', titre: 'Ajouter', label: 'Ajouter un modèle', corps: <div className="serveur-f">{formulaire('ajout-modele')}</div>,
-      pied: piedForm('ajout-modele', 'Ajouter', ICONES.plus) }, ongletEffacer];
+  // Le formulaire pose ses boutons dans le pied par <AuPied>
+  const onglets: Onglet[] = [{ cle: 'ajout', titre: 'Ajouter', label: 'Ajouter un modèle', corps: <EditionModele key={ajout} ancien={null} depart={NEUF} {...edition} />, pied: true }, ongletEffacer];
+  // Un modèle du catalogue, à modifier ; chaque fenêtre a son brouillon
+  const elements = {
+    modele: (nom: string): Onglet => {
+      const m = modeles.find((x) => x.nom === nom);
+      return {
+        cle: 'modele', titre: `Modifier « ${nom} »`,
+        corps: m ? <EditionModele ancien={nom} depart={versBrouillon(m)} essai={essais[nom]} {...edition} />
+          : <p className="texte-f">{lus ? `« ${nom} » n'est plus au catalogue.` : 'Lecture des paramètres…'}</p>,
+        pied: !!m,
+      };
+    },
+  };
 
   const g = GROUPES.find((x) => x.cle === groupe)!;
   const parFournisseur = [...new Set(modeles.map((m) => m.fournisseur))];
@@ -367,12 +340,12 @@ function Serveur() {
                       </thead>
                       <tbody>
                         {visibles.map((m) => (
-                          <tr key={m.nom} tabIndex={0} title={`Modifier « ${m.nom} »`}
-                            className={`${selection.has(m.nom) ? 'coche' : ''}${onglet === 'modifier' && edition === m.nom ? ' ouverte' : ''}`}
-                            onClick={() => modifier(m)} onKeyDown={(e) => {
+                          <tr key={m.nom} tabIndex={0} title={`Modifier « ${m.nom} »`} data-ouvre="modele" data-objet={m.nom}
+                            className={`${selection.has(m.nom) ? 'coche' : ''}${onglet === 'modele' && objet === m.nom ? ' ouverte' : ''}`}
+                            onClick={() => ouvrir('modele', m.nom)} onKeyDown={(e) => {
                               if (e.key !== 'Enter' || e.target !== e.currentTarget) return;
                               e.preventDefault();
-                              modifier(m);
+                              ouvrir('modele', m.nom);
                             }}>
                             <td onClick={(e) => e.stopPropagation()}>
                               <input type="checkbox" className="case" aria-label={`Sélectionner ${m.nom}`} checked={selection.has(m.nom)} onChange={() => setSelection((s) => {
@@ -433,7 +406,42 @@ function Serveur() {
         </div>
         {avis && <p className={`avis${avis.erreur ? ' erreur' : ''}`} role={avis.erreur ? 'alert' : 'status'} onClick={() => setAvis(null)}>{avis.texte}</p>}
       </Fenetre>
-      <Panneau onglets={onglets} />
+      <Panneau elements={elements} onglets={onglets} />
     </>
+  );
+}
+
+type ProprietesEdition = {
+  ancien: string | null; depart: Brouillon; essai?: Essai; modeles: Modele[]; fournisseurs: Record<string, Fournisseur>; occupe: boolean;
+  enregistrer: (modeles: Record<string, unknown>[], texte: string) => Promise<boolean>; tester: (saisi: Record<string, unknown>, poser: (e: Essai) => void) => Promise<void>;
+};
+
+// Un modèle à ajouter (`ancien` nul) ou à modifier : brouillon, erreur et essai sont ceux de sa fenêtre, ses boutons vont dans le pied de celle-ci
+function EditionModele({ ancien, depart, essai: essaiLu, modeles, fournisseurs, occupe, enregistrer, tester }: ProprietesEdition) {
+  const { fermer } = usePanneau();
+  const id = useId();
+  const [brouillon, setBrouillon] = useState(depart);
+  const [erreur, setErreur] = useState('');
+  const [essai, setEssai] = useState(essaiLu);
+  const valider = async () => {
+    const nom = brouillon.nom.trim();
+    if (!nom) return setErreur('Donnez-lui un nom : les briques le choisissent par lui.');
+    if (modeles.some((m) => m.nom === nom && m.nom !== ancien)) return setErreur(`Un modèle s'appelle déjà « ${nom} ».`);
+    setErreur('');
+    const neuf = versEnvoi(brouillon);
+    const liste = ancien === null ? [...modeles.map(sansCle), neuf] : modeles.map((m) => (m.nom === ancien ? neuf : sansCle(m)));
+    if (await enregistrer(liste, ancien === null ? `Modèle « ${nom} » ajouté au catalogue.` : `Modèle « ${nom} » enregistré.`)) fermer();
+  };
+  return (
+    <div className="serveur-f">
+      <FormModele id={id} brouillon={brouillon} poser={setBrouillon} fournisseurs={fournisseurs} erreur={erreur} valider={valider}
+        autres={modeles.map((m) => m.nom).filter((n) => n !== ancien && n !== brouillon.nom.trim())} />
+      <AuPied>
+          <button type="button" className="action gauche tester-f" disabled={essai?.etat === 'encours'} title="Un appel minuscule avec ce qui est saisi : seul un modèle qui appelle les outils a sa place dans Illusion."
+            onClick={() => tester(versEnvoi(brouillon), setEssai)}><Voyant essai={essai} />Tester</button>
+          <button type="button" className="action" onClick={fermer}>Annuler</button>
+          <button type="submit" form={id} className="action plein" disabled={occupe}>{ancien === null ? 'Ajouter' : 'Enregistrer'}{ico(ancien === null ? ICONES.plus : ICONES.valider)}</button>
+      </AuPied>
+    </div>
   );
 }

@@ -5,12 +5,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler, ErreurIllusion } from '../../api';
 import { Activite } from '../../activite/Activite';
 import { useSondage } from '../../activite/sondage';
-import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
+import { Dock, Fenetre, usePanneau, useVues } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin, Panneau } from '../../dock/Panneau';
 import { nomProfil } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import {
-  message, ongletComparaison, ongletIncomplet, ongletRejeu, ongletVerification, useOngletChamp, useOngletRejouer,
+  message, ongletChamp, ongletComparaison, ongletIncomplet, ongletRejeu, ongletVerification, useOngletRejouer,
   type Champ, type DemandeRejeu, type EtatRejeu, type Incomplet, type Signalement, type Verification,
 } from './panneaux';
 
@@ -407,8 +407,8 @@ type ProprietesPanneau = {
 // Le panneau : Rejouer, le Rejeu en cours ou fini, sa Comparaison, la Vérification de l'admin et les fenêtres d'un geste, en onglets
 function PanneauWorkflows({ admin, adresse, carte, afficher, rejeu, setRejeu, rejeuIci, setPasLu, occupe, signales, lirePas, ordonner, signaler, conclure, verif, erreurVerif, rejeter, valider }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
+  const { focus } = useVues();
   const [incomplet, setIncomplet] = useState<Incomplet | null>(null);
-  const [cible, setCible] = useState<Signalement | null>(null);
 
   // Lancé, le passage s'ouvre dans son onglet ; un profil aux champs obligatoires vides ouvre « Profil incomplet »
   const lancer = async (d: DemandeRejeu) => {
@@ -426,18 +426,16 @@ function PanneauWorkflows({ admin, adresse, carte, afficher, rejeu, setRejeu, re
     }
   };
   const rejouer = useOngletRejouer({ actif: onglet === 'rejouer', adresse, site: carte?.site ?? '', lancer });
-  const champ = useOngletChamp({
-    cible, champs: verif?.champs ?? [],
-    valider: async (s, c) => {
-      await valider(s, c);
-      setCible(null);
-      ouvrir('verification');
+  // Validé ou abandonné, le champ rend la main : le panneau revient à la Vérification, une fenêtre en plus se ferme
+  const rendre = () => (focus === 'panneau' ? ouvrir('verification') : fermer());
+  // Un signalement par sa clé ; traité, il le dit, sans que le panneau se ferme avant de revenir à la Vérification
+  const elements = {
+    champ: (cle: string) => {
+      const s = verif?.signalements.find((x) => x.cle === cle);
+      return s ? ongletChamp(s, { champs: verif?.champs ?? [], valider: async (x, c) => { await valider(x, c); rendre(); }, annuler: rendre })
+        : { cle: 'champ', titre: 'Champ du profil', admin: true, corps: <p className="texte-f">{verif ? 'Ce signalement est traité.' : 'Lecture des signalements…'}</p> };
     },
-    annuler: () => {
-      setCible(null);
-      ouvrir('verification');
-    },
-  });
+  };
   // Un workflow refait qui attend d'être rangé montre aussitôt sa comparaison
   const attend = rejeuIci && !!rejeu.comparaison;
   const avant = useRef(attend);
@@ -450,9 +448,8 @@ function PanneauWorkflows({ admin, adresse, carte, afficher, rejeu, setRejeu, re
     ...(onglet === 'rejouer' ? [rejouer] : []),
     ...(rejeuIci ? [ongletRejeu({ rejeu, occupe, signales, lirePas, ordonner, signaler })] : []),
     ...(attend ? [ongletComparaison(rejeu, occupe, (g) => void conclure(g).then(() => ouvrir('rejeu')))] : []),
-    ...(admin ? [ongletVerification({ verif, erreur: erreurVerif, occupe, valider: (s) => { setCible(s); ouvrir('champ'); }, rejeter, fermer })] : []),
-    ...(admin && onglet === 'champ' && cible ? [champ] : []),
+    ...(admin ? [ongletVerification({ verif, erreur: erreurVerif, occupe, valider: (s) => ouvrir('champ', s.cle), rejeter, fermer })] : []),
     ...(onglet === 'profil-incomplet' && incomplet ? [ongletIncomplet(incomplet, () => ouvrir('rejouer'))] : []),
   ];
-  return <Panneau onglets={onglets} />;
+  return <Panneau elements={elements} onglets={onglets} />;
 }

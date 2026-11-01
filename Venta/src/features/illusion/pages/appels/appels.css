@@ -22,7 +22,6 @@
 /* L'appel qui tourne : cyan, un voyant qui bat devant. */
 .ov [data-fen=appels] .direct-c{display:inline-flex;align-items:center;gap:7px;color:var(--accent)}
 .ov [data-fen=appels] .direct-c::before,.ov .ruby-f .voyant-live{content:"";flex:none;width:6px;height:6px;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:ov-pouls 1.4s infinite}
-.ov [data-fen=appels]:is([data-l=s],[data-l=xs]) .confirmer .detail-c{display:none}
 .ov [data-fen=appels] tr.vide-f td{height:auto;padding:16px 20px;white-space:normal;color:rgb(255 255 255 / .6);cursor:default}
 .ov [data-fen=appels] tr.vide-f:hover td{background:none}
 /* L'avis d'un geste : en bas à droite, au-dessus de la pagination ; un clic le ferme. */
@@ -31,36 +30,40 @@
 @media (max-height:780px){.ov [data-fen=appels]{--ligne:42px}}
 
 /* Détail : titre modifiable posé comme un titre, la méta dessous, l'offre et les noms des voix, puis la conversation qui défile. */
-.ov [data-fen=appel]{display:flex;flex-direction:column;gap:12px;padding:14px 20px 12px}
-.ov [data-fen=appel] .titre-appel{width:100%;height:30px;border:0;border-bottom:1px solid transparent;background:none;padding:0;font-size:17px;font-weight:600;color:#fff}
-.ov [data-fen=appel] .titre-appel:hover{border-bottom-color:rgba(255,255,255,.25)}
-.ov [data-fen=appel] .titre-appel:focus{outline:none;border-bottom-color:#fff}
-.ov [data-fen=appel] .meta-appel{margin-top:2px !important;font-size:11.5px;color:rgba(255,255,255,.6)}
-.ov [data-fen=appel] .champ{margin:0}
-.ov [data-fen=appel] .lib-offre{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.ov [data-fen=appel] .lib-offre .lien-d{font-size:11px}
-.ov [data-fen=appel] .voix-appel{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 12px}
-.ov [data-fen=appel] .voix-appel .champ{flex:1 1 130px;min-width:0}
-.ov [data-fen=appel] .voix-appel .action{flex:none;height:32px}
-.ov [data-fen=appel] .defile-appel{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;overflow:auto;scrollbar-width:none}
-.ov [data-fen=appel] .defile-appel::-webkit-scrollbar{display:none}
-.ov [data-fen=appel] .defile-appel h3{margin-bottom:-4px !important}
+.ov [data-fen=appel]{display:flex;flex-direction:column;padding:14px 20px 12px}
+.ov .appel-d{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
+/* Dans une fenêtre à lui, le contenu tient la hauteur du corps : seule la conversation défile. */
+.ov .p-vue>.f-corps:has(>.appel-d){display:flex;flex-direction:column}
+.ov .appel-d .confirmer{margin:0}
+.ov .appel-d .titre-appel{width:100%;height:30px;border:0;border-bottom:1px solid transparent;background:none;padding:0;font-size:17px;font-weight:600;color:#fff}
+.ov .appel-d .titre-appel:hover{border-bottom-color:rgba(255,255,255,.25)}
+.ov .appel-d .titre-appel:focus{outline:none;border-bottom-color:#fff}
+.ov .appel-d .meta-appel{margin-top:2px !important;font-size:11.5px;color:rgba(255,255,255,.6)}
+.ov .appel-d .champ{margin:0}
+.ov .appel-d .lib-offre{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.ov .appel-d .lib-offre .lien-d{font-size:11px}
+.ov .appel-d .voix-appel{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 12px}
+.ov .appel-d .voix-appel .champ{flex:1 1 130px;min-width:0}
+.ov .appel-d .voix-appel .action{flex:none;height:32px}
+.ov .appel-d .defile-appel{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;overflow:auto;scrollbar-width:none}
+.ov .appel-d .defile-appel::-webkit-scrollbar{display:none}
+.ov .appel-d .defile-appel h3{margin-bottom:-4px !important}
 /* Transcription : l'heure en chasse fixe, la voix en couleur (moi en vert, l'interlocuteur en cyan), puis ce qui a été dit. */
-.ov [data-fen=appel] .transcription{display:flex;flex-direction:column;gap:5px}
-.ov [data-fen=appel] .transcription li{padding-left:44px;text-indent:-44px;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.88);overflow-wrap:anywhere}
-.ov [data-fen=appel] .transcription time{display:inline-block;width:44px;text-indent:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.5)}
-.ov [data-fen=appel] .transcription b{margin-right:6px;font-weight:600}
-.ov :is([data-fen=appel],.ruby-f) .v-moi{color:#93FFB3}
-.ov :is([data-fen=appel],.ruby-f) .v-autre{color:var(--accent)}
+.ov .appel-d .transcription{display:flex;flex-direction:column;gap:5px}
+.ov .appel-d .transcription li{padding-left:44px;text-indent:-44px;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.88);overflow-wrap:anywhere}
+.ov .appel-d .transcription time{display:inline-block;width:44px;text-indent:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.5)}
+.ov .appel-d .transcription b{margin-right:6px;font-weight:600}
+.ov :is(.appel-d,.ruby-f) .v-moi{color:#93FFB3}
+.ov :is(.appel-d,.ruby-f) .v-autre{color:var(--accent)}
 /* Analyse : chaque partie en petites capitales à gauche, le texte à droite. */
-.ov [data-fen=appel] .analyse{margin:0;display:grid;grid-template-columns:132px minmax(0,1fr);gap:7px 14px;align-items:baseline;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.88)}
-.ov [data-fen=appel] .analyse dt{font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.62)}
-.ov [data-fen=appel] .analyse dd{margin:0;white-space:pre-line;overflow-wrap:anywhere}
-.ov [data-fen=appel] .analyse-brute{font-size:12.5px;line-height:1.45;white-space:pre-line;color:rgba(255,255,255,.88);overflow-wrap:anywhere}
+.ov .appel-d .analyse{margin:0;display:grid;grid-template-columns:132px minmax(0,1fr);gap:7px 14px;align-items:baseline;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.88)}
+.ov .appel-d .analyse dt{font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+.ov .appel-d .analyse dd{margin:0;white-space:pre-line;overflow-wrap:anywhere}
+.ov .appel-d .analyse-brute{font-size:12.5px;line-height:1.45;white-space:pre-line;color:rgba(255,255,255,.88);overflow-wrap:anywhere}
 /* Gestes de l'appel en bas : Supprimer l'appel reste visible, l'appel choisi tenant lieu de sélection. */
-.ov [data-fen=appel] .pied-appel{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 22px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
-.ov [data-fen=appel] .vide-appel{margin:auto 0 !important;text-align:center;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6)}
-.ov [data-fen=appel] .vide-appel b{display:block;color:#fff;font-weight:600}
+.ov .appel-d .pied-appel{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 22px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
+.ov .appel-d .vide-appel{margin:auto 0 !important;text-align:center;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6)}
+.ov .appel-d .vide-appel b{display:block;color:#fff;font-weight:600}
 
 /* Panneau : où se passe l'appel en deux boutons pleins, le direct et les réglages de RUBY. */
 .ov .ruby-f .lieux-f{display:flex;flex-direction:column;gap:6px}

@@ -4,7 +4,7 @@ import './fiches.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { cleBrouillon } from '../../stockage';
-import { Fenetre, usePanneau, type ArbreDepart } from '../../dock/Dock';
+import { Fenetre, usePanneau, useVues, type ArbreDepart } from '../../dock/Dock';
 import { ECART } from '../../dock/moteur';
 import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
 import {
@@ -158,13 +158,11 @@ type ProprietesTableau = {
   version: number;
   selection: Set<string>;
   choisir: (selection: Set<string>) => void;
-  siren: string | null;
-  ouvrirFiche: (siren: string) => void;
 };
 
 // Le tableau des fiches, le même dans Collecte, Parser et Audit : états filtrants, canaux, recherche, sélection, pagination
-export function TableauFiches({ titre, actions, confirmation, annuler, avis, note, version, selection, choisir, siren, ouvrirFiche }: ProprietesTableau) {
-  const { onglet, ouvrir, fermer } = usePanneau();
+export function TableauFiches({ titre, actions, confirmation, annuler, avis, note, version, selection, choisir }: ProprietesTableau) {
+  const { onglet, objet, ouvrir, fermer } = usePanneau();
   const question = useQuestionsFiche();
   const versionFiche = useFicheEntreprise((s) => s.version);
   const [etat, setEtat] = useState('');
@@ -295,11 +293,9 @@ export function TableauFiches({ titre, actions, confirmation, annuler, avis, not
           </thead>
           <tbody>
             {lignes.map((l) => (
-              <tr key={l.siren} className={[selection.has(l.siren) && 'coche', l.siren === siren && onglet === 'fiche-entreprise' && 'ouverte'].filter(Boolean).join(' ') || undefined}
-                onClick={() => {
-                  ouvrirFiche(l.siren);
-                  ouvrir('fiche-entreprise');
-                }}>
+              <tr key={l.siren} className={[selection.has(l.siren) && 'coche', l.siren === objet && onglet === 'fiche-entreprise' && 'ouverte'].filter(Boolean).join(' ') || undefined}
+                tabIndex={0} data-ouvre="fiche-entreprise" data-objet={l.siren}
+                onClick={() => ouvrir('fiche-entreprise', l.siren)} onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && ouvrir('fiche-entreprise', l.siren)}>
                 <td onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" className="case" aria-label={`Sélectionner ${l.nom}`} checked={selection.has(l.siren)} onChange={(e) => cocher([l.siren], e.target.checked)} />
                 </td>
@@ -361,25 +357,19 @@ export function TableauFiches({ titre, actions, confirmation, annuler, avis, not
 // Onglets ouverts par un geste (une fiche, une offre, une question) ; les autres sont ceux des actions de la page
 const OUVERTS_PAR_UN_GESTE = new Set(['fiche-entreprise', 'deja-audit', 'fiche-offre', 'deja-base']);
 
-// Le panneau des trois pages : leurs onglets propres, puis la fiche de l'entreprise, « Déjà audité » s'il attend, et l'offre ouverte depuis la fiche ;
-// dès qu'un geste en a ouvert un, les onglets des actions ne restent que s'ils sont ouverts, comme sur les planches (leur action les rouvre)
-export function PanneauFiches({ avant = [], apres = [], siren, choisirSiren, cleOffre, choisirOffre }: {
-  avant?: Onglet[]; apres?: Onglet[]; siren: string | null; choisirSiren: (s: string) => void; cleOffre: string | null; choisirOffre: (c: string) => void;
-}) {
+// Le panneau des trois pages : les fiches, leurs onglets propres, « Déjà audité » s'il attend ; après un geste, un onglet d'action ne reste que s'il est ouvert
+export function PanneauFiches({ avant = [], apres = [] }: { avant?: Onglet[]; apres?: Onglet[] }) {
   const { onglet, ouvrir } = usePanneau();
+  const objets = useVues().vues[0].objets;
   const deja = useFicheEntreprise((s) => s.deja);
-  const onglets = [
-    ...avant,
-    ...(siren ? [ongletFicheEntreprise(siren, { ouvrirOffre: choisirOffre, dejaEnOnglet: true })] : []),
-    ...(deja ? [ongletDejaAudite(choisirSiren)] : []),
-    ...apres,
-    ...(cleOffre ? [ongletFicheOffre(cleOffre, { ouvrirEntreprise: (s) => {
-      choisirSiren(s);
-      ouvrir('fiche-entreprise');
-    } })] : []),
-  ];
-  const parGeste = onglets.some((o) => OUVERTS_PAR_UN_GESTE.has(o.cle));
-  return <Panneau onglets={onglets.filter((o) => !parGeste || OUVERTS_PAR_UN_GESTE.has(o.cle) || o.cle === onglet)} />;
+  const elements = {
+    'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre: (c) => ouvrir('fiche-offre', c), dejaEnOnglet: true }),
+    'fiche-offre': (c: string) => ongletFicheOffre(c, { ouvrirEntreprise: (s) => ouvrir('fiche-entreprise', s) }),
+  };
+  // « Voir l'audit » rouvre aussitôt la fiche sans objet : celle de l'audit passe après
+  const onglets = [...avant, ...(deja ? [ongletDejaAudite()] : []), ...apres];
+  const parGeste = Object.keys(elements).some((cle) => objets[cle] !== undefined) || onglets.some((o) => OUVERTS_PAR_UN_GESTE.has(o.cle));
+  return <Panneau elements={elements} onglets={onglets.filter((o) => !parGeste || OUVERTS_PAR_UN_GESTE.has(o.cle) || o.cle === onglet)} />;
 }
 
 export type Lot = { brique: string; famille: string; libelle: string; aide: string; icone: React.ReactNode; plein?: boolean };

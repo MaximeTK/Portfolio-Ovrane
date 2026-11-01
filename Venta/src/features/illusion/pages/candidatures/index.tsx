@@ -52,8 +52,6 @@ export default function PageCandidatures({ compte, recherche }: ProprietesPage) 
   const [taille, setTaille] = useState<number | 'auto'>('auto');
   const [auto, setAuto] = useState(16);
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
-  const [cle, setCle] = useState<string | null>(null);
-  const [siren, setSiren] = useState<string | null>(null);
   const [incomplet, setIncomplet] = useState<Incomplet | null>(null);
   const [competence, setCompetence] = useState<DemandeAjout | null>(null);
   const [avis, setAvis] = useState<Avis>(null);
@@ -82,8 +80,8 @@ export default function PageCandidatures({ compte, recherche }: ProprietesPage) 
       <ActiviteDePage admin={compte.admin} />
       <Tableau admin={compte.admin} direct={new URLSearchParams(recherche).get('panneau') === 'direct'} file={file} erreurFile={erreurFile} filtres={filtres} setFiltres={(f) => { setFiltres(f); setPage(1); }}
         page={page} setPage={setPage} taille={taille} setTaille={(t) => { setTaille(t); setPage(1); }} auto={auto} setAuto={setAuto}
-        selection={selection} setSelection={setSelection} cle={cle} setCle={setCle} setSiren={setSiren} avis={avis} setAvis={setAvis} relire={relire} />
-      <PanneauDePage admin={compte.admin} cle={cle} setCle={setCle} siren={siren} setSiren={setSiren} incomplet={incomplet} setIncomplet={setIncomplet}
+        selection={selection} setSelection={setSelection} avis={avis} setAvis={setAvis} relire={relire} />
+      <PanneauDePage admin={compte.admin} incomplet={incomplet} setIncomplet={setIncomplet}
         competence={competence} setCompetence={setCompetence} setAvis={setAvis} relire={relire} />
     </Dock>
   );
@@ -98,12 +96,11 @@ function ActiviteDePage({ admin }: { admin: boolean }) {
 type ProprietesTableau = {
   admin: boolean; direct: boolean; file: EtatFile | null; erreurFile: string; filtres: Filtres; setFiltres: (f: Filtres) => void;
   page: number; setPage: (p: number) => void; taille: number | 'auto'; setTaille: (t: number | 'auto') => void; auto: number; setAuto: (n: number) => void;
-  selection: Set<string>; setSelection: (s: Set<string>) => void; cle: string | null; setCle: (c: string | null) => void; setSiren: (s: string) => void;
-  avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void>;
+  selection: Set<string>; setSelection: (s: Set<string>) => void; avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void>;
 };
 
-function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, cle, setCle, setSiren, avis, setAvis, relire }: ProprietesTableau) {
-  const { onglet, ouvrir, fermer } = usePanneau();
+function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, avis, setAvis, relire }: ProprietesTableau) {
+  const { onglet, objet, ouvrir, fermer } = usePanneau();
   const [confirmation, setConfirmation] = useState<'supprimer' | 'vider' | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [menu, setMenu] = useState<keyof Filtres | null>(null);
@@ -168,10 +165,7 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
     cles.forEach((c) => (oui ? s.add(c) : s.delete(c)));
     setSelection(s);
   };
-  const ouvrirFiche = (c: string) => {
-    setCle(c);
-    ouvrir('fiche-offre');
-  };
+  const ouvrirFiche = (c: string) => ouvrir('fiche-offre', c);
   const geste = async (faire: () => Promise<string>) => {
     setOccupe(true);
     try {
@@ -188,7 +182,6 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
     const cles = [...selection];
     const r = await appeler<{ offres: number; candidatures: number; fichiers: number; mails: number }>('/offres/supprimer', { methode: 'POST', corps: { cles } });
     setSelection(new Set());
-    if (cle && cles.includes(cle)) setCle(null);
     return `${r.offres} offre(s) supprimée(s) : ${r.candidatures} candidature(s), ${r.fichiers} fichier(s), ${r.mails} mail(s) détaché(s).`;
   });
   const vider = () => geste(async () => `${(await appeler<{ efface: number }>('/candidatures/vider', { methode: 'POST' })).efface} candidature(s) effacée(s) de l'historique.`);
@@ -279,16 +272,16 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
           <tbody>
             {offres.map((o) => {
               const etape = ETAPES[o.etape] ?? { nom: o.etape, classe: '' };
-              const ouverte = onglet === 'fiche-offre' && cle === o.cle;
+              const ouverte = onglet === 'fiche-offre' && objet === o.cle;
               return (
-                <tr key={o.cle} className={`${selection.has(o.cle) ? 'coche' : ''}${ouverte ? ' ouverte' : ''}`} tabIndex={0}
+                <tr key={o.cle} className={`${selection.has(o.cle) ? 'coche' : ''}${ouverte ? ' ouverte' : ''}`} tabIndex={0} data-ouvre="fiche-offre" data-objet={o.cle}
                   onClick={() => ouvrirFiche(o.cle)} onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && ouvrirFiche(o.cle)}>
                   <td onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" className="case" aria-label={`Sélectionner ${o.entreprise_brute}`} checked={selection.has(o.cle)} onChange={(e) => cocher([o.cle], e.target.checked)} />
                   </td>
                   <td className="d">{jourMois(o.publiee_le)}</td>
                   <td title={o.entreprise_brute}>{o.entreprise_siren
-                    ? <button type="button" className="ent" title="Voir la fiche entreprise" onClick={(e) => { e.stopPropagation(); setSiren(o.entreprise_siren!); ouvrir('fiche-entreprise'); }}>{o.entreprise_brute}</button>
+                    ? <button type="button" className="ent" title="Voir la fiche entreprise" data-ouvre="fiche-entreprise" data-objet={o.entreprise_siren} onClick={(e) => { e.stopPropagation(); ouvrir('fiche-entreprise', o.entreprise_siren!); }}>{o.entreprise_brute}</button>
                     : <span className="ent">{o.entreprise_brute || '—'}</span>}</td>
                   <td title={o.titre}>{o.titre || '—'}</td>
                   <td>{[o.lieu, o.contrat].filter(Boolean).join(' · ') || '—'}</td>
@@ -363,13 +356,12 @@ function MenuFiltre({ ouvert, basculer, fermer, actif, label, valeur, options, c
 }
 
 type ProprietesPanneau = {
-  admin: boolean; cle: string | null; setCle: (c: string | null) => void; siren: string | null; setSiren: (s: string | null) => void;
-  incomplet: Incomplet | null; setIncomplet: (i: Incomplet | null) => void; competence: DemandeAjout | null; setCompetence: (d: DemandeAjout | null) => void;
+  admin: boolean; incomplet: Incomplet | null; setIncomplet: (i: Incomplet | null) => void; competence: DemandeAjout | null; setCompetence: (d: DemandeAjout | null) => void;
   setAvis: (a: Avis) => void; relire: () => Promise<void>;
 };
 
-// Le panneau : chaque sous-fenêtre de la page en onglet, dans l'ordre de la planche ; la fiche et les fenêtres d'un geste n'y sont qu'avec leur objet
-function PanneauDePage({ admin, cle, setCle, siren, setSiren, incomplet, setIncomplet, competence, setCompetence, setAvis, relire }: ProprietesPanneau) {
+// Le panneau : les fiches (éléments, une par fenêtre) puis chaque sous-fenêtre de la page en onglet ; les fenêtres d'un geste n'y sont qu'avec leur objet
+function PanneauDePage({ admin, incomplet, setIncomplet, competence, setCompetence, setAvis, relire }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
   // Refermé, le panneau oublie les fenêtres d'un geste
   useEffect(() => {
@@ -379,20 +371,22 @@ function PanneauDePage({ admin, cle, setCle, siren, setSiren, incomplet, setInco
   }, [onglet, setIncomplet, setCompetence]);
   const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, setAvis });
   const ajout = useOngletAjout({ admin, actif: onglet === 'ajout', setAvis, relire: () => void relire(), montrerIncomplet: (i) => { setIncomplet(i); ouvrir('profil-incomplet'); } });
-  const direct = useOngletDirect({ actif: admin && onglet === 'direct', ouvrirFiche: (c) => { setCle(c); ouvrir('fiche-offre'); } });
-  const onglets = [
-    ongletFicheOffre(cle, {
-      ouvrirEntreprise: (s) => { setSiren(s); ouvrir('fiche-entreprise'); },
+  const direct = useOngletDirect({ actif: admin && onglet === 'direct', ouvrirFiche: (c) => ouvrir('fiche-offre', c) });
+  const elements = {
+    'fiche-offre': (c: string) => ongletFicheOffre(c, {
+      ouvrirEntreprise: (s) => ouvrir('fiche-entreprise', s),
       ajouterAuProfil: (d) => { setCompetence(d); ouvrir('ajout-competence'); },
     }),
-    ongletFicheEntreprise(siren, { ouvrirOffre: (c) => { setCle(c); ouvrir('fiche-offre'); } }),
-    ongletAjoutCompetence(competence, (texte) => { setCompetence(null); if (texte) setAvis({ texte }); ouvrir('fiche-offre'); }),
+    'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre: (c) => ouvrir('fiche-offre', c) }),
+  };
+  const onglets = [
+    ongletAjoutCompetence(competence, (texte) => { if (texte) setAvis({ texte }); if (competence) ouvrir('fiche-offre', competence.cle); setCompetence(null); }),
     ongletProfilIncomplet(incomplet, () => { setIncomplet(null); ouvrir('ajout'); }),
     reglages,
     ajout,
     ...(admin ? [direct] : []),
   ];
-  // Un onglet sans objet (fiche sans offre, ajout sans compétence) ne se montre pas
-  const pret: Record<string, boolean> = { 'fiche-offre': !!cle, 'fiche-entreprise': !!siren, 'ajout-competence': !!competence, 'profil-incomplet': !!incomplet };
-  return <Panneau onglets={onglets.filter((o) => pret[o.cle] !== false)} />;
+  // Un onglet sans objet (ajout sans compétence) ne se montre pas
+  const pret: Record<string, boolean> = { 'ajout-competence': !!competence, 'profil-incomplet': !!incomplet };
+  return <Panneau elements={elements} onglets={onglets.filter((o) => pret[o.cle] !== false)} />;
 }

@@ -4,7 +4,7 @@
 import './documents.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler, telecharger } from '../../api';
-import { cleBrouillon } from '../../stockage';
+import { aOublier, cleBrouillon } from '../../stockage';
 import { Activite } from '../../activite/Activite';
 import { useSondage } from '../../activite/sondage';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
@@ -47,6 +47,9 @@ export const nomFichier = (chemin: string) => String(chemin || '').split(/[\\/]/
 // « 28/10 14:02 », à l'heure du poste ; une date d'Illusion sans fuseau est en UTC
 export const quand = (iso: string) => (iso ? new Date(/(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : `${iso}Z`)
   .toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') : '—');
+// Pièces lues depuis l'arrivée dans Illusion, par clé : une fenêtre retrouve la sienne quand la galerie montre un autre genre, se relit ou revient
+const PIECES = new Map<string, Production>();
+aOublier(() => PIECES.clear());
 
 // Ce qu'on a tapé dans un formulaire de fabrication reste d'une visite à l'autre, comme dans l'ancien dashboard
 const lireMemoire = (nom: NomAtelier): Partial<Formulaire> => {
@@ -65,12 +68,12 @@ function useDocuments(admin: boolean) {
   const [total, setTotal] = useState<{ cv: number; lettre: number } | null>(null);
   const [options, setOptions] = useState<Options>({ poste: [], entreprise: [], profil: [], fond_mode: [] });
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
-  const [choisie, setChoisie] = useState<Production | null>(null);
   const [parametres, setParametres] = useState<Parametres | null>(null);
   const [profils, setProfils] = useState<string[]>([]);
   const [etats, setEtats] = useState<Record<NomAtelier, EtatAtelier | null>>({ constructeur: null, lettre: null });
   const [formulaires, setFormulaires] = useState<Record<NomAtelier, Formulaire>>({ constructeur: FORMULAIRE_VIDE, lettre: FORMULAIRE_VIDE });
-  const [modele, setModele] = useState<(Modele & { original: string }) | null>(null);
+  // Rang du « Nouveau modèle » vierge : chaque clic sur le bouton en repart d'un neuf
+  const [vierge, setVierge] = useState(0);
   const chargement = useRef(false);
   const generation = useRef(0);
   const telechargerApres = useRef(false);
@@ -90,6 +93,7 @@ function useDocuments(admin: boolean) {
       params.set('taille', String(TRANCHE));
       const lu = await appeler<Lot>(`/productions?${params}`);
       if (n !== generation.current) return null;
+      lu.lignes.forEach((p) => PIECES.set(clePiece(p), p));
       const suite = { lignes: [...(depuis?.lignes ?? []), ...lu.lignes], suivant: lu.suivant, fini: lu.fini !== false };
       setLot(suite);
       return suite;
@@ -200,14 +204,23 @@ function useDocuments(admin: boolean) {
       const r = await appeler<{ fichiers: number }>('/productions/supprimer', {
         methode: 'POST', corps: { pieces: pieces.map((p) => ({ candidature: p.candidature, nature: p.nature })) } });
       dire(`${r.fichiers} pièce(s) supprimée(s).`);
-      setChoisie((c) => (c && pieces.some((p) => clePiece(p) === clePiece(c)) ? null : c));
-      await relire.current();
+      pieces.forEach((p) => PIECES.delete(clePiece(p)));
+      // La galerie se relit sans retenir la fiche qui supprime : sa fenêtre se ferme aussitôt
+      void relire.current();
       return true;
     } catch (e) {
       dire(message(e), true);
       return false;
     }
   }, [dire]);
+
+  // Une compétence ajoutée au profil : les pièces de cette offre la montrent « ajoutée depuis », sans relire la galerie
+  const marquerAjoutee = useCallback((offre: string, competence: string) => {
+    PIECES.forEach((p, cle) => {
+      if (p.offre === offre && !p.ajoutees.includes(competence)) PIECES.set(cle, { ...p, ajoutees: [...p.ajoutees, competence] });
+    });
+    setLot((l) => l && { ...l, lignes: l.lignes.map((p) => PIECES.get(clePiece(p)) ?? p) });
+  }, []);
 
   const enregistrer = useCallback(async (modifs: Partial<Parametres>, texte = 'Réglages enregistrés — les prochains lancements les reprennent.') => {
     try {
@@ -221,8 +234,9 @@ function useDocuments(admin: boolean) {
   }, [dire]);
 
   return {
-    admin, dire, avis, genre, setGenre, filtres, setFiltres, lot, total, options, selection, setSelection, choisie, setChoisie,
-    parametres, setParametres, profils, etats, formulaires, changerFormulaire, executer, modele, setModele, charger, supprimer, enregistrer,
+    admin, dire, avis, genre, setGenre, filtres, setFiltres, lot, total, options, selection, setSelection, piece: (cle: string) => PIECES.get(cle),
+    marquerAjoutee, parametres, setParametres, profils, etats, formulaires, changerFormulaire, executer, vierge, viderModele: () => setVierge((n) => n + 1),
+    charger, supprimer, enregistrer,
   };
 }
 export type Documents = ReturnType<typeof useDocuments>;
@@ -279,7 +293,7 @@ function useRepli(outils: React.RefObject<HTMLDivElement | null>) {
 }
 
 function Galerie({ d }: { d: Documents }) {
-  const { onglet, ouvrir } = usePanneau();
+  const { onglet, objet, ouvrir } = usePanneau();
   const [confirmer, setConfirmer] = useState(false);
   const [occupe, setOccupe] = useState(false);
   const galerie = useRef<HTMLDivElement>(null);
@@ -291,7 +305,7 @@ function Galerie({ d }: { d: Documents }) {
   const choisies = pieces.filter((p) => selection.has(clePiece(p)));
   const tout = pieces.length > 0 && pieces.every((p) => selection.has(clePiece(p)));
   const filtre = (cle: keyof Filtres, valeur: string) => d.setFiltres({ ...filtres, [cle]: valeur });
-  const nouveau = genre === 'cv' ? 'nouveau-cv' : genre === 'lettre' ? 'nouvelle-lettre' : 'spontane';
+  const nouveau = genre === 'cv' ? 'nouveau-cv' : genre === 'lettre' ? 'nouvelle-lettre' : 'nouveau-modele';
   const modeles = d.parametres?.cv_spontanes ?? [];
   const batis = modeles.filter((m) => m.cv).length;
   const n = pieces.length, total = Math.max(d.total?.[genre === 'lettre' ? 'lettre' : 'cv'] ?? 0, n), s = n > 1 ? 's' : '';
@@ -352,7 +366,7 @@ function Galerie({ d }: { d: Documents }) {
             </button>
           )}
           <button type="button" className={`action plein${onglet === nouveau ? ' allume' : ''}`} aria-haspopup="dialog" onClick={() => {
-            if (genre === 'spontanes') d.setModele(MODELE_VIDE);
+            if (genre === 'spontanes') d.viderModele();
             ouvrir(nouveau);
           }}>
             <span className="txt">{genre === 'cv' ? 'Nouveau CV' : genre === 'lettre' ? 'Nouvelle lettre' : 'Nouveau modèle'}</span><span className="ico">{ICONES.plus}</span>
@@ -367,23 +381,17 @@ function Galerie({ d }: { d: Documents }) {
       <div ref={galerie} className="galerie" onScroll={defiler}>
         {genre === 'spontanes' ? (
           modeles.length ? modeles.map((m) => (
-            <VignetteModele key={m.nom} m={m} ouverte={onglet === 'spontane' && d.modele?.original === m.nom} ouvrir={() => {
-              d.setModele({ ...m, original: m.nom });
-              ouvrir('spontane');
-            }} />
+            <VignetteModele key={m.nom} m={m} ouverte={onglet === 'spontane' && objet === m.nom} ouvrir={() => ouvrir('spontane', m.nom)} />
           )) : <p className="vide-g">{d.parametres ? 'Aucun modèle encore : « Nouveau modèle », puis « Bâtir le CV ».' : 'Chargement…'}</p>
         ) : pieces.length ? pieces.map((p) => (
-          <Vignette key={clePiece(p)} p={p} cochee={selection.has(clePiece(p))} ouverte={onglet === 'fiche' && !!d.choisie && clePiece(d.choisie) === clePiece(p)}
+          <Vignette key={clePiece(p)} p={p} cochee={selection.has(clePiece(p))} ouverte={onglet === 'fiche' && objet === clePiece(p)}
             cocher={(c) => {
               const suite = new Set(selection);
               if (c) suite.add(clePiece(p));
               else suite.delete(clePiece(p));
               d.setSelection(suite);
             }}
-            ouvrir={() => {
-              d.setChoisie(p);
-              ouvrir('fiche');
-            }} />
+            ouvrir={() => ouvrir('fiche', clePiece(p))} />
         )) : <p className="vide-g">{lot ? `Aucun${genre === 'lettre' ? 'e lettre' : ' CV'} à ces filtres.` : 'Chargement…'}</p>}
       </div>
       {d.avis}
@@ -411,7 +419,7 @@ function Vignette({ p, cochee, ouverte, cocher, ouvrir }: { p: Production; coche
   const titre = `${p.poste || '(sans intitulé)'} · ${p.entreprise || '—'}`;
   return (
     <article className={`choix vignette${ouverte ? ' ouverte' : ''}`} aria-label={titre}>
-      <button type="button" className="v-ouvrir" aria-label={`Ouvrir la fiche de fabrication : ${titre}`} onClick={ouvrir} />
+      <button type="button" className="v-ouvrir" aria-label={`Ouvrir la fiche de fabrication : ${titre}`} data-ouvre="fiche" data-objet={clePiece(p)} onClick={ouvrir} />
       <div className="v-tete">
         <input type="checkbox" className="case" checked={cochee} aria-label={`Choisir ${titre}`} onChange={(e) => cocher(e.target.checked)} />
         {p.essai && <span className="essai" title="Essai de mise en page : aucune fiche d'employeur n'a été créée, rien n'est entré dans la file à postuler, et les comptes de compétences l'ignorent.">essai</span>}
@@ -430,12 +438,12 @@ function Vignette({ p, cochee, ouverte, cocher, ouvrir }: { p: Production; coche
   );
 }
 
-// Vignette d'un modèle de CV spontané : sa première page une fois bâti, « à bâtir » sinon ; la carte l'ouvre dans le panneau
+// Vignette d'un modèle de CV spontané : sa première page une fois bâti, « à bâtir » sinon ; la carte l'ouvre, au clic droit dans une nouvelle fenêtre
 function VignetteModele({ m, ouverte, ouvrir }: { m: Modele; ouverte: boolean; ouvrir: () => void }) {
   const lien = `${RELAIS}/cv-spontanes/${encodeURIComponent(m.nom)}`;
   return (
     <article className={`choix vignette modele${ouverte ? ' ouverte' : ''}`} aria-label={`Modèle ${m.nom}`}>
-      <button type="button" className="v-ouvrir" aria-label={`Ouvrir le modèle ${m.nom}`} onClick={ouvrir} />
+      <button type="button" className="v-ouvrir" aria-label={`Ouvrir le modèle ${m.nom}`} data-ouvre="spontane" data-objet={m.nom} onClick={ouvrir} />
       <div className="v-tete">
         <span className="etat-m">{m.cv ? 'bâti' : 'à bâtir'}</span>
         {m.cv && <a href={`${lien}/fichier`} target="_blank" rel="noopener noreferrer" className="v-oeil" title="Ouvrir le PDF" aria-label={`Ouvrir le PDF de ${m.nom}`}>{ICONES.oeil}</a>}

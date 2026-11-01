@@ -1,11 +1,11 @@
 'use client';
 
 import './relations.css';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
-import { Confirmer, Panneau, type Onglet } from '../../dock/Panneau';
+import { AuPied, Confirmer, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
 
 // Ce que /relations rend pour le nuage, et /relations/{numero} pour la fiche
@@ -74,8 +74,6 @@ function disposer(personnes: Personne[]) {
 export default function PageRelations(_: ProprietesPage) {
   const [donnees, setDonnees] = useState<Donnees | null>(null);
   const [erreur, setErreur] = useState('');
-  const [numero, setNumero] = useState<number | null>(null);
-  const [confirmer, setConfirmer] = useState(false);
   const [avis, setAvis] = useState<Avis>(null);
   const relire = useCallback(async () => {
     try {
@@ -93,20 +91,16 @@ export default function PageRelations(_: ProprietesPage) {
   return (
     <Dock id="relations" principal="nuage" panneau={null} fenetres={{ nuage: { mini: [470, 260], pref: [620, 400], flot: [760, 520] } }}>
       <Activite />
-      <Nuage donnees={donnees} erreur={erreur} numero={numero} setNumero={setNumero} confirmer={confirmer} setConfirmer={setConfirmer}
-        avis={avis} setAvis={setAvis} relire={relire} />
-      <PanneauRelations donnees={donnees} numero={numero} setNumero={setNumero} setConfirmer={setConfirmer} setAvis={setAvis} relire={relire} />
+      <Nuage donnees={donnees} erreur={erreur} avis={avis} setAvis={setAvis} relire={relire} />
+      <PanneauRelations donnees={donnees} setAvis={setAvis} relire={relire} />
     </Dock>
   );
 }
 
-type ProprietesNuage = {
-  donnees: Donnees | null; erreur: string; numero: number | null; setNumero: (n: number | null) => void; confirmer: boolean; setConfirmer: (b: boolean) => void;
-  avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void>;
-};
+type ProprietesNuage = { donnees: Donnees | null; erreur: string; avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void> };
 
-function Nuage({ donnees, erreur, numero, setNumero, confirmer, setConfirmer, avis, setAvis, relire }: ProprietesNuage) {
-  const { onglet, ouvrir, fermer } = usePanneau();
+function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
+  const { onglet, objet, ouvrir, fermer } = usePanneau();
   const [recherche, setRecherche] = useState('');
   const [occupe, setOccupe] = useState(false);
   const [vue, setVue] = useState<Vue | null>(null);
@@ -121,19 +115,16 @@ function Nuage({ donnees, erreur, numero, setNumero, confirmer, setConfirmer, av
   const { positions, groupes } = useMemo(() => disposer(personnes), [personnes]);
   const cherche = recherche.trim().toLowerCase();
   const trouvees = cherche ? personnes.filter((p) => [p.nom, p.entreprise, p.poste, ...(p.etiquettes ?? [])].join(' ').toLowerCase().includes(cherche)) : [];
-  const allumee = (onglet === 'fiche' || confirmer) && numero !== null ? numero : null;
-  const cible = personnes.find((p) => p.numero === numero);
+  const allumee = onglet === 'fiche' && objet !== null ? Number(objet) : null;
 
-  // Échap ferme la confirmation, sinon le panneau ; un avis se lit 3,5 s, une erreur 8 s
+  // Échap ferme le panneau, sauf celui qu'une confirmation a gardé pour elle ; un avis se lit 3,5 s, une erreur 8 s
   useEffect(() => {
     const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (confirmer) setConfirmer(false);
-      else fermer();
+      if (e.key === 'Escape' && !e.defaultPrevented) fermer();
     };
     document.addEventListener('keydown', echap);
     return () => document.removeEventListener('keydown', echap);
-  }, [confirmer, setConfirmer, fermer]);
+  }, [fermer]);
   useEffect(() => {
     if (!avis) return;
     const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
@@ -183,16 +174,12 @@ function Nuage({ donnees, erreur, numero, setNumero, confirmer, setConfirmer, av
     return () => el.removeEventListener('wheel', tourner);
   }, [courante]);
 
-  const ouvrirFiche = (n: number) => {
-    setNumero(n);
-    setConfirmer(false);
-    ouvrir('fiche');
-  };
-  // Glisser déplace la vue ; un clic sans glisser sur un point ouvre sa fiche
+  const ouvrirFiche = (n: number) => ouvrir('fiche', String(n));
+  // Glisser déplace la vue ; un clic sans glisser sur un point ouvre sa fiche, le clic droit dans une nouvelle fenêtre (par le dock)
   const presser = (e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
-    const point = (e.target as Element).closest('[data-numero]');
-    prise.current = { x: e.clientX, y: e.clientY, vue: courante, bouge: false, numero: point ? Number(point.getAttribute('data-numero')) : null };
+    const point = (e.target as Element).closest('[data-objet]');
+    prise.current = { x: e.clientX, y: e.clientY, vue: courante, bouge: false, numero: point ? Number(point.getAttribute('data-objet')) : null };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const bouger = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -223,23 +210,6 @@ function Nuage({ donnees, erreur, numero, setNumero, confirmer, setConfirmer, av
       setOccupe(false);
     }
   };
-  const supprimer = async () => {
-    if (!cible) return;
-    setOccupe(true);
-    try {
-      await appeler(`/relations/${cible.numero}`, { methode: 'DELETE' });
-      setAvis({ texte: `Fiche de ${cible.nom} supprimée.` });
-      setNumero(null);
-      fermer();
-      await relire();
-    } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
-    } finally {
-      setOccupe(false);
-      setConfirmer(false);
-    }
-  };
-
   const eteinte = (n: number) => !!cherche && !trouvees.some((p) => p.numero === n);
   const montrees = new Set(trouvees.length <= 40 ? trouvees.map((p) => p.numero) : []);
 
@@ -263,19 +233,15 @@ function Nuage({ donnees, erreur, numero, setNumero, confirmer, setConfirmer, av
             onClick={() => void importer(() => appeler('/relations/importer/lapis', { methode: 'POST' }), 'LAPIS')}>
             <span className="ico">{ICONES.lapis}</span><span className="txt">Importer depuis LAPIS</span>
           </button>
-          <button type="button" className="action plein" aria-haspopup="dialog" aria-expanded={onglet === 'neuve'} onClick={() => { setConfirmer(false); ouvrir('neuve'); }}>
+          <button type="button" className="action plein" aria-haspopup="dialog" aria-expanded={onglet === 'neuve'} onClick={() => ouvrir('neuve')}>
             Nouvelle personne<span className="ico">{ICONES.plus}</span>
           </button>
         </div>
       </div>
-      {confirmer && cible && (
-        <Confirmer question={`Supprimer la fiche de ${cible.nom} ?`} detail={<span className="detail-r">Ses liens et ses échanges propres sont effacés.</span>} action="Supprimer"
-          occupe={occupe} onAnnuler={() => setConfirmer(false)} onConfirmer={() => void supprimer()} />
-      )}
       {cherche && (
         <div className="trouvees-r" aria-label="Personnes trouvées">
           {trouvees.slice(0, 40).map((p) => (
-            <button key={p.numero} type="button" className="puce" onClick={() => ouvrirFiche(p.numero)}>{[p.nom, p.poste, p.entreprise].filter(Boolean).join(' · ')}</button>
+            <button key={p.numero} type="button" className="puce" data-ouvre="fiche" data-objet={p.numero} onClick={() => ouvrirFiche(p.numero)}>{[p.nom, p.poste, p.entreprise].filter(Boolean).join(' · ')}</button>
           ))}
           {trouvees.length > 40 && <span className="note-r">… et {trouvees.length - 40} autre(s)</span>}
           {!trouvees.length && <span className="note-r">Personne ne répond à « {recherche.trim()} ».</span>}
@@ -302,7 +268,7 @@ function Nuage({ donnees, erreur, numero, setNumero, confirmer, setConfirmer, av
                 const { x, y } = positions.get(p.numero)!, s = cote(p);
                 const teinte = groupes.find((g) => g.nom === groupe(p))?.teinte ?? TEINTES[0];
                 return (
-                  <rect key={p.numero} data-numero={p.numero} x={x - s / 2} y={y - s / 2} width={s} height={s} tabIndex={0} role="button"
+                  <rect key={p.numero} data-ouvre="fiche" data-objet={p.numero} x={x - s / 2} y={y - s / 2} width={s} height={s} tabIndex={0} role="button"
                     aria-label={`Ouvrir la fiche de ${p.nom}`} style={{ '--t': teinte } as React.CSSProperties}
                     className={`point-r${allumee === p.numero ? ' choisi' : ''}${eteinte(p.numero) ? ' eteint' : ''}`}
                     onKeyDown={(e) => {
@@ -343,21 +309,62 @@ function Nuage({ donnees, erreur, numero, setNumero, confirmer, setConfirmer, av
   );
 }
 
-type ProprietesPanneau = {
-  donnees: Donnees | null; numero: number | null; setNumero: (n: number | null) => void; setConfirmer: (b: boolean) => void;
-  setAvis: (a: Avis) => void; relire: () => Promise<void>;
-};
+type ProprietesPanneau = { donnees: Donnees | null; setAvis: (a: Avis) => void; relire: () => Promise<void> };
 
-// Le panneau : la fiche de la personne ouverte, ou une fiche vierge à créer, un seul onglet à la fois
-function PanneauRelations({ donnees, numero, setNumero, setConfirmer, setAvis, relire }: ProprietesPanneau) {
+// Le panneau : la fiche de chaque personne ouverte (une par fenêtre), ou une fiche vierge à créer
+function PanneauRelations({ donnees, setAvis, relire }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
+  const [occupe, setOccupe] = useState(false);
+  const creer = async (champs: Record<string, unknown>) => {
+    setOccupe(true);
+    try {
+      const lu = await appeler<Fiche>('/relations', { methode: 'POST', corps: champs });
+      setAvis({ texte: `Fiche de ${lu.nom} créée.` });
+      // Le nuage relu d'abord : la fiche s'ouvre sur une personne qu'il connaît
+      await relire();
+      ouvrir('fiche', String(lu.numero));
+    } catch (e) {
+      setAvis({ texte: message(e), erreur: true });
+    } finally {
+      setOccupe(false);
+    }
+  };
+
+  const elements: Elements = {
+    fiche: (n) => {
+      const personne = donnees?.personnes.find((p) => String(p.numero) === n);
+      // Sortie du nuage (supprimée), sa fiche ne se montre plus
+      return donnees && !personne ? null : {
+        cle: 'fiche', titre: `Fiche · ${personne?.nom ?? ''}`,
+        corps: <FicheRelation numero={Number(n)} donnees={donnees} setAvis={setAvis} relire={relire} />, pied: true,
+      };
+    },
+  };
+  const onglets: Onglet[] = onglet === 'neuve' ? [{
+    cle: 'neuve', titre: 'Nouvelle personne',
+    corps: <Formulaire id="relation-neuve" fiche={null} envoyer={(c) => void creer(c)} />,
+    pied: (
+      <>
+        <button type="button" className="action" onClick={fermer}>Annuler</button>
+        <button type="submit" form="relation-neuve" className="action plein" disabled={occupe}>Créer la fiche<span className="ico">{ICONES.coche}</span></button>
+      </>
+    ),
+  }] : [];
+  return <Panneau elements={elements} onglets={onglets} />;
+}
+
+type ProprietesFicheRelation = { numero: number; donnees: Donnees | null; setAvis: (a: Avis) => void; relire: () => Promise<void> };
+
+// La fiche d'une personne, une par fenêtre : elle lit sa personne et ses appels, et rend son pied pour que ses gestes, sa confirmation et son formulaire restent les siens
+function FicheRelation({ numero, donnees, setAvis, relire }: ProprietesFicheRelation) {
+  const { ouvrir, fermer } = usePanneau();
   const [fiche, setFiche] = useState<Fiche | null>(null);
   const [erreur, setErreur] = useState('');
   const [appels, setAppels] = useState<AppelCourt[]>([]);
   const [occupe, setOccupe] = useState(false);
-  const ouverte = onglet === 'fiche' && numero !== null;
+  const [confirmer, setConfirmer] = useState(false);
+  const formulaire = useId();
   useEffect(() => {
-    if (!ouverte) return;
     let vivant = true;
     Promise.all([appeler<Fiche>(`/relations/${numero}`), appeler<{ appels: AppelCourt[] }>('/appels')]).then(([f, a]) => {
       if (!vivant) return;
@@ -368,7 +375,7 @@ function PanneauRelations({ donnees, numero, setNumero, setConfirmer, setAvis, r
     return () => {
       vivant = false;
     };
-  }, [ouverte, numero]);
+  }, [numero]);
 
   // Un geste sur la fiche : elle revient à jour, le nuage se relit
   const geste = async (faire: () => Promise<Fiche>, texte?: string) => {
@@ -385,48 +392,39 @@ function PanneauRelations({ donnees, numero, setNumero, setConfirmer, setAvis, r
       setOccupe(false);
     }
   };
-  const creer = async (champs: Record<string, unknown>) => {
+  const supprimer = async () => {
     setOccupe(true);
     try {
-      const lu = await appeler<Fiche>('/relations', { methode: 'POST', corps: champs });
-      setAvis({ texte: `Fiche de ${lu.nom} créée.` });
-      setFiche(lu);
-      setNumero(lu.numero);
-      ouvrir('fiche');
+      await appeler(`/relations/${numero}`, { methode: 'DELETE' });
+      setAvis({ texte: `Fiche de ${fiche?.nom ?? ''} supprimée.` });
+      fermer();
       await relire();
     } catch (e) {
       setAvis({ texte: message(e), erreur: true });
     } finally {
       setOccupe(false);
+      setConfirmer(false);
     }
   };
 
-  const lue = fiche && fiche.numero === numero ? fiche : null;
-  const onglets: Onglet[] = onglet === 'neuve' ? [{
-    cle: 'neuve', titre: 'Nouvelle personne',
-    corps: <Formulaire id="relation-neuve" fiche={null} envoyer={(c) => void creer(c)} />,
-    pied: (
-      <>
-        <button type="button" className="action" onClick={fermer}>Annuler</button>
-        <button type="submit" form="relation-neuve" className="action plein" disabled={occupe}>Créer la fiche<span className="ico">{ICONES.coche}</span></button>
-      </>
-    ),
-  }] : numero !== null ? [{
-    cle: 'fiche', titre: `Fiche · ${lue?.nom ?? donnees?.personnes.find((p) => p.numero === numero)?.nom ?? ''}`,
-    corps: erreur ? <p className="texte-f" role="alert">{erreur}</p> : !lue ? <p className="texte-f">Lecture de la fiche…</p> : (
-      <CorpsFiche fiche={lue} donnees={donnees} appels={appels} occupe={occupe} setAvis={setAvis} geste={geste}
-        ouvrirFiche={(n) => setNumero(n)} />
-    ),
-    pied: lue ? (
-      <>
+  if (erreur) return <p className="texte-f" role="alert">{erreur}</p>;
+  if (!fiche) return <p className="texte-f">Lecture de la fiche…</p>;
+  return (
+    <>
+      {confirmer && (
+        <Confirmer question={`Supprimer la fiche de ${fiche.nom} ?`} detail="Ses liens et ses échanges propres sont effacés." action="Supprimer"
+          occupe={occupe} onAnnuler={() => setConfirmer(false)} onConfirmer={() => void supprimer()} />
+      )}
+      <CorpsFiche fiche={fiche} donnees={donnees} appels={appels} occupe={occupe} setAvis={setAvis} geste={geste} formulaire={formulaire}
+        ouvrirFiche={(n) => ouvrir('fiche', String(n))} />
+      <AuPied>
         <button type="button" className="action rouge gauche" aria-haspopup="dialog" onClick={() => setConfirmer(true)}>
           <span className="ico">{ICONES.supprimer}</span>Supprimer la fiche
         </button>
-        <button type="submit" form="relation-fiche" className="action plein" disabled={occupe}>Enregistrer la fiche<span className="ico">{ICONES.coche}</span></button>
-      </>
-    ) : undefined,
-  }] : [];
-  return <Panneau onglets={onglets} />;
+        <button type="submit" form={formulaire} className="action plein" disabled={occupe}>Enregistrer la fiche<span className="ico">{ICONES.coche}</span></button>
+      </AuPied>
+    </>
+  );
 }
 
 // Les champs d'une fiche, vierges pour une personne neuve ; Entrée enregistre
@@ -463,11 +461,11 @@ function Formulaire({ id, fiche, envoyer }: { id: string; fiche: Fiche | null; e
 
 type ProprietesFiche = {
   fiche: Fiche; donnees: Donnees | null; appels: AppelCourt[]; occupe: boolean; setAvis: (a: Avis) => void;
-  geste: (faire: () => Promise<Fiche>, texte?: string) => Promise<boolean>; ouvrirFiche: (n: number) => void;
+  geste: (faire: () => Promise<Fiche>, texte?: string) => Promise<boolean>; formulaire: string; ouvrirFiche: (n: number) => void;
 };
 
-// La fiche : ce qu'on sait, les champs, les liens, les échanges
-function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, ouvrirFiche }: ProprietesFiche) {
+// La fiche : ce qu'on sait, les champs, les liens, les échanges ; `formulaire`, l'id propre à sa fenêtre que son pied vise
+function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, formulaire, ouvrirFiche }: ProprietesFiche) {
   const [vers, setVers] = useState('');
   const [nature, setNature] = useState('');
   const [note, setNote] = useState('');
@@ -510,14 +508,14 @@ function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, ouvrirFich
           )}
         </div>
       ) : null}
-      <Formulaire key={`${fiche.numero}-${JSON.stringify(CHAMPS.map(([c]) => fiche[c]))}`} id="relation-fiche" fiche={fiche}
+      <Formulaire key={`${fiche.numero}-${JSON.stringify(CHAMPS.map(([c]) => fiche[c]))}`} id={formulaire} fiche={fiche}
         envoyer={(c) => void geste(() => appeler<Fiche>(chemin, { methode: 'PUT', corps: c }), 'Fiche enregistrée.')} />
       <div className="section-f"><h3>Liens</h3>
         {fiche.liens.length ? (
           <ul className="liste-f">
             {fiche.liens.map((l) => (
               <li key={l.numero}>
-                <button type="button" className="lien-r" onClick={() => ouvrirFiche(l.numero)}>{l.nom || `#${l.numero}`}</button>
+                <button type="button" className="lien-r" data-ouvre="fiche" data-objet={l.numero} onClick={() => ouvrirFiche(l.numero)}>{l.nom || `#${l.numero}`}</button>
                 <span className="d">{l.nature}</span>
                 <button type="button" className="x-r" title="Retirer ce lien" aria-label={`Retirer le lien avec ${l.nom || l.numero}`} disabled={occupe}
                   onClick={() => void geste(() => appeler<Fiche>(`${chemin}/liens/${l.numero}`, { methode: 'DELETE' }))}>×</button>
@@ -526,8 +524,8 @@ function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, ouvrirFich
           </ul>
         ) : <p className="texte-f">Aucun lien.</p>}
         <form className="rangee-r" aria-label="Relier à une personne" onSubmit={(e) => { e.preventDefault(); void relier(); }}>
-          <input className="saisie" list="relations-noms" placeholder="Relier à…" aria-label="Relier à" value={vers} onChange={(e) => setVers(e.target.value)} />
-          <datalist id="relations-noms">{autres.map((p) => <option key={p.numero} value={p.nom} />)}</datalist>
+          <input className="saisie" list={`${formulaire}-noms`} placeholder="Relier à…" aria-label="Relier à" value={vers} onChange={(e) => setVers(e.target.value)} />
+          <datalist id={`${formulaire}-noms`}>{autres.map((p) => <option key={p.numero} value={p.nom} />)}</datalist>
           <input className="saisie" placeholder="ami, collègue, frère…" aria-label="Nature du lien" value={nature} onChange={(e) => setNature(e.target.value)} />
           <button type="submit" className="action" disabled={occupe}>Relier</button>
         </form>

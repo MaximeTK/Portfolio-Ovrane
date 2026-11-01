@@ -1,4 +1,6 @@
 // Mécanique organique : fenêtres en arbre de partages, détachées, aimantées à la pause, rangées ou flottantes
+import { aOublier } from '../stockage';
+
 export type Taille = [number, number];
 export type DefFenetre = { mini?: Taille; pref?: Taille; flot?: Taille; prises?: string };
 export type Feuille = { id: string };
@@ -34,6 +36,7 @@ type Action =
     };
 
 const MEMOIRES = new Map<string, Memoire>();
+aOublier(() => MEMOIRES.clear());
 
 export type OptionsDock = {
   id: string;
@@ -44,6 +47,8 @@ export type OptionsDock = {
   entiere: HTMLElement;
   fentes: HTMLElement;
   remise: HTMLElement;
+  // Fenêtres d'éléments : hors de l'arbre, elles prennent la place logique (voir `placerElement`) ; retirées de la page, elles le quittent
+  elements?: (id: string) => boolean;
 };
 // Fenêtres qui se déplient depuis leur bord, ou celle qui se replie vers le sien, pendant que les autres prennent ou rendent la place ;
 // `depuis` : fenêtres gardées d'une page à l'autre, qui glissent de leur place sur la page quittée jusqu'à la leur
@@ -90,11 +95,11 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     return !sorties.has(id) && (id === inclus || etat(id).flot === null);
   };
   const visible = (n: Arbre): boolean => (feuille(n) ? affichee(n.id) : n.enfants.some(visible));
-  const miniArbre = (n: Arbre, axe: 'w' | 'h'): number => {
+  const miniArbre = (n: Arbre, axe: 'w' | 'h', vu = visible): number => {
     if (feuille(n)) return mini(n.id)[axe === 'w' ? 0 : 1];
-    const vis = n.enfants.filter(visible);
-    if ((n.dir === 'row') === (axe === 'w')) return vis.reduce((s, c) => s + miniArbre(c, axe), 0) + ECART * Math.max(vis.length - 1, 0);
-    return Math.max(0, ...vis.map((c) => miniArbre(c, axe)));
+    const vis = n.enfants.filter(vu);
+    if ((n.dir === 'row') === (axe === 'w')) return vis.reduce((s, c) => s + miniArbre(c, axe, vu), 0) + ECART * Math.max(vis.length - 1, 0);
+    return Math.max(0, ...vis.map((c) => miniArbre(c, axe, vu)));
   };
 
   // Partage simplifié : plus de case vide, plus de partage à un seul enfant, deux partages de même sens fondus en un
@@ -238,6 +243,89 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     });
   }
 
+  // Place logique d'une fenêtre d'élément : elle réduit une fenêtre qui couvre plusieurs des 8 zones de l'écran (4 colonnes sur 2 rangées), jamais sous les minimums
+  function placerElement(id: string): Arbre | null {
+    const racine = memoire.racine;
+    if (!racine || !visible(racine)) return null;
+    const z = zoneUtile(cadre()), res = calculer(racine).res, unite = z.w / 4;
+    const etendue = (n: Arbre, ligne: boolean) => {
+      const rs = ids(n).map((i) => res[i]).filter(Boolean);
+      return ligne ? Math.max(...rs.map((r) => r.x + r.w)) - Math.min(...rs.map((r) => r.x)) : Math.max(...rs.map((r) => r.y + r.h)) - Math.min(...rs.map((r) => r.y));
+    };
+    const repartir = (u: number, t: number[]) => {
+      if (t.length >= u) return t.map(() => u / t.length);
+      const s = t.reduce((a, b) => a + b, 0) || 1, q = t.map((v) => (v * u) / s), p = q.map((v) => Math.max(1, Math.floor(v)));
+      const ecart = (j: number) => q[j] - p[j];
+      for (let n = p.reduce((a, b) => a + b, 0); n !== u; n += n < u ? 1 : -1) {
+        const js = p.map((_, j) => j).filter((j) => n < u || p[j] > 1);
+        const j = js.reduce((m, k) => ((n < u ? ecart(k) > ecart(m) : ecart(k) < ecart(m)) ? k : m));
+        p[j] += n < u ? 1 : -1;
+      }
+      return p;
+    };
+    // Zones de chaque fenêtre : chaque enfant d'un partage en couvre au moins une quand il y en a assez, le reste selon sa taille
+    const couvre: Record<string, { c: number; r: number }> = {};
+    const zones =(n: Arbre, c: number, r: number) => {
+      if (feuille(n)) { if (res[n.id]) couvre[n.id] = { c, r }; return; }
+      const vis = n.enfants.filter((e) => ids(e).some((i) => res[i])), ligne = n.dir === 'row';
+      const parts = repartir(ligne ? c : r, vis.map((e) => etendue(e, ligne)));
+      vis.forEach((e, i) => zones(e, ligne ? parts[i] : c, ligne ? r : parts[i]));
+    };
+    zones(racine, 4, 2);
+    const nombre = (i: string) => Math.round(couvre[i].c * couvre[i].r * 100);
+    const ordre = Object.keys(couvre).sort((a, b) => nombre(b) - nombre(a) || res[b].w * res[b].h - res[a].w * res[a].h);
+    // La nouvelle, encore cachée, compte déjà
+    const vu = (n: Arbre): boolean => (feuille(n) ? n.id === id || affichee(n.id) : n.enfants.some(vu));
+    const etroite = (n: Arbre) => feuille(n) && !!res[n.id] && res[n.id].w < unite * 0.75;
+    const colonnes = (n: Arbre): number => {
+      if (feuille(n)) return 1;
+      const c = n.enfants.filter(vu).map(colonnes);
+      return n.dir === 'row' ? c.reduce((a, b) => a + b, 0) : Math.max(1, ...c);
+    };
+    // Après une colonne de plus ou l'Activité partagée, chaque enfant d'une rangée a sa part selon ses colonnes, une fenêtre étroite garde la sienne
+    const egaliser = (n: Arbre) => {
+      if (feuille(n)) return;
+      n.enfants.forEach(egaliser);
+      if (n.dir !== 'row') return;
+      const vis = n.enfants.map((_, i) => i).filter((i) => vu(n.enfants[i])), larges = vis.filter((i) => !etroite(n.enfants[i]));
+      const reste = larges.reduce((s, i) => s + n.parts[i], 0), total = larges.reduce((s, i) => s + colonnes(n.enfants[i]), 0);
+      larges.forEach((i) => { n.parts[i] = (reste * colonnes(n.enfants[i])) / total; });
+    };
+    // Une colonne de plus au bout de la rangée qui porte la fenêtre, à côté d'elle si aucune ne la porte ; sans fenêtre, au bord droit
+    const colonne = (arbre: Arbre, cible: string | null): Arbre | null => {
+      if (!cible) return inserer(arbre, { bord: true, cote: 'droite' }, id);
+      const trouve: { rangee: Partage | null } = { rangee: null };
+      const rec = (n: Arbre): boolean => {
+        if (feuille(n)) return n.id === cible;
+        if (!n.enfants.some(rec)) return false;
+        if (n.dir === 'row' && !trouve.rangee) trouve.rangee = n;
+        return true;
+      };
+      rec(arbre);
+      const r = trouve.rangee;
+      if (!r) return inserer(arbre, { id: cible, cote: 'droite' }, id);
+      r.enfants.push({ id });
+      r.parts.push(r.parts.reduce((a, b) => a + b, 0) / r.parts.length);
+      return arbre;
+    };
+    const feuilles = Object.keys(couvre), larg = (i: string) => couvre[i].c, haut = (i: string) => couvre[i].r;
+    // Dans l'ordre : plus large que la moitié de l'écran, une colonne à droite ; pleine hauteur, dessous, la plus à droite d'abord ; plusieurs colonnes, une colonne à droite ; une colonne au bord droit ; puis n'importe quel côté
+    const essais: [string | null, boolean][] = [
+      ...feuilles.filter((i) => larg(i) > 2).sort((a, b) => nombre(b) - nombre(a)).map((i): [string, boolean] => [i, false]),
+      ...feuilles.filter((i) => haut(i) >= 2 && larg(i) <= 2).sort((a, b) => res[b].x - res[a].x).map((i): [string, boolean] => [i, true]),
+      ...feuilles.filter((i) => larg(i) >= 2).sort((a, b) => nombre(b) - nombre(a)).map((i): [string, boolean] => [i, false]),
+      [null, false],
+    ];
+    for (const n of new Set(ordre.map(nombre))) for (const sien of [true, false]) for (const i of ordre.filter((x) => nombre(x) === n)) essais.push([i, (haut(i) >= larg(i)) === sien]);
+    for (const [cible, dessous] of essais) {
+      const arbre = normaliser(dessous ? inserer(copie(racine), { id: cible!, cote: 'bas' }, id) : colonne(copie(racine), cible));
+      if (!arbre || miniArbre(arbre, 'w', vu) > z.w + 0.5 || miniArbre(arbre, 'h', vu) > z.h + 0.5) continue;
+      if (!dessous || res[cible!].w < unite * 0.75) egaliser(arbre);
+      return arbre;
+    }
+    return null;
+  }
+
   // Les fenêtres présentes dans la page ; une fenêtre absente de l'arbre et rangée se pose sur le bord droit
   function scanner() {
     const vus = new Set<string>();
@@ -256,30 +344,39 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       el.dataset.flot = '1';
       poser(el, f.flot);
     });
-    for (const id in els) if (!vus.has(id)) { els[id] = null; sorties.delete(id); }
-    const places = ids(memoire.racine);
-    vus.forEach((id) => { if (!etat(id).flot && !places.includes(id)) memoire.racine = normaliser(inserer(memoire.racine, { bord: true, cote: 'droite' }, id)); });
+    for (const id in els) if (!vus.has(id)) {
+      els[id] = null;
+      sorties.delete(id);
+      // Fenêtre d'élément fermée : sa place revient aux autres, son état est oublié ; rouverte, elle reprend la place logique du moment
+      if (!o.elements?.(id)) continue;
+      memoire.racine = normaliser(retirer(memoire.racine, id));
+      delete fen[id];
+    }
+    vus.forEach((id) => {
+      if (etat(id).flot || ids(memoire.racine).includes(id)) return;
+      memoire.racine = normaliser((o.elements?.(id) && placerElement(id)) || inserer(memoire.racine, { bord: true, cote: 'droite' }, id));
+    });
   }
 
-  // Fenêtre repliée : réduite à un point sur le bord de son partage qu'elle occupe, un écart au-delà, pour que sa voisine la suive
-  // en gardant 16 px jusqu'au bout ; au milieu d'un partage ou flottante, vers son centre. En hauteur (ou en largeur), vers son milieu.
+  // Fenêtre repliée sans bouger, réduite à zéro vers un de ses bords : celui du bout de son partage, au milieu celui qu'atteint la fenêtre principale ; seule ou flottante, son centre
   function pli(id: string, r: Zone): Zone {
     const trouve: { dir: 'row' | 'col' | null; place: number } = { dir: null, place: 0 };
-    const rec = (n: Arbre): boolean => {
-      if (feuille(n)) return false;
-      const vis = n.enfants.filter(visible);
-      const i = vis.findIndex((c) => feuille(c) && c.id === id);
-      if (i < 0) return n.enfants.some(rec);
-      trouve.dir = n.dir;
-      trouve.place = vis.length < 2 ? 0 : i === 0 ? -1 : i === vis.length - 1 ? 1 : 0;
-      return true;
+    // Le partage le plus profond où elle a des voisines visibles
+    const rec = (n: Arbre) => {
+      if (feuille(n)) return;
+      const vis = n.enfants.filter(visible), i = vis.findIndex((c) => ids(c).includes(id));
+      if (i < 0) return;
+      if (vis.length > 1) {
+        const jp = vis.findIndex((c) => ids(c).includes(o.principal()));
+        trouve.dir = n.dir;
+        trouve.place = i === 0 ? -1 : i === vis.length - 1 ? 1 : jp >= 0 && jp < i ? 1 : -1;
+      }
+      rec(vis[i]);
     };
     if (memoire.racine && etat(id).flot === null) rec(memoire.racine);
-    const cx = r.x + r.w / 2, cy = r.y + r.h / 2, bout = (debut: number, long: number, milieu: number) =>
-      trouve.place > 0 ? debut + long + ECART : trouve.place < 0 ? debut - ECART : milieu;
-    if (trouve.dir === 'row') return { x: bout(r.x, r.w, cx), y: cy, w: 0, h: 0 };
-    if (trouve.dir === 'col') return { x: cx, y: bout(r.y, r.h, cy), w: 0, h: 0 };
-    return { x: cx, y: cy, w: 0, h: 0 };
+    if (trouve.dir === 'row') return { x: trouve.place > 0 ? r.x + r.w : r.x, y: r.y, w: 0, h: r.h };
+    if (trouve.dir === 'col') return { x: r.x, y: trouve.place > 0 ? r.y + r.h : r.y, w: r.w, h: 0 };
+    return { x: r.x + r.w / 2, y: r.y + r.h / 2, w: 0, h: 0 };
   }
 
   let base: Calcul = { res: {}, fentes: [] };

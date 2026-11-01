@@ -1,12 +1,12 @@
 'use client';
 
 import './appels.css';
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { Activite } from '../../activite/Activite';
-import { Dock, Fenetre, usePanneau, type ArbreDepart } from '../../dock/Dock';
+import { Dock, Fenetre, usePanneau, useVues, type ArbreDepart } from '../../dock/Dock';
 import { ECART } from '../../dock/moteur';
-import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
+import { Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import { dateUtc, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { demarrer, nomEnDirect, oublierAvis, terminer, useDirect, type Avis, type Mode, type Tour } from './direct';
@@ -74,8 +74,6 @@ export default function PageAppels({ compte }: ProprietesPage) {
   const [vue, setVue] = useState<Vue | null>(null);
   const [erreurVue, setErreurVue] = useState('');
   const [choisi, setChoisiEtat] = useState<number | null>(dernierChoisi);
-  const [cleOffre, setCleOffre] = useState<string | null>(null);
-  const [confirmer, setConfirmer] = useState(false);
   const [avis, setAvis] = useState<Avis>(null);
   const [version, setVersion] = useState(0);
   const setChoisi = useCallback((id: number | null) => {
@@ -109,38 +107,34 @@ export default function PageAppels({ compte }: ProprietesPage) {
     <Dock id="appels" principal="appels" arbre={ARBRE} panneau={direct.appel ? 'direct' : compte.admin ? 'reglages' : null}
       fenetres={{ appels: { mini: [420, 220], pref: [560, 360], flot: [640, 480] }, appel: { mini: [400, 260], pref: [520, 400], flot: [560, 620] } }}>
       <Activite />
-      <Liste vue={vue} erreurVue={erreurVue} choisi={choisi} setChoisi={setChoisi} confirmer={confirmer} setConfirmer={setConfirmer}
-        avis={avis} setAvis={setAvis} relire={relire} />
-      <Detail vue={vue} choisi={choisi} version={version} setCleOffre={setCleOffre} setConfirmer={setConfirmer} setAvis={setAvis} relire={relire} />
-      <PanneauAppels admin={compte.admin} vue={vue} cleOffre={cleOffre} setAvis={setAvis} relire={relire} />
+      <Liste vue={vue} erreurVue={erreurVue} choisi={choisi} setChoisi={setChoisi} avis={avis} setAvis={setAvis} />
+      <Detail vue={vue} choisi={choisi} version={version} setChoisi={setChoisi} setAvis={setAvis} relire={relire} />
+      <PanneauAppels admin={compte.admin} vue={vue} version={version} setAvis={setAvis} relire={relire} />
     </Dock>
   );
 }
 
 type ProprietesListe = {
-  vue: Vue | null; erreurVue: string; choisi: number | null; setChoisi: (id: number | null) => void; confirmer: boolean; setConfirmer: (b: boolean) => void;
-  avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void>;
+  vue: Vue | null; erreurVue: string; choisi: number | null; setChoisi: (id: number | null) => void; avis: Avis; setAvis: (a: Avis) => void;
 };
 
-function Liste({ vue, erreurVue, choisi, setChoisi, confirmer, setConfirmer, avis, setAvis, relire }: ProprietesListe) {
-  const { onglet, ouvrir, fermer } = usePanneau();
+function Liste({ vue, erreurVue, choisi, setChoisi, avis, setAvis }: ProprietesListe) {
+  const { onglet, objet, ouvrir, fermer } = usePanneau();
+  const { focus } = useVues();
   const direct = useDirect();
-  const [occupe, setOccupe] = useState(false);
   const [taille, setTaille] = useState<number | 'auto'>('auto');
   const [auto, setAuto] = useState(8);
   const [page, setPage] = useState(1);
   const defile = useRef<HTMLDivElement>(null);
 
-  // Échap ferme la confirmation, sinon le panneau
+  // Échap ferme le panneau, sauf celui qu'une confirmation a gardé pour elle
   useEffect(() => {
     const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (confirmer) setConfirmer(false);
-      else fermer();
+      if (e.key === 'Escape' && !e.defaultPrevented) fermer();
     };
     document.addEventListener('keydown', echap);
     return () => document.removeEventListener('keydown', echap);
-  }, [confirmer, setConfirmer, fermer]);
+  }, [fermer]);
   // Un avis se lit 3,5 s, une erreur 8 s
   useEffect(() => {
     if (!avis) return;
@@ -167,27 +161,15 @@ function Liste({ vue, erreurVue, choisi, setChoisi, confirmer, setConfirmer, avi
   const pages = Math.max(1, Math.ceil(appels.length / parPage));
   const courante = Math.min(page, pages);
   const visibles = appels.slice((courante - 1) * parPage, courante * parPage);
-  const choisiLu = appels.find((a) => a.id === choisi);
 
-  const supprimer = async () => {
-    if (choisi === null) return;
-    setOccupe(true);
-    try {
-      await appeler(`/appels/${choisi}`, { methode: 'DELETE' });
-      setChoisi(null);
-      setAvis({ texte: 'Appel effacé, avec sa transcription et son analyse.' });
-    } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
-    } finally {
-      setOccupe(false);
-      setConfirmer(false);
-      await relire();
-    }
-  };
-  // L'appel en cours rouvre son direct ; un autre s'affiche à la place du panneau
+  // L'appel en cours rouvre son direct ; un autre va dans la fenêtre en plus qui a le focus, sinon s'affiche à la place du panneau
   const ouvrirLigne = (a: LigneAppel) => {
     if (direct.appel?.id === a.id) {
       ouvrir('direct');
+      return;
+    }
+    if (focus !== 'panneau') {
+      ouvrir('appel', String(a.id));
       return;
     }
     setChoisi(a.id);
@@ -208,20 +190,16 @@ function Liste({ vue, erreurVue, choisi, setChoisi, confirmer, setConfirmer, avi
           </button>
         </div>
       </div>
-      {confirmer && choisiLu && (
-        <Confirmer question="Supprimer l'appel ?" detail={<span className="detail-c">Sa transcription et son analyse sont effacées.</span>} action="Supprimer"
-          occupe={occupe} onAnnuler={() => setConfirmer(false)} onConfirmer={() => void supprimer()} />
-      )}
       <div className="defile" ref={defile}>
         <table>
           <thead><tr><th>Quand</th><th>Appel</th><th>Durée</th><th>Coût</th><th aria-label="Analyse" /></tr></thead>
           <tbody>
             {visibles.map((a) => {
               const enDirect = direct.appel?.id === a.id;
-              const classe = enDirect && onglet === 'direct' ? 'ouverte' : onglet === null && a.id === choisi ? 'choisi' : '';
+              const classe = (enDirect && onglet === 'direct') || (onglet === 'appel' && objet === String(a.id)) ? 'ouverte' : onglet === null && a.id === choisi ? 'choisi' : '';
               const offre = [a.entreprise, a.intitule].filter(Boolean).join(' · ');
               return (
-                <tr key={a.id} className={classe} tabIndex={0} aria-selected={classe !== ''} title={enDirect ? 'Voir la transcription en direct' : undefined}
+                <tr key={a.id} className={classe} tabIndex={0} aria-selected={classe !== ''} title={enDirect ? 'Voir la transcription en direct' : undefined} data-ouvre="appel" data-objet={a.id}
                   onClick={() => ouvrirLigne(a)} onKeyDown={(e) => e.key === 'Enter' && ouvrirLigne(a)}>
                   <td className="mono d">{quand(a.debut)}</td>
                   <td><span className="t-appel" title={a.titre || 'Appel'}>{a.titre || 'Appel'}</span><span className={`offre-appel${offre ? '' : ' sans'}`} title={offre || undefined}>{offre || 'aucune offre'}</span></td>
@@ -259,21 +237,35 @@ function Liste({ vue, erreurVue, choisi, setChoisi, confirmer, setConfirmer, avi
   );
 }
 
-type ProprietesDetail = {
-  vue: Vue | null; choisi: number | null; version: number; setCleOffre: (c: string) => void; setConfirmer: (b: boolean) => void;
-  setAvis: (a: Avis) => void; relire: () => Promise<void>;
-};
+type ProprietesDetail = { vue: Vue | null; choisi: number | null; version: number; setChoisi: (id: number | null) => void; setAvis: (a: Avis) => void; relire: () => Promise<void> };
 
-// L'appel choisi : titre, offre, noms des voix, transcription, analyse ; le panneau ouvert prend sa place
-function Detail({ vue, choisi, version, setCleOffre, setConfirmer, setAvis, relire }: ProprietesDetail) {
-  const { onglet, ouvrir } = usePanneau();
+// L'appel choisi au clic gauche ; le panneau ouvert prend sa place
+function Detail({ vue, choisi, version, setChoisi, setAvis, relire }: ProprietesDetail) {
+  const { onglet } = usePanneau();
+  return (
+    <Fenetre id="appel" className="detail-appel" hidden={onglet !== null} aria-label="Appel choisi" titrePrise="Glisser pour détacher l'appel choisi">
+      {choisi === null ? (
+        <div className="appel-d"><p className="vide-appel"><b>Aucun appel choisi.</b>Choisissez un appel dans la liste, ou démarrez-en un.</p></div>
+      ) : <ContenuAppel key={choisi} id={choisi} vue={vue} version={version} setAvis={setAvis} relire={relire} supprime={() => setChoisi(null)} />}
+    </Fenetre>
+  );
+}
+
+type ProprietesContenu = { id: number; vue: Vue | null; version: number; setAvis: (a: Avis) => void; relire: () => Promise<void>; supprime: () => void };
+
+// Un appel, dans la fenêtre de l'appel choisi ou dans une fenêtre à lui : titre, offre, noms des voix, transcription, analyse ; sa confirmation et ses gestes sont les siens
+function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: ProprietesContenu) {
+  const { ouvrir } = usePanneau();
   const direct = useDirect();
   const [detail, setDetail] = useState<DetailAppel | null>(null);
   const [erreur, setErreur] = useState('');
   const [titre, setTitre] = useState('');
   const [noms, setNoms] = useState<Record<string, string>>({});
   const [geste, setGeste] = useState<'clore' | 'analyser' | null>(null);
-  const analyseEnCours = direct.analyse !== null && direct.analyse === choisi;
+  const [confirmer, setConfirmer] = useState(false);
+  const [occupe, setOccupe] = useState(false);
+  const base = useId();
+  const analyseEnCours = direct.analyse === id;
 
   const montrer = useCallback((d: DetailAppel) => {
     setDetail(d);
@@ -283,9 +275,9 @@ function Detail({ vue, choisi, version, setCleOffre, setConfirmer, setAvis, reli
       .sort(([a], [b]) => Number(a.startsWith('appel')) - Number(b.startsWith('appel')) || a.localeCompare(b))));
   }, []);
   useEffect(() => {
-    if (choisi === null || analyseEnCours) return;
+    if (analyseEnCours) return;
     let vivant = true;
-    appeler<DetailAppel>(`/appels/${choisi}`).then((d) => {
+    appeler<DetailAppel>(`/appels/${id}`).then((d) => {
       if (!vivant) return;
       montrer(d);
       setErreur('');
@@ -297,9 +289,9 @@ function Detail({ vue, choisi, version, setCleOffre, setConfirmer, setAvis, reli
     return () => {
       vivant = false;
     };
-  }, [choisi, version, analyseEnCours, montrer]);
+  }, [id, version, analyseEnCours, montrer]);
 
-  const lu = detail && detail.id === choisi ? detail : null;
+  const lu = detail && detail.id === id ? detail : null;
   const modifier = async (corps: Record<string, unknown>, texte: string) => {
     if (!lu) return;
     try {
@@ -332,6 +324,20 @@ function Detail({ vue, choisi, version, setCleOffre, setConfirmer, setAvis, reli
     montrer(await appeler<DetailAppel>(`/appels/${a.id}/analyse`, { methode: 'POST' }));
     return 'Analyse rédigée.';
   });
+  const supprimer = async () => {
+    setOccupe(true);
+    try {
+      await appeler(`/appels/${id}`, { methode: 'DELETE' });
+      supprime();
+      setAvis({ texte: 'Appel effacé, avec sa transcription et son analyse.' });
+    } catch (e) {
+      setAvis({ texte: message(e), erreur: true });
+    } finally {
+      setOccupe(false);
+      setConfirmer(false);
+      await relire();
+    }
+  };
 
   const voix = Object.keys(noms);
   const offres = vue?.offres ?? [];
@@ -340,13 +346,13 @@ function Detail({ vue, choisi, version, setCleOffre, setConfirmer, setAvis, reli
   const enDirect = lu !== null && direct.appel?.id === lu.id;
 
   return (
-    <Fenetre id="appel" className="detail-appel" hidden={onglet !== null} aria-label="Appel choisi" titrePrise="Glisser pour détacher l'appel choisi">
+    <div className="appel-d">
       {analyseEnCours ? (
         <p className="vide-appel" role="status"><b>Analyse de la conversation…</b>Elle prend une minute au plus.</p>
       ) : erreur ? (
         <p className="vide-appel" role="alert"><b>Appel illisible.</b>{erreur}</p>
       ) : !lu ? (
-        <p className="vide-appel"><b>{choisi === null ? 'Aucun appel choisi.' : 'Lecture de l’appel…'}</b>{choisi === null ? 'Choisissez un appel dans la liste, ou démarrez-en un.' : ''}</p>
+        <p className="vide-appel"><b>Lecture de l’appel…</b></p>
       ) : (
         <>
           <div className="tete-appel">
@@ -359,10 +365,10 @@ function Detail({ vue, choisi, version, setCleOffre, setConfirmer, setAvis, reli
           </div>
           <div className="champ">
             <span className="lib-offre">
-              <label htmlFor="appel-offre">Offre concernée</label>
-              {lu.offre_cle && <button type="button" className="lien-d" aria-haspopup="dialog" onClick={() => { setCleOffre(lu.offre_cle); ouvrir('fiche-offre'); }}>Voir la fiche</button>}
+              <label htmlFor={`${base}-offre`}>Offre concernée</label>
+              {lu.offre_cle && <button type="button" className="lien-d" aria-haspopup="dialog" data-ouvre="fiche-offre" data-objet={lu.offre_cle} onClick={() => ouvrir('fiche-offre', lu.offre_cle)}>Voir la fiche</button>}
             </span>
-            <select id="appel-offre" className="saisie" value={lu.offre_cle} onChange={(e) => void modifier({ offre_cle: e.target.value }, 'Appel rattaché.')}>
+            <select id={`${base}-offre`} className="saisie" value={lu.offre_cle} onChange={(e) => void modifier({ offre_cle: e.target.value }, 'Appel rattaché.')}>
               <option value="">— aucune offre —</option>
               {lu.offre_cle && !offres.some((o) => o.cle === lu.offre_cle) && (
                 <option value={lu.offre_cle}>{ligne?.entreprise ? `${ligne.entreprise} — ${ligne.intitule}` : lu.offre || lu.offre_cle}</option>
@@ -376,8 +382,8 @@ function Detail({ vue, choisi, version, setCleOffre, setConfirmer, setAvis, reli
                 const [piste, lettre] = cle.split(':');
                 return (
                   <div key={cle} className="champ">
-                    <label htmlFor={`voix-${cle}`}>{piste === 'appel' ? "Son de l'appel" : 'Micro'}{lettre ? ` · voix ${lettre}` : ''}</label>
-                    <input id={`voix-${cle}`} className="saisie" value={noms[cle]} onChange={(e) => setNoms((n) => ({ ...n, [cle]: e.target.value }))} />
+                    <label htmlFor={`${base}-voix-${cle}`}>{piste === 'appel' ? "Son de l'appel" : 'Micro'}{lettre ? ` · voix ${lettre}` : ''}</label>
+                    <input id={`${base}-voix-${cle}`} className="saisie" value={noms[cle]} onChange={(e) => setNoms((n) => ({ ...n, [cle]: e.target.value }))} />
                   </div>
                 );
               })}
@@ -401,6 +407,10 @@ function Detail({ vue, choisi, version, setCleOffre, setConfirmer, setAvis, reli
               <dl className="analyse">{lues.map((p, i) => <Fragment key={i}><dt>{p.titre}</dt><dd>{p.corps}</dd></Fragment>)}</dl>
             ) : lu.analyse ? <p className="analyse-brute">{lu.analyse}</p> : <p className="texte-f">Pas encore d&apos;analyse.</p>}
           </div>
+          {confirmer && (
+            <Confirmer question="Supprimer l'appel ?" detail="Sa transcription et son analyse sont effacées." action="Supprimer"
+              occupe={occupe} onAnnuler={() => setConfirmer(false)} onConfirmer={() => void supprimer()} />
+          )}
           <div className="pied-appel">
             {!lu.fin && !enDirect && (
               <button type="button" className="action plein" disabled={geste !== null}
@@ -418,13 +428,14 @@ function Detail({ vue, choisi, version, setCleOffre, setConfirmer, setAvis, reli
           </div>
         </>
       )}
-    </Fenetre>
+    </div>
   );
 }
 
-// Le panneau : Nouvel appel ou En direct, et les Réglages ; la fiche de l'offre concernée seule quand on l'ouvre
-function PanneauAppels({ admin, vue, cleOffre, setAvis, relire }: { admin: boolean; vue: Vue | null; cleOffre: string | null; setAvis: (a: Avis) => void; relire: () => Promise<void> }) {
+// Le panneau : les éléments (un appel, la fiche de son offre), puis Nouvel appel ou En direct, et les Réglages
+function PanneauAppels({ admin, vue, version, setAvis, relire }: { admin: boolean; vue: Vue | null; version: number; setAvis: (a: Avis) => void; relire: () => Promise<void> }) {
   const { onglet, ouvrir, fermer } = usePanneau();
+  const ouverts = useVues().vues[0].objets;
   const direct = useDirect();
   const reglages = useOngletReglages(admin, onglet === 'reglages', fermer, setAvis);
   const nouvel = useOngletNouvel(vue, () => {
@@ -435,8 +446,21 @@ function PanneauAppels({ admin, vue, cleOffre, setAvis, relire }: { admin: boole
   useEffect(() => {
     if (onglet === 'direct' && !direct.appel) fermer();
   }, [onglet, direct.appel, fermer]);
-  const onglets = onglet === 'fiche-offre' && cleOffre ? [ongletFicheOffre(cleOffre)] : [direct.appel ? ongletDirect() : nouvel, reglages];
-  return <Panneau onglets={onglets} />;
+  const elements: Elements = {
+    appel: (n) => {
+      const ligne = vue?.appels.find((a) => String(a.id) === n);
+      // Effacé, l'appel ne se montre plus
+      return vue && !ligne ? null : {
+        cle: 'appel', titre: ligne ? `Appel · ${quand(ligne.debut)}` : 'Appel', label: `Appel · ${ligne?.titre || 'sans titre'}`,
+        corps: <ContenuAppel id={Number(n)} vue={vue} version={version} setAvis={setAvis} relire={relire} supprime={fermer} />,
+      };
+    },
+    'fiche-offre': (c) => ongletFicheOffre(c),
+  };
+  // Un élément ouvert : les onglets des actions ne restent que s'ils sont ouverts, leur bouton de la liste les rouvre
+  const parGeste = Object.keys(elements).some((c) => ouverts[c] !== undefined);
+  const onglets = [direct.appel ? ongletDirect() : nouvel, reglages].filter((o) => !parGeste || o.cle === onglet);
+  return <Panneau elements={elements} onglets={onglets} />;
 }
 
 function useOngletNouvel(vue: Vue | null, demarre: () => void, fermer: () => void): Onglet {

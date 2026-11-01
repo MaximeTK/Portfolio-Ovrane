@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { appeler, telecharger, televerser } from '../../api';
 import { useSondage } from '../../activite/sondage';
-import { MarqueAdmin, type Onglet } from '../../dock/Panneau';
+import { AuPied, MarqueAdmin, type Onglet } from '../../dock/Panneau';
 import { dateUtc } from '../../partage/FicheOffre';
+import { aOublier } from '../../stockage';
 
 export type Avis = { texte: string; erreur?: boolean } | null;
 export type PieceJointe = { nom: string; type: string; taille: number; telechargeable: boolean };
@@ -233,46 +234,78 @@ function Message({ m, replie }: { m: MailLu; replie: boolean }) {
 }
 
 type Rattachable = { cle: string; titre: string; entreprise: string; statut: string; date: string };
+type FilLu = { fil?: MailLu[]; offres?: Rattachable[]; erreur?: string };
 
-// Fil · <entreprise> : l'échange entier, l'offre où il est rangé, et la réponse au dernier mail reçu
-export function useOngletFil({ filId, setAvis, relire, voirFiche, voirOffre, fermer }: {
-  filId: string | null; setAvis: (a: Avis) => void; relire: () => void; voirFiche: (siren: string) => void; voirOffre: (cle: string) => void; fermer: () => void;
-}): Onglet {
-  const [lu, setLu] = useState<{ id: string; fil: MailLu[]; offres: Rattachable[] } | null>(null);
-  const [erreur, setErreur] = useState('');
+// Les fils lus, par identifiant : le titre et le corps de chaque fenêtre qui en montre un les partagent
+const fils = new Map<string, FilLu>();
+aOublier(() => fils.clear());
+const abonnes = new Set<() => void>();
+const abonner = (f: () => void) => {
+  abonnes.add(f);
+  return () => {
+    abonnes.delete(f);
+  };
+};
+const poserFil = (id: string, lu: FilLu) => {
+  fils.set(id, { ...fils.get(id), ...lu });
+  abonnes.forEach((f) => f());
+};
+const useFilLu = (id: string) => useSyncExternalStore(abonner, () => fils.get(id), () => undefined);
+
+type ProprietesFil = { setAvis: (a: Avis) => void; relire: () => void; voirFiche: (siren: string) => void; voirOffre: (cle: string) => void; fermer: () => void };
+
+// Fil · <entreprise> : l'échange entier, l'offre où il est rangé, et la réponse au dernier mail reçu ; un élément par fil, chaque fenêtre a sa réponse
+export function ongletFil(id: string, proprietes: ProprietesFil): Onglet {
+  return {
+    cle: 'fil', titre: <TitreFil id={id} />, label: `Fil · ${fils.get(id)?.fil?.[0]?.sujet || '(sans objet)'}`,
+    corps: <CorpsFil id={id} {...proprietes} />, pied: true,
+  };
+}
+
+// Le titre : « Fil · ALTEN » une fois le fil lu
+function TitreFil({ id }: { id: string }) {
+  const lu = useFilLu(id);
+  const fil = lu?.fil ?? [];
+  const racine = fil[0];
+  const dernierRecu = [...fil].reverse().find((m) => m.sens === 'entrant');
+  const entreprise = lu?.offres?.find((o) => o.cle === racine?.offre_cle)?.entreprise || (dernierRecu ? nomAffiche(dernierRecu.expediteur) : '') || racine?.sujet;
+  return <>{`Fil · ${entreprise || '…'}`}</>;
+}
+
+function CorpsFil({ id, setAvis, relire, voirFiche, voirOffre, fermer }: ProprietesFil & { id: string }) {
+  const lu = useFilLu(id);
   const [tour, setTour] = useState(0);
   const [occupe, setOccupe] = useState(false);
+  const uid = useId();
   const relireListe = useRef(relire);
   useEffect(() => {
     relireListe.current = relire;
   });
   useEffect(() => {
-    if (!filId) return;
     let vivant = true;
-    setErreur('');
+    if (fils.get(id)?.erreur) poserFil(id, { erreur: '' });
     // La liste des offres manque : le fil se lit quand même, il ne se range simplement pas d'ici
-    Promise.all([appeler<{ fil: MailLu[] }>(`/mails/fil/${encodeURIComponent(filId)}`), appeler<Rattachable[]>('/mails/offres').catch(() => [])])
+    Promise.all([appeler<{ fil: MailLu[] }>(`/mails/fil/${encodeURIComponent(id)}`), appeler<Rattachable[]>('/mails/offres').catch(() => [])])
       .then(([f, offres]) => {
         if (!vivant) return;
-        setLu({ id: filId, fil: f.fil, offres });
-        setErreur('');
+        poserFil(id, { fil: f.fil, offres, erreur: '' });
         // Ouvrir le fil le marque lu : la liste le dit aussitôt
         relireListe.current();
       })
-      .catch((e) => vivant && setErreur(message(e)));
+      .catch((e) => vivant && poserFil(id, { erreur: message(e) }));
     return () => {
       vivant = false;
     };
-  }, [filId, tour]);
-  const fil = lu && lu.id === filId ? lu.fil : [];
+  }, [id, tour]);
+  const fil = lu?.fil ?? [];
+  const erreur = lu?.erreur ?? '';
   const racine = fil[0], dernier = fil[fil.length - 1];
   // On répond au dernier mail REÇU ; un brouillon qui attend sur un mail plus ancien passe devant
   const dernierRecu = [...fil].reverse().find((m) => m.sens === 'entrant');
   const aRelire = [...fil].reverse().find((m) => m.sens === 'entrant' && m.reponse) ?? dernierRecu;
   const offres = lu?.offres ?? [];
-  const entreprise = offres.find((o) => o.cle === racine?.offre_cle)?.entreprise || (dernierRecu ? nomAffiche(dernierRecu.expediteur) : '') || racine?.sujet;
   const envoi = useEnvoi({
-    id: 'fil-envoi', cle: `${filId}|${aRelire?.message_id ?? ''}`, setAvis, titre: 'Répondre',
+    id: `${uid}-envoi`, cle: `${id}|${aRelire?.message_id ?? ''}`, setAvis, titre: 'Répondre',
     depart: {
       destinataire: aRelire ? adresseSeule(aRelire.expediteur) : '', corps: aRelire?.reponse ?? '', repond_a: aRelire?.message_id ?? '',
       sujet: aRelire ? (aRelire.sujet?.startsWith('Re: ') ? aRelire.sujet : `Re: ${aRelire.sujet ?? ''}`) : '',
@@ -300,7 +333,7 @@ export function useOngletFil({ filId, setAvis, relire, voirFiche, voirOffre, fer
   };
   const ranger = async (cle: string) => {
     try {
-      const r = await appeler<{ mails: number }>('/mails/fil/offre', { methode: 'POST', corps: { message_id: filId, offre_cle: cle } });
+      const r = await appeler<{ mails: number }>('/mails/fil/offre', { methode: 'POST', corps: { message_id: id, offre_cle: cle } });
       setAvis({ texte: cle ? `${r.mails} mail(s) du fil rattaché(s) à l'offre choisie.` : `${r.mails} mail(s) du fil détaché(s) : il n'est plus sur aucune offre.` });
       setTour((t) => t + 1);
     } catch (e) {
@@ -320,8 +353,16 @@ export function useOngletFil({ filId, setAvis, relire, voirFiche, voirOffre, fer
         {dernier.tags.length > 0 && <> · {dernier.tags.map((t) => <Nature key={t} tag={t} />)}</>}
       </p>
       <div className="actions actions-f">
-        {racine.entreprise_siren && <button type="button" className="action" aria-haspopup="dialog" onClick={() => voirFiche(racine.entreprise_siren!)}><span className="ico">{ICONES.fiche}</span>Voir la fiche</button>}
-        {racine.offre_cle && <button type="button" className="action" aria-haspopup="dialog" onClick={() => voirOffre(racine.offre_cle!)}><span className="ico">{ICONES.offre}</span>Voir l&apos;offre</button>}
+        {racine.entreprise_siren && (
+          <button type="button" className="action" aria-haspopup="dialog" data-ouvre="fiche-entreprise" data-objet={racine.entreprise_siren} onClick={() => voirFiche(racine.entreprise_siren!)}>
+            <span className="ico">{ICONES.fiche}</span>Voir la fiche
+          </button>
+        )}
+        {racine.offre_cle && (
+          <button type="button" className="action" aria-haspopup="dialog" data-ouvre="fiche-offre" data-objet={racine.offre_cle} onClick={() => voirOffre(racine.offre_cle!)}>
+            <span className="ico">{ICONES.offre}</span>Voir l&apos;offre
+          </button>
+        )}
         {dernierRecu?.a_repondre && (
           <button type="button" className="action" disabled={occupe} title="Le modèle écrit la réponse au dernier mail reçu ; elle attend ici, rien ne part." onClick={() => void rediger()}>
             <span className="ico">{ICONES.reecrire}</span>{occupe ? 'Rédaction…' : dernierRecu.reponse ? 'Réécrire le brouillon' : 'Rédiger le brouillon'}
@@ -329,8 +370,8 @@ export function useOngletFil({ filId, setAvis, relire, voirFiche, voirOffre, fer
         )}
       </div>
       <div className="champ">
-        <label htmlFor="fil-offre" title="Tout le fil suit : ses mails passent sur l'offre choisie, ou sur aucune.">Offre du fil</label>
-        <select id="fil-offre" className="saisie" value={racine.offre_cle ?? ''} onChange={(e) => void ranger(e.target.value)}>
+        <label htmlFor={`${uid}-offre`} title="Tout le fil suit : ses mails passent sur l'offre choisie, ou sur aucune.">Offre du fil</label>
+        <select id={`${uid}-offre`} className="saisie" value={racine.offre_cle ?? ''} onChange={(e) => void ranger(e.target.value)}>
           <option value="">— aucune (fil détaché) —</option>
           {racine.offre_cle && !connue && <option value={racine.offre_cle}>offre actuelle</option>}
           {offres.map((o) => <option key={o.cle} value={o.cle}>{`${o.entreprise || '—'} — ${o.titre || '(sans intitulé)'} · ${jourMois(o.date)}`}</option>)}
@@ -342,10 +383,13 @@ export function useOngletFil({ filId, setAvis, relire, voirFiche, voirOffre, fer
       {aRelire ? envoi.champs : <p className="texte-f repondre">Ce fil ne contient aucun message reçu : il n&apos;y a personne à qui répondre.</p>}
     </>
   );
-  return {
-    cle: 'fil', titre: `Fil · ${entreprise || '…'}`, label: `Fil · ${racine?.sujet || '(sans objet)'}`,
-    corps, pied: aRelire ? envoi.pied : undefined,
-  };
+  // Joindre et Envoyer vont au pied de la fenêtre qui montre ce corps : le formulaire et son envoi restent propres à chaque fenêtre
+  return (
+    <>
+      {corps}
+      {aRelire && <AuPied>{envoi.pied}</AuPied>}
+    </>
+  );
 }
 
 // Étiqueter N mails : des tags posés, retirés ou remplacés sur la sélection

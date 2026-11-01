@@ -80,8 +80,6 @@ function Offres({ admin }: { admin: boolean }) {
   const [parametres, setParametres] = useState<Parametres | null>(null);
   const [profils, setProfils] = useState<ProfilDispo[]>([]);
   const [incomplets, setIncomplets] = useState<Incomplets>({});
-  const [cleOffre, setCleOffre] = useState<string | null>(null);
-  const [siren, setSiren] = useState<string | null>(null);
   const [ligne, setLigne] = useState<string | null>(null);
   const [tour, setTour] = useState(0);
   const defile = useRef<HTMLDivElement>(null);
@@ -186,14 +184,12 @@ function Offres({ admin }: { admin: boolean }) {
   const ajout = useAjout(profils, dire, recharger);
 
   const ouvrirOffre = useCallback((cle: string) => {
-    setCleOffre(cle);
     setLigne(cle);
-    ouvrir('fiche-offre');
+    ouvrir('fiche-offre', cle);
   }, [ouvrir]);
   const ouvrirEntreprise = useCallback((s: string, cle?: string) => {
-    setSiren(s);
     if (cle) setLigne(cle);
-    ouvrir('fiche-entreprise');
+    ouvrir('fiche-entreprise', s);
   }, [ouvrir]);
 
   // Les questions de la fiche entreprise (supprimer, remettre à zéro…) se posent en barre à la place des outils
@@ -234,10 +230,12 @@ function Offres({ admin }: { admin: boolean }) {
   const onglets: Onglet[] = [
     { cle: 'recherche', titre: 'Recherche', label: 'Profils de recherche', corps: recherche.corps, pied: recherche.pied },
     ...(admin ? [{ cle: 'veille', titre: 'Veille', label: 'Profils de veille', admin: true, corps: veilles.corps, pied: veilles.pied }] : []),
-    ...(cleOffre ? [ongletFicheOffre(cleOffre, { ouvrirEntreprise: (s) => ouvrirEntreprise(s) })] : []),
-    ...(siren ? [ongletFicheEntreprise(siren, { ouvrirOffre })] : []),
     ...(onglet === 'ajouter' || ajout.entame ? [{ cle: 'ajouter', titre: 'Ajouter', label: 'Ajouter une offre', corps: ajout.corps, pied: ajout.pied }] : []),
   ];
+  const elements = {
+    'fiche-offre': (cle: string) => ongletFicheOffre(cle, { ouvrirEntreprise: (s) => ouvrirEntreprise(s) }),
+    'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre }),
+  };
   const ouverte = (cle: string) => cle === ligne && (onglet === 'fiche-offre' || onglet === 'fiche-entreprise');
 
   return (
@@ -323,7 +321,7 @@ function Offres({ admin }: { admin: boolean }) {
                   const etape = passes.find((p) => p.cle === o.etape)?.libelle ?? o.etape;
                   return (
                     <tr
-                      key={o.cle} className={ouverte(o.cle) ? 'ouverte' : undefined} tabIndex={0}
+                      key={o.cle} className={ouverte(o.cle) ? 'ouverte' : undefined} tabIndex={0} data-ouvre="fiche-offre" data-objet={o.cle}
                       aria-label={`${o.titre} chez ${o.entreprise_brute} : ouvrir la fiche de l'offre`}
                       onClick={() => ouvrirOffre(o.cle)}
                       onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && ouvrirOffre(o.cle)}
@@ -332,8 +330,8 @@ function Offres({ admin }: { admin: boolean }) {
                       <td title={o.entreprise_brute}>
                         {o.entreprise_siren ? (
                           <>
-                            <button type="button" className="ent" onClick={(e) => { e.stopPropagation(); ouvrirEntreprise(o.entreprise_siren!, o.cle); }}>{o.entreprise_brute || '—'}</button>
-                            <button type="button" className="sous lien-fiche" onClick={(e) => { e.stopPropagation(); ouvrirEntreprise(o.entreprise_siren!, o.cle); }}>voir la fiche</button>
+                            <button type="button" className="ent" data-ouvre="fiche-entreprise" data-objet={o.entreprise_siren} onClick={(e) => { e.stopPropagation(); ouvrirEntreprise(o.entreprise_siren!, o.cle); }}>{o.entreprise_brute || '—'}</button>
+                            <button type="button" className="sous lien-fiche" data-ouvre="fiche-entreprise" data-objet={o.entreprise_siren} onClick={(e) => { e.stopPropagation(); ouvrirEntreprise(o.entreprise_siren!, o.cle); }}>voir la fiche</button>
                           </>
                         ) : (
                           <><b className="ent">{o.entreprise_brute || '—'}</b><span className="sous" title={RAISONS[o.rattachement]?.[1]}>{RAISONS[o.rattachement]?.[0] ?? o.rattachement}</span></>
@@ -356,7 +354,7 @@ function Offres({ admin }: { admin: boolean }) {
         <Pagination page={page} pages={donnees?.pages ?? 1} taille={taille} auto={Math.max(10, auto)} surPage={setPage} surTaille={setTaille} />
         {avis}
       </Fenetre>
-      <Panneau onglets={onglets} />
+      <Panneau elements={elements} onglets={onglets} />
     </>
   );
 }

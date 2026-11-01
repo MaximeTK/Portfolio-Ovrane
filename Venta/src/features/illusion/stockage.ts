@@ -4,6 +4,11 @@ const PREFIXE = 'illusion:';
 const ANCIENNES = ['illusion:atelier:', 'illusion:documents:'];
 
 let compte = '';
+// Ce que les pages gardent en mémoire pour la session (fenêtres, pièces, fils lus…) : oublié quand le compte change ou se déconnecte
+const oublis = new Set<() => void>();
+export const aOublier = (f: () => void) => {
+  oublis.add(f);
+};
 
 // Une empreinte courte de l'adresse : sépare les comptes sans écrire l'e-mail en clair dans le navigateur
 function empreinte(texte: string) {
@@ -28,6 +33,7 @@ function cles() {
 export function poserCompte(email: string) {
   const neuf = empreinte(email.trim().toLowerCase());
   if (neuf === compte) return;
+  if (compte) oublis.forEach((f) => f());
   compte = neuf;
   for (const cle of cles()) if (ANCIENNES.some((a) => cle.startsWith(a))) localStorage.removeItem(cle);
 }
@@ -38,5 +44,6 @@ export const cleBrouillon = (nom: string) => `${PREFIXE}${compte}:${nom}`;
 /** Efface tous les brouillons d'Illusion de ce navigateur, quel que soit leur compte : la déconnexion n'en laisse aucun. */
 export function effacerBrouillons() {
   compte = '';
+  oublis.forEach((f) => f());
   for (const cle of cles()) if (cle.startsWith(PREFIXE)) localStorage.removeItem(cle);
 }

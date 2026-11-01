@@ -1,13 +1,13 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- les aperçus viennent d'Illusion par le relais, avec la session : l'optimiseur de next/image ne les atteint pas */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { appeler, telecharger } from '../../api';
-import { usePanneau } from '../../dock/Dock';
-import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
+import { usePanneau, useVues } from '../../dock/Dock';
+import { AuPied, Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import { ongletAjoutCompetence, ongletFicheOffre, type DemandeAjout } from '../../partage/FicheOffre';
 import { Couleurs, ICONES, ListeFichiers, RELAIS, court, message, poids, useFichiers, type Fichier } from './commun';
-import { MODELE_VIDE, nomFichier, quand, sansJson, type Documents, type Formulaire, type NomAtelier, type Parametres } from './index';
+import { MODELE_VIDE, nomFichier, quand, sansJson, type Documents, type Formulaire, type Modele, type NomAtelier, type Parametres, type Production } from './index';
 
 const FONDS = ['', 'aplat', 'degrade', 'photo', 'photo-teintee', 'blanc'];
 const LANGUES = ['fr', 'en', 'de', 'es', 'it', 'pt', 'nl'];
@@ -21,54 +21,71 @@ const PARTAGES = ['profil', 'offre', 'poste', 'entreprise', 'deja_postule'] as c
 const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 const hexa = (v?: string) => /^#[0-9a-f]{3,8}$/i.test(v ?? '');
 
-// Le panneau : chaque sous-fenêtre de la page en onglet ; la fiche et les fenêtres d'un geste n'y sont qu'avec leur objet
+// Le panneau : les éléments (pièce, fiche de poste, modèle de CV spontané), puis chaque sous-fenêtre de la page en onglet ; l'ajout d'une compétence n'y est qu'avec son objet
 export function PanneauDocuments({ d }: { d: Documents }) {
   const { onglet, ouvrir } = usePanneau();
-  const [cleOffre, setCleOffre] = useState<string | null>(null);
-  const [demande, setDemande] = useState<DemandeAjout | null>(null);
-  // Refermé, le panneau oublie les fenêtres d'un geste
+  const ouverts = useVues().vues[0].objets;
+  // L'ajout d'une compétence, et l'élément où revenir ensuite
+  const [demande, setDemande] = useState<{ ajout: DemandeAjout; sorte: string; objet: string } | null>(null);
+  // Refermé, le panneau oublie l'ajout en cours
   useEffect(() => {
-    if (onglet !== null) return;
-    setCleOffre(null);
-    setDemande(null);
+    if (onglet === null) setDemande(null);
   }, [onglet]);
-  const fiche = useOngletFiche(d, (cle) => { setCleOffre(cle); ouvrir('fiche-offre'); }, (dm) => { setDemande(dm); ouvrir('ajout-competence'); });
+  const ajouter = (ajout: DemandeAjout, sorte: string, objet: string) => {
+    setDemande({ ajout, sorte, objet });
+    ouvrir('ajout-competence');
+  };
+  const elements: Elements = {
+    fiche: (cle) => {
+      const p = d.piece(cle);
+      return p ? {
+        cle: 'fiche', titre: `${p.nature === 'cv' ? 'CV' : 'Lettre'} · ${court(p.entreprise || '—', 14)}`, label: `Fiche de fabrication · ${p.entreprise || '—'}`,
+        corps: <FichePiece p={p} d={d} ajouter={(dm) => ajouter(dm, 'fiche', cle)} />, pied: true,
+      } : null;
+    },
+    'fiche-offre': (c) => ongletFicheOffre(c, { ajouterAuProfil: (dm) => ajouter(dm, 'fiche-offre', c) }),
+    // Un modèle renommé garde sa fenêtre jusqu'à ce qu'elle passe à son nouveau nom : la fiche ne disparaît pas si son nom manque
+    spontane: (nom) => ({
+      cle: 'spontane', titre: `Modèle ${court(nom, 14)}`, label: `Modèle de CV spontané · ${nom}`,
+      corps: d.parametres ? <FicheModele depart={d.parametres.cv_spontanes?.find((m) => m.nom === nom)} d={d} enregistre={(n) => n !== nom && ouvrir('spontane', n)} />
+        : <p className="texte-f">Lecture du modèle…</p>,
+      pied: !!d.parametres,
+    }),
+  };
   const cv = useOngletFabrication(d, 'constructeur');
   const lettre = useOngletFabrication(d, 'lettre');
   const reglages = useOngletReglages(d, onglet === 'reglages');
-  const modele = useOngletModele(d);
-  const objets = [d.choisie, cleOffre, demande].filter(Boolean).length;
+  const nouveauModele: Onglet = {
+    cle: 'nouveau-modele', titre: 'Nouveau modèle', label: 'Nouveau modèle de CV spontané',
+    corps: <FicheModele key={d.vierge} depart={MODELE_VIDE} d={d} enregistre={(nom) => { d.viderModele(); ouvrir('spontane', nom); }} />, pied: true,
+  };
+  const objets = Object.keys(elements).filter((c) => ouverts[c] !== undefined && elements[c](ouverts[c])).length + (demande ? 1 : 0);
   // Deux objets ouverts : les onglets de geste ne restent que s'ils sont ouverts, sinon la tête du panneau déborde
   const peu = objets <= 1;
   const voulu = (o: Onglet, montre: boolean) => (montre || onglet === o.cle ? [o] : []);
   const onglets: Onglet[] = [
-    ...(fiche ? [{ ...fiche, titre: objets > 1 ? 'Fabrication' : fiche.titre }] : []),
-    ...(cleOffre ? [ongletFicheOffre(cleOffre, { ajouterAuProfil: (dm) => { setDemande(dm); ouvrir('ajout-competence'); } })] : []),
-    ...(demande ? [ongletAjoutCompetence(demande, (texte) => {
+    ...(demande ? [ongletAjoutCompetence(demande.ajout, (texte) => {
       setDemande(null);
       if (texte) {
         d.dire(texte);
         // La puce change de camp sous les yeux : « manquante ici, ajoutée depuis »
-        d.setChoisie((p) => (p && p.offre === demande.cle ? { ...p, ajoutees: [...p.ajoutees, demande.competence] } : p));
+        d.marquerAjoutee(demande.ajout.cle, demande.ajout.competence);
       }
-      ouvrir(cleOffre ? 'fiche-offre' : 'fiche');
+      ouvrir(demande.sorte, demande.objet);
     })] : []),
     ...voulu(cv, d.genre === 'cv' && peu),
     ...voulu(lettre, d.genre === 'lettre' && peu),
-    ...voulu(modele, d.genre === 'spontanes' && peu && !!d.modele),
+    ...voulu(nouveauModele, d.genre === 'spontanes' && peu),
     ...voulu(reglages, peu),
   ];
-  return <Panneau onglets={onglets} />;
+  return <Panneau elements={elements} onglets={onglets} />;
 }
 
-// Fiche de fabrication : la page en grand, ce qui l'a faite, sa mise en page et ses compétences ; Supprimer, Exporter les paramètres, Télécharger
-function useOngletFiche(d: Documents, voirOffre: (cle: string) => void, ajouter: (dm: DemandeAjout) => void): Onglet | null {
-  const { ouvrir } = usePanneau();
+// Fiche de fabrication d'une pièce, une par fenêtre, avec son pied (Supprimer, Exporter les paramètres, Télécharger) pour que sa confirmation reste la sienne
+function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (dm: DemandeAjout) => void }) {
+  const { ouvrir, fermer } = usePanneau();
   const [confirmer, setConfirmer] = useState(false);
   const [occupe, setOccupe] = useState(false);
-  const p = d.choisie;
-  useEffect(() => setConfirmer(false), [p]);
-  if (!p) return null;
   const lien = `${RELAIS}/productions/${p.candidature}/${p.nature}`;
   const piece = p.nature === 'cv' ? 'CV' : 'Lettre';
   const exporter = () => {
@@ -87,8 +104,8 @@ function useOngletFiche(d: Documents, voirOffre: (cle: string) => void, ajouter:
   };
   const supprimer = async () => {
     setOccupe(true);
-    // La fiche parle d'UNE pièce : c'est elle qu'on supprime, pas ce qui reste coché dans la galerie
-    if (await d.supprimer([p])) setConfirmer(false);
+    // La fiche parle d'UNE pièce : c'est elle qu'on supprime, pas ce qui reste coché dans la galerie ; partie, sa fenêtre se ferme
+    if (await d.supprimer([p])) fermer();
     setOccupe(false);
   };
   const tirage = ([['fond_mode', 'Fond'], ['fond_accent', 'Accent'], ['fond_famille', 'Police'], ['fond_structure', 'Structure'], ['fond_secondaire', 'Secondaire'], ['fond_photo', 'Photo']] as const)
@@ -100,17 +117,14 @@ function useOngletFiche(d: Documents, voirOffre: (cle: string) => void, ajouter:
     </li>
   );
   const donne = `${STATUTS[p.statut] ?? p.statut}${p.statut === 'POSTULEE' && !p.reponse ? ' · pas encore de réponse' : ''}`;
-  return {
-    cle: 'fiche',
-    titre: `Fiche · ${court(p.entreprise || '—', 14)}`,
-    label: `Fiche de fabrication · ${p.entreprise || '—'}`,
-    corps: (
+  return (
+    <>
+      {confirmer && (
+        <Confirmer question={p.nature === 'cv' ? 'Supprimer ce CV ?' : 'Supprimer cette lettre ?'} occupe={occupe} action="Supprimer"
+          detail={p.offre_reelle ? 'Le fichier part, la candidature envoyée reste.' : "Bâti sans annonce : rien d'autre n'en dépend."}
+          onAnnuler={() => setConfirmer(false)} onConfirmer={supprimer} />
+      )}
       <div className="docs-f">
-        {confirmer && (
-          <Confirmer question={p.nature === 'cv' ? 'Supprimer ce CV ?' : 'Supprimer cette lettre ?'} occupe={occupe} action="Supprimer"
-            detail={p.offre_reelle ? 'Le fichier part, la candidature envoyée reste.' : "Bâti sans annonce : rien d'autre n'en dépend."}
-            onAnnuler={() => setConfirmer(false)} onConfirmer={supprimer} />
-        )}
         <div className="fiche">
           {p.apercu ? (
             <a href={lien} target="_blank" rel="noopener noreferrer" className="grande" title="Ouvrir le fichier">
@@ -126,7 +140,7 @@ function useOngletFiche(d: Documents, voirOffre: (cle: string) => void, ajouter:
               <li><span className="lib-champ">Poste</span><span className="d">{p.poste || '(sans intitulé)'}</span></li>
               <li><span className="lib-champ">Entreprise</span><span className="d">{p.entreprise || '—'}</span></li>
               <li><span className="lib-champ">Offre</span>{p.offre_reelle
-                ? <button type="button" className="d lien" aria-haspopup="dialog" onClick={() => voirOffre(p.offre)}>Voir la fiche de poste</button>
+                ? <button type="button" className="d lien" aria-haspopup="dialog" data-ouvre="fiche-offre" data-objet={p.offre} onClick={() => ouvrir('fiche-offre', p.offre)}>Voir la fiche de poste</button>
                 : <span className="d">aucune annonce : bâti sans lien</span>}</li>
               <li><span className="lib-champ">Profil</span><span className="d mono">{nomFichier(p.profil_chemin || p.profil) || '—'}</span></li>
               <li><span className="lib-champ">Fabriquée le</span><span className="d">{quand(p.date)}{p.fabrication_s ? ` · en ${Math.round(p.fabrication_s)} s` : ''}</span></li>
@@ -160,17 +174,15 @@ function useOngletFiche(d: Documents, voirOffre: (cle: string) => void, ajouter:
           </div>
         )}
       </div>
-    ),
-    pied: (
-      <>
+      <AuPied>
         <button type="button" className="action rouge gauche" onClick={() => setConfirmer(true)}><span className="ico">{ICONES.supprimer}</span>Supprimer</button>
         <button type="button" className="action" title="Exporter les paramètres" onClick={exporter}><span className="ico">{ICONES.exporter}</span><span className="txt">Exporter les paramètres</span></button>
         <button type="button" className="action plein" onClick={() => telecharger(`/productions/${p.candidature}/${p.nature}`).catch((e) => d.dire(message(e), true))}>
           Télécharger<span className="ico">{ICONES.telecharger}</span>
         </button>
-      </>
-    ),
-  };
+      </AuPied>
+    </>
+  );
 }
 
 // Nouveau CV et Nouvelle lettre : l'atelier de la brique, ses champs, Exécuter qui devient Arrêter, et l'état du lancement
@@ -330,23 +342,21 @@ function useOngletReglages(d: Documents, actif: boolean): Onglet {
   };
 }
 
-// Modèle de CV spontané : à qui il s'adresse, ce qu'il met en avant, sa mise en page, et les échanges avec le Constructeur
-function useOngletModele(d: Documents): Onglet {
+// Modèle de CV spontané, un par fenêtre (vierge pour « Nouveau modèle ») : à qui il s'adresse, ce qu'il met en avant, sa mise en page, les échanges avec le Constructeur ; sa saisie et son pied sont les siens
+function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents; enregistre: (nom: string) => void }) {
   const { fermer } = usePanneau();
-  const m = d.modele ?? MODELE_VIDE;
+  const [m, setM] = useState<(Modele & { original: string }) | null>(() => (depart ? { ...depart, original: depart.nom } : null));
   const [rubriques, setRubriques] = useState<[string, string[]][] | null>(null);
   const [confirmer, setConfirmer] = useState(false);
   const [batit, setBatit] = useState(false);
-  const changer = (champs: Partial<typeof m>) => d.setModele({ ...m, ...champs });
+  const base = useId();
+  const profil = m?.profil ?? '';
   useEffect(() => {
-    setConfirmer(false);
-  }, [m.original]);
-  useEffect(() => {
-    if (!m.profil) return setRubriques([]);
+    if (!profil) return setRubriques([]);
     let vivant = true;
     setRubriques(null);
     // Les compétences d'un profil comme le Constructeur les lit : par rubrique, en liste ou en texte à virgules
-    appeler<{ contenu: string }>(`/profils-candidature/${encodeURIComponent(m.profil)}`).then((r) => {
+    appeler<{ contenu: string }>(`/profils-candidature/${encodeURIComponent(profil)}`).then((r) => {
       const lues = Object.entries((JSON.parse(r.contenu)?.competences ?? {}) as Record<string, string | string[]>)
         .map(([rub, l]): [string, string[]] => [rub, (typeof l === 'string' ? l.split(',') : l ?? []).map((c) => String(c).trim()).filter(Boolean)])
         .filter(([, l]) => l.length);
@@ -360,7 +370,10 @@ function useOngletModele(d: Documents): Onglet {
     };
     // Relues quand le profil choisi change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [m.profil]);
+  }, [profil]);
+  // Supprimé ailleurs, ou jamais trouvé : la fenêtre le dit ; renommé, il est retrouvé sous son nouveau nom
+  if (!m || (m.original && !d.parametres?.cv_spontanes?.some((x) => x.nom === m.original))) return <p className="texte-f">Ce modèle n&apos;existe plus.</p>;
+  const changer = (champs: Partial<Modele>) => setM({ ...m, ...champs });
   const choisies = new Set(m.competences.map((c) => c.toLowerCase()));
   const enregistrer = async (avis = true) => {
     const nom = m.nom.trim();
@@ -374,8 +387,12 @@ function useOngletModele(d: Documents): Onglet {
     if (rang >= 0) liste[rang] = modele;
     else liste.push(modele);
     if (!await d.enregistrer({ cv_spontanes: liste }, avis ? `Modèle « ${nom} » enregistré.` : '')) return null;
-    d.setModele({ ...modele, original: nom });
+    setM({ ...modele, original: nom });
     return nom;
+  };
+  const sauver = async () => {
+    const nom = await enregistrer();
+    if (nom) enregistre(nom);
   };
   const batir = async () => {
     // Ce qui est saisi part d'abord : le serveur bâtit le modèle tel qu'il est écrit à l'écran
@@ -383,10 +400,12 @@ function useOngletModele(d: Documents): Onglet {
     if (!nom) return;
     setBatit(true);
     try {
-      const bati = await appeler<typeof m>(`/cv-spontanes/${encodeURIComponent(nom)}/batir`, { methode: 'POST' });
+      const bati = await appeler<Modele>(`/cv-spontanes/${encodeURIComponent(nom)}/batir`, { methode: 'POST' });
       d.setParametres(await appeler<Parametres>('/parametres'));
-      d.setModele({ ...bati, original: bati.nom });
+      setM({ ...bati, original: bati.nom });
       d.dire(`CV spontané « ${bati.nom} » bâti.`);
+      // Nouveau ou renommé, il ne passe à la fenêtre de son nom qu'une fois bâti, pour que « Mise en page… » reste sous les yeux
+      enregistre(bati.nom);
     } catch (e) {
       d.dire(message(e), true);
     }
@@ -406,22 +425,16 @@ function useOngletModele(d: Documents): Onglet {
     d.dire(`Profil, poste${m.constructeur ? '' : ' et palette'} envoyés au Constructeur${fond ? `, et son fond réglé sur « ${m.fond || 'tiré au sort'} »` : ''}.`);
   };
   const supprimer = async () => {
-    if (await d.enregistrer({ cv_spontanes: (d.parametres?.cv_spontanes ?? []).filter((x) => x.nom !== m.original) }, `Modèle « ${m.original} » supprimé.`)) {
-      d.setModele(null);
-      fermer();
-    }
+    if (await d.enregistrer({ cv_spontanes: (d.parametres?.cv_spontanes ?? []).filter((x) => x.nom !== m.original) }, `Modèle « ${m.original} » supprimé.`)) fermer();
   };
-  const id = (c: string) => `sp-${c}`;
-  return {
-    cle: 'spontane',
-    titre: m.original ? `Modèle ${court(m.original, 14)}` : 'Nouveau modèle',
-    label: m.original ? `Modèle de CV spontané · ${m.original}` : 'Nouveau modèle de CV spontané',
-    corps: (
-      <form className="docs-f" aria-label="Modèle de CV spontané" onSubmit={(e) => { e.preventDefault(); void enregistrer(); }}>
-        {confirmer && (
-          <Confirmer question={`Supprimer le modèle « ${m.original} » ?`} detail="Son PDF bâti n'est plus proposé aux candidatures spontanées." action="Supprimer"
-            onAnnuler={() => setConfirmer(false)} onConfirmer={() => void supprimer()} />
-        )}
+  const id = (c: string) => `${base}-${c}`;
+  return (
+    <>
+      {confirmer && (
+        <Confirmer question={`Supprimer le modèle « ${m.original} » ?`} detail="Son PDF bâti n'est plus proposé aux candidatures spontanées." action="Supprimer"
+          onAnnuler={() => setConfirmer(false)} onConfirmer={() => void supprimer()} />
+      )}
+      <form className="docs-f" aria-label="Modèle de CV spontané" onSubmit={(e) => { e.preventDefault(); void sauver(); }}>
         <div className="section-f">
           <div className="grille-2">
             <div className="champ"><label htmlFor={id('nom')}>Nom</label><input id={id('nom')} className="saisie" placeholder="ESN" value={m.nom} onChange={(e) => changer({ nom: e.target.value })} /></div>
@@ -476,16 +489,14 @@ function useOngletModele(d: Documents): Onglet {
         </div>
         <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
       </form>
-    ),
-    pied: (
-      <>
+      <AuPied>
         {m.original && <button type="button" className="action rouge gauche" onClick={() => setConfirmer(true)}><span className="ico">{ICONES.supprimer}</span>Supprimer</button>}
-        <button type="button" className="action" onClick={() => void enregistrer()}>Enregistrer</button>
+        <button type="button" className="action" onClick={() => void sauver()}>Enregistrer</button>
         <button type="button" className="action plein" disabled={batit} onClick={() => void batir()}>
           {batit ? 'Mise en page…' : m.cv ? 'Rebâtir le CV' : 'Bâtir le CV'}<span className="ico">{ICONES.fleche}</span>
         </button>
-      </>
-    ),
-  };
+      </AuPied>
+    </>
+  );
 }
 

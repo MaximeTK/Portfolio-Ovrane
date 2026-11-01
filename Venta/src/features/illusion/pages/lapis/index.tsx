@@ -71,8 +71,6 @@ export default function PageLapis({ compte }: ProprietesPage) {
   const [donnees, setDonnees] = useState<Lapis | null>(null);
   const [erreur, setErreur] = useState('');
   const [avis, setAvis] = useState<Avis>(null);
-  const [cle, setCle] = useState<string | null>(null);
-  const [urn, setUrn] = useState<string | null>(null);
   const lire = useCallback(async () => {
     try {
       setDonnees(await appeler<Lapis>('/lapis'));
@@ -87,19 +85,17 @@ export default function PageLapis({ compte }: ProprietesPage) {
   return (
     <Dock id="lapis" principal="galerie" fenetres={{ galerie: { mini: [470, 260] } }} panneau={null}>
       <Activite />
-      <Galerie donnees={donnees} erreur={erreur} avis={avis} setAvis={setAvis} setCle={setCle} urn={urn} setUrn={setUrn} />
-      <PanneauLapis admin={compte.admin} donnees={donnees} cle={cle} urn={urn} setAvis={setAvis} relire={lire} />
+      <Galerie donnees={donnees} erreur={erreur} avis={avis} setAvis={setAvis} />
+      <PanneauLapis admin={compte.admin} donnees={donnees} setAvis={setAvis} relire={lire} />
     </Dock>
   );
 }
 
-type ProprietesGalerie = {
-  donnees: Lapis | null; erreur: string; avis: Avis; setAvis: (a: Avis) => void; setCle: (c: string) => void; urn: string | null; setUrn: (u: string) => void;
-};
+type ProprietesGalerie = { donnees: Lapis | null; erreur: string; avis: Avis; setAvis: (a: Avis) => void };
 
 // La fenêtre principale : les quatre onglets de ce que LAPIS a trouvé, ce que la passe cherche, la galerie paginée
-function Galerie({ donnees, erreur, avis, setAvis, setCle, urn, setUrn }: ProprietesGalerie) {
-  const { onglet, ouvrir, fermer } = usePanneau();
+function Galerie({ donnees, erreur, avis, setAvis }: ProprietesGalerie) {
+  const { onglet, objet, ouvrir, fermer } = usePanneau();
   const [sorte, setSorte] = useState<Sorte>('personnes');
   const [page, setPage] = useState(1);
   const [taille, setTaille] = useState<number | 'auto'>('auto');
@@ -152,10 +148,7 @@ function Galerie({ donnees, erreur, avis, setAvis, setCle, urn, setUrn }: Propri
     }
     setOccupe(false);
   };
-  const ouvrirOffre = (u: string) => {
-    setUrn(u);
-    ouvrir('offre');
-  };
+  const ouvrirOffre = (u: string) => ouvrir('offre', u);
 
   const numeros = [...new Set([1, 2, 3, courante - 1, courante, courante + 1, pages - 2, pages - 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
   const libelle = SORTES.find(([s]) => s === sorte)?.[1] ?? '';
@@ -197,7 +190,7 @@ function Galerie({ donnees, erreur, avis, setAvis, setCle, urn, setUrn }: Propri
                 <Sortie href={p.profil_url}>Profil LinkedIn</Sortie>
                 {p.origine.genre === 'post' && <span className="origine" title={p.origine.texte}>Vue dans un post · <Sortie href={p.origine.url} className="" fleche={false}>voir le post</Sortie></span>}
                 {p.origine.genre === 'offre' && p.origine.cle && (
-                  <span className="origine">Cherchée pour l&apos;offre <button type="button" aria-haspopup="dialog" onClick={() => { setCle(p.origine.cle!); ouvrir('fiche-offre'); }}>{p.origine.texte}</button></span>
+                  <span className="origine">Cherchée pour l&apos;offre <button type="button" aria-haspopup="dialog" data-ouvre="fiche-offre" data-objet={p.origine.cle} onClick={() => ouvrir('fiche-offre', p.origine.cle!)}>{p.origine.texte}</button></span>
                 )}
               </div>
             </div>
@@ -206,11 +199,11 @@ function Galerie({ donnees, erreur, avis, setAvis, setCle, urn, setUrn }: Propri
         {sorte === 'offres' && (visibles as Post[]).map((o) => {
           const entreprise = o.offre.entreprise || o.entreprise;
           return (
-            <article key={o.urn} className={`personne cliquable${onglet === 'offre' && urn === o.urn ? ' ouverte' : ''}`} onClick={() => ouvrirOffre(o.urn)}>
+            <article key={o.urn} className={`personne cliquable${onglet === 'offre' && objet === o.urn ? ' ouverte' : ''}`} data-ouvre="offre" data-objet={o.urn} onClick={() => ouvrirOffre(o.urn)}>
               <div>
                 <Photo url={o.photo} nom={o.auteur} />
                 <div className="qui">
-                  <b><button type="button" className="titre-c" aria-haspopup="dialog" title={o.offre.intitule || o.resume} onClick={(e) => { e.stopPropagation(); ouvrirOffre(o.urn); }}>{o.offre.intitule || o.resume}</button></b>
+                  <b><button type="button" className="titre-c" aria-haspopup="dialog" title={o.offre.intitule || o.resume} data-ouvre="offre" data-objet={o.urn} onClick={(e) => { e.stopPropagation(); ouvrirOffre(o.urn); }}>{o.offre.intitule || o.resume}</button></b>
                   <span className="titre-p">{[entreprise, o.offre.lieu].filter(Boolean).join(' · ') || '—'}</span>
                   <span className="poste" title={[o.auteur, o.auteur_titre].filter(Boolean).join(', ')}><i>Publiée par</i> {o.auteur || '—'}</span>
                   <Sortie href={o.url}>Voir le post</Sortie>
@@ -275,14 +268,15 @@ function Galerie({ donnees, erreur, avis, setAvis, setCle, urn, setUrn }: Propri
   );
 }
 
-// Le panneau : Réglages, l'offre repérée choisie et la fiche de l'offre pour laquelle une personne a été cherchée
-function PanneauLapis({ admin, donnees, cle, urn, setAvis, relire }: {
-  admin: boolean; donnees: Lapis | null; cle: string | null; urn: string | null; setAvis: (a: Avis) => void; relire: () => Promise<void>;
-}) {
+// Le panneau : les offres repérées et les fiches des offres pour lesquelles une personne a été cherchée (une par fenêtre), puis Réglages
+function PanneauLapis({ admin, donnees, setAvis, relire }: { admin: boolean; donnees: Lapis | null; setAvis: (a: Avis) => void; relire: () => Promise<void> }) {
   const { onglet, fermer } = usePanneau();
   const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, setAvis, relire });
-  const offre = useOngletOffre(donnees?.offres.find((o) => o.urn === urn) ?? null, setAvis);
-  return <Panneau onglets={[reglages, ...(offre ? [offre] : []), ...(cle ? [ongletFicheOffre(cle)] : [])]} />;
+  const elements = {
+    offre: (urn: string) => ongletOffre(urn, donnees, setAvis),
+    'fiche-offre': (cle: string) => ongletFicheOffre(cle),
+  };
+  return <Panneau elements={elements} onglets={[reglages]} />;
 }
 
 type Formulaire = { recherches: string; postes: string; posts: string; personnes: string; employeurs: string; modele: string };
@@ -373,9 +367,33 @@ function useOngletReglages({ admin, actif, fermer, setAvis, relire }: {
 }
 
 // Offre repérée : le post qui l'annonce, de quoi chercher des contacts chez l'employeur ou la mettre dans la file ; personne n'est contacté
-function useOngletOffre(post: Post | null, setAvis: (a: Avis) => void): Onglet | null {
+function ongletOffre(urn: string, donnees: Lapis | null, setAvis: (a: Avis) => void): Onglet | null {
+  const post = donnees?.offres.find((o) => o.urn === urn);
+  // LAPIS pas encore relu (retour sur la page) : la fenêtre attend ; relu sans ce post, elle n'a plus rien à montrer
+  if (!post) return donnees ? null : { cle: 'offre', titre: 'Offre', label: 'Offre repérée', corps: <p className="texte-f">Lecture de LAPIS…</p> };
+  const o = post.offre;
+  const entreprise = o.entreprise || post.entreprise;
+  return {
+    cle: 'offre', titre: `Offre · ${entreprise || '—'}`, label: `Offre repérée · ${o.intitule || post.resume}${entreprise ? ` chez ${entreprise}` : ''}`,
+    corps: (
+      <div className="lapis-offre">
+        <div className="auteur"><Photo url={post.photo} nom={post.auteur} /><p><b>{o.intitule || '—'}</b>{[entreprise, o.lieu].filter(Boolean).join(' · ')}</p></div>
+        <p className="resume-offre">{post.resume}</p>
+        <ul className="liste-f">
+          <li>Publiée par<span className="d">{[post.auteur, post.auteur_titre].filter(Boolean).join(', ') || '—'}</span></li>
+          <li>Lue le<span className="d">{jourMois(post.lu_le)}, recherche « {post.recherche} »</span></li>
+          {o.lien && <li>Lien de l&apos;offre<Sortie href={o.lien} className="d">{o.lien.replace(/^https?:\/\//i, '')}</Sortie></li>}
+          <li>Post<Sortie href={post.url} className="d">Voir le post</Sortie></li>
+        </ul>
+      </div>
+    ),
+    pied: <PiedOffre key={urn} post={post} setAvis={setAvis} />,
+  };
+}
+
+// Les gestes d'une offre repérée, chacun occupé dans sa fenêtre le temps de son appel
+function PiedOffre({ post, setAvis }: { post: Post; setAvis: (a: Avis) => void }) {
   const [occupe, setOccupe] = useState(false);
-  if (!post) return null;
   const o = post.offre;
   const entreprise = o.entreprise || post.entreprise;
   const geste = async (faire: () => Promise<string>) => {
@@ -391,25 +409,10 @@ function useOngletOffre(post: Post | null, setAvis: (a: Avis) => void): Onglet |
     ? "LAPIS cherche des contacts chez cet employeur ; personne n'est contacté." : 'Une passe de LAPIS tourne déjà.'));
   const ajouter = () => geste(async () => ((await appeler<{ neuve: boolean }>('/offres', { methode: 'POST', corps: {
     url: o.lien, entreprise: entreprise || '', titre: o.intitule || '', lieu: o.lieu || '' } })).neuve ? 'Offre ajoutée à la file.' : 'Cette offre était déjà en base.'));
-  return {
-    cle: 'offre', titre: `Offre · ${entreprise || '—'}`, label: `Offre repérée · ${o.intitule || post.resume}${entreprise ? ` chez ${entreprise}` : ''}`,
-    corps: (
-      <div className="lapis-offre">
-        <div className="auteur"><Photo url={post.photo} nom={post.auteur} /><p><b>{o.intitule || '—'}</b>{[entreprise, o.lieu].filter(Boolean).join(' · ')}</p></div>
-        <p className="resume-offre">{post.resume}</p>
-        <ul className="liste-f">
-          <li>Publiée par<span className="d">{[post.auteur, post.auteur_titre].filter(Boolean).join(', ') || '—'}</span></li>
-          <li>Lue le<span className="d">{jourMois(post.lu_le)}, recherche « {post.recherche} »</span></li>
-          {o.lien && <li>Lien de l&apos;offre<Sortie href={o.lien} className="d">{o.lien.replace(/^https?:\/\//i, '')}</Sortie></li>}
-          <li>Post<Sortie href={post.url} className="d">Voir le post</Sortie></li>
-        </ul>
-      </div>
-    ),
-    pied: (
-      <>
-        {entreprise && <button type="button" className="action" disabled={occupe} onClick={() => void contacts()}><span className="ico">{ICONES.contacts}</span>Chercher des contacts</button>}
-        {o.lien && <button type="button" className="action plein" disabled={occupe} onClick={() => void ajouter()}>Ajouter à la file<span className="ico">{ICONES.plus}</span></button>}
-      </>
-    ),
-  };
+  return (
+    <>
+      {entreprise && <button type="button" className="action" disabled={occupe} onClick={() => void contacts()}><span className="ico">{ICONES.contacts}</span>Chercher des contacts</button>}
+      {o.lien && <button type="button" className="action plein" disabled={occupe} onClick={() => void ajouter()}>Ajouter à la file<span className="ico">{ICONES.plus}</span></button>}
+    </>
+  );
 }

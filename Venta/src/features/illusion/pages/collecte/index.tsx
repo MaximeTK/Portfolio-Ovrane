@@ -99,8 +99,6 @@ function PiedImport({ i }: { i: Import }) {
 
 export default function PageCollecte(_: ProprietesPage) {
   const { avis, dire } = useAvis();
-  const [siren, setSiren] = useState<string | null>(null);
-  const [cleOffre, setCleOffre] = useState<string | null>(null);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
   const [version, setVersion] = useState(0);
@@ -148,7 +146,7 @@ export default function PageCollecte(_: ProprietesPage) {
     <Dock id="collecte" principal="fiches" arbre={ARBRE} fenetres={{ fiches: { mini: [470, 220] } }} panneau="reglages">
       <Activite />
       <TableauFiches titre="Fiches entreprises" avis={avis} note={prochaine} version={version} selection={selection} choisir={setSelection}
-        siren={siren} ouvrirFiche={setSiren} confirmation={confirmation} annuler={() => setConfirmation(null)}
+        confirmation={confirmation} annuler={() => setConfirmation(null)}
         actions={(
           <>
             <ActionOnglet cle="reglages" libelle="Réglages" icone={ICONES.reglages} />
@@ -159,7 +157,7 @@ export default function PageCollecte(_: ProprietesPage) {
             <button type="button" className="action plein" title="Interroge Sirene selon les secteurs réglés." onClick={collecter}><span className="txt">Collecter</span>{FLECHE}</button>
           </>
         )} />
-      <PanneauFiches siren={siren} choisirSiren={setSiren} cleOffre={cleOffre} choisirOffre={setCleOffre} avant={[
+      <PanneauFiches avant={[
         { cle: 'reglages', titre: 'Réglages', label: 'Réglages · Collecte Sirene', corps: <CorpsReglages champs={CHAMPS} r={reglages} aide={prochaine} />, pied: <PiedReglages r={reglages} /> },
         { cle: 'importer', titre: 'Importer', label: 'Importer une société', corps: <CorpsImport i={imp} />, pied: <PiedImport i={imp} /> },
       ]} />

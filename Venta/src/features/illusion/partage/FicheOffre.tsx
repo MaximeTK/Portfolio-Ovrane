@@ -4,6 +4,7 @@ import '../pages/candidatures/fiche-offre.css';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { appeler, telecharger, televerser } from '../api';
 import type { Onglet } from '../dock/Panneau';
+import { aOublier } from '../stockage';
 
 // Ce que /offres/{cle}/dossier rend : l'offre, sa candidature, son courrier et ce qui pend à elle
 type Offre = {
@@ -103,6 +104,7 @@ const prevenirPages = (cle: string) => window.dispatchEvent(new CustomEvent(OFFR
 
 // Les dossiers lus, partagés par le titre, le corps et le pied de la fiche
 const dossiers = new Map<string, { dossier?: Dossier; erreur?: string }>();
+aOublier(() => dossiers.clear());
 const abonnes = new Set<() => void>();
 const abonner = (f: () => void) => {
   abonnes.add(f);
@@ -149,7 +151,7 @@ function PiedFiche({ cle, ouvrirEntreprise }: { cle: string; ouvrirEntreprise?: 
   return (
     <>
       {o.entreprise_siren && ouvrirEntreprise && (
-        <button type="button" className="action gauche" aria-haspopup="dialog" onClick={() => ouvrirEntreprise(o.entreprise_siren!)}>Voir la fiche entreprise</button>
+        <button type="button" className="action gauche" aria-haspopup="dialog" data-ouvre="fiche-entreprise" data-objet={o.entreprise_siren} onClick={() => ouvrirEntreprise(o.entreprise_siren!)}>Voir la fiche entreprise</button>
       )}
       {lien && (
         <a className="action plein" href={lien} target="_blank" rel="noopener noreferrer">

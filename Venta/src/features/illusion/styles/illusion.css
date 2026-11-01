@@ -247,6 +247,8 @@
 .ov .f-corps::-webkit-scrollbar{display:none}
 .ov .f-pied{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:22px;padding:10px 16px;border-top:1px solid rgb(255 255 255 / .1)}
 .ov .f-pied .gauche{margin-right:auto}
+/* Pied rempli par le corps (<AuPied>) : caché tant qu'il n'a rien à montrer. */
+.ov .f-pied[data-porte]:empty{display:none}
 .ov .f-coin{position:absolute;right:3px;bottom:3px;width:9px;height:9px;border-right:1px solid rgb(255 255 255 / .45);border-bottom:1px solid rgb(255 255 255 / .45);cursor:nwse-resize}
 
 /* Contenu des fenêtres : sections, champs au libellé en capitales, interrupteurs carrés. */
@@ -312,6 +314,9 @@
 .ov .panneau{min-width:0;display:flex;flex-direction:column}
 .ov .p-tete{flex:none;display:flex;align-items:center;gap:6px;height:44px;padding:0 4px 0 16px;border-bottom:1px solid rgb(255 255 255 / .1)}
 .ov .p-onglets{flex:1;min-width:0;display:flex;gap:16px;overflow:hidden}
+/* Hexagone de focus en tête de chaque fenêtre d'éléments ; le titre seul d'une fenêtre en plus ne se clique pas. */
+.ov .p-tete>.case{flex:none;margin-right:8px}
+.ov span.p-onglet{cursor:default}
 .ov .p-onglet{position:relative;display:flex;align-items:center;height:44px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;color:rgb(255 255 255 / .5);cursor:pointer;transition:color .2s}
 .ov .p-onglet:hover{color:rgb(255 255 255 / .85)}
 .ov .p-onglet.actif{color:#fff;text-shadow:0 0 6px rgb(255 255 255 / .5)}

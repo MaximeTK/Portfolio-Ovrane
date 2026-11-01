@@ -12,7 +12,7 @@ import { ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import {
   ICONES, NATURES, Nature, RATTACHEMENTS, adresseSeule, formaterDate, message, nomAffiche,
-  useOngletEcrire, useOngletEtiqueter, useOngletExecuter, useOngletFil, useOngletReglages, type Avis, type MailLu,
+  ongletFil, useOngletEcrire, useOngletEtiqueter, useOngletExecuter, useOngletReglages, type Avis, type MailLu,
 } from './panneaux';
 
 // Ce que /mails rend : la page de la boîte, son résumé et l'état de l'écoute
@@ -33,9 +33,6 @@ export default function PageMails({ compte }: ProprietesPage) {
   const [taille, setTaille] = useState<number | 'auto'>('auto');
   const [auto, setAuto] = useState(15);
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
-  const [filId, setFilId] = useState<string | null>(null);
-  const [cle, setCle] = useState<string | null>(null);
-  const [siren, setSiren] = useState<string | null>(null);
   const [avis, setAvis] = useState<Avis>(null);
   // L'API lit au moins 10 lignes ; en « auto », le défileur garde celles qui ne tiennent pas
   const adresse = `/mails?${new URLSearchParams({ ...filtres, page: String(page), taille: String(taille === 'auto' ? Math.max(10, auto) : taille) })}`;
@@ -58,10 +55,8 @@ export default function PageMails({ compte }: ProprietesPage) {
       <Activite />
       <Boite admin={compte.admin} etat={etat} erreurBoite={erreurBoite} filtres={filtres} setFiltres={(f) => { setFiltres(f); setPage(1); }}
         page={page} setPage={setPage} taille={taille} setTaille={(t) => { setTaille(t); setPage(1); }} auto={auto} setAuto={setAuto}
-        selection={selection} setSelection={setSelection} filId={filId} setFilId={setFilId} setCle={setCle} setSiren={setSiren}
-        avis={avis} setAvis={setAvis} relire={relire} />
-      <PanneauDePage admin={compte.admin} adresseBoite={etat?.adresse ?? ''} selection={selection} filId={filId}
-        cle={cle} setCle={setCle} siren={siren} setSiren={setSiren} setAvis={setAvis} relire={relireVite} setPage={setPage} />
+        selection={selection} setSelection={setSelection} avis={avis} setAvis={setAvis} relire={relire} />
+      <PanneauDePage admin={compte.admin} adresseBoite={etat?.adresse ?? ''} selection={selection} setAvis={setAvis} relire={relireVite} setPage={setPage} />
     </Dock>
   );
 }
@@ -69,12 +64,11 @@ export default function PageMails({ compte }: ProprietesPage) {
 type ProprietesBoite = {
   admin: boolean; etat: EtatBoite | null; erreurBoite: string; filtres: Filtres; setFiltres: (f: Filtres) => void;
   page: number; setPage: (p: number) => void; taille: number | 'auto'; setTaille: (t: number | 'auto') => void; auto: number; setAuto: (n: number) => void;
-  selection: Set<string>; setSelection: (s: Set<string>) => void; filId: string | null; setFilId: (id: string) => void;
-  setCle: (c: string) => void; setSiren: (s: string) => void; avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void>;
+  selection: Set<string>; setSelection: (s: Set<string>) => void; avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void>;
 };
 
-function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, filId, setFilId, setCle, setSiren, avis, setAvis, relire }: ProprietesBoite) {
-  const { onglet, ouvrir, fermer } = usePanneau();
+function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, avis, setAvis, relire }: ProprietesBoite) {
+  const { onglet, objet, ouvrir, fermer } = usePanneau();
   const [confirmation, setConfirmation] = useState<'supprimer' | 'vider' | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [menu, setMenu] = useState<'etiquette' | 'sens' | null>(null);
@@ -130,10 +124,7 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
     ids.forEach((id) => (oui ? s.add(id) : s.delete(id)));
     setSelection(s);
   };
-  const ouvrirFil = (id: string) => {
-    setFilId(id);
-    ouvrir('fil');
-  };
+  const ouvrirFil = (id: string) => ouvrir('fil', id);
   const geste = async (faire: () => Promise<Avis>) => {
     setOccupe(true);
     try {
@@ -274,9 +265,9 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
             {mails.map((m) => {
               const sortant = m.sens === 'sortant';
               const nom = sortant ? adresseSeule(m.destinataire) : nomAffiche(m.expediteur);
-              const ouverte = onglet === 'fil' && filId === m.message_id;
+              const ouverte = onglet === 'fil' && objet === m.message_id;
               return (
-                <tr key={m.message_id} className={`${selection.has(m.message_id) ? 'coche' : ''}${ouverte ? ' ouverte' : ''}`} tabIndex={0}
+                <tr key={m.message_id} className={`${selection.has(m.message_id) ? 'coche' : ''}${ouverte ? ' ouverte' : ''}`} tabIndex={0} data-ouvre="fil" data-objet={m.message_id}
                   onClick={() => ouvrirFil(m.message_id)} onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && ouvrirFil(m.message_id)}>
                   <td onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" className="case" aria-label={`Sélectionner le mail de ${nom || '—'}`} checked={selection.has(m.message_id)} onChange={(e) => cocher([m.message_id], e.target.checked)} />
@@ -290,9 +281,9 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
                   <td className="sur" onClick={(e) => e.stopPropagation()}>
                     {m.entreprise_siren || m.offre_cle ? (
                       <>
-                        {m.entreprise_siren && <button type="button" aria-haspopup="dialog" onClick={() => { setSiren(m.entreprise_siren!); ouvrir('fiche-entreprise'); }}>la fiche</button>}
+                        {m.entreprise_siren && <button type="button" aria-haspopup="dialog" data-ouvre="fiche-entreprise" data-objet={m.entreprise_siren} onClick={() => ouvrir('fiche-entreprise', m.entreprise_siren!)}>la fiche</button>}
                         {m.entreprise_siren && m.offre_cle && ' · '}
-                        {m.offre_cle && <button type="button" aria-haspopup="dialog" onClick={() => { setCle(m.offre_cle!); ouvrir('fiche-offre'); }}>l&apos;offre</button>}
+                        {m.offre_cle && <button type="button" aria-haspopup="dialog" data-ouvre="fiche-offre" data-objet={m.offre_cle} onClick={() => ouvrir('fiche-offre', m.offre_cle!)}>l&apos;offre</button>}
                       </>
                     ) : <span className="vide-c" title={RATTACHEMENTS[m.rattachement] ?? ''}>—</span>}
                   </td>
@@ -362,30 +353,25 @@ function MenuFiltre({ ouvert, basculer, fermer, lib, actif, valeur, options, cou
   );
 }
 
-type ProprietesPanneau = {
-  admin: boolean; adresseBoite: string; selection: Set<string>; filId: string | null;
-  cle: string | null; setCle: (c: string) => void; siren: string | null; setSiren: (s: string) => void;
-  setAvis: (a: Avis) => void; relire: () => void; setPage: (p: number) => void;
-};
+type ProprietesPanneau = { admin: boolean; adresseBoite: string; selection: Set<string>; setAvis: (a: Avis) => void; relire: () => void; setPage: (p: number) => void };
 
 // Les onglets du courrier ; les autres sont les outils de la boîte
 const COURRIER = ['fil', 'etiqueter', 'fiche-offre', 'fiche-entreprise'];
 
-// Le panneau, comme les planches : le courrier (fil, étiquetage, fiches, chacun avec son objet) ou les outils (Exécuter chez l'admin, Écrire, Réglages), selon l'onglet ouvert
-function PanneauDePage({ admin, adresseBoite, selection, filId, cle, setCle, siren, setSiren, setAvis, relire, setPage }: ProprietesPanneau) {
+// Le panneau : les éléments (fils et fiches, un par fenêtre), puis l'étiquetage dans le courrier ou les outils (Exécuter chez l'admin, Écrire, Réglages), selon l'onglet ouvert
+function PanneauDePage({ admin, adresseBoite, selection, setAvis, relire, setPage }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
-  const voirFiche = useCallback((s: string) => { setSiren(s); ouvrir('fiche-entreprise'); }, [setSiren, ouvrir]);
-  const voirOffre = useCallback((c: string) => { setCle(c); ouvrir('fiche-offre'); }, [setCle, ouvrir]);
-  const fil = useOngletFil({ filId, setAvis, relire, voirFiche, voirOffre, fermer });
+  const voirFiche = useCallback((s: string) => ouvrir('fiche-entreprise', s), [ouvrir]);
+  const voirOffre = useCallback((c: string) => ouvrir('fiche-offre', c), [ouvrir]);
   const etiqueter = useOngletEtiqueter({ selection, setAvis, relire, fermer });
   const ecrire = useOngletEcrire({ adresse: adresseBoite, setAvis, apres: () => { fermer(); setPage(1); relire(); } });
   const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, setAvis, relire });
   const executer = useOngletExecuter({ actif: admin && onglet === 'executer', fermer, setAvis });
-  const onglets = onglet && COURRIER.includes(onglet) ? [
-    ...(filId ? [fil] : []),
-    ...(selection.size ? [etiqueter] : []),
-    ...(cle ? [ongletFicheOffre(cle, { ouvrirEntreprise: voirFiche })] : []),
-    ...(siren ? [ongletFicheEntreprise(siren, { ouvrirOffre: voirOffre })] : []),
-  ] : [...(admin ? [executer] : []), ecrire, reglages];
-  return <Panneau onglets={onglets} />;
+  const elements = {
+    fil: (id: string) => ongletFil(id, { setAvis, relire, voirFiche, voirOffre, fermer }),
+    'fiche-offre': (c: string) => ongletFicheOffre(c, { ouvrirEntreprise: voirFiche }),
+    'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre: voirOffre }),
+  };
+  const onglets = onglet && COURRIER.includes(onglet) ? (selection.size ? [etiqueter] : []) : [...(admin ? [executer] : []), ecrire, reglages];
+  return <Panneau elements={elements} onglets={onglets} />;
 }

@@ -4,6 +4,11 @@
 @media (max-width:1366px){.ov .coquille:has(>[data-fen=metriques]){--panneau:400px}}
 @media (max-width:1300px){.ov .coquille:has(>[data-fen=metriques]){--panneau:360px}}
 @media (min-width:1700px){.ov .coquille:has(>[data-fen=metriques]){--panneau:560px}}
+/* Ses onglets (un détail, une fiche d'offre, une fiche d'entreprise) passent à la ligne plutôt que de se couper. */
+.ov .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-tete{height:auto;min-height:44px;align-items:flex-start}
+.ov .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-onglets{flex-wrap:wrap;column-gap:16px;row-gap:0}
+.ov .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-onglet{flex:none;height:42px}
+.ov .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-tete .f-btn{margin-top:7px}
 
 .ov [data-fen=metriques] .filtre .chevron,.ov [data-fen=metriques] .filtre svg{flex:none}
 .ov [data-fen=metriques] .raccourcis{display:inline-flex;margin-left:26px;padding-left:22px;border-left:1px solid rgb(255 255 255 / .14)}

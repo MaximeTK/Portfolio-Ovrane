@@ -41,7 +41,7 @@ const CHEVRON = <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stro
 const DOSSIER = <svg {...TRAIT}><path d="M3 6h6l2 2h10v11H3z" /><path d="M3 11h18" /></svg>;
 const VALIDER = <svg {...TRAIT}><path d="m5 12 5 5 9-10" /></svg>;
 
-// Les sous-fenêtres de la page, ouvertes par leur carte ou leur petite carte
+// Les détails, éléments de la page ouverts par leur carte ou leur petite carte : un par fenêtre, chacun lu par son nom
 const DETAILS: Record<string, string> = {
   couts: 'Coûts · détail', jobboards: 'Jobboards · détail', winrate: 'Winrate des profils · détail', workflows: 'Workflows · détail',
   metiers: 'Métiers et postes', fantomes: 'Offres fantômes', liens: 'Liens suivis', partage: 'Base partagée', cv: 'Mise en page des CV', appels: 'Appels · détail',
@@ -82,7 +82,7 @@ function useLignesQuiTiennent(cle: unknown) {
 }
 
 function Metriques() {
-  const { onglet, ouvrir, fermer } = usePanneau();
+  const { onglet, objet, ouvrir, fermer } = usePanneau();
   const [periode, setPeriode] = useState<Periode>(() => plage(30));
   const [raccourci, setRaccourci] = useState<number | null>(30);
   const [brouillon, setBrouillon] = useState<Periode>(periode);
@@ -94,9 +94,6 @@ function Metriques() {
   const [erreurSuivi, setErreurSuivi] = useState('');
   const [fantomes, setFantomes] = useState<Fantome[] | null>(null);
   const [erreurFantomes, setErreurFantomes] = useState('');
-  const [detail, setDetail] = useState('couts');
-  const [cle, setCle] = useState<string | null>(null);
-  const [siren, setSiren] = useState<string | null>(null);
   const [avis, setAvis] = useState<Avis>(null);
   const [range, setRange] = useState(false);
   const boutonDebut = useRef<HTMLButtonElement>(null);
@@ -203,20 +200,9 @@ function Metriques() {
     }
     setRange(false);
   };
-  const ouvrirDetail = useCallback((d: string) => {
-    setDetail(d);
-    setCle(null);
-    setSiren(null);
-    ouvrir(d);
-  }, [ouvrir]);
-  const voirOffre = (c: string) => {
-    setCle(c);
-    ouvrir('fiche-offre');
-  };
-  const voirEntreprise = (s: string) => {
-    setSiren(s);
-    ouvrir('fiche-entreprise');
-  };
+  const ouvrirDetail = useCallback((d: string) => ouvrir('detail', d), [ouvrir]);
+  const voirOffre = (c: string) => ouvrir('fiche-offre', c);
+  const voirEntreprise = (s: string) => ouvrir('fiche-entreprise', s);
 
   const corps: Record<string, React.ReactNode> = page ? {
     couts: <CorpsCouts page={page} />, jobboards: <CorpsJobboards page={page} />, winrate: <CorpsWinrate page={page} />,
@@ -224,14 +210,14 @@ function Metriques() {
     fantomes: <CorpsFantomes page={page} fantomes={fantomes} erreur={erreurFantomes} voir={voirOffre} />, liens: <CorpsLiens page={page} voir={voirOffre} />,
     partage: <CorpsPartage suivi={suivi} erreur={erreurSuivi} voir={voirOffre} />, cv: <CorpsCv page={page} />, appels: <CorpsAppels page={page} />,
   } : {};
-  const ongletDetail: Onglet = {
-    cle: detail, titre: DETAILS[detail], corps: corps[detail] ?? <p className="texte-f">Lecture des métriques…</p>,
-    pied: <button type="button" className="action" onClick={fermer}>Fermer</button>,
+  const elements = {
+    detail: (d: string): Onglet | null => (DETAILS[d] ? {
+      cle: 'detail', titre: DETAILS[d], corps: corps[d] ?? <p className="texte-f">Lecture des métriques…</p>,
+      pied: <button type="button" className="action" onClick={fermer}>Fermer</button>,
+    } : null),
+    'fiche-offre': (c: string) => ongletFicheOffre(c, { ouvrirEntreprise: voirEntreprise }),
+    'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre: voirOffre }),
   };
-  const ficheOffre = ongletFicheOffre(cle, { ouvrirEntreprise: voirEntreprise });
-  // Deux onglets au plus, la fiche et ce qui l'a ouverte : le panneau n'en tient pas trois
-  const onglets = onglet === 'fiche-entreprise' ? [ficheOffre, ongletFicheEntreprise(siren, { ouvrirOffre: voirOffre })]
-    : onglet === 'fiche-offre' ? [ongletDetail, ficheOffre] : [ongletDetail];
 
   const choixDate = (quoi: 'debut' | 'fin', lib: string) => (
     <button ref={quoi === 'debut' ? boutonDebut : boutonFin} type="button" className={`filtre${menuDate === quoi ? ' actif' : ''}`}
@@ -278,7 +264,7 @@ function Metriques() {
             </form>
           </div>
         )}
-        {page ? <Tableau page={page} suivi={suivi} erreurSuivi={erreurSuivi} onglet={onglet} ouvrir={ouvrirDetail} />
+        {page ? <Tableau page={page} suivi={suivi} erreurSuivi={erreurSuivi} ouvert={onglet === 'detail' ? objet : null} ouvrir={ouvrirDetail} />
           : <p className={`attente-m${erreur ? ' erreur' : ''}`} role={erreur ? 'alert' : 'status'}>{erreur ? `Métriques illisibles. ${erreur}` : 'Lecture des métriques…'}</p>}
         {(avis || (page && erreur)) && (
           <p className={`avis${avis?.erreur || !avis ? ' erreur' : ''}`} role={avis && !avis.erreur ? 'status' : 'alert'} onClick={() => setAvis(null)}>
@@ -286,14 +272,15 @@ function Metriques() {
           </p>
         )}
       </Fenetre>
-      <Panneau onglets={onglets} />
+      <Panneau elements={elements} onglets={[]} />
     </>
   );
 }
 
-type ProprietesTableau = { page: PageMetriques; suivi: Suivi | null; erreurSuivi: string; onglet: string | null; ouvrir: (d: string) => void };
+// `ouvert` : le détail que montre le panneau
+type ProprietesTableau = { page: PageMetriques; suivi: Suivi | null; erreurSuivi: string; ouvert: string | null; ouvrir: (d: string) => void };
 
-function Tableau({ page, suivi, erreurSuivi, onglet, ouvrir }: ProprietesTableau) {
+function Tableau({ page, suivi, erreurSuivi, ouvert, ouvrir }: ProprietesTableau) {
   const r = page.resume;
   // Rien de mesuré encore : un coût par candidature à zéro dirait qu'elles n'ont rien coûté
   const unitaire = (v: number | null) => (r.cout_total ? dollars(v) : '—');
@@ -323,14 +310,14 @@ function Tableau({ page, suivi, erreurSuivi, onglet, ouvrir }: ProprietesTableau
         ))}
       </div>
       <div className="cartes">
-        <CarteCouts page={page} ouverte={onglet === 'couts'} ouvrir={() => ouvrir('couts')} />
-        <CarteJobboards page={page} ouverte={onglet === 'jobboards'} ouvrir={() => ouvrir('jobboards')} />
-        <CarteWinrate page={page} ouverte={onglet === 'winrate'} ouvrir={() => ouvrir('winrate')} />
-        <CarteWorkflows page={page} ouverte={onglet === 'workflows'} ouvrir={() => ouvrir('workflows')} />
+        <CarteCouts page={page} ouvert={ouvert} ouvrir={ouvrir} />
+        <CarteJobboards page={page} ouvert={ouvert} ouvrir={ouvrir} />
+        <CarteWinrate page={page} ouvert={ouvert} ouvrir={ouvrir} />
+        <CarteWorkflows page={page} ouvert={ouvert} ouvrir={ouvrir} />
       </div>
       <div className="mini-cartes-m">
         {minis.map(([cle, lib, valeur, titre]) => (
-          <button key={cle} type="button" className={`mini-m${onglet === cle ? ' allume' : ''}`} aria-haspopup="dialog" title={titre} onClick={() => ouvrir(cle)}>
+          <button key={cle} type="button" className={`mini-m${ouvert === cle ? ' allume' : ''}`} aria-haspopup="dialog" title={titre} data-ouvre="detail" data-objet={cle} onClick={() => ouvrir(cle)}>
             <span className="etiquette">{lib}</span><b>{valeur}</b>
           </button>
         ))}
@@ -339,19 +326,20 @@ function Tableau({ page, suivi, erreurSuivi, onglet, ouvrir }: ProprietesTableau
   );
 }
 
-type ProprietesCarte = { page: PageMetriques; ouverte: boolean; ouvrir: () => void };
+type ProprietesCarte = { page: PageMetriques; ouvert: string | null; ouvrir: (d: string) => void };
 
-// Une carte : sa tête, son chiffre, son lien Détail ; un clic n'importe où sur elle ouvre son détail
-function Carte({ titre, d, large, ouverte, ouvrir, className, children }: {
-  titre: string; d?: string; large?: boolean; ouverte: boolean; ouvrir: () => void; className?: string; children: React.ReactNode;
+// Une carte : sa tête, son chiffre, son lien Détail ; un clic n'importe où sur elle ouvre son détail (`detail`, son nom)
+function Carte({ titre, detail, d, large, ouvert, ouvrir, className, children }: {
+  titre: string; detail: string; d?: string; large?: boolean; ouvert: string | null; ouvrir: (d: string) => void; className?: string; children: React.ReactNode;
 }) {
   return (
-    <section className={`carte${large ? ' large' : ''}${ouverte ? ' ouverte' : ''}${className ? ` ${className}` : ''}`} aria-label={titre} onClick={ouvrir}>
+    <section className={`carte${large ? ' large' : ''}${ouvert === detail ? ' ouverte' : ''}${className ? ` ${className}` : ''}`} aria-label={titre}
+      data-ouvre="detail" data-objet={detail} onClick={() => ouvrir(detail)}>
       <div className="carte-tete">
         <h3 className="etiquette">{titre}</h3>{d && <span className="d">{d}</span>}
-        <button type="button" className="detail" aria-haspopup="dialog" aria-label={`Détail : ${titre}`} onClick={(e) => {
+        <button type="button" className="detail" aria-haspopup="dialog" aria-label={`Détail : ${titre}`} data-ouvre="detail" data-objet={detail} onClick={(e) => {
           e.stopPropagation();
-          ouvrir();
+          ouvrir(detail);
         }}>Détail ›</button>
       </div>
       {children}
@@ -359,7 +347,7 @@ function Carte({ titre, d, large, ouverte, ouvrir, className, children }: {
   );
 }
 
-function CarteCouts({ page, ouverte, ouvrir }: ProprietesCarte) {
+function CarteCouts({ page, ouvert, ouvrir }: ProprietesCarte) {
   const { total, par_jour: parJour, postes } = page.couts;
   const moyenne = parJour.length ? parJour.reduce((n, j) => n + j.cout, 0) / parJour.length : 0;
   const haut = arrondi(Math.max(0, ...parJour.map((j) => j.cout)));
@@ -367,7 +355,7 @@ function CarteCouts({ page, ouverte, ouvrir }: ProprietesCarte) {
   const premier = parJour[0]?.jour ?? '';
   const dernier = parJour.at(-1)?.jour ?? '';
   return (
-    <Carte titre="Coûts" d={`${dollars(total)} · ${dollars(moyenne)} par jour`} ouverte={ouverte} ouvrir={ouvrir} className="carte-couts">
+    <Carte titre="Coûts" detail="couts" d={`${dollars(total)} · ${dollars(moyenne)} par jour`} ouvert={ouvert} ouvrir={ouvrir} className="carte-couts">
       <div className="histo">
         <span className="histo-y" aria-hidden="true"><i>{centimes(haut)}</i><i>{centimes(haut / 2)}</i><i>0</i></span>
         <div className="histo-trace">
@@ -387,11 +375,11 @@ function CarteCouts({ page, ouverte, ouvrir }: ProprietesCarte) {
   );
 }
 
-function CarteJobboards({ page, ouverte, ouvrir }: ProprietesCarte) {
+function CarteJobboards({ page, ouvert, ouvrir }: ProprietesCarte) {
   const boite = useLignesQuiTiennent(page);
   const sources = page.jobboards.filter((b) => b.offres).length;
   return (
-    <Carte titre="Jobboards" d={`${pluriel(sources, 'source')} · ${pluriel(page.resume.offres, 'offre')}`} large ouverte={ouverte} ouvrir={ouvrir}>
+    <Carte titre="Jobboards" detail="jobboards" d={`${pluriel(sources, 'source')} · ${pluriel(page.resume.offres, 'offre')}`} large ouvert={ouvert} ouvrir={ouvrir}>
       <div ref={boite} className="corps-carte">
         {page.jobboards.length ? (
           <table className="compact t-jobs">
@@ -411,11 +399,11 @@ function CarteJobboards({ page, ouverte, ouvrir }: ProprietesCarte) {
   );
 }
 
-function CarteWinrate({ page, ouverte, ouvrir }: ProprietesCarte) {
+function CarteWinrate({ page, ouvert, ouvrir }: ProprietesCarte) {
   const boite = useLignesQuiTiennent(page);
   const genres: ['cv' | 'recherche', string][] = [['cv', 'Profil de CV'], ['recherche', 'Profil de recherche']];
   return (
-    <Carte titre="Winrate des profils" ouverte={ouverte} ouvrir={ouvrir}>
+    <Carte titre="Winrate des profils" detail="winrate" ouvert={ouvert} ouvrir={ouvrir}>
       <div ref={boite} className="corps-carte">
         {page.profils.length ? genres.map(([genre, titre]) => (
           <div key={genre}>
@@ -441,11 +429,11 @@ function CarteWinrate({ page, ouverte, ouvrir }: ProprietesCarte) {
   );
 }
 
-function CarteWorkflows({ page, ouverte, ouvrir }: ProprietesCarte) {
+function CarteWorkflows({ page, ouvert, ouvrir }: ProprietesCarte) {
   const boite = useLignesQuiTiennent(page);
   const candidatures = page.workflows.reduce((n, w) => n + w.candidatures, 0);
   return (
-    <Carte titre="Workflows" d={`${pluriel(page.workflows.length, 'site')} · ${pluriel(candidatures, 'candidature')}`} large ouverte={ouverte} ouvrir={ouvrir}>
+    <Carte titre="Workflows" detail="workflows" d={`${pluriel(page.workflows.length, 'site')} · ${pluriel(candidatures, 'candidature')}`} large ouvert={ouvert} ouvrir={ouvrir}>
       <div ref={boite} className="corps-carte">
         {page.workflows.length ? (
           <table className="compact t-wf">

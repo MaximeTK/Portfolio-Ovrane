@@ -1,9 +1,9 @@
 'use client';
 
 import { LienIllusion } from '../../partage/LienIllusion';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { appeler } from '../../api';
-import type { Onglet } from '../../dock/Panneau';
+import { AuPied, type Onglet } from '../../dock/Panneau';
 import { jourMois, nomProfil } from '../../partage/FicheOffre';
 
 // Ce que /workflows/rejeu rend : le dernier passage du compte, l'étape qui attend son ordre, une étape du journal, sa fin
@@ -243,7 +243,7 @@ export function ongletVerification({ verif, erreur, occupe, valider, rejeter, fe
                     <td><span className={`src${A_VERIFIER.includes(s.source?.sorte ?? '') ? ' att' : ''}`}>{SOURCES_SAISIE[s.source?.sorte ?? ''] ?? s.source?.sorte ?? ''}</span>{s.source?.donnee && <><br /><code>{s.source.donnee}</code></>}</td>
                     <td>{s.compte} fois,<br /><span className="d">dernière {jourMois(s.dernier)}</span></td>
                     <td className="pile">
-                      <button type="button" className="btn-l" aria-haspopup="dialog" disabled={occupe} onClick={() => valider(s)}>Valider…</button>
+                      <button type="button" className="btn-l" aria-haspopup="dialog" disabled={occupe} data-ouvre="champ" data-objet={s.cle} onClick={() => valider(s)}>Valider…</button>
                       <button type="button" className="btn-l gris" disabled={occupe} onClick={() => rejeter(s)}>Rejeter</button>
                     </td>
                   </tr>
@@ -278,22 +278,21 @@ export function ongletVerification({ verif, erreur, occupe, valider, rejeter, fe
   };
 }
 
-// Champ du profil : la validation d'un signalement crée ce champ au profil de tous, ou le rend obligatoire
+type ProprietesChamp = { champs: { cle: string; libelle: string }[]; valider: (s: Signalement, champ: Champ) => Promise<void>; annuler: () => void };
+
+// Champ du profil : la validation d'un signalement crée ce champ au profil de tous, ou le rend obligatoire ; une fenêtre par signalement
+export function ongletChamp(cible: Signalement, proprietes: ProprietesChamp): Onglet {
+  return { cle: 'champ', titre: 'Champ du profil', admin: true, corps: <ChampDuProfil cible={cible} {...proprietes} />, pied: true };
+}
+
 const VIERGE = { cle: '', libelle: '', section: 'identite', type: 'text', choix: '', obligatoire: true };
-export function useOngletChamp({ cible, champs, valider, annuler }: {
-  cible: Signalement | null; champs: { cle: string; libelle: string }[]; valider: (s: Signalement, champ: Champ) => Promise<void>; annuler: () => void;
-}): Onglet {
-  const [f, setF] = useState(VIERGE);
+function ChampDuProfil({ cible, champs, valider, annuler }: ProprietesChamp & { cible: Signalement }) {
+  const id = useId();
+  // Le signalement préremplit la clé et le libellé de sa question
+  const [f, setF] = useState(() => ({ ...VIERGE, cle: cleDe(cible.question || cible.ligne), libelle: cible.question ?? '' }));
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
-  // Un nouveau signalement à valider préremplit la clé et le libellé de sa question
-  useEffect(() => {
-    if (!cible) return;
-    setF({ ...VIERGE, cle: cleDe(cible.question || cible.ligne), libelle: cible.question ?? '' });
-    setErreur('');
-  }, [cible]);
   const partir = async () => {
-    if (!cible) return;
     setOccupe(true);
     setErreur('');
     try {
@@ -307,41 +306,36 @@ export function useOngletChamp({ cible, champs, valider, annuler }: {
   const poser = (cle: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setF((v) => ({ ...v, [cle]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value }));
   const entree = (e: React.KeyboardEvent) => e.key === 'Enter' && !occupe && void partir();
-  return {
-    cle: 'champ', titre: 'Champ du profil', admin: true,
-    corps: (
-      <div className="wf-p">
-        {cible && <p className="texte-f">Valider « {cible.question || cible.ligne} » sur {cible.site}. Une clé déjà au profil le rend obligatoire ; une nouvelle l&apos;y ajoute pour tous.</p>}
-        <div className="grille-2">
-          <div className="champ"><label htmlFor="wf-cle">Clé du profil</label>
-            <input id="wf-cle" className="saisie" type="text" list="wf-cles" autoComplete="off" value={f.cle} onChange={poser('cle')} onKeyDown={entree} />
-            <datalist id="wf-cles">{champs.map((c) => <option key={c.cle} value={c.cle}>{c.libelle}</option>)}</datalist>
-          </div>
-          <div className="champ"><label htmlFor="wf-lib">Libellé</label><input id="wf-lib" className="saisie" type="text" value={f.libelle} onChange={poser('libelle')} onKeyDown={entree} /></div>
+  return (
+    <div className="wf-p">
+      <p className="texte-f">Valider « {cible.question || cible.ligne} » sur {cible.site}. Une clé déjà au profil le rend obligatoire ; une nouvelle l&apos;y ajoute pour tous.</p>
+      <div className="grille-2">
+        <div className="champ"><label htmlFor={`${id}-cle`}>Clé du profil</label>
+          <input id={`${id}-cle`} className="saisie" type="text" list={`${id}-cles`} autoComplete="off" value={f.cle} onChange={poser('cle')} onKeyDown={entree} />
+          <datalist id={`${id}-cles`}>{champs.map((c) => <option key={c.cle} value={c.cle}>{c.libelle}</option>)}</datalist>
         </div>
-        <div className="grille-2">
-          <div className="champ"><label htmlFor="wf-sec">Section</label>
-            <select id="wf-sec" className="saisie" value={f.section} onChange={poser('section')}>{Object.entries(SECTIONS_DE_CHAMP).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
-          </div>
-          <div className="champ"><label htmlFor="wf-forme">Forme</label>
-            <select id="wf-forme" className="saisie" value={f.type} onChange={poser('type')}>{Object.entries(FORMES_CHAMP).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
-          </div>
-        </div>
-        <div className="champ"><label htmlFor="wf-choix">Choix</label>
-          <input id="wf-choix" className="saisie" type="text" value={f.choix} onChange={poser('choix')} onKeyDown={entree} />
-          <p className="aide-champ">Séparés par des virgules.</p>
-        </div>
-        <label className="inter">Obligatoire<input type="checkbox" checked={f.obligatoire} onChange={poser('obligatoire')} /></label>
-        {erreur && <p className="erreur-f" role="alert">{erreur}</p>}
+        <div className="champ"><label htmlFor={`${id}-lib`}>Libellé</label><input id={`${id}-lib`} className="saisie" type="text" value={f.libelle} onChange={poser('libelle')} onKeyDown={entree} /></div>
       </div>
-    ),
-    pied: (
-      <>
-        <button type="button" className="action" onClick={annuler}>Annuler</button>
-        <button type="button" className="action plein" disabled={occupe} onClick={() => void partir()}>Valider{ico(ICONES.valider)}</button>
-      </>
-    ),
-  };
+      <div className="grille-2">
+        <div className="champ"><label htmlFor={`${id}-sec`}>Section</label>
+          <select id={`${id}-sec`} className="saisie" value={f.section} onChange={poser('section')}>{Object.entries(SECTIONS_DE_CHAMP).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
+        </div>
+        <div className="champ"><label htmlFor={`${id}-forme`}>Forme</label>
+          <select id={`${id}-forme`} className="saisie" value={f.type} onChange={poser('type')}>{Object.entries(FORMES_CHAMP).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
+        </div>
+      </div>
+      <div className="champ"><label htmlFor={`${id}-choix`}>Choix</label>
+        <input id={`${id}-choix`} className="saisie" type="text" value={f.choix} onChange={poser('choix')} onKeyDown={entree} />
+        <p className="aide-champ">Séparés par des virgules.</p>
+      </div>
+      <label className="inter">Obligatoire<input type="checkbox" checked={f.obligatoire} onChange={poser('obligatoire')} /></label>
+      {erreur && <p className="erreur-f" role="alert">{erreur}</p>}
+      <AuPied>
+          <button type="button" className="action" onClick={annuler}>Annuler</button>
+          <button type="button" className="action plein" disabled={occupe} onClick={() => void partir()}>Valider{ico(ICONES.valider)}</button>
+      </AuPied>
+    </div>
+  );
 }
 
 // Profil incomplet : le profil choisi a des champs obligatoires vides, aucun passage ne part avec lui
