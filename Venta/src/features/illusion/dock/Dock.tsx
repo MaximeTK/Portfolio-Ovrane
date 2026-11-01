@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DUREES, ecrire, effacer, mouvementReduit, voiler, type Controle } from '../partage/glyphes';
 import { aOublier } from '../stockage';
-import { DUREE_RANGEMENT, ECART, PRISES, TRANSITION, installerDock, type ArbreDepart, type DefFenetre, type Moteur, type OptionsRangement, type Zone } from './moteur';
+import { DUREE_RANGEMENT, ECART, PRISES, TRANSITION_DE, delaiDepli, dureeRepli, installerDock, type ArbreDepart, type DefFenetre, type Moteur, type OptionsRangement, type Zone } from './moteur';
 export type { Arbre, ArbreDepart, DefFenetre, Taille, Zone } from './moteur';
 
 // Tailles des fenêtres partagées et de la fenêtre principale d'une page : minimum, bande d'un bord de l'écran, premier détachement
@@ -40,7 +40,7 @@ type ContexteDock = {
   // Fenêtres visibles sur la page quittée ; null à l'arrivée dans Illusion
   avant: Record<string, boolean> | null;
   // Ce que le changement de page prévoit pour une fenêtre (et d'où elle se déplie), et l'attente des ouvertures holographiques ; rien hors d'un changement de page
-  prevue: (id: string) => { mode?: Mode; delai: number; depart?: Zone };
+  prevue: (id: string) => { mode?: Mode; delai: number; depart?: Depart };
   onglet: string | null;
   // L'objet de l'élément montré par le panneau
   objet: string | null;
@@ -63,7 +63,9 @@ const Contexte = createContext<ContexteDock | null>(null);
 type Sortant = { id: string; passage: string; vue: boolean; flot: boolean; rect: DOMRect; el: HTMLElement };
 type Sortants = { page: string; principal: string; fenetres: Sortant[] };
 // Ce que prévoit le changement de page : l'attente des ouvertures holographiques, le mode de chaque fenêtre, d'où se déplient celles qui manquaient
-type Passage = { delai: number; modes: Map<string, Mode>; departs: Map<string, Zone> };
+type Passage = { delai: number; modes: Map<string, Mode>; departs: Map<string, Depart> };
+// D'où se déplie une fenêtre qui manquait (son centre) et après combien de temps (ms)
+type Depart = { zone: Zone; retard: number };
 
 // Fenêtres visibles du dock monté : celui de la page suivante les lit au premier rendu, quand l'ancien est encore là ;
 // `sortants` : les fenêtres du dock démonté et sa page, lues par le suivant dans le même rendu
@@ -80,8 +82,8 @@ function copier(s: Sortant, calque: HTMLElement, o: DOMRect, classe: string) {
   return copie;
 }
 
-// Fenêtres de la page quittée sans place ici, copiées par-dessus la page : les détachées se referment en holographique, les rangées se replient vers leur bord
-function sortir(holo: Sortant[], organiques: [Sortant, Zone][], ov: HTMLElement) {
+// Fenêtres de la page quittée sans place ici, copiées par-dessus la page : les détachées se referment en holographique, les rangées se replient vers leur centre en leur temps
+function sortir(holo: Sortant[], organiques: [Sortant, number][], ov: HTMLElement) {
   const calque = document.createElement('div');
   calque.className = 'dock fantomes';
   calque.dataset.pret = '1';
@@ -93,11 +95,11 @@ function sortir(holo: Sortant[], organiques: [Sortant, Zone][], ov: HTMLElement)
     copie.style.setProperty('--holo-delai', `${DUREES.effacer}ms`);
     effacer(copie, { duree: DUREES.effacer });
   }
-  for (const [s, z] of organiques) {
-    const copie = copier(s, calque, o, 'replie');
+  for (const [s, duree] of organiques) {
+    const copie = copier(s, calque, o, 'replie'), r = s.rect;
     void copie.offsetWidth;
-    copie.style.transition = TRANSITION;
-    Object.assign(copie.style, { left: `${z.x - o.left}px`, top: `${z.y - o.top}px`, width: `${z.w}px`, height: `${z.h}px` });
+    copie.style.transition = TRANSITION_DE(duree);
+    Object.assign(copie.style, { left: `${r.left + r.width / 2 - o.left}px`, top: `${r.top + r.height / 2 - o.top}px`, width: '0px', height: '0px' });
   }
   window.setTimeout(() => calque.remove(), Math.max(holo.length ? DUREES.effacer + DUREES.fermer : 0, DUREE_RANGEMENT) + 60);
 }
@@ -110,7 +112,6 @@ function passer({ fenetres, principal: ancien }: Sortants, coq: HTMLElement, m: 
   const vue = (el: HTMLElement) => !el.hidden && el.dataset.fermee === undefined && getComputedStyle(el).visibility !== 'hidden';
   const recouvre = (a: DOMRect, b: DOMRect) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
   const aire = (r: DOMRect) => r.width * r.height;
-  const centre = (r: DOMRect) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
   // Deux places voisines au plus : elles se touchent, à l'écart près
   const proches = (a: DOMRect, b: DOMRect) => a.left <= b.right + ECART + 2 && b.left <= a.right + ECART + 2 && a.top <= b.bottom + ECART + 2 && b.top <= a.bottom + ECART + 2;
   // Le rôle d'une fenêtre d'une page à l'autre : la grande fenêtre, sinon son nom (le panneau, celle posée sous lui…)
@@ -120,7 +121,7 @@ function passer({ fenetres, principal: ancien }: Sortants, coq: HTMLElement, m: 
   const ici = Array.from(coq.querySelectorAll<HTMLElement>('[data-fen]')).filter(vue);
   const avant = fenetres.filter((s) => s.vue);
   const depuis: Record<string, Zone> = {};
-  const holo: Sortant[] = [], organiques: [Sortant, Zone][] = [];
+  const holo: Sortant[] = [], organiques: [Sortant, number][] = [];
   for (const s of avant.filter((x) => x.passage === 'fixe')) if (ici.some((el) => el.dataset.fen === s.id)) depuis[s.id] = zone(s.rect);
   for (const s of avant) if (s.passage !== 'fixe' && s.flot) holo.push(s);
   for (const el of ici) if (el.dataset.passage !== 'fixe' && el.dataset.flot) passage.modes.set(el.dataset.fen!, 'holo');
@@ -144,48 +145,16 @@ function passer({ fenetres, principal: ancien }: Sortants, coq: HTMLElement, m: 
   const relayees = [...relais.values()];
   // D'où vient chaque fenêtre d'ici : sa place sur la page quittée, sinon la sienne (elle s'y déplie)
   const origine = (el: HTMLElement, r: DOMRect) => relais.get(el)?.rect ?? avant.find((x) => x.passage === 'fixe' && x.id === el.dataset.fen)?.rect ?? r;
-  // Part de [min, max] que balaie un bord allant de `de` à `a`
-  const balaye = (de: number, a: number, min: number, max: number) => Math.max(0, Math.min(Math.max(de, a), max) - Math.max(Math.min(de, a), min)) / (max - min || 1);
-  // Réduite à zéro sans bouger vers le bord (le coin si les deux poussées se valent) où la poussent vx et vy ; sans poussée, vers le bord de l'écran le plus proche, seule vers son centre
-  const replie = (r: DOMRect, vx: number, vy: number, seule: boolean): Zone => {
-    const fort = Math.max(Math.abs(vx), Math.abs(vy)) * 0.6, v = fort && Math.abs(vy) >= fort ? Math.sign(vy) : 0;
-    let h = fort && Math.abs(vx) >= fort ? Math.sign(vx) : 0;
-    if (!h && !v) {
-      if (seule) return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: 0, h: 0 };
-      h = centre(r).x < c.left + c.width / 2 ? -1 : 1;
-    }
-    return { x: h > 0 ? r.right : r.left, y: v > 0 ? r.bottom : r.top, w: h ? 0 : r.width, h: v ? 0 : r.height };
-  };
-  // Une rangée sans relais se replie du côté où la poussent les bords des fenêtres qui balaient sa place
-  for (const s of rangeesAvant) {
-    if (relayees.includes(s)) continue;
-    const r = s.rect;
-    let vx = 0, vy = 0;
-    for (const { el, r: n } of posees) {
-      if (!recouvre(r, n)) continue;
-      const d = origine(el, n);
-      if (n.right > d.right) vx += balaye(d.right, n.right, r.left, r.right);
-      if (n.left < d.left) vx -= balaye(n.left, d.left, r.left, r.right);
-      if (n.bottom > d.bottom) vy += balaye(d.bottom, n.bottom, r.top, r.bottom);
-      if (n.top < d.top) vy -= balaye(n.top, d.top, r.top, r.bottom);
-    }
-    organiques.push([s, replie(r, vx, vy, rangeesAvant.length === 1)]);
-  }
-  // Une rangée qui manquait se déplie depuis le bord d'où reculent les fenêtres qui occupaient sa place ; sans elles, depuis son bord dans l'arbre
-  const donneuses = posees.flatMap(({ el, r: n }) => (origine(el, n) === n ? [] : [{ d: origine(el, n), n }]));
+  const vers = (r: DOMRect): Zone => ({ x: r.left, y: r.top, w: r.width, h: r.height });
+  // Le glissement des fenêtres d'ici venues d'ailleurs, de leur place sur la page quittée à la leur
+  const mouvements = posees.flatMap(({ el, r }) => (origine(el, r) === r ? [] : [{ el, de: vers(origine(el, r)), a: vers(r) }]));
+  // Une rangée sans relais se replie vers son centre, le plus lentement possible sans toucher celles qui prennent sa place
+  for (const s of rangeesAvant) if (!relayees.includes(s)) organiques.push([s, dureeRepli(vers(s.rect), mouvements)]);
+  // Une rangée qui manquait se déplie depuis son centre dès que celles qui occupaient sa place ne peuvent plus la toucher
   for (const { el, r } of rangeesIci) {
     if (relais.has(el)) continue;
-    let vx = 0, vy = 0;
-    for (const { d, n } of donneuses) {
-      if (!recouvre(r, d)) continue;
-      if (n.right < d.right) vx += balaye(n.right, d.right, r.left, r.right);
-      if (n.left > d.left) vx -= balaye(d.left, n.left, r.left, r.right);
-      if (n.bottom < d.bottom) vy += balaye(n.bottom, d.bottom, r.top, r.bottom);
-      if (n.top > d.top) vy -= balaye(d.top, n.top, r.top, r.bottom);
-    }
-    if (!vx && !vy) continue;
-    const z = replie(r, vx, vy, false);
-    passage.departs.set(el.dataset.fen!, { x: z.x - c.left, y: z.y - c.top, w: z.w, h: z.h });
+    const z = zone(r);
+    passage.departs.set(el.dataset.fen!, { zone: { x: z.x + z.w / 2, y: z.y + z.h / 2, w: 0, h: 0 }, retard: delaiDepli(vers(r), mouvements.filter((x) => x.el !== el)) });
   }
   if (Object.keys(depuis).length) m.ranger(true, { depuis });
   const ov = coq.closest<HTMLElement>('.ov');
@@ -480,7 +449,7 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
       if (mode === 'ecrit') {
         e.anims.push(ecrire(el.current, { duree: DUREES.contenu }));
       } else if (mode === 'organique') {
-        ranger(true, depart ? { depuis: { [id]: depart } } : { entrees: [id] });
+        ranger(true, depart ? { depuis: { [id]: depart.zone }, retards: { [id]: depart.retard } } : { entrees: [id] });
         e.anims.push(voiler(el.current, DUREE_RANGEMENT + 60));
         plus(tour, () => {
           if (!el.current) return;

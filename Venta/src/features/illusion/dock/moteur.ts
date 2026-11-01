@@ -12,7 +12,57 @@ export type ArbreDepart = Arbre | ((zone: Zone, style: CSSStyleDeclaration) => A
 export const ECART = 16, SEUIL = 6, BORD = 26, MARGE = 0.3, ARMEMENT = 450, IMMOBILE = 10;
 // Glissement des fenêtres vers leur place, le même que celui de la feuille de style (0,3 s)
 export const DUREE_RANGEMENT = 300;
-export const TRANSITION = ['left', 'top', 'width', 'height'].map((p) => `${p} ${DUREE_RANGEMENT}ms cubic-bezier(.2,.8,.2,1)`).join(',');
+export const TRANSITION_DE = (duree: number, delai = 0) => ['left', 'top', 'width', 'height'].map((p) => `${p} ${Math.round(duree)}ms cubic-bezier(.2,.8,.2,1) ${Math.round(delai)}ms`).join(',');
+export const TRANSITION = TRANSITION_DE(DUREE_RANGEMENT);
+
+// Avancée du glissement (0 à 1) à la fraction u de sa durée, sur la courbe cubic-bezier(.2,.8,.2,1)
+function courbe(u: number) {
+  const b = (t: number, p1: number, p2: number) => 3 * (1 - t) * (1 - t) * t * p1 + 3 * (1 - t) * t * t * p2 + t * t * t;
+  let bas = 0, haut = 1;
+  for (let k = 0; k < 20; k++) {
+    const m = (bas + haut) / 2;
+    if (b(m, 0.2, 0.2) < u) bas = m;
+    else haut = m;
+  }
+  return b((bas + haut) / 2, 0.8, 1);
+}
+// Une fenêtre qui glisse de `de` à `a` pendant DUREE_RANGEMENT
+export type Mouvement = { de: Zone; a: Zone };
+const entre = (de: Zone, a: Zone, p: number): Zone => ({ x: de.x + (a.x - de.x) * p, y: de.y + (a.y - de.y) * p, w: de.w + (a.w - de.w) * p, h: de.h + (a.h - de.h) * p });
+const touche = (a: Zone, b: Zone) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.5 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.5;
+export const centre = (r: Zone): Zone => ({ x: r.x + r.w / 2, y: r.y + r.h / 2, w: 0, h: 0 });
+// Vrai si `r`, repliée vers son centre ou dépliée depuis lui pendant `duree` après `delai`, ne touche à aucun instant celles qui glissent
+function libre(r: Zone, repli: boolean, delai: number, duree: number, autres: Mouvement[]) {
+  for (let k = 1; k < 40; k++) {
+    const t = (DUREE_RANGEMENT * k) / 40;
+    if (t <= delai) continue;
+    const p = courbe(Math.min(1, (t - delai) / duree)), moi = repli ? entre(r, centre(r), p) : entre(centre(r), r, p);
+    if (autres.some((m) => touche(moi, entre(m.de, m.a, courbe(t / DUREE_RANGEMENT))))) return false;
+  }
+  return true;
+}
+// Repli vers son centre le plus lent qui ne touche jamais celles qui prennent sa place : ni trop tôt, ni trop tard
+export function dureeRepli(r: Zone, autres: Mouvement[]) {
+  if (libre(r, true, 0, DUREE_RANGEMENT, autres)) return DUREE_RANGEMENT;
+  let bas = 40, haut = DUREE_RANGEMENT;
+  for (let k = 0; k < 10; k++) {
+    const m = (bas + haut) / 2;
+    if (libre(r, true, 0, m, autres)) bas = m;
+    else haut = m;
+  }
+  return bas;
+}
+// Dépli depuis son centre le plus tôt possible sans jamais toucher celles qui lui laissent la place : il finit avec elles
+export function delaiDepli(r: Zone, autres: Mouvement[]) {
+  if (libre(r, false, 0, DUREE_RANGEMENT, autres)) return 0;
+  let bas = 0, haut = DUREE_RANGEMENT - 40;
+  for (let k = 0; k < 10; k++) {
+    const m = (bas + haut) / 2;
+    if (libre(r, false, m, DUREE_RANGEMENT - m, autres)) haut = m;
+    else bas = m;
+  }
+  return haut;
+}
 const MINI_DEFAUT: Taille = [200, 160];
 const PREF_DEFAUT: Taille = [400, 300];
 // Têtes qui servent de prise, en plus de la rangée de points
@@ -50,9 +100,9 @@ export type OptionsDock = {
   // Fenêtres d'éléments : hors de l'arbre, elles prennent la place logique (voir `placerElement`) ; retirées de la page, elles le quittent
   elements?: (id: string) => boolean;
 };
-// Fenêtres qui se déplient depuis leur bord, ou celle qui se replie vers le sien, pendant que les autres prennent ou rendent la place ;
-// `depuis` : fenêtres gardées d'une page à l'autre, qui glissent de leur place sur la page quittée jusqu'à la leur
-export type OptionsRangement = { entrees?: string[]; sortie?: string; depuis?: Record<string, Zone> };
+// Fenêtres qui se déplient depuis leur centre, ou celle qui se replie vers le sien, pendant que les autres prennent ou rendent la place ;
+// `depuis` : fenêtres gardées d'une page à l'autre, qui glissent de leur place sur la page quittée jusqu'à la leur, après leur `retard` (ms)
+export type OptionsRangement = { entrees?: string[]; sortie?: string; depuis?: Record<string, Zone>; retards?: Record<string, number> };
 export type Moteur = { ranger: (anime: boolean, options?: OptionsRangement) => void; detruire: () => void };
 
 const feuille = (n: Arbre): n is Feuille => (n as Feuille).id !== undefined;
@@ -358,38 +408,17 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     });
   }
 
-  // Fenêtre repliée sans bouger, réduite à zéro vers un de ses bords : celui du bout de son partage, au milieu celui qu'atteint la fenêtre principale ; seule ou flottante, son centre
-  function pli(id: string, r: Zone): Zone {
-    const trouve: { dir: 'row' | 'col' | null; place: number } = { dir: null, place: 0 };
-    // Le partage le plus profond où elle a des voisines visibles
-    const rec = (n: Arbre) => {
-      if (feuille(n)) return;
-      const vis = n.enfants.filter(visible), i = vis.findIndex((c) => ids(c).includes(id));
-      if (i < 0) return;
-      if (vis.length > 1) {
-        const jp = vis.findIndex((c) => ids(c).includes(o.principal()));
-        trouve.dir = n.dir;
-        trouve.place = i === 0 ? -1 : i === vis.length - 1 ? 1 : jp >= 0 && jp < i ? 1 : -1;
-      }
-      rec(vis[i]);
-    };
-    if (memoire.racine && etat(id).flot === null) rec(memoire.racine);
-    if (trouve.dir === 'row') return { x: trouve.place > 0 ? r.x + r.w : r.x, y: r.y, w: 0, h: r.h };
-    if (trouve.dir === 'col') return { x: r.x, y: trouve.place > 0 ? r.y + r.h : r.y, w: r.w, h: 0 };
-    return { x: r.x + r.w / 2, y: r.y + r.h / 2, w: 0, h: 0 };
-  }
-
   let base: Calcul = { res: {}, fentes: [] };
   // Fin du dernier glissement lancé : un rangement sans animation demandé d'ici là (taille de la page relue) ne le coupe pas
   let finGlisse = 0;
   const glisses = new Map<HTMLElement, number>();
   // Le glissement porté par la fenêtre elle-même : il vaut aussi pour une flottante, qui n'en a pas d'ordinaire
-  const glisser = (el: HTMLElement) => {
-    el.style.transition = TRANSITION;
+  const glisser = (el: HTMLElement, duree = DUREE_RANGEMENT, delai = 0) => {
+    el.style.transition = TRANSITION_DE(duree, delai);
     clearTimeout(glisses.get(el));
-    glisses.set(el, window.setTimeout(() => { el.style.transition = ''; glisses.delete(el); }, DUREE_RANGEMENT + 60));
+    glisses.set(el, window.setTimeout(() => { el.style.transition = ''; glisses.delete(el); }, delai + duree + 60));
   };
-  const ranger = (anime: boolean, { entrees = [], sortie, depuis = {} }: OptionsRangement = {}) => {
+  const ranger = (anime: boolean, { entrees = [], sortie, depuis = {}, retards = {} }: OptionsRangement = {}) => {
     scanner();
     const sans = !anime && performance.now() > finGlisse;
     if (sans) ov.classList.add('sans-anim');
@@ -399,29 +428,35 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       ov.classList.remove('sans-anim');
     }
     if (anime && (entrees.length || sortie || Object.keys(depuis).length)) finGlisse = performance.now() + DUREE_RANGEMENT + 60;
-    // Celle qui sort se replie depuis sa place, pendant que les autres la prennent
+    // Celle qui sort se replie vers son centre pendant que les autres prennent sa place
     const elSortie = sortie ? els[sortie] : null;
+    let repli: Zone | null = null;
     if (sortie && elSortie && !sorties.has(sortie) && getComputedStyle(elSortie).display !== 'none') {
-      const r = etat(sortie).flot ?? base.res[sortie];
-      if (r) {
-        const p = pli(sortie, r);
-        glisser(elSortie);
-        placer(elSortie, p);
-      }
+      repli = etat(sortie).flot ?? base.res[sortie] ?? null;
       sorties.add(sortie);
     }
-    // Celle qui revient pendant qu'elle se repliait repart de là où elle en est ; une nouvelle part de son point replié
+    // Celle qui revient pendant qu'elle se repliait repart de là où elle en est ; une nouvelle part de son centre
     const revenues = entrees.filter((id) => sorties.delete(id));
+    const avant = base;
     base = calculer(memoire.racine);
+    // Le glissement des autres fenêtres rangées, de leur place d'avant à la nouvelle
+    const mouvements = (sauf: string): Mouvement[] => Object.keys(base.res)
+      .flatMap((id) => (id !== sauf && avant.res[id] && etat(id).flot === null ? [{ de: avant.res[id], a: base.res[id] }] : []));
+    if (sortie && elSortie && repli) {
+      glisser(elSortie, dureeRepli(repli, mouvements(sortie)));
+      placer(elSortie, centre(repli));
+    }
     for (const id of entrees) {
       const el = els[id], r = el && (etat(id).flot ?? base.res[id]);
       if (!el || !r || !anime) continue;
-      if (!revenues.includes(id)) {
+      const revient = revenues.includes(id);
+      if (!revient) {
         el.style.transition = 'none';
-        placer(el, pli(id, r));
+        placer(el, centre(r));
         void el.offsetWidth;
       }
-      glisser(el);
+      const delai = revient || etat(id).flot ? 0 : delaiDepli(r, mouvements(id));
+      glisser(el, DUREE_RANGEMENT - delai, delai);
       if (etat(id).flot) poser(el, r);
     }
     // Gardée d'une page à l'autre : elle repart de sa place d'avant, rangée ou détachée comme on l'a laissée ici
@@ -431,7 +466,8 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       el.style.transition = 'none';
       placer(el, depuis[id]);
       void el.offsetWidth;
-      glisser(el);
+      const retard = retards[id] ?? 0;
+      glisser(el, DUREE_RANGEMENT - retard, retard);
       if (etat(id).flot) poser(el, r);
     }
     appliquer(base, null, !action);
