@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { appeler } from '../../api';
+import { aOublier } from '../../stockage';
 
 // RUBY en direct : l'audio ne quitte le navigateur que vers AssemblyAI.
 
@@ -82,6 +83,17 @@ function arreterFlux() {
   void enCours.contexte?.close();
   enCours.contexte = null;
 }
+
+// Déconnexion : micro et flux coupés, l'appel reste à clore côté serveur.
+aOublier(() => {
+  clearInterval(enCours.minuteur);
+  for (const piste of enCours.pistes) piste.ws.close(1000);
+  arreterFlux();
+  window.removeEventListener('beforeunload', retenir);
+  enCours.aEnvoyer.clear();
+  Object.assign(enCours, { appel: null, pistes: [], debut: 0, fin: false });
+  changer({ debut: 0, cloture: false, analyse: null, avis: null });
+});
 
 export async function demarrer(demande: { mode: Mode; offre_cle: string; titre: string }) {
   try {
@@ -192,7 +204,7 @@ async function envoyerTours() {
         await appeler(`/appels/${enCours.appel.id}/segments`, { methode: 'POST', corps: { segments } });
       } catch {
         // Un envoi raté repart au suivant ; la transcription reste dans la page.
-        for (const cle of cles) enCours.aEnvoyer.add(cle);
+        if (enCours.appel) for (const cle of cles) enCours.aEnvoyer.add(cle);
         break;
       }
     }
@@ -219,6 +231,8 @@ export async function terminer(): Promise<number | null> {
   // L'envoi en cours d'abord : clore avant perdrait ses derniers tours.
   while (enCours.envoi) await attendre(100);
   await envoyerTours();
+  // Déconnecté pendant la clôture : ce numéro n'est plus celui de ce compte.
+  if (enCours.appel !== appel) return null;
   let avis: Avis = null;
   if (enCours.aEnvoyer.size) {
     avis = { texte: `${enCours.aEnvoyer.size} tour(s) de parole n'ont pas pu être enregistrés.`, erreur: true };
