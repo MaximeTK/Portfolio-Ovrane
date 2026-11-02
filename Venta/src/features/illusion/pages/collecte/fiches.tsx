@@ -23,7 +23,6 @@ export const ICONES = {
   actualiser: <svg {...TRAIT}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
   croix: <svg {...TRAIT} strokeWidth={2.4}><path d="M6 6l12 12M18 6 6 18" /></svg>,
 };
-const CHEVRON = ICONES_COMMUNES.chevron;
 const BARRES = <span className="barres vivant" aria-hidden="true"><i /><i /><i /><i /></span>;
 export const FLECHE = <span className="ico">{ICONES.fleche}</span>;
 
@@ -72,7 +71,7 @@ function MenuFiltre({ lib, affiche, choix, valeur, choisir }: { lib: string; aff
   return (
     <div ref={hote} className="menu-hote">
       <button type="button" className={`filtre${valeur ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
-        <span><span className="lib">{lib}</span>{affiche}</span>{CHEVRON}
+        <span><span className="lib">{lib}</span>{affiche}</span>{ICONES.chevron}
       </button>
       {ouvert && (
         <div className="menu verre" role="listbox" aria-label={lib}>

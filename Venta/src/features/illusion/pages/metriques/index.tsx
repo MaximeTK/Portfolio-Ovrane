@@ -36,7 +36,6 @@ const arrondi = (v: number) => {
 };
 const centimes = (v: number) => `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`;
 
-const CHEVRON = ICONES_COMMUNES.chevron;
 const DOSSIER = <svg {...TRAIT}><path d="M3 6h6l2 2h10v11H3z" /><path d="M3 11h18" /></svg>;
 const VALIDER = <svg {...TRAIT}><path d="m5 12 5 5 9-10" /></svg>;
 
@@ -222,7 +221,7 @@ function Metriques() {
         setBrouillon(periode);
         setMenuDate((m) => (m === quoi ? null : quoi));
       }}>
-      <span><span className="lib">{lib}</span>{enClair(periode[quoi])}</span>{CHEVRON}
+      <span><span className="lib">{lib}</span>{enClair(periode[quoi])}</span>{ICONES_COMMUNES.chevron}
     </button>
   );
 
