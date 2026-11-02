@@ -27,7 +27,7 @@ function enTetes(request: Source): Record<string, string> | null {
   const secret = process.env.SERVICE_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-ovrane-service');
   if (!secret) return null;
   const h = request.headers;
-  const ip = h.get('x-forwarded-for')?.split(',')[0].trim() || h.get('x-real-ip');
+  const ip = h.get('x-forwarded-for')?.split(',').at(-1)?.trim() || h.get('x-real-ip');
   const session = request.cookies.get(SESSION_COOKIE)?.value;
   const appareil = request.cookies.get(APPAREIL_COOKIE)?.value;
   return {
