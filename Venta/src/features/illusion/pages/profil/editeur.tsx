@@ -121,7 +121,7 @@ function sansVidesInedits(edite: Profil, base: Profil) {
 const FORMES: Record<string, Forme> = { text: 'text', texte_long: 'texte_long', nombre: 'nombre', choix: 'choix', liste: 'liste', email: 'email', lieu: 'lieu' };
 
 // Champs d'une section : les siens, puis ceux que la correction y a ajoutés
-export function champsDe(section: string, champs: Champ[], schema: ChampSchema[]): Champ[] {
+function champsDe(section: string, champs: Champ[], schema: ChampSchema[]): Champ[] {
   const ajoutes: Champ[] = schema.filter((c) => c.section === section && !champs.some((x) => x.cle === c.cle))
     .map((c) => ({ cle: c.cle, libelle: c.libelle, type: FORMES[c.type] ?? 'text', choix: c.choix, portee: 'commune', large: c.type === 'texte_long' }));
   return [...champs, ...ajoutes].map((c) => ({ ...c, obligatoire: schema.some((s) => s.cle === c.cle && s.obligatoire) }));
@@ -150,7 +150,7 @@ function initial(origine: Profil, schema: ChampSchema[], gen: number): Saisie {
   };
 }
 
-export type Editeur = ReturnType<typeof useEditeur>;
+type Editeur = ReturnType<typeof useEditeur>;
 
 // L'état d'un éditeur de profil, reposé quand le profil ou le schéma changent
 export function useEditeur(origine: Profil, schema: ChampSchema[]) {

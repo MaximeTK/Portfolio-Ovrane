@@ -26,7 +26,7 @@ type MessageFlux = {
   words?: { start: number; end: number }[]; revisions?: { turn_order: number; speaker_label: string }[]; session_duration_seconds?: number;
 };
 
-export type EtatDirect = {
+type EtatDirect = {
   appel: AppelOuvert | null;
   // Début de l'appel, en millisecondes de l'horloge du navigateur
   debut: number;

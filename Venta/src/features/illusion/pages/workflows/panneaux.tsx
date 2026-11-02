@@ -29,7 +29,7 @@ const sansProtocole = (u?: string) => (u ?? '').replace(/^https?:\/\//i, '');
 const SORTES: Record<string, string> = { rejouer: 'Rejeu sans IA', corriger: "Rejeu avec l'IA en repli", refaire: "Refonte par l'IA" };
 const CONCLUSIONS: Record<string, string> = { fusionner: 'fusionné à celui en base', remplacer: 'mis à la place de celui en base', annuler: 'annulé' };
 // D'où vient une valeur saisie ; déduite ou inventée, elle demande l'attention
-export const SOURCES_SAISIE: Record<string, string> = {
+const SOURCES_SAISIE: Record<string, string> = {
   exacte: 'de la fiche', deduite: 'déduite', inventee: 'inventée', offre: "propre à l'offre", cv: "CV de l'offre", lettre: "lettre de l'offre",
   fixe: 'case', coffre: 'coffre', modele: "écrite par l'IA", non_declaree: 'non déclarée',
 };

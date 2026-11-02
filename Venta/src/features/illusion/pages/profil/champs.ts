@@ -16,9 +16,9 @@ export type Champ = {
 };
 
 // Réponse neutre à une question sensible, rendue par « Prefer not to say »
-export const SANS_REPONSE = 'Je préfère ne pas répondre';
+const SANS_REPONSE = 'Je préfère ne pas répondre';
 
-export const CHAMPS_IDENTITE: Champ[] = [
+const CHAMPS_IDENTITE: Champ[] = [
   { cle: 'civilite', libelle: 'Civilité', type: 'choix', choix: ['Madame', 'Monsieur'] },
   { cle: 'prenom', libelle: 'Prénom', exemple: 'Prénom' },
   { cle: 'nom', libelle: 'Nom', repli: 'identite.nom', exemple: 'Nom' },
@@ -41,7 +41,7 @@ export const CHAMPS_IDENTITE: Champ[] = [
   { cle: 'portfolio', libelle: 'Portfolio', repli: 'identite.site' },
 ];
 
-export const CHAMPS_PRESENTATION: Champ[] = [
+const CHAMPS_PRESENTATION: Champ[] = [
   { cle: 'annees_experience', libelle: "Années d'expérience", type: 'nombre' },
   { cle: 'niveaux de diplomes', libelle: 'Niveau de diplôme', exemple: 'Bac +5' },
   { cle: 'motivation', libelle: 'Accroche', type: 'texte_long', repli: 'accroche_par_defaut', large: true,
@@ -49,7 +49,7 @@ export const CHAMPS_PRESENTATION: Champ[] = [
 ];
 
 // Ce qu'un formulaire d'embauche demande et qu'aucun CV n'imprime
-export const CHAMPS_SITUATION: Champ[] = [
+const CHAMPS_SITUATION: Champ[] = [
   { cle: 'disponibilite', libelle: 'Disponibilité', exemple: 'Immédiate, ou 01/12/2026' },
   { cle: 'preavis', libelle: 'Préavis', exemple: '1 mois, négociable' },
   { cle: 'autorisation_travail', libelle: 'Autorisé(e) à travailler en', type: 'liste', exemple: 'France, Union européenne' },
@@ -64,7 +64,7 @@ export const CHAMPS_SITUATION: Champ[] = [
 ];
 
 // Salaire en chiffres : un formulaire veut un nombre, une lettre une phrase
-export const CHAMPS_REMUNERATION: Champ[] = [
+const CHAMPS_REMUNERATION: Champ[] = [
   { cle: 'salaire_actuel', libelle: 'Salaire actuel', type: 'nombre', exemple: '34000' },
   { cle: 'salaire_minimum', libelle: 'Salaire minimum', type: 'nombre', exemple: '36000' },
   { cle: 'salaire_cible', libelle: 'Salaire visé', type: 'nombre', exemple: '40000' },
@@ -73,7 +73,7 @@ export const CHAMPS_REMUNERATION: Champ[] = [
   { cle: 'pretentions', libelle: 'Prétentions, en clair', exemple: '38–42 k€ brut annuel', large: true },
 ];
 
-export const CHAMPS_REPONSES_FIXES: Champ[] = [
+const CHAMPS_REPONSES_FIXES: Champ[] = [
   { cle: 'source_par_defaut', libelle: '« Comment nous avez-vous connus ? »', exemple: 'LinkedIn', large: true },
   { cle: 'consentement_autres_offres', libelle: "Être contacté(e) pour d'autres offres", type: 'choix', choix: ['oui', 'non'], large: true },
   { cle: 'consentement_ia', libelle: "Accepter l'IA dans le recrutement", type: 'choix', choix: ['oui', 'non'], large: true },
@@ -81,7 +81,7 @@ export const CHAMPS_REPONSES_FIXES: Champ[] = [
 ];
 
 // Matière des lettres et questions ouvertes : ce que veut le candidat
-export const CHAMPS_MOTIVATIONS: Champ[] = [
+const CHAMPS_MOTIVATIONS: Champ[] = [
   { cle: 'projet_professionnel', libelle: 'Projet professionnel', type: 'texte_long', large: true, exemple: 'Deux ou trois phrases : où vous allez, et pourquoi.' },
   { cle: 'motivation_esn', libelle: 'Pourquoi une ESN', type: 'texte_long', large: true },
   { cle: 'motivation_startup', libelle: 'Pourquoi une start-up', type: 'texte_long', large: true },

@@ -110,7 +110,7 @@ function Offres({ admin }: { admin: boolean }) {
   const page = Math.floor(debut / lignes) + 1;
   const setPage = (n: number) => setDebut((n - 1) * lignes);
 
-  // File et écartées chacune sa lecture : un clic de page ne relit que la montrée
+  // Deux lectures : un clic de page ne relit que la liste montrée
   const adresseFile = `/candidatures?${new URLSearchParams({ etape: motif ? '' : choisie.cle, page: String(motif ? 1 : page), taille: String(lignes), ...groupe })}`;
   const adresseEcartees = `/vues/offres/ecartees?${new URLSearchParams({ motif: motif ?? '', page: String(motif ? page : 1), taille: String(lignes) })}`;
   useEffect(() => {

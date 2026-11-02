@@ -42,7 +42,7 @@ const GENRES: { cle: Genre; libelle: string }[] = [{ cle: 'cv', libelle: 'CV' },
 const ESSAIS = [{ cle: '', libelle: 'Tous' }, { cle: 'non', libelle: 'Sans les essais' }, { cle: 'oui', libelle: 'Essais seuls' }];
 const FORMULAIRE_VIDE: Formulaire = { offre: '', entreprise: '', poste: '', profil: '', palette: [], langue: 'fr', deja_postule: false, essai: false, silencieux: true };
 export const MODELE_VIDE = { nom: '', destination: '', profil: '', poste: '', competences: [], constructeur: true, fond: '', palette: [], cv: '', original: '' };
-export const clePiece = (p: Production) => `${p.candidature}:${p.nature}`;
+const clePiece = (p: Production) => `${p.candidature}:${p.nature}`;
 export const sansJson = (nom: string) => nom.replace(/\.json$/i, '');
 export const nomFichier = (chemin: string) => String(chemin || '').split(/[\\/]/).pop() ?? '';
 // « 28/10 14:02 » à l'heure du poste ; une date sans fuseau est en UTC

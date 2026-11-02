@@ -26,7 +26,7 @@ export const versBrouillon = (m: Modele): Brouillon => ({
 export const nomCourt = (fournisseurs: Record<string, Fournisseur>, cle: string) => (fournisseurs[cle]?.nom ?? cle).replace(/\s*\(.*\)$/, '') || '—';
 
 // Ce que l'effacement emporte, dans l'ordre où on le lit
-export const CE_QUI_PART: [string, string, string][] = [
+const CE_QUI_PART: [string, string, string][] = [
   ['fiches', 'Fiches entreprises suivies', 'tes notes et tes écarts ; la fiche commune et son audit restent dans la base partagée'],
   ['offres', 'Offres en base', 'la file à postuler comprise'],
   ['candidatures', 'Candidatures', 'le registre de ce qui a été envoyé'],

@@ -8,7 +8,7 @@ import { dateUtc } from '../../partage/FicheOffre';
 import { aOublier, repris, useGarder } from '../../stockage';
 import { useParametresOuverts, ICONES_COMMUNES, TRAIT, message, duree, type Avis } from '../commun';
 
-export type PieceJointe = { nom: string; type: string; taille: number; telechargeable: boolean };
+type PieceJointe = { nom: string; type: string; taille: number; telechargeable: boolean };
 // Un mail tel que /mails et /mails/fil le rendent
 export type MailLu = {
   message_id: string; sens: string; recu_le: string; expediteur: string; destinataire: string; sujet: string; corps: string;

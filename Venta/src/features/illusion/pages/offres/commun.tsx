@@ -16,7 +16,7 @@ type EtatVeille = {
   prochain_dans: number | null; cycle: Cycle; stock: { offres: number };
 };
 export type Plateforme = { nom: string; actif: boolean };
-export type ProfilVeille = { nom: string; langue: string; actif: boolean; plateformes: Plateforme[]; depuis_jours: number; par_source: number; max_fiches: number; titre_exact: boolean };
+type ProfilVeille = { nom: string; langue: string; actif: boolean; plateformes: Plateforme[]; depuis_jours: number; par_source: number; max_fiches: number; titre_exact: boolean };
 export type ProfilRecherche = { nom: string; actif: boolean; langue: string; mots_cles: string[]; mots_bannis: string[]; departements: string[]; profils_candidature: string[] };
 export type Jobboard = { url: string; nom: string; actif: boolean; veille: boolean; siren: string };
 export type Parametres = {

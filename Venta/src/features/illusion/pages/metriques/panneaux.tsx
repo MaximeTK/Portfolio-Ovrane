@@ -31,7 +31,7 @@ export type PageMetriques = {
   appels: { nombre: number; duree_s: number; cout_transcription: number; cout_analyse: number;
     liste: { id: number; titre: string; debut: string; duree_s: number; analyse: boolean; cout: number }[] };
 };
-export type Visite = { cible: string; date: string; robot: boolean };
+type Visite = { cible: string; date: string; robot: boolean };
 export type Suivi = { branchee: boolean; candidatures: { jeton: string; titre: string; entreprise: string; envoyee_le: string; cv: boolean; visites: Visite[]; offre_cle: string }[] };
 export type Fantome = { cle: string; entreprise: string; titre: string; source: string; republiee: number; creee_le: string; statut: string };
 
@@ -62,7 +62,7 @@ export const jourMoisIso = (iso: string) => (iso ? `${iso.slice(8, 10)}/${iso.sl
 export const winrate = (b?: Bilan) => (b && b.envoyees ? `${b.entretiens}/${b.envoyees} · ${pourcent(b.taux_entretien)}` : '—');
 const sur = (n: number, taux: number | null) => `${nombre(n)} · ${pourcent(taux)}`;
 
-export function periodeTexte(p: { debut: string; fin: string }) {
+function periodeTexte(p: { debut: string; fin: string }) {
   if (!p.debut && !p.fin) return "Sur tout l'historique";
   if (!p.debut) return `Jusqu'au ${jourMoisIso(p.fin)}`;
   if (!p.fin) return `Depuis le ${jourMoisIso(p.debut)}`;
