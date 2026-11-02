@@ -143,7 +143,7 @@ function Offres({ admin }: { admin: boolean }) {
   }, [dire, lireProfils]);
 
   // Une passe qui finit, un stock ou une fiche qui change : la file se relit
-  const signature = etat ? `${etat.en_cours}|${etat.stock.offres}` : '';
+  const signature = etat ? `${etat.en_cours}|${etat.tri_en_cours}|${etat.stock.offres}` : '';
   const vue = useRef(signature);
   useEffect(() => {
     if (vue.current && signature && vue.current !== signature) recharger();
