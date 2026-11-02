@@ -20,12 +20,9 @@ export function setupTTSRoutes(app, openai) {
       if (typeof text !== 'string' || !text) return sendError(res, 400, ERROR_MESSAGES.ttsTextRequired);
       if (text.length > MAX_TEXTE) return sendError(res, 413, ERROR_MESSAGES.ttsTextTooLong);
 
-      // Seul un passage d'un texte signé part chez un fournisseur de voix
-      if (!voixPermise(text, source, voix)) return res.json({ useClientTTS: true, text });
-      // Plafond de voix atteint : la voix du navigateur lit, aucun appel payant
-      if (!(await consommer('tts'))) return res.json({ useClientTTS: true, text });
-      const audio = await generateTTS(text, openai);
-      // Sans audio, la voix du navigateur lit le texte
+      // Seul un passage d'un texte signé part chez un fournisseur, sous le plafond
+      const audio = voixPermise(text, source, voix) && await consommer('tts') && await generateTTS(text, openai);
+      // Sinon la voix du navigateur lit le texte, aucun appel payant
       if (!audio) return res.json({ useClientTTS: true, text });
       res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-cache', 'X-TTS-Provider': audio.provider });
       if (!audio.stream) return res.send(audio.buffer);

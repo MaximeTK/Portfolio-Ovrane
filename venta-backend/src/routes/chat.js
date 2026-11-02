@@ -12,11 +12,11 @@ import * as log from '../log.js';
 
 const MAX_PROMPT = 4000;
 
-// Candidature Illusion du recruteur ; une erreur ne bloque jamais le chat
+// Pièces du recruteur, à chaque message ; une erreur ne bloque jamais le chat
 async function loadCandidature(jeton) {
   if (!isValidJeton(jeton)) return null;
   try {
-    return await IllusionCandidature.findOne({ jeton }).lean();
+    return await IllusionCandidature.findOne({ jeton }, { _id: 0, offre: 1, entreprise: 1, cv: 1, lettre: 1 }).lean();
   } catch (error) {
     log.warn(`[CHAT] Candidature Illusion illisible (${jeton}) :`, error.message);
     return null;
