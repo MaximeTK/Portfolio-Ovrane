@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { relayerJson, sessionJeton } from '@/lib/proxy';
+import { relayerJson } from '@/lib/proxy';
 import { corpsJson } from '@/lib/origine';
 
 // Liste blanche (méthode, chemin) des routes relayées telles quelles
@@ -13,7 +13,6 @@ const ROUTES = new Set([
   'POST auth/reinitialiser',
   'POST auth/verification',
   'POST auth/verifier',
-  'POST chat',
   'GET chat/history',
   'GET preferences',
   'POST preferences',
@@ -29,14 +28,10 @@ async function relayer(request: NextRequest, { params }: { params: Promise<{ che
   if (request.method === 'POST') {
     if (!corpsJson(request.headers)) return NextResponse.json({ error: 'Requête invalide' }, { status: 415 });
     body = await request.json().catch(() => ({}));
-    // Le jeton du recruteur vient du cookie posé par le middleware, jamais du corps
-    if (chemin === 'chat') body = { ...body, jeton: sessionJeton(request) };
   }
   return relayerJson(request, `/api/${chemin}${request.nextUrl.search}`, {
     method: request.method,
     body,
-    // L'appel au modèle avec sa boucle d'outils peut être long
-    timeout: chemin === 'chat' ? 60_000 : undefined,
   });
 }
 
