@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { Session } from '../models/Session.js';
 import { Reinitialisation } from '../models/Reinitialisation.js';
-import { empreinte, estJeton } from './sessions.js';
+import { empreinte, estJeton, oublierComptes } from './sessions.js';
 import { envoyerMail } from './mails.js';
 import { config } from '../config.js';
 import { MAILS } from '../messages.js';
@@ -43,6 +43,7 @@ export async function reinitialiser(jeton, motDePasse) {
   ).lean();
   if (!compte) return false;
   await Session.deleteMany({ utilisateur: demande.utilisateur });
+  oublierComptes();
   envoyerMail(compte.email, MAILS.motDePasseChange(compte.name));
   return true;
 }

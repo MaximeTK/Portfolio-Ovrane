@@ -8,6 +8,8 @@ import { once } from 'node:events';
 import { config } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { ERROR_MESSAGES } from '../src/messages.js';
+import { User } from '../src/models/User.js';
+import { reinitialiser } from '../src/services/reinitialisation.js';
 
 const SECRET_ILLUSION = 'secret-illusion-de-test';
 const MO = 1024 * 1024;
@@ -222,6 +224,47 @@ test('relais Illusion : une adresse non vérifiée n\'ouvre rien, sans rien dema
   const refus = await envoyer('/api/illusion/app/candidatures', { session: jeton });
   assert.deepEqual([refus.status, refus.json], [403, { error: ERROR_MESSAGES.illusionEmailNonVerifie }]);
   assert.equal(recues.length, avant);
+});
+
+// Une session neuve du compte, pour ne pas fermer celle des autres tests
+function sessionNeuve(utilisateur) {
+  const jeton = crypto.randomBytes(32).toString('base64url');
+  base.sessions.push({ _id: crypto.createHash('sha256').update(jeton).digest('hex'), utilisateur,
+    creeLe: new Date(), vuLe: new Date(), expireLe: new Date(Date.now() + 3600 * 1000) });
+  return jeton;
+}
+
+test('relais Illusion : un compte vérifié se lit une fois par rafale, un refus se relit à chaque appel', async (t) => {
+  const lecture = t.mock.method(User, 'findOne');
+  const session = sessionNeuve('cillusion01');
+  const reponses = await Promise.all(Array.from({ length: 5 }, () => envoyer('/api/illusion/app/rafale', { session })));
+  assert.deepEqual(reponses.map((r) => r.status), [200, 200, 200, 200, 200]);
+  assert.equal((await envoyer('/api/illusion/app/rafale', { session })).status, 200);
+  assert.equal(recues.at(-1).headers['x-ovrane-utilisateur'], 'essai@exemple.test');
+  assert.equal(lecture.mock.callCount(), 1);
+
+  base.users.push({ id: 'cattente', name: 'Attente', nameNormalized: 'attente', email: 'attente@exemple.test', visitCount: 1, conversations: [] });
+  const attente = sessionNeuve('cattente');
+  assert.equal((await envoyer('/api/illusion/app/rafale', { session: attente })).status, 403);
+  base.users.find((u) => u.id === 'cattente').emailVerifieLe = new Date();
+  assert.equal((await envoyer('/api/illusion/app/rafale', { session: attente })).status, 200, 'vérifiée : ouvert aussitôt');
+});
+
+test('relais Illusion : déconnexion et nouveau mot de passe ferment aussitôt le relais', async () => {
+  base.users.push({ id: 'cfermeture', name: 'Fermeture', nameNormalized: 'fermeture', email: 'fermeture@exemple.test', emailVerifieLe: new Date(), visitCount: 1, conversations: [] });
+  const session = sessionNeuve('cfermeture');
+  assert.equal((await envoyer('/api/illusion/app/rafale', { session })).status, 200);
+  assert.equal((await envoyer('/api/auth/logout', { methode: 'POST', session, entetes: { 'Content-Type': 'application/json' }, corps: '{}' })).status, 200);
+  const fermee = await envoyer('/api/illusion/app/rafale', { session });
+  assert.deepEqual([fermee.status, fermee.json], [401, { error: ERROR_MESSAGES.sessionRequired }]);
+
+  const autre = sessionNeuve('cfermeture');
+  assert.equal((await envoyer('/api/illusion/app/rafale', { session: autre })).status, 200);
+  const lien = crypto.randomBytes(32).toString('base64url');
+  base.reinitialisations.push({ _id: crypto.createHash('sha256').update(lien).digest('hex'), utilisateur: 'cfermeture',
+    creeLe: new Date(), expireLe: new Date(Date.now() + 60 * 1000) });
+  assert.equal(await reinitialiser(lien, 'nouveau-mot-de-passe'), true);
+  assert.equal((await envoyer('/api/illusion/app/rafale', { session: autre })).status, 401);
 });
 
 test('relais Illusion : ni connexion, ni inscription, ni canal du logiciel de bureau ; la lecture du compte passe', async () => {

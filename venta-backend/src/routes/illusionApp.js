@@ -2,9 +2,9 @@
 import http from 'http';
 import https from 'https';
 import { pipeline } from 'stream';
-import { User } from '../models/User.js';
 import { config } from '../config.js';
-import { limite, requireService, requireSession, sendError } from '../http.js';
+import { limite, requireService, sendError } from '../http.js';
+import { compteDeSession } from '../services/sessions.js';
 import { ERROR_MESSAGES } from '../messages.js';
 import * as log from '../log.js';
 
@@ -30,10 +30,11 @@ const INJOIGNABLE = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'EHOSTUNR
 // E-mail du compte de session, prouvé par son lien : Illusion les connaît ainsi
 async function compte(req, res, next) {
   try {
-    const user = await User.findOne({ id: req.user.id }, { _id: 0, email: 1, emailVerifieLe: 1 }).lean();
+    const { session, user } = await compteDeSession(req.get('x-ovrane-session'));
+    if (!session) return sendError(res, 401, ERROR_MESSAGES.sessionRequired);
     if (!user?.email) return sendError(res, 401, ERROR_MESSAGES.illusionAccountRequired);
     if (!user.emailVerifieLe) return sendError(res, 403, ERROR_MESSAGES.illusionEmailNonVerifie);
-    req.user.email = user.email;
+    req.user = { id: session.utilisateur, email: user.email };
     next();
   } catch (error) {
     next(error);
@@ -104,5 +105,5 @@ function relayer(req, res) {
 
 export function setupIllusionAppRoutes(app) {
   // Limite propre par IP : une page interroge Illusion toutes les 1,5 à 5 s
-  app.use('/api/illusion/app', limite(15 * 60 * 1000, config.production ? 6000 : 60000), requireService, requireSession, compte, relayer);
+  app.use('/api/illusion/app', limite(15 * 60 * 1000, config.production ? 6000 : 60000), requireService, compte, relayer);
 }
