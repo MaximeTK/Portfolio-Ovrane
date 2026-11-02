@@ -6,7 +6,7 @@ import { useSondage } from '../../activite/sondage';
 import { AuPied, MarqueAdmin, type Onglet } from '../../dock/Panneau';
 import { dateUtc } from '../../partage/FicheOffre';
 import { aOublier, repris, useGarder } from '../../stockage';
-import { ICONES_COMMUNES, TRAIT, message, duree, type Avis } from '../commun';
+import { useParametresOuverts, ICONES_COMMUNES, TRAIT, message, duree, type Avis } from '../commun';
 
 export type PieceJointe = { nom: string; type: string; taille: number; telechargeable: boolean };
 // Un mail tel que /mails et /mails/fil le rendent
@@ -513,19 +513,7 @@ export function useOngletReglages({ admin, actif, fermer, setAvis, relire }: { a
     setMots(texteMots(p.mail_mots_etiquettes));
     setSecret(null);
   };
-  // Relus à chaque ouverture : un autre onglet a pu les changer
-  useEffect(() => {
-    if (!actif) return;
-    let vivant = true;
-    appeler<Parametres>('/parametres').then((p) => {
-      if (!vivant) return;
-      reprendre(p);
-      setErreur('');
-    }).catch((e) => vivant && setErreur(message(e)));
-    return () => {
-      vivant = false;
-    };
-  }, [actif]);
+  useParametresOuverts<Parametres>(actif, reprendre, setErreur);
   const champs = [...BOITE.flat(), ...REPONSES, ...BOITE_REELLE].filter((c) => c.sorte !== 'secret' && (admin || !c.admin));
   const changes: Record<string, unknown> = {};
   if (lus) {

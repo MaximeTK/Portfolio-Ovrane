@@ -5,7 +5,7 @@ import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 import { useSondage } from '../../activite/sondage';
 import { Confirmer } from '../../dock/Panneau';
-import { ICONES_COMMUNES, TRAIT, message, useMenu } from '../commun';
+import { MenuColonne, ICONES_COMMUNES, TRAIT, message } from '../commun';
 
 // Ce que les pages Offres et Veille lisent d'Illusion
 export type Passage = { source: string; statut?: number; vues?: number; lues?: number; erreur?: string; sans_objet?: boolean };
@@ -190,35 +190,8 @@ export function Pagination({ page, pages, taille, auto, surPage, surTaille }: {
 
 // Menu d'un filtre : choix courant allumé ; clic ailleurs ou Échap le ferme
 export type Choix = { cle: string; libelle: string; n?: number };
-export function MenuFiltre({ lib, valeur, actif, choix, courant, choisir }: {
-  lib: string; valeur: string; actif: boolean; choix: Choix[]; courant: string; choisir: (cle: string) => void;
-}) {
-  const { ouvert, setOuvert, hote } = useMenu();
-  return (
-    <div ref={hote} className="menu-hote menu-filtre">
-      <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
-        <span><span className="lib">{lib}</span>{valeur}</span>
-        {ICONES.chevron}
-      </button>
-      {ouvert && (
-        <div className="menu verre" role="listbox" aria-label={lib}>
-          <span className="verre-halos" aria-hidden="true" />
-          {choix.map((c) => (
-            <button
-              key={c.cle} type="button" role="option" aria-selected={c.cle === courant}
-              className={`menu-option${c.cle === courant ? ' actif' : ''}`}
-              onClick={() => {
-                choisir(c.cle);
-                setOuvert(false);
-              }}
-            >
-              {c.libelle}{c.n !== undefined && <span className="compteur">{c.n}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+export function MenuFiltre(p: { lib: string; valeur: string; actif: boolean; choix: Choix[]; courant: string; choisir: (cle: string) => void }) {
+  return <MenuColonne {...p} classeHote=" menu-filtre" />;
 }
 
 // Profils de veille : une carte par langue, dans l'ordre du cycle, déplaçable

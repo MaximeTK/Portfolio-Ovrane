@@ -11,7 +11,7 @@ import { Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../
 import { dateUtc, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { demarrer, nomEnDirect, oublierAvis, terminer, useDirect, type Mode, type Tour } from './direct';
-import { useLignesAuto, ICONES_COMMUNES, TRAIT, message, duree, useAvisBref, useEchap, type Avis } from '../commun';
+import { useParametresOuverts, useLignesAuto, ICONES_COMMUNES, TRAIT, message, duree, useAvisBref, useEchap, type Avis } from '../commun';
 
 // Ce que /vues/appels rend : appels, offres et jour de candidature.
 type LigneAppel = {
@@ -559,19 +559,7 @@ function useOngletReglages(admin: boolean, actif: boolean, fermer: () => void, s
     setParole(p.ruby_modele_parole);
     setModele(p.ruby_modele);
   };
-  // Relus à chaque ouverture : un autre onglet a pu les changer
-  useEffect(() => {
-    if (!actif) return;
-    let vivant = true;
-    appeler<Parametres>('/parametres').then((p) => {
-      if (!vivant) return;
-      prendre(p);
-      setErreur('');
-    }).catch((e) => vivant && setErreur(message(e)));
-    return () => {
-      vivant = false;
-    };
-  }, [actif]);
+  useParametresOuverts<Parametres>(actif, prendre, setErreur);
   const changes = lus ? {
     ...(cle ? { ruby_cle: cle } : {}),
     ...(parole !== lus.ruby_modele_parole ? { ruby_modele_parole: parole } : {}),

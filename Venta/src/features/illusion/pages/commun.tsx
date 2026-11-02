@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { appeler } from '../api';
 
 // Ce que les pages partagent : erreurs, avis, Échap, menus, pagination
 export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -44,6 +45,26 @@ export function useEchap(agir: (e: KeyboardEvent) => void, toujours = false) {
   }, [toujours]);
 }
 
+// Réglages relus à chaque ouverture : un autre onglet a pu les changer
+export function useParametresOuverts<P>(actif: boolean, prendre: (p: P) => void, setErreur: (e: string) => void) {
+  const courant = useRef(prendre);
+  useEffect(() => {
+    courant.current = prendre;
+  });
+  useEffect(() => {
+    if (!actif) return;
+    let vivant = true;
+    appeler<P>('/parametres').then((p) => {
+      if (!vivant) return;
+      courant.current(p);
+      setErreur('');
+    }).catch((e) => vivant && setErreur(message(e)));
+    return () => {
+      vivant = false;
+    };
+  }, [actif, setErreur]);
+}
+
 // Tant que le menu est ouvert, un clic hors de son hôte le ferme
 export function useClicDehors(ouvert: boolean, fermer: () => void) {
   const hote = useRef<HTMLDivElement>(null);
@@ -75,6 +96,35 @@ export function useMenu(arreter = false) {
     return () => document.removeEventListener('keydown', echap, true);
   }, [ouvert, arreter, fermer]);
   return { ouvert, setOuvert, hote };
+}
+
+// Un filtre et son menu en colonne : clic ailleurs ou Échap le referme
+export function MenuColonne({ lib, titre = lib, valeur, actif, choix, courant, choisir, classeHote = '', classeMenu = '', icone = ICONES_COMMUNES.chevron }: {
+  lib: string; titre?: string; valeur: string; actif: boolean; choix: { cle: string; libelle: string; n?: number }[]; courant: string; choisir: (cle: string) => void;
+  classeHote?: string; classeMenu?: string; icone?: React.ReactNode;
+}) {
+  const { ouvert, setOuvert, hote } = useMenu();
+  return (
+    <div ref={hote} className={`menu-hote${classeHote}`}>
+      <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
+        <span><span className="lib">{lib}</span>{valeur}</span>{icone}
+      </button>
+      {ouvert && (
+        <div className={`menu verre${classeMenu}`} role="listbox" aria-label={titre}>
+          <span className="verre-halos" aria-hidden="true" />
+          {choix.map((c) => (
+            <button key={c.cle} type="button" role="option" aria-selected={c.cle === courant} className={`menu-option${c.cle === courant ? ' actif' : ''}`}
+              onClick={() => {
+                choisir(c.cle);
+                setOuvert(false);
+              }}>
+              {c.libelle}{c.n !== undefined && <span className="compteur">{c.n}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Un filtre en texte seul et son menu, tenus par la page

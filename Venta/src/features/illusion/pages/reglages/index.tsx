@@ -12,7 +12,7 @@ import { useSondage } from '../../activite/sondage';
 import type { ProprietesPage } from '../liste';
 import { useOngletApparence } from './apparence';
 import { FILTRES, SITE_GLOBAL, TableComptes, lignesDe, ongletTester, useOngletAjout, versEnvoi, type Essai, type Identifiant, type Ligne } from './comptes';
-import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, useMenu, type Avis } from '../commun';
+import { MenuColonne, ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
 
 type Parametres = Record<string, unknown> & { modeles: { nom: string; modele?: string }[]; identifiants: Identifiant[] };
 type Sorte = 'inter' | 'nombre' | 'texte' | 'liste' | 'secret' | 'choix' | 'modele' | 'texte_long' | 'couleurs';
@@ -348,7 +348,7 @@ function Reglages({ admin }: { admin: boolean }) {
         <div className="outils">
           <p className="filtre titre-groupe"><span><span className="lib">Groupe</span>{g.titre}</span></p>
           {groupe === 'comptes' && (
-            <MenuEtat valeur={`${garde.libelle} · ${lignes.filter((l) => garde.garde(l, essais[l.site])).length}`}
+            <MenuColonne lib="État" titre="État des comptes" classeMenu=" menu-etat" icone={ICONES.chevron} valeur={`${garde.libelle} · ${lignes.filter((l) => garde.garde(l, essais[l.site])).length}`}
               choix={FILTRES.map((f) => ({ cle: f.cle, libelle: f.libelle, n: lignes.filter((l) => f.garde(l, essais[l.site])).length }))}
               courant={filtre} actif={filtre !== 'tous'} choisir={setFiltre} />
           )}
@@ -430,26 +430,3 @@ function BoutonGroupe({ g, courant, choisir }: { g: Groupe; courant: string; cho
   return <button type="button" className={`rubrique${g.cle === courant ? ' actif' : ''}`} aria-current={g.cle === courant ? 'page' : undefined} onClick={() => choisir(g.cle)}>{g.titre}</button>;
 }
 
-// Filtre « État » des comptes : menu en colonne, fermé par un clic ailleurs.
-function MenuEtat({ valeur, choix, courant, actif, choisir }: { valeur: string; choix: { cle: string; libelle: string; n: number }[]; courant: string; actif: boolean; choisir: (c: string) => void }) {
-  const { ouvert, setOuvert, hote } = useMenu();
-  return (
-    <div ref={hote} className="menu-hote">
-      <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
-        <span><span className="lib">État</span>{valeur}</span>{ICONES.chevron}
-      </button>
-      {ouvert && (
-        <div className="menu verre menu-etat" role="listbox" aria-label="État des comptes">
-          <span className="verre-halos" aria-hidden="true" />
-          {choix.map((c) => (
-            <button key={c.cle} type="button" role="option" aria-selected={c.cle === courant} className={`menu-option${c.cle === courant ? ' actif' : ''}`}
-              onClick={() => {
-                choisir(c.cle);
-                setOuvert(false);
-              }}>{c.libelle}<span className="compteur">{c.n}</span></button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}

@@ -1,6 +1,6 @@
 'use client';
 
-import { ICONES_COMMUNES, useMenu } from '../commun';
+import { MenuColonne } from '../commun';
 
 export type Modele = {
   nom: string; fournisseur: string; modele: string; base_url: string; cle_api: boolean; reglages: Record<string, string>; reserve: string;
@@ -118,29 +118,9 @@ export function FormModele({ id, brouillon: b, poser, fournisseurs, autres, erre
   );
 }
 
-// Filtre Fournisseur : menu en colonne ; un clic ailleurs ou Échap le referme.
-export function MenuFournisseur({ valeur, choix, courant, choisir }: { valeur: string; choix: { cle: string; libelle: string; n: number }[]; courant: string; choisir: (c: string) => void }) {
-  const { ouvert, setOuvert, hote } = useMenu();
-  return (
-    <div ref={hote} className="menu-hote">
-      <button type="button" className={`filtre${courant ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
-        <span><span className="lib">Fournisseur</span>{valeur}</span>
-        {ICONES_COMMUNES.chevron}
-      </button>
-      {ouvert && (
-        <div className="menu verre menu-fournisseur" role="listbox" aria-label="Fournisseur des modèles">
-          <span className="verre-halos" aria-hidden="true" />
-          {choix.map((c) => (
-            <button key={c.cle} type="button" role="option" aria-selected={c.cle === courant} className={`menu-option${c.cle === courant ? ' actif' : ''}`}
-              onClick={() => {
-                choisir(c.cle);
-                setOuvert(false);
-              }}>{c.libelle}<span className="compteur">{c.n}</span></button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+// Filtre Fournisseur : menu en colonne
+export function MenuFournisseur(p: { valeur: string; choix: { cle: string; libelle: string; n: number }[]; courant: string; choisir: (c: string) => void }) {
+  return <MenuColonne {...p} lib="Fournisseur" titre="Fournisseur des modèles" actif={!!p.courant} classeMenu=" menu-fournisseur" />;
 }
 
 export function CorpsEffacer({ apercu, erreur }: { apercu: Apercu | null; erreur: string }) {

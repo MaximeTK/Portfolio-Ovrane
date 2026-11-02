@@ -6,7 +6,7 @@ import { appeler, televerser } from '../../api';
 import { useSondage } from '../../activite/sondage';
 import { MarqueAdmin, type Onglet } from '../../dock/Panneau';
 import { nomProfil } from '../../partage/FicheOffre';
-import { message, duree, type Avis } from '../commun';
+import { useParametresOuverts, message, duree, type Avis } from '../commun';
 
 // Refus d'un lancement faute de profil complet : chaque profil et ce qui manque
 export type Incomplet = { message: string; profils: { nom: string; manquants: { cle: string; libelle: string }[] }[] };
@@ -38,20 +38,10 @@ export function useOngletReglages({ admin, actif, fermer, setAvis }: { admin: bo
   const [erreur, setErreur] = useState('');
   const [occupe, setOccupe] = useState(false);
   const champs = admin ? [...DU_COMPTE, ...DU_SERVEUR] : DU_COMPTE;
-  // Relus à chaque ouverture : un autre onglet a pu les changer
-  useEffect(() => {
-    if (!actif) return;
-    let vivant = true;
-    appeler<Parametres>('/parametres').then((p) => {
-      if (!vivant) return;
-      setLus(p);
-      setValeurs(p);
-      setErreur('');
-    }).catch((e) => vivant && setErreur(message(e)));
-    return () => {
-      vivant = false;
-    };
-  }, [actif]);
+  useParametresOuverts<Parametres>(actif, (p) => {
+    setLus(p);
+    setValeurs(p);
+  }, setErreur);
   const changes = lus ? champs.filter((c) => valeurs[c.cle] !== lus[c.cle]) : [];
   const enregistrer = async (e: React.FormEvent) => {
     e.preventDefault();
