@@ -110,22 +110,23 @@ function Offres({ admin }: { admin: boolean }) {
   const page = Math.floor(debut / lignes) + 1;
   const setPage = (n: number) => setDebut((n - 1) * lignes);
 
-  // File et écartées d'un coup : l'une se montre, l'autre donne ses comptes
+  // File et écartées chacune sa lecture : un clic de page ne relit que la montrée
+  const adresseFile = `/candidatures?${new URLSearchParams({ etape: motif ? '' : choisie.cle, page: String(motif ? 1 : page), taille: String(lignes), ...groupe })}`;
+  const adresseEcartees = `/vues/offres/ecartees?${new URLSearchParams({ motif: motif ?? '', page: String(motif ? page : 1), taille: String(lignes) })}`;
   useEffect(() => {
     const arret = new AbortController();
-    const filtre = new URLSearchParams({ etape: motif ? '' : choisie.cle, page: String(motif ? 1 : page), taille: String(lignes), ...groupe });
-    const ecart = new URLSearchParams({ motif: motif ?? '', page: String(motif ? page : 1), taille: String(lignes) });
-    Promise.all([
-      appeler<ReponseFile>(`/candidatures?${filtre}`, { signal: arret.signal }),
-      appeler<ReponseEcartees>(`/vues/offres/ecartees?${ecart}`, { signal: arret.signal }),
-    ]).then(([f, e]) => {
-      setFile(f);
-      setEcartees(e);
-    }).catch((e) => {
+    appeler<ReponseFile>(adresseFile, { signal: arret.signal }).then(setFile).catch((e) => {
       if ((e as Error).name !== 'AbortError') dire(message(e), true);
     });
     return () => arret.abort();
-  }, [choisie.cle, motif, page, lignes, groupe, tour, dire]);
+  }, [adresseFile, tour, dire]);
+  useEffect(() => {
+    const arret = new AbortController();
+    appeler<ReponseEcartees>(adresseEcartees, { signal: arret.signal }).then(setEcartees).catch((e) => {
+      if ((e as Error).name !== 'AbortError') dire(message(e), true);
+    });
+    return () => arret.abort();
+  }, [adresseEcartees, tour, dire]);
 
   const lireProfils = useCallback(async () => {
     try {
