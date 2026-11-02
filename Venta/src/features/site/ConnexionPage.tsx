@@ -155,6 +155,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
   const formulaire = mode === 'reinit' || compte === null;
   const titre = formulaire ? TITRES[mode] : compte ? `Bonjour ${compte.pseudo}` : 'Compte';
   const alerte = erreur && <p role="alert" className="text-sm text-red-300">{erreur}</p>;
+  const avis = info && <p role="status" className="text-sm text-emerald-300">{info}</p>;
   const motDePasse = mode !== 'oubli' && (
     <>
       <Champ
@@ -211,7 +212,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
             Ouvrir Illusion
           </button>
           {alerte}
-          {info && <p role="status" className="text-sm text-emerald-300">{info}</p>}
+          {avis}
           <button
             type="button"
             onClick={deconnecter}
@@ -265,7 +266,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
               <Champ label="Code d'invitation" value={champs.inviteCode} onChange={changer('inviteCode')} autoComplete="off" />
             )}
             {alerte}
-            {info && <p role="status" className="text-sm text-emerald-300">{info}</p>}
+            {avis}
             <button
               type="submit"
               disabled={envoi}
