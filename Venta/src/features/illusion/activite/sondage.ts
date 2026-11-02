@@ -10,10 +10,18 @@ export function useSondage(lire: () => unknown, periodeMs: number, actif = true,
   });
   useEffect(() => {
     if (!actif) return;
-    const tour = () => {
-      if (document.visibilityState === 'visible') void derniere.current();
+    // Une seule lecture en vol : un serveur lent n'en reçoit pas davantage
+    let enVol = false;
+    const tour = async () => {
+      if (enVol || document.visibilityState !== 'visible') return;
+      enVol = true;
+      try {
+        await derniere.current();
+      } finally {
+        enVol = false;
+      }
     };
-    tour();
+    void tour();
     const minuteur = setInterval(tour, periodeMs);
     document.addEventListener('visibilitychange', tour);
     return () => {

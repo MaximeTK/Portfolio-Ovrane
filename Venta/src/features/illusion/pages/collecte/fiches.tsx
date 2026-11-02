@@ -36,14 +36,24 @@ export const arbreFiches = (panneau: (largeurEcran: number) => number | null): A
 };
 
 // Relance `lire` toutes les `ms` tant que l'onglet est visible ; `null` coupe
-export function useSondage(lire: () => void, ms: number | null) {
+export function useSondage(lire: () => unknown, ms: number | null) {
   const courant = useRef(lire);
   useEffect(() => {
     courant.current = lire;
   });
   useEffect(() => {
     if (ms === null) return;
-    const tic = () => document.visibilityState === 'visible' && courant.current();
+    // Une seule lecture en vol : un serveur lent n'en reçoit pas davantage
+    let enVol = false;
+    const tic = async () => {
+      if (enVol || document.visibilityState !== 'visible') return;
+      enVol = true;
+      try {
+        await courant.current();
+      } finally {
+        enVol = false;
+      }
+    };
     const minuteur = setInterval(tic, ms);
     document.addEventListener('visibilitychange', tic);
     return () => {

@@ -69,19 +69,30 @@ export const ICONES = {
 };
 
 // Relit `lire` toutes les `ms` onglet visible, et dès qu'il le redevient
-export function useSondage(lire: () => void, ms: number) {
+export function useSondage(lire: () => unknown, ms: number) {
   const fn = useRef(lire);
   useEffect(() => {
     fn.current = lire;
   });
   useEffect(() => {
     let minuteur = 0;
+    // Une seule lecture en vol : un serveur lent n'en reçoit pas davantage
+    let enVol = false;
+    const tour = async () => {
+      if (enVol) return;
+      enVol = true;
+      try {
+        await fn.current();
+      } finally {
+        enVol = false;
+      }
+    };
     const armer = () => {
       window.clearInterval(minuteur);
-      if (document.visibilityState === 'visible') minuteur = window.setInterval(() => fn.current(), ms);
+      if (document.visibilityState === 'visible') minuteur = window.setInterval(tour, ms);
     };
     const changer = () => {
-      if (document.visibilityState === 'visible') fn.current();
+      if (document.visibilityState === 'visible') void tour();
       armer();
     };
     armer();
