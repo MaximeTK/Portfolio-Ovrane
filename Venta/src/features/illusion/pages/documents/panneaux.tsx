@@ -6,8 +6,9 @@ import { appeler, telecharger } from '../../api';
 import { usePanneau, useVues } from '../../dock/Dock';
 import { AuPied, Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import { ongletAjoutCompetence, ongletFicheOffre, type DemandeAjout } from '../../partage/FicheOffre';
-import { Couleurs, ICONES, ListeFichiers, RELAIS, court, message, poids, useFichiers, type Fichier } from './commun';
+import { Couleurs, ICONES, ListeFichiers, RELAIS, court, poids, useFichiers, type Fichier } from './commun';
 import { MODELE_VIDE, nomFichier, quand, sansJson, type Documents, type Formulaire, type Modele, type NomAtelier, type Parametres, type Production } from './index';
+import { message, duree } from '../commun';
 
 const FONDS = ['', 'aplat', 'degrade', 'photo', 'photo-teintee', 'blanc'];
 const LANGUES = ['fr', 'en', 'de', 'es', 'it', 'pt', 'nl'];
@@ -18,7 +19,6 @@ const STATUTS: Record<string, string> = {
 const REPONSES: Record<string, string> = { positive: 'réponse positive', refus: 'refus', reponse: 'réponse reçue' };
 // Ce que Nouveau CV et Nouvelle lettre se repassent
 const PARTAGES = ['profil', 'offre', 'poste', 'entreprise', 'deja_postule'] as const;
-const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 const hexa = (v?: string) => /^#[0-9a-f]{3,8}$/i.test(v ?? '');
 
 // Éléments, puis sous-fenêtres en onglets ; ajout de compétence avec objet

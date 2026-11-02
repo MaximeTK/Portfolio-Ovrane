@@ -11,9 +11,10 @@ import { Confirmer, MarqueAdmin, Panneau } from '../../dock/Panneau';
 import { nomProfil } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import {
-  message, ongletChamp, ongletComparaison, ongletIncomplet, ongletRejeu, ongletVerification, useOngletRejouer,
+  ongletChamp, ongletComparaison, ongletIncomplet, ongletRejeu, ongletVerification, useOngletRejouer,
   type Champ, type DemandeRejeu, type EtatRejeu, type Incomplet, type Signalement, type Verification,
 } from './panneaux';
+import { message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
 
 // Arbre d'un site comme /workflows/site le rend, réponses par profil.
 type Valeur = { fiche?: string; avec?: string; format?: string; ia?: unknown; reponse?: unknown; fixe?: string; cv?: unknown; lettre?: unknown } | null;
@@ -27,7 +28,6 @@ type Carte = {
   site: string; candidatures: number; reponses: Record<string, { profil: string; valeur: unknown }[]>;
   arbres: { page: string; cle: string; candidatures: number; arbre: { lignes?: Ligne[] } }[];
 };
-type Avis = { texte: string; erreur?: boolean } | null;
 type Retrait = { cle: string; aiguillage: string; voie: string };
 type Contexte = { site: string; cle: string; reponses: Carte['reponses']; nomPage: (adresse: string) => string; retirer: (r: Retrait) => void };
 
@@ -228,22 +228,12 @@ function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurC
   const champ = useRef<HTMLInputElement>(null);
 
   // Échap ferme le menu, sinon la confirmation, sinon le panneau
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (menu) setMenu(false);
-      else if (retrait) setRetrait(null);
-      else fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [menu, retrait, fermer]);
-  // Un avis se lit 3,5 s, une erreur 8 s
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis, setAvis]);
+  useEchap(() => {
+    if (menu) setMenu(false);
+    else if (retrait) setRetrait(null);
+    else fermer();
+  });
+  useAvisBref(avis, setAvis);
 
   const retirer = async () => {
     if (!retrait || !carte) return;
@@ -319,15 +309,7 @@ function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurC
 function MenuPages({ carte, rang, ouvert, basculer, fermer, choisir }: {
   carte: Carte; rang: number; ouvert: boolean; basculer: () => void; fermer: () => void; choisir: (i: number) => void;
 }) {
-  const hote = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (!hote.current?.contains(e.target as Node)) fermer();
-    };
-    document.addEventListener('pointerdown', dehors);
-    return () => document.removeEventListener('pointerdown', dehors);
-  }, [ouvert, fermer]);
+  const hote = useClicDehors(ouvert, fermer);
   const n = carte.arbres.length;
   return (
     <div ref={hote} className="menu-hote filtre-hote">

@@ -6,6 +6,7 @@ import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 import { AuPied, type Onglet } from '../../dock/Panneau';
 import { jourMois, nomProfil } from '../../partage/FicheOffre';
+import { message } from '../commun';
 
 // Ce que /workflows/rejeu rend : dernier passage, étape en attente, journal.
 export type Saisie = { question?: string; valeur?: string; source?: { sorte?: string; donnee?: string }; signalement?: string; site?: string; ligne?: string; page?: string };
@@ -22,7 +23,6 @@ export type Incomplet = { message: string; profils: { nom: string; manquants: { 
 export type DemandeRejeu = { url: string; profil: string; mode: 'manuel' | 'auto'; sorte: 'rejouer' | 'corriger' | 'refaire' };
 export type Champ = { cle: string; libelle: string; section: string; type: string; choix: string[]; obligatoire: boolean };
 
-export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const sansProtocole = (u?: string) => (u ?? '').replace(/^https?:\/\//i, '');
 
 // Chaque sorte de passage telle que la page la nomme

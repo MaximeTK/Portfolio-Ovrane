@@ -12,11 +12,11 @@ import {
   CorpsEffacer, FormModele, MenuFournisseur, NEUF, Voyant, nomCourt, totalApercu, versBrouillon,
   type Apercu, type Brouillon, type Essai, type Fournisseur, type Modele,
 } from './panneaux';
+import { message, useAvisBref, useEchap, type Avis } from '../commun';
 
 type Parametres = Record<string, unknown> & { modeles: Modele[]; fournisseurs: Record<string, Fournisseur> };
 type Champ = { cle: string; libelle: string; sorte: 'nombre' | 'texte' | 'secret' | 'choix'; aide?: string; choix?: string[]; min?: number };
 type Groupe = { cle: string; titre: string; aide: string; champs: Champ[] };
-type Avis = { texte: string; erreur?: boolean } | null;
 
 // Groupes repris de l'ancien dashboard ; Réinitialiser ouvre son onglet.
 const GROUPES: Groupe[] = [
@@ -50,7 +50,6 @@ const BRIQUES: [string, string, string][] = [
 ];
 const CHAMPS: Champ[] = [...GROUPES.flatMap((g) => g.champs), ...BRIQUES.map(([cle, libelle]): Champ => ({ cle, libelle, sorte: 'texte' }))];
 
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const decimal = (t: string) => parseFloat(t.replace(',', '.')) || 0;
 // Un modèle tel qu'il part : sans clé, celle du coffre reste ; vide, effacée.
 const sansCle = ({ cle_api: _, ...m }: Modele) => m;
@@ -112,12 +111,7 @@ function Serveur() {
     }).catch((e) => setErreurLecture(message(e)));
   }, []);
 
-  // Un avis se lit 3,5 s, une erreur 8 s
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis]);
+  useAvisBref(avis, setAvis);
 
   // Ce que l'effacement emporterait, compté à chaque ouverture de son onglet
   const compter = useCallback(() => {
@@ -132,15 +126,10 @@ function Serveur() {
   }, [onglet, compter]);
 
   // Échap ferme la confirmation, sinon le panneau
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (confirmation) setConfirmation(false);
-      else if (onglet) fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [confirmation, onglet, fermer]);
+  useEchap(() => {
+    if (confirmation) setConfirmation(false);
+    else if (onglet) fermer();
+  });
 
   // Ce qui partira : chaque champ dans sa forme, secrets retapés ou effacés.
   const envoi = (c: Champ): unknown => (c.sorte === 'nombre' ? (valeurs[c.cle] === '' ? 0 : Number(valeurs[c.cle])) : valeurs[c.cle]);

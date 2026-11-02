@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 import { Confirmer } from '../../dock/Panneau';
+import { message, useMenu } from '../commun';
 
 // Ce que les pages Offres et Veille lisent d'Illusion
 export type Passage = { source: string; statut?: number; vues?: number; lues?: number; erreur?: string; sans_objet?: boolean };
@@ -35,7 +36,6 @@ export const libelleSource = (s: string) => SOURCES[s] ?? s;
 // Langues proposées ; un code posé hors liste reste proposé tel quel
 export const LANGUES: Record<string, string> = { fr: 'Français', en: 'Anglais', de: 'Allemand', es: 'Espagnol', it: 'Italien', pt: 'Portugais', nl: 'Néerlandais' };
 
-export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export const liste = (texte: string) => texte.split(',').map((v) => v.trim()).filter(Boolean);
 export const nomFiche = (chemin: string) => String(chemin).split(/[\\/]/).pop() ?? '';
 export const sansJson = (nom: string) => nom.replace(/\.json$/i, '');
@@ -236,26 +236,7 @@ export type Choix = { cle: string; libelle: string; n?: number };
 export function MenuFiltre({ lib, valeur, actif, choix, courant, choisir }: {
   lib: string; valeur: string; actif: boolean; choix: Choix[]; courant: string; choisir: (cle: string) => void;
 }) {
-  const [ouvert, setOuvert] = useState(false);
-  const hote = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (!hote.current?.contains(e.target as Node)) setOuvert(false);
-    };
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      // Avant la page : Échap ferme le menu, pas le panneau
-      e.preventDefault();
-      setOuvert(false);
-    };
-    document.addEventListener('pointerdown', dehors);
-    document.addEventListener('keydown', echap, true);
-    return () => {
-      document.removeEventListener('pointerdown', dehors);
-      document.removeEventListener('keydown', echap, true);
-    };
-  }, [ouvert]);
+  const { ouvert, setOuvert, hote } = useMenu();
   return (
     <div ref={hote} className="menu-hote menu-filtre">
       <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>

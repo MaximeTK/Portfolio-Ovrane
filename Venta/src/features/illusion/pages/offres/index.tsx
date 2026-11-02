@@ -12,10 +12,11 @@ import { ongletFicheEntreprise, useFicheEntreprise, useQuestionsFiche } from '..
 import { OFFRE_CHANGEE, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import {
-  ChoixLangue, ICONES, LANGUES, MenuFiltre, Pagination, enregistrerReglages, jourMois, libelleSource, liste, message, nomFiche,
+  ChoixLangue, ICONES, LANGUES, MenuFiltre, Pagination, enregistrerReglages, jourMois, libelleSource, liste, nomFiche,
   sansJson, useAvis, useEtatVeille, useGestesStock, useProfilsVeille,
   type Choix, type Parametres, type ProfilRecherche, type Taille,
 } from './commun';
+import { message, useEchap } from '../commun';
 
 type OffreFile = {
   cle: string; entreprise_brute: string; entreprise_siren: string | null; titre: string; lieu: string; contrat: string; source: string;
@@ -202,16 +203,12 @@ function Offres({ admin }: { admin: boolean }) {
 
   // Échap ferme la confirmation, sinon le panneau ; celle d'une carte, seule
   const { confirmer, fermerVider } = gestes;
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || (e.target as Element | null)?.closest?.('.confirmer')) return;
-      if (confirmer) fermerVider();
-      else if (question) useFicheEntreprise.setState({ question: null });
-      else if (onglet) fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [confirmer, fermerVider, question, onglet, fermer]);
+  useEchap((e) => {
+    if ((e.target as Element | null)?.closest?.('.confirmer')) return;
+    if (confirmer) fermerVider();
+    else if (question) sansQuestion();
+    else if (onglet) fermer();
+  });
 
   const groupes = file?.groupes ?? {};
   const choixGroupe = (cle: 'langue' | 'metier', comptes: Record<string, number> = {}, tous: string, nom: (v: string) => string): Choix[] => {

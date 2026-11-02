@@ -9,6 +9,7 @@ import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
 import { jourMois, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
+import { message, useAvisBref, useEchap, type Avis } from '../commun';
 
 // Ce que /lapis rend : personnes, offres, événements et derniers posts lus.
 type Personne = {
@@ -21,7 +22,6 @@ type Post = {
 };
 type Lapis = { personnes: Personne[]; offres: Post[]; evenements: Post[]; posts: Post[]; recherches: string[]; postes: string[] };
 type Sorte = 'personnes' | 'offres' | 'evenements' | 'posts';
-type Avis = { texte: string; erreur?: boolean } | null;
 type Parametres = {
   lapis_recherches: string[]; lapis_postes: string[]; lapis_posts_par_recherche: number; lapis_personnes_par_poste: number;
   lapis_entreprises_par_passe: number; lapis_modele: string; modeles?: { nom: string }[];
@@ -36,7 +36,6 @@ const VIDES: Record<Sorte, string> = {
 };
 const NATURES: Record<string, string> = { offre: 'Offre', evenement: 'Événement', autre: 'Autre' };
 const TAILLES = [24, 48];
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 // Seul un lien web s'ouvre depuis la galerie
 const sur = (u?: string) => (u && /^https?:\/\//i.test(u) ? u : undefined);
 const initiales = (nom: string) => nom.split(/\s+/).filter(Boolean).slice(0, 2).map((m) => m[0]).join('').toUpperCase() || '?';
@@ -107,19 +106,9 @@ function Galerie({ donnees, erreur, avis, setAvis }: ProprietesGalerie) {
   const [occupe, setOccupe] = useState(false);
   const grille = useRef<HTMLDivElement>(null);
 
-  // Échap ferme le panneau ; un avis se lit 3,5 s, une erreur 8 s
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [fermer]);
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis, setAvis]);
+  // Échap ferme le panneau
+  useEchap(fermer);
+  useAvisBref(avis, setAvis);
 
   const cartes = donnees?.[sorte] ?? [];
   const parPage = taille === 'auto' ? auto : taille;

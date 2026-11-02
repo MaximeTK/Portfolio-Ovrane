@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useMenu } from '../commun';
 
 export type Modele = {
   nom: string; fournisseur: string; modele: string; base_url: string; cle_api: boolean; reglages: Record<string, string>; reserve: string;
@@ -120,25 +120,7 @@ export function FormModele({ id, brouillon: b, poser, fournisseurs, autres, erre
 
 // Filtre Fournisseur : menu en colonne ; un clic ailleurs ou Échap le referme.
 export function MenuFournisseur({ valeur, choix, courant, choisir }: { valeur: string; choix: { cle: string; libelle: string; n: number }[]; courant: string; choisir: (c: string) => void }) {
-  const [ouvert, setOuvert] = useState(false);
-  const hote = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (!hote.current?.contains(e.target as Node)) setOuvert(false);
-    };
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      setOuvert(false);
-    };
-    document.addEventListener('pointerdown', dehors);
-    document.addEventListener('keydown', echap, true);
-    return () => {
-      document.removeEventListener('pointerdown', dehors);
-      document.removeEventListener('keydown', echap, true);
-    };
-  }, [ouvert]);
+  const { ouvert, setOuvert, hote } = useMenu();
   return (
     <div ref={hote} className="menu-hote">
       <button type="button" className={`filtre${courant ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>

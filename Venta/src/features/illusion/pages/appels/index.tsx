@@ -10,7 +10,8 @@ import { ECART } from '../../dock/moteur';
 import { Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import { dateUtc, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
-import { demarrer, nomEnDirect, oublierAvis, terminer, useDirect, type Avis, type Mode, type Tour } from './direct';
+import { demarrer, nomEnDirect, oublierAvis, terminer, useDirect, type Mode, type Tour } from './direct';
+import { message, duree, useAvisBref, useEchap, type Avis } from '../commun';
 
 // Ce que /vues/appels rend : appels, offres et jour de candidature.
 type LigneAppel = {
@@ -28,10 +29,8 @@ type Parametres = { ruby_cle: boolean; ruby_modele_parole: string; ruby_modele: 
 
 const TAILLES = [25, 50];
 const MODELES_PAROLE = ['universal-streaming-multilingual', 'universal-3-6-pro'];
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const quand = (iso: string) => dateUtc(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const jour = (iso: string) => dateUtc(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 const dollars = (v: number) => `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: v > 0 && v < 0.01 ? 4 : 2 })} $`;
 const minutes = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 const libelleOffre = (o: OffreEnvoyee) => `${o.entreprise} — ${o.titre} · ${jour(o.envoyee_le)}`;
@@ -131,19 +130,8 @@ function Liste({ vue, erreurVue, choisi, setChoisi, avis, setAvis }: ProprietesL
   const defile = useRef<HTMLDivElement>(null);
 
   // Échap ferme le panneau, sauf celui qu'une confirmation a gardé pour elle
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [fermer]);
-  // Un avis se lit 3,5 s, une erreur 8 s
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis, setAvis]);
+  useEchap(fermer);
+  useAvisBref(avis, setAvis);
   // « auto » : autant de lignes que le défileur en montre sans en couper une
   useLayoutEffect(() => {
     const zone = defile.current;

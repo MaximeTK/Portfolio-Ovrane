@@ -12,6 +12,7 @@ import { useSondage } from '../../activite/sondage';
 import type { ProprietesPage } from '../liste';
 import { useOngletApparence } from './apparence';
 import { FILTRES, SITE_GLOBAL, TableComptes, lignesDe, ongletTester, useOngletAjout, versEnvoi, type Essai, type Identifiant, type Ligne } from './comptes';
+import { message, useAvisBref, useEchap, useMenu, type Avis } from '../commun';
 
 type Parametres = Record<string, unknown> & { modeles: { nom: string; modele?: string }[]; identifiants: Identifiant[] };
 type Sorte = 'inter' | 'nombre' | 'texte' | 'liste' | 'secret' | 'choix' | 'modele' | 'texte_long' | 'couleurs';
@@ -19,10 +20,8 @@ type Champ = { cle: string; libelle: string; sorte: Sorte; aide?: string; admin?
 type Section = { titre: string; champs: Champ[]; admin?: boolean; pieces?: boolean };
 type Groupe = { cle: string; titre: string; aide?: string; sections?: Section[] };
 type Piece = { nom: string; taille: number };
-type Avis = { texte: string; erreur?: boolean } | null;
 type Confirmation = { sorte: 'sites' } | { sorte: 'piece'; nom: string } | null;
 
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const egal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const decouper = (v: unknown) => String(v ?? '').split(',').map((x) => x.trim()).filter(Boolean);
 const poids = (o: number) => (o < 1024 ? `${o} o` : `${(o / 1024).toFixed(1).replace('.', ',')} Ko`);
@@ -134,12 +133,7 @@ function Reglages({ admin }: { admin: boolean }) {
   const fichiers = useRef<HTMLInputElement>(null);
   const dire = useCallback((texte: string, erreur = false) => setAvis({ texte, erreur }), []);
 
-  // Un avis se lit 3,5 s, une erreur 8 s
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis]);
+  useAvisBref(avis, setAvis);
 
   const poserLus = useCallback((p: Parametres) => {
     setLus(p);
@@ -186,15 +180,10 @@ function Reglages({ admin }: { admin: boolean }) {
   }, [groupe, lirePieces]);
 
   // Échap ferme la confirmation, sinon le panneau
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (confirmation) setConfirmation(null);
-      else if (onglet) fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [confirmation, onglet, fermer]);
+  useEchap(() => {
+    if (confirmation) setConfirmation(null);
+    else if (onglet) fermer();
+  });
 
   // Ce qui partira : chaque champ dans sa forme, secrets retapés ou effacés.
   const champsVus = GROUPES.flatMap((g) => (g.sections ?? []).filter((s) => admin || !s.admin).flatMap((s) => s.champs.filter((c) => admin || !c.admin)));
@@ -444,25 +433,7 @@ function BoutonGroupe({ g, courant, choisir }: { g: Groupe; courant: string; cho
 
 // Filtre « État » des comptes : menu en colonne, fermé par un clic ailleurs.
 function MenuEtat({ valeur, choix, courant, actif, choisir }: { valeur: string; choix: { cle: string; libelle: string; n: number }[]; courant: string; actif: boolean; choisir: (c: string) => void }) {
-  const [ouvert, setOuvert] = useState(false);
-  const hote = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (!hote.current?.contains(e.target as Node)) setOuvert(false);
-    };
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      setOuvert(false);
-    };
-    document.addEventListener('pointerdown', dehors);
-    document.addEventListener('keydown', echap, true);
-    return () => {
-      document.removeEventListener('pointerdown', dehors);
-      document.removeEventListener('keydown', echap, true);
-    };
-  }, [ouvert]);
+  const { ouvert, setOuvert, hote } = useMenu();
   return (
     <div ref={hote} className="menu-hote">
       <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>

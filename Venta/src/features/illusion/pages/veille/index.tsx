@@ -10,9 +10,10 @@ import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { AuPied, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
 import {
-  ICONES, SOURCES, dateDe, enregistrerReglages, heure, jourMois, libelleSource, message, useAvis, useEtatVeille, useGestesStock, useProfilsVeille,
+  ICONES, SOURCES, dateDe, enregistrerReglages, heure, jourMois, libelleSource, useAvis, useEtatVeille, useGestesStock, useProfilsVeille,
   type Cycle, type Jobboard, type Parametres,
 } from '../offres/commun';
+import { message, useEchap } from '../commun';
 
 // Clés de chaque plateforme, valables pour toutes les veilles.
 type Champ = { cle: string; libelle: string; nombre?: boolean };
@@ -93,15 +94,11 @@ function Veille() {
   const reglages = useReglages(parametres, enregistrer);
 
   const { confirmer, fermerVider } = gestes;
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || (e.target as Element | null)?.closest?.('.confirmer')) return;
-      if (confirmer) fermerVider();
-      else if (onglet) fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [confirmer, fermerVider, onglet, fermer]);
+  useEchap((e) => {
+    if ((e.target as Element | null)?.closest?.('.confirmer')) return;
+    if (confirmer) fermerVider();
+    else if (onglet) fermer();
+  });
 
   const basculer = async () => {
     const armee = etat?.rotation_armee;

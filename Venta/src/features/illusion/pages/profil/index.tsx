@@ -10,14 +10,13 @@ import { Activite } from '../../activite/Activite';
 import type { ProprietesPage } from '../liste';
 import { FORMES_CHAMP, SECTIONS_DE_CHAMP, libelleDonnee, titreProfil, type ChampSchema } from './champs';
 import { EditeurProfil, useEditeur, type EtatProfil, type Profil } from './editeur';
+import { message, useAvisBref, useEchap, type Avis } from '../commun';
 
 type ProfilDispo = { nom: string; chemin: string };
 type Manque = { cle: string; libelle: string };
-type Avis = { texte: string; erreur?: boolean } | null;
 type Demandee = { cle: string; libelles?: string[]; sites?: string[] };
 type Dire = (texte: string, erreur?: boolean) => void;
 
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const nomFichier = (chemin: string) => chemin.split(/[\\/]/).pop() ?? chemin;
 const SANS_ETAT: EtatProfil = { manquants: [], a_completer: [] };
 const SVG = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', 'aria-hidden': true } as const;
@@ -61,12 +60,7 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
   const editeur = useEditeur(origine, schema);
   const dire = useCallback<Dire>((texte, erreur = false) => setAvis({ texte, erreur }), []);
 
-  // Avis 3,5 s, erreur 8 s, comme les notifications de l'ancien dashboard
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis]);
+  useAvisBref(avis, setAvis);
 
   const relireListe = useCallback(async () => {
     const [liste, inc, sch] = await Promise.all([
@@ -109,15 +103,10 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
   }, [fiche, relireListe, ouvrirProfil, dire]);
 
   // Échap ferme la confirmation, sinon le panneau
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (confirmation) setConfirmation(null);
-      else if (onglet) fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [confirmation, onglet, fermer]);
+  useEchap(() => {
+    if (confirmation) setConfirmation(null);
+    else if (onglet) fermer();
+  });
 
   const enregistrer = async () => {
     setOccupe(true);

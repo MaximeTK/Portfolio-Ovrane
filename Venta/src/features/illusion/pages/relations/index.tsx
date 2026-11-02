@@ -8,6 +8,7 @@ import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { AuPied, Confirmer, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
+import { message, useAvisBref, useEchap, type Avis } from '../commun';
 
 // Ce que /relations rend pour le nuage, et /relations/{numero} pour la fiche
 type Personne = { numero: number; nom: string; etiquettes?: string[]; entreprise?: string; poste?: string; echanges: number };
@@ -19,7 +20,6 @@ type Fiche = {
   liens: { numero: number; nature: string; nom: string }[]; echanges: Echange[];
 };
 type AppelCourt = { id: number; titre: string; debut: string };
-type Avis = { texte: string; erreur?: boolean } | null;
 type Vue = { x: number; y: number; l: number; h: number };
 
 // Une couleur par étiquette, dans l'ordre des grappes, répétées au-delà
@@ -33,7 +33,6 @@ const CHAMPS = [
   ['linkedin', 'LinkedIn'], ['notes', 'Notes personnelles', 'long'],
 ] as const;
 type Cle = (typeof CHAMPS)[number][0];
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 // Une date d'Illusion, en UTC sans fuseau écrit
 const utc = (t: string) => new Date(/(Z|[+-]\d{2}:?\d{2})$/i.test(t) ? t : `${t}Z`);
 const jour = (iso?: string) => (iso ? utc(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '');
@@ -123,18 +122,8 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
   const allumee = onglet === 'fiche' && objet !== null ? Number(objet) : null;
 
   // Échap ferme le panneau, sauf celui qu'une confirmation garde pour elle
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [fermer]);
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis, setAvis]);
+  useEchap(fermer);
+  useAvisBref(avis, setAvis);
   // La taille du nuage : la vue garde ses proportions, sans bande vide autour
   useLayoutEffect(() => {
     const el = zone.current;

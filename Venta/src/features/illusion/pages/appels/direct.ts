@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { appeler } from '../../api';
 import { aOublier } from '../../stockage';
+import type { Avis } from '../commun';
 
 // RUBY en direct : l'audio ne quitte le navigateur que vers AssemblyAI.
 
@@ -24,7 +25,6 @@ type MessageFlux = {
   type: string; end_of_turn?: boolean; transcript?: string; turn_order: number; speaker_label?: string;
   words?: { start: number; end: number }[]; revisions?: { turn_order: number; speaker_label: string }[]; session_duration_seconds?: number;
 };
-export type Avis = { texte: string; erreur?: boolean } | null;
 
 export type EtatDirect = {
   appel: AppelOuvert | null;

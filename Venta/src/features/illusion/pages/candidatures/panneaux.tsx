@@ -6,13 +6,11 @@ import { appeler, televerser } from '../../api';
 import { useSondage } from '../../activite/sondage';
 import { MarqueAdmin, type Onglet } from '../../dock/Panneau';
 import { nomProfil } from '../../partage/FicheOffre';
+import { message, duree, type Avis } from '../commun';
 
-export type Avis = { texte: string; erreur?: boolean } | null;
 // Refus d'un lancement faute de profil complet : chaque profil et ce qui manque
 export type Incomplet = { message: string; profils: { nom: string; manquants: { cle: string; libelle: string }[] }[] };
 
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
-const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 const FLECHE = <span className="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>;
 
 // Réglages : compte, puis serveur pour l'admin ; seuls les changés partent

@@ -6,8 +6,8 @@ import { useSondage } from '../../activite/sondage';
 import { AuPied, MarqueAdmin, type Onglet } from '../../dock/Panneau';
 import { dateUtc } from '../../partage/FicheOffre';
 import { aOublier, repris, useGarder } from '../../stockage';
+import { message, duree, type Avis } from '../commun';
 
-export type Avis = { texte: string; erreur?: boolean } | null;
 export type PieceJointe = { nom: string; type: string; taille: number; telechargeable: boolean };
 // Un mail tel que /mails et /mails/fil le rendent
 export type MailLu = {
@@ -41,13 +41,11 @@ const MOTS_ETIQUETTES = ['candidature_recue', 'refus', 'proposition', 'rendez_vo
 // Le relais refuse plus de 21 Mo : 15 Mo de fichiers en base64.
 const PLAFOND_PIECES = 15 * 1024 * 1024;
 
-export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export const adresseSeule = (brut: string) => ((/<([^>]+)>/.exec(brut ?? '')?.[1] ?? brut ?? '').trim());
 export const nomAffiche = (brut: string) => (brut ?? '').trim().split('<')[0].trim().replace(/^"|"$/g, '') || adresseSeule(brut);
 export const formaterDate = (iso: string) => (iso ? dateUtc(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
 const jourMois = (iso: string) => (iso ? dateUtc(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '—');
 const poids = (octets: number) => (!octets ? '' : octets < 1024 ? `${octets} o` : octets < 1048576 ? `${Math.round(octets / 1024)} Ko` : `${(octets / 1048576).toFixed(1)} Mo`);
-const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
 const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;

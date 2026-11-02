@@ -14,9 +14,9 @@ import {
   CorpsAppels, CorpsCouts, CorpsCv, CorpsFantomes, CorpsJobboards, CorpsLiens, CorpsMetiers, CorpsPartage, CorpsWinrate, CorpsWorkflows,
   dollars, jourMoisIso, jours, nombre, nomPoste, pourcent, winrate, type Fantome, type PageMetriques, type Suivi,
 } from './panneaux';
+import { message, useAvisBref, type Avis } from '../commun';
 
 type Periode = { debut: string; fin: string };
-type Avis = { texte: string; erreur?: boolean } | null;
 
 const RACCOURCIS: [number, string][] = [[7, '7 jours'], [30, '30 jours'], [90, '90 jours'], [0, 'Tout']];
 // Les N derniers jours, aujourd'hui compris, en dates locales ; 0 : tout
@@ -27,7 +27,6 @@ const requete = (p: Periode) => {
   const q = new URLSearchParams(Object.entries(p).filter(([, v]) => v)).toString();
   return q ? `?${q}` : '';
 };
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const pluriel = (n: number, mot: string) => `${nombre(n)} ${mot}${n > 1 ? 's' : ''}`;
 // Haut de l'échelle : la valeur ronde au-dessus du jour le plus cher
 const arrondi = (v: number) => {
@@ -148,12 +147,7 @@ function Metriques() {
     };
   }, []);
 
-  // Un avis se lit 3,5 s, une erreur 8 s
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis]);
+  useAvisBref(avis, setAvis);
 
   // Échap ferme le choix d'une date, sinon le panneau
   useEffect(() => {

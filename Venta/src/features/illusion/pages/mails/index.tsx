@@ -12,9 +12,10 @@ import { ongletFicheEntreprise } from '../../partage/FicheEntreprise';
 import { ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import {
-  ICONES, NATURES, Nature, RATTACHEMENTS, adresseSeule, formaterDate, message, nomAffiche,
-  ongletFil, useOngletEcrire, useOngletEtiqueter, useOngletExecuter, useOngletReglages, type Avis, type MailLu,
+  ICONES, NATURES, Nature, RATTACHEMENTS, adresseSeule, formaterDate, nomAffiche,
+  ongletFil, useOngletEcrire, useOngletEtiqueter, useOngletExecuter, useOngletReglages, type MailLu,
 } from './panneaux';
+import { message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
 
 // Ce que /mails rend : la page de la boîte, son résumé et l'état de l'écoute
 type EtatBoite = {
@@ -86,22 +87,12 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
     return () => clearTimeout(t);
   }, [saisie, filtres, setFiltres]);
   // Échap ferme un menu, sinon la confirmation, sinon le panneau
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (menu) setMenu(null);
-      else if (confirmation) setConfirmation(null);
-      else fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [menu, confirmation, fermer]);
-  // Un avis se lit 3,5 s, une erreur 8 s
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis, setAvis]);
+  useEchap(() => {
+    if (menu) setMenu(null);
+    else if (confirmation) setConfirmation(null);
+    else fermer();
+  }, true);
+  useAvisBref(avis, setAvis);
   // « auto » : autant de lignes que le défileur en montre, remesuré au rendu.
   const garnie = !!etat?.mails.length;
   useLayoutEffect(() => {
@@ -328,15 +319,7 @@ function MenuFiltre({ ouvert, basculer, fermer, lib, actif, valeur, options, cou
   ouvert: boolean; basculer: () => void; fermer: () => void; lib: string; actif: boolean; valeur: string;
   options: { valeur: string; nom: string; compte: number }[]; courant: string; choisir: (v: string) => void;
 }) {
-  const hote = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (!hote.current?.contains(e.target as Node)) fermer();
-    };
-    document.addEventListener('pointerdown', dehors);
-    return () => document.removeEventListener('pointerdown', dehors);
-  }, [ouvert, fermer]);
+  const hote = useClicDehors(ouvert, fermer);
   return (
     <div ref={hote} className="menu-hote filtre-hote">
       <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} aria-label={`${lib} : ${valeur}`} onClick={basculer}>

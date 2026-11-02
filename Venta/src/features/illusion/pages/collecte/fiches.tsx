@@ -12,6 +12,7 @@ import {
   useQuestionsFiche,
 } from '../../partage/FicheEntreprise';
 import { ongletFicheOffre } from '../../partage/FicheOffre';
+import { duree, useEchap, useMenu } from '../commun';
 
 const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
 export const ICONES = {
@@ -100,23 +101,7 @@ export type Confirmation = { question: string; detail?: React.ReactNode; action:
 
 type Choix = { valeur: string; libelle: string; compte?: number };
 function MenuFiltre({ lib, affiche, choix, valeur, choisir }: { lib: string; affiche: string; choix: Choix[]; valeur: string; choisir: (v: string) => void }) {
-  const [ouvert, setOuvert] = useState(false);
-  const hote = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => !hote.current?.contains(e.target as Node) && setOuvert(false);
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      setOuvert(false);
-    };
-    document.addEventListener('pointerdown', dehors);
-    document.addEventListener('keydown', echap, true);
-    return () => {
-      document.removeEventListener('pointerdown', dehors);
-      document.removeEventListener('keydown', echap, true);
-    };
-  }, [ouvert]);
+  const { ouvert, setOuvert, hote } = useMenu();
   return (
     <div ref={hote} className="menu-hote">
       <button type="button" className={`filtre${valeur ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
@@ -238,14 +223,9 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
   useSondage(lire, 8000);
 
   // Échap referme la confirmation d'abord, puis le panneau
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || confirmation || question || !onglet) return;
-      fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [confirmation, question, onglet, fermer]);
+  useEchap(() => {
+    if (!confirmation && !question && onglet) fermer();
+  });
 
   useLayoutEffect(mesurer, [donnees, mesurer]);
   const lignes = donnees?.lignes ?? [];
@@ -637,7 +617,6 @@ const CONTROLES: Record<string, (v: string) => string> = {
   siren: (v) => (/^\d{9}$/.test(v) ? '' : 'le SIREN compte 9 chiffres'),
 };
 const LIBELLES_FICHE: Record<string, string> = { url: 'Site officiel', nom: 'Entreprise', siren: 'SIREN' };
-export const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 const lireRetenues = (nom: string): Valeurs => {
   try {
     return JSON.parse(localStorage.getItem(cleBrouillon(`atelier:${nom}`)) ?? '{}');

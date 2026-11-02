@@ -8,7 +8,8 @@ import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
-import { Couleurs, ICONES, ListeFichiers, message, poids, useAvis, useFichiers, type Fichier } from '../documents/commun';
+import { Couleurs, ICONES, ListeFichiers, poids, useAvis, useFichiers, type Fichier } from '../documents/commun';
+import { message } from '../commun';
 
 type Reglages = { constructeur_fond: string; constructeur_palette: string[] };
 type Sorte = 'background' | 'structure' | 'title';

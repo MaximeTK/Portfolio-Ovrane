@@ -5,12 +5,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import './commun.css';
 import { appeler, televerser } from '../../api';
 import { repris, useGarder } from '../../stockage';
+import { message, useMenu } from '../commun';
 
 // Partagé par Documents et Constructeur : icônes, menus, couleurs, fichiers
 
 // Les fichiers servis tels quels passent par le même relais que appeler()
 export const RELAIS = '/api/illusion/app';
-export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
 export const ICONES = {
@@ -61,27 +61,7 @@ export type Choix = { cle: string; libelle: string };
 export function MenuFiltre({ lib, valeur, actif, choix, courant, choisir, titre, children }: {
   lib?: string; valeur: string; actif: boolean; choix?: Choix[]; courant?: string; choisir?: (cle: string) => void; titre?: string; children?: React.ReactNode;
 }) {
-  const [ouvert, setOuvert] = useState(false);
-  const hote = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (!hote.current?.contains(e.target as Node)) setOuvert(false);
-    };
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      // Avant la page : Échap ferme le menu, pas le panneau
-      e.preventDefault();
-      e.stopPropagation();
-      setOuvert(false);
-    };
-    document.addEventListener('pointerdown', dehors);
-    document.addEventListener('keydown', echap, true);
-    return () => {
-      document.removeEventListener('pointerdown', dehors);
-      document.removeEventListener('keydown', echap, true);
-    };
-  }, [ouvert]);
+  const { ouvert, setOuvert, hote } = useMenu(true);
   return (
     <div ref={hote} className="menu-hote filtre-doc">
       <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} title={titre}

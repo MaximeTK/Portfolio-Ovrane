@@ -12,7 +12,8 @@ import { Confirmer, MarqueAdmin, Panneau } from '../../dock/Panneau';
 import { ongletFicheEntreprise } from '../../partage/FicheEntreprise';
 import { ETAPES, OFFRE_CHANGEE, dateUtc, jourMois, libelleSource, nomProfil, ongletAjoutCompetence, ongletFicheOffre, type DemandeAjout } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
-import { ongletProfilIncomplet, useOngletAjout, useOngletDirect, useOngletReglages, type Avis, type Incomplet } from './panneaux';
+import { ongletProfilIncomplet, useOngletAjout, useOngletDirect, useOngletReglages, type Incomplet } from './panneaux';
+import { message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
 
 // Une ligne de la file telle que /candidatures la rend
 type OffreFile = {
@@ -26,7 +27,6 @@ type EtatFile = {
 type Filtres = { etape: string; metier: string; langue: string };
 const LANGUES: Record<string, string> = { fr: 'Français', en: 'Anglais', de: 'Allemand', es: 'Espagnol', it: 'Italien', pt: 'Portugais', nl: 'Néerlandais' };
 const TAILLES = [25, 50, 100];
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
 const ICONES = {
@@ -137,22 +137,12 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
     return () => clearTimeout(minuteur);
   }, [direct, admin, ouvrir]);
   // Échap ferme un menu, sinon la confirmation, sinon le panneau
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (menu) setMenu(null);
-      else if (confirmation) setConfirmation(null);
-      else fermer();
-    };
-    document.addEventListener('keydown', echap);
-    return () => document.removeEventListener('keydown', echap);
-  }, [menu, confirmation, fermer]);
-  // Un avis se lit 3,5 s, une erreur 8 s
-  useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis, setAvis]);
+  useEchap(() => {
+    if (menu) setMenu(null);
+    else if (confirmation) setConfirmation(null);
+    else fermer();
+  }, true);
+  useAvisBref(avis, setAvis);
   // « auto » : autant de lignes que le défileur en montre entières
   const nbLignes = file?.offres?.length ?? 0;
   useLayoutEffect(() => {
@@ -338,15 +328,7 @@ function MenuFiltre({ ouvert, basculer, fermer, actif, label, valeur, options, c
   ouvert: boolean; basculer: () => void; fermer: () => void; actif: boolean; label: string; valeur: React.ReactNode;
   options: { valeur: string; nom: string; compte: number }[]; courant: string; choisir: (v: string) => void;
 }) {
-  const hote = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (!hote.current?.contains(e.target as Node)) fermer();
-    };
-    document.addEventListener('pointerdown', dehors);
-    return () => document.removeEventListener('pointerdown', dehors);
-  }, [ouvert, fermer]);
+  const hote = useClicDehors(ouvert, fermer);
   return (
     <div ref={hote} className="menu-hote filtre-hote">
       <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} aria-label={label} onClick={basculer}>

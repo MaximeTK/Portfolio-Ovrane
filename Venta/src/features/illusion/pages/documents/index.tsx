@@ -10,8 +10,9 @@ import { useSondage } from '../../activite/sondage';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
-import { ICONES, MenuFiltre, RELAIS, court, message, useAvis } from './commun';
+import { ICONES, MenuFiltre, RELAIS, court, useAvis } from './commun';
 import { PanneauDocuments } from './panneaux';
+import { message } from '../commun';
 
 // Une pièce de la galerie telle que /productions la rend
 export type Production = {
