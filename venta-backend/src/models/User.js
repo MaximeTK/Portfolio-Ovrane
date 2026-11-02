@@ -70,5 +70,8 @@ const UserSchema = new mongoose.Schema({
 // Index sparse pour email (null autorisé, unicité sur les valeurs non-null)
 UserSchema.index({ email: 1 }, { sparse: true, unique: true });
 
+// Connexion et inscription cherchent aussi par pseudo : pas de parcours complet
+UserSchema.index({ nameNormalized: 1 });
+
 // Empêcher la recompilation du modèle si le fichier est réimporté (Hot Reload)
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
