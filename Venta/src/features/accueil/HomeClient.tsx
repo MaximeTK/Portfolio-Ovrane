@@ -16,7 +16,8 @@ import { IntroSequence } from './IntroSequence';
 const MessagingView = dynamic(() => import('@/features/chat/MessagingView').then((m) => m.MessagingView));
 // ssr: false pose une frontière à repli nul : l'œil n'attend pas le module
 const chargerFenetres = () => import('@/features/fenetres/GlassmorphismeWindow');
-const WindowsManager = dynamic(() => chargerFenetres().then((m) => m.WindowsManager), { ssr: false });
+// Module injoignable (redéploiement, réseau) : la fenêtre se perd, pas le site
+const WindowsManager = dynamic(() => chargerFenetres().then((m) => m.WindowsManager).catch(() => () => null), { ssr: false });
 
 // Page actualisée et non ouverte : l'accueil s'affiche sans être redit
 const estRechargement = () => (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload';
@@ -175,7 +176,7 @@ export default function HomeClient() {
 
   const handleSubmit = (text: string) => {
     // La réponse prend plus de temps que le module de ses fenêtres
-    void chargerFenetres();
+    void chargerFenetres().catch(() => undefined);
     setLastProcessedTranscript('');
     setScrollTrigger((n) => n + 1);
     setCurrentAnimation('thinking');
