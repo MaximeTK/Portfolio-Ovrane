@@ -7,7 +7,6 @@ import { useTTS, type FluxVoix } from '@/features/oeil/useTTS';
 import { HexagonalAnimation, type HexagonalAnimationHandle } from '@/features/oeil/HexagonalAnimation';
 import { useChatController } from '@/features/chat/useChatController';
 import { InputArea } from '@/features/chat/InputArea';
-import { WindowsManager } from '@/features/fenetres/GlassmorphismeWindow';
 import { SiteHeader } from '@/features/site/SiteHeader';
 import { PageView } from '@/features/site/PageView';
 import { useUIStore, CLE_SON, CLE_VERRE } from '@/lib/uiStore';
@@ -15,6 +14,9 @@ import { CHAT_UI } from '@/lib/messages';
 import { IntroSequence } from './IntroSequence';
 
 const MessagingView = dynamic(() => import('@/features/chat/MessagingView').then((m) => m.MessagingView));
+// ssr: false pose une frontière à repli nul : l'œil n'attend pas le module
+const chargerFenetres = () => import('@/features/fenetres/GlassmorphismeWindow');
+const WindowsManager = dynamic(() => chargerFenetres().then((m) => m.WindowsManager), { ssr: false });
 
 // Page actualisée et non ouverte : l'accueil s'affiche sans être redit
 const estRechargement = () => (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload';
@@ -45,6 +47,7 @@ export default function HomeClient() {
   const setAppState = useUIStore((state) => state.setAppState);
   const viewMode = useUIStore((state) => state.viewMode);
   const page = useUIStore((state) => state.page);
+  const aDesFenetres = useUIStore((state) => state.windows.length > 0);
   // Si les canaux d'Illusion sont montrés, l'œil leur laisse sa place
   const oeilEfface = useUIStore((state) => state.cote === 'illusion' && (state.page !== null || state.viewMode === 'messaging'));
   const isAppLocked = useUIStore((state) => state.isAppLocked);
@@ -171,6 +174,8 @@ export default function HomeClient() {
   }, [status, currentTranscript, lastProcessedTranscript, currentTTS, currentVoix, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addWindow, setWindowContent, montrerAstuce, setAppState, viewMode, page, sonCoupe]);
 
   const handleSubmit = (text: string) => {
+    // La réponse prend plus de temps que le module de ses fenêtres
+    void chargerFenetres();
     setLastProcessedTranscript('');
     setScrollTrigger((n) => n + 1);
     setCurrentAnimation('thinking');
@@ -260,7 +265,7 @@ export default function HomeClient() {
       </div>
 
       {/* Fenêtres flottantes : jamais en messagerie, ni sur une page, ni sous md */}
-      {appState === 'awake' && viewMode !== 'messaging' && !page && (
+      {aDesFenetres && appState === 'awake' && viewMode !== 'messaging' && !page && (
         <div className="hidden md:block">
           <WindowsManager />
         </div>
