@@ -31,6 +31,10 @@ const illusion = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': "sandbox; default-src 'none'; img-src data:" });
       return res.end('<p>Bonjour</p>');
     }
+    if (req.url.startsWith('/api/hostile')) {
+      res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Security-Policy': "default-src 'none'" });
+      return res.end('<meta http-equiv="refresh" content="0;url=https://evil.example">');
+    }
     if (req.url.startsWith('/api/page')) {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       return res.end('<script>alert(1)</script>');
@@ -159,6 +163,11 @@ test('relais Illusion : réponse en flux avec son statut, son type, son nom et s
   const refus = await envoyer('/api/illusion/app/refus', { methode: 'POST' });
   assert.deepEqual([refus.status, refus.json], [422, { detail: [{ type: 'missing', loc: ['body', 'url'], msg: 'Field required' }] }]);
   assert.equal((await envoyer('/api/illusion/app/mail')).headers['content-security-policy'], "sandbox; default-src 'none'; img-src data:");
+  // Isolé par sandbox, il s'affiche ; sinon, il se télécharge
+  assert.equal((await envoyer('/api/illusion/app/mail')).headers['content-disposition'], undefined);
+  const hostile = await envoyer('/api/illusion/app/hostile');
+  assert.equal(hostile.headers['content-disposition'], 'attachment');
+  assert.equal(hostile.headers['content-security-policy'], "default-src 'none'");
   // Sans CSP d'Illusion, une page active ne s'exécute pas sur le domaine du site
   assert.equal((await envoyer('/api/illusion/app/page')).headers['content-security-policy'], "sandbox; default-src 'none'");
   assert.equal((await envoyer('/api/illusion/app/candidatures')).headers['content-security-policy'], undefined);

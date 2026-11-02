@@ -19,7 +19,7 @@ function backendUrl(): string {
 // Une route relaie sa requête, une page serveur ses en-têtes et cookies
 type Source = Pick<NextRequest, 'headers'> & { cookies: { get(nom: string): { value: string } | undefined } };
 
-// Seuls ces en-têtes d'Illusion reviennent ; sa CSP isole le HTML des mails
+// Seuls ces en-têtes d'Illusion reviennent ; sa CSP isole ses documents
 const RENDUS_ILLUSION = ['content-type', 'content-disposition', 'content-length', 'content-security-policy'];
 
 /** En-têtes des appels au backend ; null en production sans SERVICE_SECRET */

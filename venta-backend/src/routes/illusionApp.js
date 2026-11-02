@@ -75,8 +75,11 @@ function relayer(req, res) {
     if (res.headersSent) return reponse.resume();
     res.status(reponse.statusCode);
     for (const nom of RENDUS) if (reponse.headers[nom]) res.setHeader(nom, reponse.headers[nom]);
-    if (ACTIF.test(reponse.headers['content-type'] || '') && !reponse.headers['content-security-policy']) {
-      res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+    if (ACTIF.test(reponse.headers['content-type'] || '')) {
+      const csp = reponse.headers['content-security-policy'];
+      if (!csp) res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+      // Sans sandbox, un mail hostile s'afficherait seul sous l'URL du site
+      else if (!csp.includes('sandbox')) res.setHeader('Content-Disposition', 'attachment');
     }
     res.setHeader('Cache-Control', 'no-store');
     pipeline(reponse, res, () => {});
