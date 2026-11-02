@@ -12,7 +12,7 @@ import { useSondage } from '../../activite/sondage';
 import type { ProprietesPage } from '../liste';
 import { useOngletApparence } from './apparence';
 import { FILTRES, SITE_GLOBAL, TableComptes, lignesDe, ongletTester, useOngletAjout, versEnvoi, type Essai, type Identifiant, type Ligne } from './comptes';
-import { message, useAvisBref, useEchap, useMenu, type Avis } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, useMenu, type Avis } from '../commun';
 
 type Parametres = Record<string, unknown> & { modeles: { nom: string; modele?: string }[]; identifiants: Identifiant[] };
 type Sorte = 'inter' | 'nombre' | 'texte' | 'liste' | 'secret' | 'choix' | 'modele' | 'texte_long' | 'couleurs';
@@ -25,13 +25,12 @@ type Confirmation = { sorte: 'sites' } | { sorte: 'piece'; nom: string } | null;
 const egal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const decouper = (v: unknown) => String(v ?? '').split(',').map((x) => x.trim()).filter(Boolean);
 const poids = (o: number) => (o < 1024 ? `${o} o` : `${(o / 1024).toFixed(1).replace('.', ',')} Ko`);
-const SVG = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', 'aria-hidden': true } as const;
 const ICONES = {
-  plus: <svg {...SVG}><path d="M12 5v14M5 12h14" /></svg>,
-  supprimer: <svg {...SVG}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
-  valider: <svg {...SVG}><path d="m5 12 5 5 9-10" /></svg>,
-  chevron: <svg {...SVG} className="chevron"><path d="m6 9 6 6 6-6" /></svg>,
-  televerser: <svg {...SVG}><path d="M12 16V4M6 10l6-6 6 6M4 20h16" /></svg>,
+  ...ICONES_COMMUNES,
+  plus: <svg {...TRAIT}><path d="M12 5v14M5 12h14" /></svg>,
+  valider: <svg {...TRAIT}><path d="m5 12 5 5 9-10" /></svg>,
+  chevron: <svg {...TRAIT} className="chevron"><path d="m6 9 6 6 6-6" /></svg>,
+  televerser: <svg {...TRAIT}><path d="M12 16V4M6 10l6-6 6 6M4 20h16" /></svg>,
 };
 const ico = (i: React.ReactNode) => <span className="ico">{i}</span>;
 const FONDS: [string, string][] = [['', 'Aléatoire'], ...['aplat', 'degrade', 'photo', 'photo-teintee', 'blanc'].map((f): [string, string] => [f, f])];

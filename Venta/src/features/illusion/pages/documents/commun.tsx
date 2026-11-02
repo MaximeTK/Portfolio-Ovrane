@@ -5,19 +5,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import './commun.css';
 import { appeler, televerser } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { message, useMenu } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, useMenu } from '../commun';
 
 // Partagé par Documents et Constructeur : icônes, menus, couleurs, fichiers
 
 // Les fichiers servis tels quels passent par le même relais que appeler()
 export const RELAIS = '/api/illusion/app';
 
-const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
 export const ICONES = {
-  chevron: <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>,
-  reglages: <svg {...TRAIT}><polygon points="22.3,10.2 22.3,13.8 19.4,13.8 18.5,15.9 20.6,18.0 18.0,20.6 15.9,18.5 13.8,19.4 13.8,22.3 10.2,22.3 10.2,19.4 8.1,18.5 6.0,20.6 3.4,18.0 5.5,15.9 4.6,13.8 1.7,13.8 1.7,10.2 4.6,10.2 5.5,8.1 3.4,6.0 6.0,3.4 8.1,5.5 10.2,4.6 10.2,1.7 13.8,1.7 13.8,4.6 15.9,5.5 18.0,3.4 20.6,6.0 18.5,8.1 19.4,10.2" /><circle cx="12" cy="12" r="3" /></svg>,
-  supprimer: <svg {...TRAIT}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
-  plus: <svg {...TRAIT} strokeWidth={2.6}><path d="M12 5v14M5 12h14" /></svg>,
+  ...ICONES_COMMUNES,
   oeil: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" /><circle cx="12" cy="12" r="3" /></svg>,
   suite: <svg {...TRAIT}><path d="m6 9 6 6 6-6" /></svg>,
   exporter: <svg {...TRAIT}><path d="M12 15V4M7 9l5-5 5 5M5 20h14" /></svg>,

@@ -6,7 +6,7 @@ import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 import { AuPied, type Onglet } from '../../dock/Panneau';
 import { jourMois, nomProfil } from '../../partage/FicheOffre';
-import { message } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message } from '../commun';
 
 // Ce que /workflows/rejeu rend : dernier passage, étape en attente, journal.
 export type Saisie = { question?: string; valeur?: string; source?: { sorte?: string; donnee?: string }; signalement?: string; site?: string; ligne?: string; page?: string };
@@ -39,12 +39,11 @@ const FORMES_CHAMP: Record<string, string> = { text: 'Texte', texte_long: 'Texte
 // « Ville de naissance » → ville_de_naissance
 const cleDe = (texte?: string) => (texte ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
 
-const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', 'aria-hidden': true } as const;
 const ICONES = {
+  ...ICONES_COMMUNES,
   arreter: <svg {...TRAIT}><rect x="6" y="6" width="12" height="12" /></svg>,
   auto: <svg {...TRAIT}><path d="m5 5 7 7-7 7M13 5l7 7-7 7" /></svg>,
   suivant: <svg {...TRAIT}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
-  jouer: <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>,
   valider: <svg {...TRAIT} strokeWidth={2.6}><path d="m5 12 5 5 9-10" /></svg>,
   chevron: <svg {...TRAIT}><path d="m6 9 6 6 6-6" /></svg>,
 };

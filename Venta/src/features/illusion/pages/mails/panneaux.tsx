@@ -6,7 +6,7 @@ import { useSondage } from '../../activite/sondage';
 import { AuPied, MarqueAdmin, type Onglet } from '../../dock/Panneau';
 import { dateUtc } from '../../partage/FicheOffre';
 import { aOublier, repris, useGarder } from '../../stockage';
-import { message, duree, type Avis } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, duree, type Avis } from '../commun';
 
 export type PieceJointe = { nom: string; type: string; taille: number; telechargeable: boolean };
 // Un mail tel que /mails et /mails/fil le rendent
@@ -48,14 +48,9 @@ const jourMois = (iso: string) => (iso ? dateUtc(iso).toLocaleDateString('fr-FR'
 const poids = (octets: number) => (!octets ? '' : octets < 1024 ? `${octets} o` : octets < 1048576 ? `${Math.round(octets / 1024)} Ko` : `${(octets / 1048576).toFixed(1)} Mo`);
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
-const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
 export const ICONES = {
-  chevron: <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>,
-  loupe: <svg {...TRAIT}><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>,
+  ...ICONES_COMMUNES,
   tag: <svg {...TRAIT}><path d="M3 3h8l10 10-8 8L3 11z" /><path d="M7.5 7.5h.01" /></svg>,
-  supprimer: <svg {...TRAIT}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
-  reglages: <svg {...TRAIT}><polygon points="22.3,10.2 22.3,13.8 19.4,13.8 18.5,15.9 20.6,18.0 18.0,20.6 15.9,18.5 13.8,19.4 13.8,22.3 10.2,22.3 10.2,19.4 8.1,18.5 6.0,20.6 3.4,18.0 5.5,15.9 4.6,13.8 1.7,13.8 1.7,10.2 4.6,10.2 5.5,8.1 3.4,6.0 6.0,3.4 8.1,5.5 10.2,4.6 10.2,1.7 13.8,1.7 13.8,4.6 15.9,5.5 18.0,3.4 20.6,6.0 18.5,8.1 19.4,10.2" /><circle cx="12" cy="12" r="3" /></svg>,
-  plus: <svg {...TRAIT} strokeWidth={2.6}><path d="M12 5v14M5 12h14" /></svg>,
   rattacher: <svg {...TRAIT}><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>,
   vider: <svg {...TRAIT}><path d="M3 13h5l1.5 3h5l1.5-3h5" /><path d="M5 5h14l2 8v6H3v-6z" /></svg>,
   executer: <svg {...TRAIT}><path d="m4 17 6-5-6-5M12 19h8" /></svg>,
@@ -63,7 +58,6 @@ export const ICONES = {
   fiche: <svg {...TRAIT}><rect x="3" y="7" width="18" height="13" /><path d="M9 7V4h6v3M3 13h18" /></svg>,
   offre: <svg {...TRAIT}><path d="M14 3H6v18h12V7z" /><path d="M14 3v4h4M9 12h6M9 16h6" /></svg>,
   reecrire: <svg {...TRAIT}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
-  fleche: <svg {...TRAIT} strokeWidth={2.6}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
   valider: <svg {...TRAIT} strokeWidth={2.6}><path d="M5 12l5 5L20 7" /></svg>,
 };
 

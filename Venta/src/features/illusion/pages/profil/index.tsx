@@ -10,7 +10,7 @@ import { Activite } from '../../activite/Activite';
 import type { ProprietesPage } from '../liste';
 import { FORMES_CHAMP, SECTIONS_DE_CHAMP, libelleDonnee, titreProfil, type ChampSchema } from './champs';
 import { EditeurProfil, useEditeur, type EtatProfil, type Profil } from './editeur';
-import { message, useAvisBref, useEchap, type Avis } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
 
 type ProfilDispo = { nom: string; chemin: string };
 type Manque = { cle: string; libelle: string };
@@ -19,12 +19,11 @@ type Dire = (texte: string, erreur?: boolean) => void;
 
 const nomFichier = (chemin: string) => chemin.split(/[\\/]/).pop() ?? chemin;
 const SANS_ETAT: EtatProfil = { manquants: [], a_completer: [] };
-const SVG = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', 'aria-hidden': true } as const;
 const ICONES = {
-  supprimer: <svg {...SVG}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
-  dupliquer: <svg {...SVG}><rect x="8" y="8" width="12" height="12" /><path d="M16 8V4H4v12h4" /></svg>,
-  fleche: <svg {...SVG}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
-  plus: <svg {...SVG}><path d="M12 5v14M5 12h14" /></svg>,
+  ...ICONES_COMMUNES,
+  dupliquer: <svg {...TRAIT}><rect x="8" y="8" width="12" height="12" /><path d="M16 8V4H4v12h4" /></svg>,
+  fleche: <svg {...TRAIT}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
+  plus: <svg {...TRAIT}><path d="M12 5v14M5 12h14" /></svg>,
 };
 const ico = (i: React.ReactNode) => <span className="ico">{i}</span>;
 // Le constructeur refuse un profil sans expérience : la carte le dit

@@ -14,7 +14,7 @@ import {
   CorpsAppels, CorpsCouts, CorpsCv, CorpsFantomes, CorpsJobboards, CorpsLiens, CorpsMetiers, CorpsPartage, CorpsWinrate, CorpsWorkflows,
   dollars, jourMoisIso, jours, nombre, nomPoste, pourcent, winrate, type Fantome, type PageMetriques, type Suivi,
 } from './panneaux';
-import { message, useAvisBref, type Avis } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, useAvisBref, type Avis } from '../commun';
 
 type Periode = { debut: string; fin: string };
 
@@ -36,8 +36,7 @@ const arrondi = (v: number) => {
 };
 const centimes = (v: number) => `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`;
 
-const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
-const CHEVRON = <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
+const CHEVRON = ICONES_COMMUNES.chevron;
 const DOSSIER = <svg {...TRAIT}><path d="M3 6h6l2 2h10v11H3z" /><path d="M3 11h18" /></svg>;
 const VALIDER = <svg {...TRAIT}><path d="m5 12 5 5 9-10" /></svg>;
 

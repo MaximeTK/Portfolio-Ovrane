@@ -8,7 +8,7 @@ import { Activite } from '../../activite/Activite';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { AuPied, Confirmer, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
-import { message, useAvisBref, useEchap, type Avis } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
 
 // Ce que /relations rend pour le nuage, et /relations/{numero} pour la fiche
 type Personne = { numero: number; nom: string; etiquettes?: string[]; entreprise?: string; poste?: string; echanges: number };
@@ -40,14 +40,11 @@ const quand = (iso: string) => utc(iso).toLocaleString('fr-FR', { day: '2-digit'
 const groupe = (p: Personne) => p.etiquettes?.[0] || SANS;
 const cote = (p: Personne) => 9 + Math.min(7.2, Math.sqrt(p.echanges || 0) * 4.2);
 
-const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
 const ICONES = {
-  loupe: <svg {...TRAIT}><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>,
+  ...ICONES_COMMUNES,
   televerser: <svg {...TRAIT}><path d="M12 15V3M7 8l5-5 5 5M4 15v6h16v-6" /></svg>,
   lapis: <svg {...TRAIT}><circle cx="10" cy="8" r="4" /><path d="M3 20c0-3.5 3-6 7-6" /><circle cx="17" cy="16" r="3" /><path d="m21 20-1.8-1.8" /></svg>,
-  plus: <svg {...TRAIT} strokeWidth={2.6}><path d="M12 5v14M5 12h14" /></svg>,
   coche: <svg {...TRAIT} strokeWidth={2.6}><path d="M5 12l5 5L20 7" /></svg>,
-  supprimer: <svg {...TRAIT}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
 };
 
 // Une grappe par première étiquette, ses personnes en spirale de tournesol

@@ -11,7 +11,7 @@ import { Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../
 import { dateUtc, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { demarrer, nomEnDirect, oublierAvis, terminer, useDirect, type Mode, type Tour } from './direct';
-import { message, duree, useAvisBref, useEchap, type Avis } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, duree, useAvisBref, useEchap, type Avis } from '../commun';
 
 // Ce que /vues/appels rend : appels, offres et jour de candidature.
 type LigneAppel = {
@@ -35,14 +35,10 @@ const dollars = (v: number) => `${v.toLocaleString('fr-FR', { minimumFractionDig
 const minutes = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 const libelleOffre = (o: OffreEnvoyee) => `${o.entreprise} — ${o.titre} · ${jour(o.envoyee_le)}`;
 
-const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
 const ICONES = {
-  reglages: <svg {...TRAIT}><polygon points="22.3,10.2 22.3,13.8 19.4,13.8 18.5,15.9 20.6,18.0 18.0,20.6 15.9,18.5 13.8,19.4 13.8,22.3 10.2,22.3 10.2,19.4 8.1,18.5 6.0,20.6 3.4,18.0 5.5,15.9 4.6,13.8 1.7,13.8 1.7,10.2 4.6,10.2 5.5,8.1 3.4,6.0 6.0,3.4 8.1,5.5 10.2,4.6 10.2,1.7 13.8,1.7 13.8,4.6 15.9,5.5 18.0,3.4 20.6,6.0 18.5,8.1 19.4,10.2" /><circle cx="12" cy="12" r="3" /></svg>,
-  plus: <svg {...TRAIT} strokeWidth={2.6}><path d="M12 5v14M5 12h14" /></svg>,
-  fleche: <svg {...TRAIT} strokeWidth={2.6}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
+  ...ICONES_COMMUNES,
   coche: <svg {...TRAIT} strokeWidth={2.6}><path d="M5 12l5 5L20 7" /></svg>,
   refaire: <svg {...TRAIT}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
-  supprimer: <svg {...TRAIT}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
   arreter: <svg {...TRAIT}><rect x="6" y="6" width="12" height="12" /></svg>,
 };
 

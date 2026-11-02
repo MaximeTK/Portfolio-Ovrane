@@ -13,7 +13,7 @@ import { ongletFicheEntreprise } from '../../partage/FicheEntreprise';
 import { ETAPES, OFFRE_CHANGEE, dateUtc, jourMois, libelleSource, nomProfil, ongletAjoutCompetence, ongletFicheOffre, type DemandeAjout } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { ongletProfilIncomplet, useOngletAjout, useOngletDirect, useOngletReglages, type Incomplet } from './panneaux';
-import { message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
 
 // Une ligne de la file telle que /candidatures la rend
 type OffreFile = {
@@ -28,14 +28,9 @@ type Filtres = { etape: string; metier: string; langue: string };
 const LANGUES: Record<string, string> = { fr: 'Français', en: 'Anglais', de: 'Allemand', es: 'Espagnol', it: 'Italien', pt: 'Portugais', nl: 'Néerlandais' };
 const TAILLES = [25, 50, 100];
 
-const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
 const ICONES = {
-  chevron: <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>,
+  ...ICONES_COMMUNES,
   reprendre: <svg {...TRAIT}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
-  vider: <svg {...TRAIT}><path d="M4 6h16M6 6l1 14h10l1-14M9 10l6 6M15 10l-6 6" /></svg>,
-  supprimer: <svg {...TRAIT}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
-  reglages: <svg {...TRAIT}><polygon points="22.3,10.2 22.3,13.8 19.4,13.8 18.5,15.9 20.6,18.0 18.0,20.6 15.9,18.5 13.8,19.4 13.8,22.3 10.2,22.3 10.2,19.4 8.1,18.5 6.0,20.6 3.4,18.0 5.5,15.9 4.6,13.8 1.7,13.8 1.7,10.2 4.6,10.2 5.5,8.1 3.4,6.0 6.0,3.4 8.1,5.5 10.2,4.6 10.2,1.7 13.8,1.7 13.8,4.6 15.9,5.5 18.0,3.4 20.6,6.0 18.5,8.1 19.4,10.2" /><circle cx="12" cy="12" r="3" /></svg>,
-  plus: <svg {...TRAIT} strokeWidth={2.6}><path d="M12 5v14M5 12h14" /></svg>,
 };
 
 // Une seule minuterie pour tous les chronos, lancée tant qu'il y en a un

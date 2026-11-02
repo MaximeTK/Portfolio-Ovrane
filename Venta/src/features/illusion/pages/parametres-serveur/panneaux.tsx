@@ -1,6 +1,6 @@
 'use client';
 
-import { useMenu } from '../commun';
+import { ICONES_COMMUNES, useMenu } from '../commun';
 
 export type Modele = {
   nom: string; fournisseur: string; modele: string; base_url: string; cle_api: boolean; reglages: Record<string, string>; reserve: string;
@@ -125,7 +125,7 @@ export function MenuFournisseur({ valeur, choix, courant, choisir }: { valeur: s
     <div ref={hote} className="menu-hote">
       <button type="button" className={`filtre${courant ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
         <span><span className="lib">Fournisseur</span>{valeur}</span>
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        {ICONES_COMMUNES.chevron}
       </button>
       {ouvert && (
         <div className="menu verre menu-fournisseur" role="listbox" aria-label="Fournisseur des modèles">

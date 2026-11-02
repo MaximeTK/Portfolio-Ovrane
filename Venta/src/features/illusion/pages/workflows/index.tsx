@@ -14,7 +14,7 @@ import {
   ongletChamp, ongletComparaison, ongletIncomplet, ongletRejeu, ongletVerification, useOngletRejouer,
   type Champ, type DemandeRejeu, type EtatRejeu, type Incomplet, type Signalement, type Verification,
 } from './panneaux';
-import { message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
 
 // Arbre d'un site comme /workflows/site le rend, réponses par profil.
 type Valeur = { fiche?: string; avec?: string; format?: string; ia?: unknown; reponse?: unknown; fixe?: string; cv?: unknown; lettre?: unknown } | null;
@@ -34,13 +34,10 @@ type Contexte = { site: string; cle: string; reponses: Carte['reponses']; nomPag
 // Le rejeu est relu chaque seconde tant qu'il tourne.
 const PAS_REJEU_MS = 1000;
 
-const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', 'aria-hidden': true } as const;
 const ICONES = {
-  loupe: <svg {...TRAIT}><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>,
-  chevron: <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>,
+  ...ICONES_COMMUNES,
   portee: <svg {...TRAIT} strokeWidth={2.4}><path d="m6 9 6 6 6-6" /></svg>,
-  bouclier: <svg {...TRAIT} strokeLinejoin="miter"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" /><path d="m8.5 12 2.5 2.5 4.5-5" /></svg>,
-  jouer: <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>,
+  bouclier: <svg {...TRAIT}><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" /><path d="m8.5 12 2.5 2.5 4.5-5" /></svg>,
 };
 
 // D'où une ligne tire sa valeur et la cible qu'elle vise.

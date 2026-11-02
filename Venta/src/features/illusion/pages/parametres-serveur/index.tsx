@@ -12,7 +12,7 @@ import {
   CorpsEffacer, FormModele, MenuFournisseur, NEUF, Voyant, nomCourt, totalApercu, versBrouillon,
   type Apercu, type Brouillon, type Essai, type Fournisseur, type Modele,
 } from './panneaux';
-import { message, useAvisBref, useEchap, type Avis } from '../commun';
+import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
 
 type Parametres = Record<string, unknown> & { modeles: Modele[]; fournisseurs: Record<string, Fournisseur> };
 type Champ = { cle: string; libelle: string; sorte: 'nombre' | 'texte' | 'secret' | 'choix'; aide?: string; choix?: string[]; min?: number };
@@ -61,10 +61,8 @@ const versEnvoi = (b: Brouillon) => ({
 });
 const heure = () => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
 const ICONES = {
-  plus: <svg {...TRAIT} strokeWidth={2.6}><path d="M12 5v14M5 12h14" /></svg>,
-  supprimer: <svg {...TRAIT}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
+  ...ICONES_COMMUNES,
   valider: <svg {...TRAIT}><path d="m5 12 5 5 9-10" /></svg>,
   effacer: <svg {...TRAIT}><path d="M4 6h16M6 6l1 14h10l1-14M9 10l6 6M15 10l-6 6" /></svg>,
 };
