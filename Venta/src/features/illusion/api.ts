@@ -15,7 +15,7 @@ export class ErreurIllusion extends Error {
   }
 }
 
-export type Methode = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+type Methode = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 const RACINE = '/api/illusion/app';
 
@@ -31,7 +31,7 @@ export function quitterSection() {
 const abandonnee = (signal: AbortSignal | null | undefined, error: unknown) => (error as Error)?.name === 'AbortError' && !!signal && sections.has(signal);
 
 /** L'erreur d'une réponse refusée : `detail` d'Illusion, sinon `error` */
-export async function lireErreur(reponse: Response): Promise<ErreurIllusion> {
+async function lireErreur(reponse: Response): Promise<ErreurIllusion> {
   const corps = await reponse.json().catch(() => null);
   const detail = corps?.detail ?? corps?.error;
   const message = typeof detail === 'string' && detail ? detail

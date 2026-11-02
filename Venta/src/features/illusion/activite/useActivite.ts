@@ -9,7 +9,7 @@ import { useSondage } from './sondage';
 export type Sorte = 'envoi' | 'reponse' | 'entretien' | 'relance' | 'offres' | 'afaire';
 
 // Du plus récent au plus ancien, un séparateur après le dernier de chaque jour
-export type ElementFil = { id: string; sorte: Sorte; heure: string; phrase: string } | { id: string; jour: string };
+type ElementFil = { id: string; sorte: Sorte; heure: string; phrase: string } | { id: string; jour: string };
 
 export type DonneesActivite = {
   bilan: Record<Sorte, number>;
@@ -50,13 +50,13 @@ export function phrase(e: Evenement): string {
   }
 }
 
-export const phraseEnCours = (c: ReponseActivite['en_cours']) =>
+const phraseEnCours = (c: ReponseActivite['en_cours']) =>
   c ? `${c.entreprise || 'Une candidature'}, ${PHASES[c.phase] ?? 'la candidature avance'}` : null;
 
 export const heure = (d: Date) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 // Minuit à l'heure du poste, `jours` jours plus tôt
-export function debutDuJour(jours = 0) {
+function debutDuJour(jours = 0) {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - jours);
@@ -73,7 +73,7 @@ export function nomDuJour(d: Date) {
 }
 
 // Le fil de la fenêtre, un séparateur après le dernier élément de chaque jour
-export function avecJours(evenements: Evenement[]): ElementFil[] {
+function avecJours(evenements: Evenement[]): ElementFil[] {
   const fil: ElementFil[] = [];
   evenements.forEach((e, i) => {
     const quand = new Date(e.quand);

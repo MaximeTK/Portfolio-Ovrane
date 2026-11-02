@@ -55,4 +55,4 @@ function useApparenceDuCompte<T>(lire: (s: EtatApparence) => T): T {
   return magasin(lire);
 }
 
-export const useApparence = Object.assign(useApparenceDuCompte, { getState: magasin.getState, setState: magasin.setState, subscribe: magasin.subscribe });
+export const useApparence = Object.assign(useApparenceDuCompte, { getState: magasin.getState });

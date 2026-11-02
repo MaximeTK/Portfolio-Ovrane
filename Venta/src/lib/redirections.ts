@@ -8,7 +8,7 @@ export const REDIRECT_TARGETS = {
   portfolio: '/',
 } as const;
 
-export type RedirectCible = keyof typeof REDIRECT_TARGETS;
+type RedirectCible = keyof typeof REDIRECT_TARGETS;
 
 /** Ordre de test : redirectcvdesign avant redirectcv, qu'il contient. */
 const CIBLES: RedirectCible[] = ['cvdesign', 'cv', 'linkedin', 'github', 'portfolio'];

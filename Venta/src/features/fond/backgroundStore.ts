@@ -1,6 +1,6 @@
 /** Fond de l'application : palette demandée à l'IA ou reprise du profil */
 import { create } from 'zustand';
-import { COLOR_PALETTES, getDefaultPalette, type ColorPalette } from './colorPalettes';
+import { COLOR_PALETTES, type ColorPalette } from './colorPalettes';
 
 interface BackgroundState {
   currentPalette: ColorPalette;
@@ -35,7 +35,7 @@ function resolvePalette(paletteId: string): ColorPalette | undefined {
 }
 
 export const useBackgroundStore = create<BackgroundState>((set) => ({
-  currentPalette: getDefaultPalette(),
+  currentPalette: COLOR_PALETTES.default,
 
   // Le backend enregistre lui-même la préférence du fond qu'il demande
   setBackground: (paletteId) => {
@@ -55,7 +55,7 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
     }).catch(() => {});
   },
 
-  resetBackground: () => set({ currentPalette: getDefaultPalette() }),
+  resetBackground: () => set({ currentPalette: COLOR_PALETTES.default }),
 
   // Préférence du profil de la session, sinon le fond par défaut
   loadPreference: async () => {
@@ -63,6 +63,6 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
       .then((res) => (res.ok ? res.json() : null))
       .catch(() => null);
     const id = data?.preferences?.backgroundColor;
-    set({ currentPalette: (typeof id === 'string' && resolvePalette(id)) || getDefaultPalette() });
+    set({ currentPalette: (typeof id === 'string' && resolvePalette(id)) || COLOR_PALETTES.default });
   },
 }));

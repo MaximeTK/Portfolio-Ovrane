@@ -34,7 +34,7 @@ function createMessage(role: MessageRole, content: string, timestamp = Date.now(
 const normalize = (text: string) => text.replace(/\s+/g, ' ').trim();
 
 /** Écoute d'une réponse en flux : texte, audio PCM base64, voix de secours */
-export interface EcouteReponse {
+interface EcouteReponse {
   texte: (complet: string) => void;
   audio: (pcm: string) => void;
   secours: () => void;

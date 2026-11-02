@@ -160,7 +160,3 @@ export const COLOR_PALETTES: Record<string, ColorPalette> = {
   }
 };
 
-export function getDefaultPalette(): ColorPalette {
-  return COLOR_PALETTES.default;
-}
-

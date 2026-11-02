@@ -46,7 +46,7 @@ export function Etape({ etat }: { etat: string }) {
 
 // Une date du serveur sans fuseau est en UTC
 const enDate = (iso: string) => new Date(/Z|[+-]\d\d:\d\d$/.test(iso) || iso.length <= 10 ? iso : iso + 'Z');
-export const dateCourte = (iso?: string | null) => (iso ? enDate(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '—');
+const dateCourte = (iso?: string | null) => (iso ? enDate(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '—');
 export const dateHeure = (iso?: string | null) =>
   iso ? `${dateCourte(iso)} ${enDate(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : '—';
 // Seules les adresses web s'ouvrent
@@ -80,7 +80,7 @@ type AuditEnBase = { quand: string; prealable: boolean; resume: string };
 // Question en attente d'accord : outils de la page, sinon tête de la fiche
 export type Question = { question: string; detail?: React.ReactNode; action: string; faire: (fermer: () => void) => Promise<void>; siren?: string };
 // Audit existant : « Déjà audité » propose de relancer ; `retour` : origine
-export type Deja = AuditEnBase & { siren: string; nom: string; retour: string; lancer: () => Promise<void> };
+type Deja = AuditEnBase & { siren: string; nom: string; retour: string; lancer: () => Promise<void> };
 
 // Une fiche lue : plusieurs fenêtres en montrent côte à côte, chacune la sienne
 type Lue = { donnees: Donnees | null; erreur: string; avis: { texte: string; erreur: boolean } | null; notes: string };

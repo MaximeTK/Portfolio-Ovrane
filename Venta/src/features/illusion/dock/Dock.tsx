@@ -5,16 +5,16 @@ import { DUREES, ecrire, effacer, mouvementReduit, voiler, type Controle } from 
 import { quitterSection } from '../api';
 import { aOublier } from '../stockage';
 import { DUREE_RANGEMENT, ECART, PRISES, TRANSITION_DE, delaiDepli, dureeRepli, installerDock, type ArbreDepart, type DefFenetre, type Moteur, type OptionsRangement, type Zone } from './moteur';
-export type { Arbre, ArbreDepart, DefFenetre, Taille, Zone } from './moteur';
+export type { ArbreDepart } from './moteur';
 
 // Tailles minimales, bande de bord d'écran et premier détachement des fenêtres
-export const TAILLES_ACTIVITE: DefFenetre = { mini: [200, 170], pref: [228, 240], flot: [300, 520] };
-export const TAILLES_PANNEAU: DefFenetre = { mini: [360, 220], pref: [440, 320], flot: [460, 560] };
-export const TAILLES_PRINCIPALE: DefFenetre = { mini: [470, 220], pref: [620, 360], flot: [760, 480] };
+const TAILLES_ACTIVITE: DefFenetre = { mini: [200, 170], pref: [228, 240], flot: [300, 520] };
+const TAILLES_PANNEAU: DefFenetre = { mini: [360, 220], pref: [440, 320], flot: [460, 560] };
+const TAILLES_PRINCIPALE: DefFenetre = { mini: [470, 220], pref: [620, 360], flot: [760, 480] };
 const LARGEUR_ACTIVITE = 228;
 
 // Rangée de départ : Activité | fenêtre principale | panneau (--panneau)
-export const arbreDePage = (principal: string, miniPrincipal = TAILLES_PRINCIPALE.mini![0]): ArbreDepart => (zone, style) => {
+const arbreDePage = (principal: string, miniPrincipal = TAILLES_PRINCIPALE.mini![0]): ArbreDepart => (zone, style) => {
   const lp = parseFloat(style.getPropertyValue('--panneau')) || 440;
   return {
     dir: 'row',
@@ -168,9 +168,6 @@ function useContexte() {
   if (!c) throw new Error('Fenêtre ou panneau hors d’un <Dock>');
   return c;
 }
-
-// Nouveau rangement quand une fenêtre apparaît ou disparaît hors <Fenetre>
-export const useDock = () => ({ ranger: useContexte().ranger });
 
 // Onglet ouvert du panneau et son objet ; ouvrir choisit l'élément et le montre
 export function usePanneau() {

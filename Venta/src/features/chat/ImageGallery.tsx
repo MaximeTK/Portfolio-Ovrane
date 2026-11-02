@@ -91,8 +91,6 @@ export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProp
     );
   };
 
-  if (!images.length) return null;
-
   return (
     <dialog
       ref={dialogRef}

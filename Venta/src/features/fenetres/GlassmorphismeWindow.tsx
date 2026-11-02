@@ -21,7 +21,7 @@ const Window = memo(function Window({ fenetre }: { fenetre: Fenetre }) {
   const grabRef = useRef<{ dx: number; dy: number } | null>(null);
   const title = fenetre.kind === 'image' ? `Image: ${fenetre.content}` : 'Réponse';
   // Assez large pour le titre et les quatre boutons
-  const minWidth = Math.max(300, Math.max(150, title.length * 8) + 200);
+  const minWidth = Math.max(150, title.length * 8) + 200;
   // Un glissé ne réanalyse rien ; un texte en flux cède la main à l'écran
   const texte = useDeferredValue(fenetre.content);
   const rendu = useMemo(

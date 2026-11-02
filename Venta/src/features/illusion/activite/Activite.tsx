@@ -5,7 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { appeler } from '../api';
 import { Fenetre } from '../dock/Dock';
-import { MarqueAdmin } from '../dock/Panneau';
+import { CROIX, MarqueAdmin } from '../dock/Panneau';
 import { DUREES, ecrire, type Controle } from '../partage/glyphes';
 import { ouvrirIllusion } from '../partage/LienIllusion';
 import { useSondage } from './sondage';
@@ -69,7 +69,6 @@ export function Activite({ donnees, surMaintenant, liens, cachees = [] }: Propri
     return n;
   });
 
-  // Rangée de départ : Activité | fenêtre principale | panneau (--panneau)
   const filRef = useRef<HTMLOListElement>(null);
   const vu = useRef<{ bilan: Record<Sorte, number>; ids: Set<string>; enCours: string | null } | null>(null);
   const signaux = useRef<Controle[]>([]);
@@ -174,9 +173,7 @@ function Flottante({ titre, admin, fermer, children }: { titre: string; admin?: 
       <header className="f-barre" onPointerDown={saisir}>
         <span className="f-poignee" aria-hidden="true" />
         <h2 className="f-titre">{titre}{admin && <MarqueAdmin />}</h2>
-        <button type="button" className="f-btn" title="Fermer" aria-label={`Fermer ${titre}`} onClick={fermer}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
-        </button>
+        <button type="button" className="f-btn" title="Fermer" aria-label={`Fermer ${titre}`} onClick={fermer}>{CROIX}</button>
       </header>
       <div className="f-corps">{children}</div>
     </section>,

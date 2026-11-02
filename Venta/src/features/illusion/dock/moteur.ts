@@ -3,8 +3,8 @@ import { aOublier } from '../stockage';
 
 export type Taille = [number, number];
 export type DefFenetre = { mini?: Taille; pref?: Taille; flot?: Taille; prises?: string };
-export type Feuille = { id: string };
-export type Partage = { dir: 'row' | 'col'; enfants: Arbre[]; parts: number[] };
+type Feuille = { id: string };
+type Partage = { dir: 'row' | 'col'; enfants: Arbre[]; parts: number[] };
 export type Arbre = Feuille | Partage;
 export type Zone = { x: number; y: number; w: number; h: number };
 export type ArbreDepart = Arbre | ((zone: Zone, style: CSSStyleDeclaration) => Arbre);
@@ -13,7 +13,6 @@ export const ECART = 16, SEUIL = 6, BORD = 26, MARGE = 0.3, ARMEMENT = 450, IMMO
 // Glissement des fenêtres vers leur place, comme la feuille de style (0,3 s)
 export const DUREE_RANGEMENT = 300;
 export const TRANSITION_DE = (duree: number, delai = 0) => ['left', 'top', 'width', 'height'].map((p) => `${p} ${Math.round(duree)}ms cubic-bezier(.2,.8,.2,1) ${Math.round(delai)}ms`).join(',');
-export const TRANSITION = TRANSITION_DE(DUREE_RANGEMENT);
 
 // Avancée du glissement (0 à 1) à la fraction u, en cubic-bezier(.2,.8,.2,1)
 function courbe(u: number) {
@@ -27,7 +26,7 @@ function courbe(u: number) {
   return b((bas + haut) / 2, 0.8, 1);
 }
 // Une fenêtre qui glisse de `de` à `a` pendant DUREE_RANGEMENT
-export type Mouvement = { de: Zone; a: Zone };
+type Mouvement = { de: Zone; a: Zone };
 const entre = (de: Zone, a: Zone, p: number): Zone => ({ x: de.x + (a.x - de.x) * p, y: de.y + (a.y - de.y) * p, w: de.w + (a.w - de.w) * p, h: de.h + (a.h - de.h) * p });
 const touche = (a: Zone, b: Zone) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.5 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.5;
 export const centre = (r: Zone): Zone => ({ x: r.x + r.w / 2, y: r.y + r.h / 2, w: 0, h: 0 });
@@ -88,7 +87,7 @@ type Action =
 const MEMOIRES = new Map<string, Memoire>();
 aOublier(() => MEMOIRES.clear());
 
-export type OptionsDock = {
+type OptionsDock = {
   id: string;
   principal: () => string;
   depart: () => ArbreDepart;
