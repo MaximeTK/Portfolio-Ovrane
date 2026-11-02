@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
+import { useSondage } from '../../activite/sondage';
 import { Confirmer } from '../../dock/Panneau';
 import { ICONES_COMMUNES, TRAIT, message, useMenu } from '../commun';
 
@@ -63,42 +64,6 @@ export const ICONES = {
   croix: <svg {...TRAIT} strokeWidth={2.4}><path d="M6 6l12 12M18 6 6 18" /></svg>,
 };
 
-// Relit `lire` toutes les `ms` onglet visible, et dès qu'il le redevient
-export function useSondage(lire: () => unknown, ms: number) {
-  const fn = useRef(lire);
-  useEffect(() => {
-    fn.current = lire;
-  });
-  useEffect(() => {
-    let minuteur = 0;
-    // Une seule lecture en vol : un serveur lent n'en reçoit pas davantage
-    let enVol = false;
-    const tour = async () => {
-      if (enVol) return;
-      enVol = true;
-      try {
-        await fn.current();
-      } finally {
-        enVol = false;
-      }
-    };
-    const armer = () => {
-      window.clearInterval(minuteur);
-      if (document.visibilityState === 'visible') minuteur = window.setInterval(tour, ms);
-    };
-    const changer = () => {
-      if (document.visibilityState === 'visible') void tour();
-      armer();
-    };
-    armer();
-    document.addEventListener('visibilitychange', changer);
-    return () => {
-      window.clearInterval(minuteur);
-      document.removeEventListener('visibilitychange', changer);
-    };
-  }, [ms]);
-}
-
 // Les notifications de l'ancien dashboard : 3,5 s, une erreur un peu plus
 export function useAvis() {
   const [avis, setAvis] = useState<{ texte: string; erreur: boolean; n: number } | null>(null);
@@ -127,9 +92,6 @@ export function useEtatVeille(dire: (t: string, e?: boolean) => void) {
       enPanne.current = true;
     }
   }, [dire]);
-  useEffect(() => {
-    lire();
-  }, [lire]);
   useSondage(lire, 5000);
   return [etat, lire] as const;
 }

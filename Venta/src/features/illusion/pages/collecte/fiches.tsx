@@ -4,6 +4,7 @@ import './fiches.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { cleBrouillon, repris, useGarder } from '../../stockage';
+import { useSondage } from '../../activite/sondage';
 import { Fenetre, usePanneau, useVues, type ArbreDepart } from '../../dock/Dock';
 import { ECART } from '../../dock/moteur';
 import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
@@ -33,34 +34,6 @@ export const arbreFiches = (panneau: (largeurEcran: number) => number | null): A
   return { dir: 'row', enfants: [{ id: 'activite' }, { dir: 'row', enfants: [{ id: 'fiches' }, { id: 'panneau' }], parts: [Math.max(reste - lp - ECART, 470), lp] }], parts: [228, reste] };
 };
 
-// Relance `lire` toutes les `ms` tant que l'onglet est visible ; `null` coupe
-export function useSondage(lire: () => unknown, ms: number | null) {
-  const courant = useRef(lire);
-  useEffect(() => {
-    courant.current = lire;
-  });
-  useEffect(() => {
-    if (ms === null) return;
-    // Une seule lecture en vol : un serveur lent n'en reçoit pas davantage
-    let enVol = false;
-    const tic = async () => {
-      if (enVol || document.visibilityState !== 'visible') return;
-      enVol = true;
-      try {
-        await courant.current();
-      } finally {
-        enVol = false;
-      }
-    };
-    const minuteur = setInterval(tic, ms);
-    document.addEventListener('visibilitychange', tic);
-    return () => {
-      clearInterval(minuteur);
-      document.removeEventListener('visibilitychange', tic);
-    };
-  }, [ms]);
-}
-
 export type Avis = { texte: string; erreur: boolean } | null;
 // Avis du dernier geste, plus long pour une erreur
 export function useAvis() {
@@ -87,9 +60,6 @@ export function useBriques(section: string) {
       // Serveur injoignable : les lots restent jusqu'à la prochaine lecture
     }
   }, []);
-  useEffect(() => {
-    lire();
-  }, [lire]);
   useSondage(lire, 5000);
   return { actives, lire };
 }
@@ -201,11 +171,11 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
     return () => observateur.disconnect();
   }, [mesurer]);
 
+  const adresse = `/vues/collecte/fiches?${new URLSearchParams({ q: cherche, etat, tags: canal, page: String(page), taille: String(parPage) })}`;
   const lire = useCallback(async () => {
     const n = ++rang.current;
-    const params = new URLSearchParams({ q: cherche, etat, tags: canal, page: String(page), taille: String(parPage) });
     try {
-      const vu = await appeler<ReponseFiches>(`/vues/collecte/fiches?${params}`);
+      const vu = await appeler<ReponseFiches>(adresse);
       if (n !== rang.current) return;
       setDonnees(vu);
       setErreur('');
@@ -213,11 +183,8 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
     } catch (e) {
       if (n === rang.current) setErreur(messageDe(e));
     }
-  }, [cherche, etat, canal, page, parPage]);
-  useEffect(() => {
-    lire();
-  }, [lire, version, versionFiche]);
-  useSondage(lire, 8000);
+  }, [adresse, page]);
+  useSondage(lire, 8000, true, `${adresse}|${version}|${versionFiche}`);
 
   // Échap referme la confirmation d'abord, puis le panneau
   useEchap(() => {
@@ -709,7 +676,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
       // Le serveur ne répond pas : la prochaine lecture reprendra
     }
   }, [nom]); // eslint-disable-line react-hooks/exhaustive-deps
-  useSondage(lire, etat?.en_cours ? 1500 : null);
+  useSondage(lire, 1500, !!etat?.en_cours);
 
   const avecReglages = (v: Valeurs) => ({ ...v, ...Object.fromEntries((brique?.arguments ?? []).filter((a) => a.parametre).map((a) => [a.cle, a.valeur])) });
   const partir = async (v: Valeurs) => {
