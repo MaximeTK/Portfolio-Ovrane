@@ -1,7 +1,4 @@
-/**
- * Tests du RAG et du chat avec le vrai OpenAI, sans MongoDB : index, recherche, porte, cache du prompt et ordre des messages
- * Lancement : npm run test:openai (quelques fractions de centime)
- */
+/** Tests du RAG et du chat avec le vrai OpenAI : npm run test:openai */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'url';

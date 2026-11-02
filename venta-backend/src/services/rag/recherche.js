@@ -1,10 +1,8 @@
-/**
- * Recherche hybride en mémoire : BM25, cosinus, fusion RRF et porte de pertinence
- */
+/** Recherche hybride en mémoire : BM25, cosinus, RRF et porte de pertinence */
 
 const MOTS_VIDES = new Set(`a ai alors apres as au aussi aux avait avaient avant avec avez avoir avons beaucoup bien ca ce ceci cela celle celles celui ces cet cette ceux chez combien comme comment dans de depuis des dire dis dit doit dois donc donne donner du elle elles en encore entre es est et etaient etait ete etes etre eu eux explique expliquer fait faire fais font il ils je la le les leur leurs lui ma mais me meme mes moi mon montre montrer ne ni nos notre nous on ont ou par parle parler pas pendant peu peut peuvent peux plus pour pourquoi pouvez presente presenter puis qu quand que quel quelle quelles quels qui quoi raconte sa sans se selon sera ses son sont sous suis sur ta te tes toi ton tous tout toute toutes tres tu un une va vas vers vont vos votre vous`.split(' '));
 
-// Seuils de la porte, calibrés par scripts/eval-rag.js : un mot isolé (« heure ») ne l'ouvre pas sous le plancher
+// Seuils de la porte calibrés par eval-rag.js : un mot isolé ne l'ouvre pas
 export const SEUILS = { cosinus: 0.45, couverture: 0.6, plancher: 0.3 };
 
 export function normaliser(texte) {
@@ -16,9 +14,7 @@ export function normaliser(texte) {
     .replace(/[̀-ͯ]/g, '');
 }
 
-/**
- * Termes indexés : sans accents ni mots vides, pluriels en s/x ramenés au singulier
- */
+/** Termes sans accents ni mots vides, pluriels ramenés au singulier */
 export function termes(texte) {
   return normaliser(texte)
     .split(/[^a-z0-9]+/)
@@ -39,9 +35,7 @@ export function indexerBm25(textes) {
   return { docs, df, moyenne };
 }
 
-/**
- * Scores BM25 (k1 1.2, b 0.75) et part maximale des termes de la requête réunis dans un même passage
- */
+/** Scores BM25 (k1 1.2, b 0.75) et part max des termes dans un passage */
 export function bm25(index, requete) {
   const requis = [...new Set(termes(requete))];
   const n = index.docs.length;
@@ -67,9 +61,7 @@ function ordre(scores) {
   return scores.map((_, i) => i).sort((a, b) => scores[b] - scores[a]);
 }
 
-/**
- * Classements d'une requête : tous les passages par cosinus, ceux qui partagent un terme par BM25
- */
+/** Classements : tous les passages par cosinus, ceux à terme commun par BM25 */
 export function listesClassees(index, embeddings, requete, vecteur) {
   // Les embeddings OpenAI sont normés : le produit scalaire est le cosinus
   const cosinus = embeddings.map((e) => e.reduce((somme, v, i) => somme + v * vecteur[i], 0));
@@ -82,9 +74,7 @@ export function listesClassees(index, embeddings, requete, vecteur) {
   };
 }
 
-/**
- * Reciprocal Rank Fusion : somme de poids / (60 + rang) sur chaque liste
- */
+/** Reciprocal Rank Fusion : somme de poids / (60 + rang) par liste */
 export function fusionner(listes) {
   const total = new Map();
   for (const { ordre: liste, poids } of listes) {

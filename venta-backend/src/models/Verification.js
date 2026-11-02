@@ -1,6 +1,4 @@
-/**
- * Demande de vérification d'une adresse e-mail : seul le sha256 du jeton envoyé est gardé, MongoDB l'efface à expireLe
- */
+/** Vérification d'e-mail : sha256 du jeton seul gardé, expire à expireLe */
 import mongoose from 'mongoose';
 
 const verificationSchema = new mongoose.Schema({

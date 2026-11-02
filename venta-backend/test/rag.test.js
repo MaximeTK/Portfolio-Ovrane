@@ -1,6 +1,4 @@
-/**
- * Tests hors ligne du RAG et du prompt : découpage Markdown, termes, BM25, fusion RRF, porte, prompt fixe et outils
- */
+/** Tests hors ligne du RAG et du prompt : découpage, BM25, RRF, outils */
 import './env.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

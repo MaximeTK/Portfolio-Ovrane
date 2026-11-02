@@ -1,17 +1,11 @@
-/**
- * Plafond de dépense du jour : un visiteur anonyme ne coûte rien tant que le modèle et la voix restent sous ces plafonds,
- * tous visiteurs confondus. Au-delà, le service se met en veille jusqu'au lendemain plutôt que de brûler les crédits.
- */
+/** Plafond de dépense du jour : au-delà, veille jusqu'au lendemain */
 import { Budget } from '../models/Budget.js';
 import { config } from '../config.js';
 import * as log from '../log.js';
 
 const jour = (maintenant) => maintenant.toISOString().slice(0, 10);
 
-/**
- * Compte un appel payant de ce type (« chat » ou « tts ») pour aujourd'hui et dit s'il reste sous le plafond.
- * Plafond à 0 : aucune limite, rien n'est écrit. Base injoignable : on laisse passer (le plafond ne doit pas couper le service).
- */
+/** Compte un appel payant (chat, tts) ; plafond 0 ou base HS : passe */
 export async function consommer(type, maintenant = new Date()) {
   const plafond = config.budget[type] || 0;
   if (plafond <= 0) return true;

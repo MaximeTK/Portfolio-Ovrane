@@ -1,6 +1,4 @@
-/**
- * Sonde de Render : état de la base et du RAG, sans le nom de la base
- */
+/** Sonde de Render : état de la base et du RAG, sans le nom de la base */
 import mongoose from 'mongoose';
 import { getSystemStats } from '../services/rag/ragSystem.js';
 import { SUCCESS_MESSAGES } from '../messages.js';

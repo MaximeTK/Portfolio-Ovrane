@@ -1,6 +1,4 @@
-/**
- * Tests hors ligne d'Illusion : liens suivis, robots, contexte du recruteur, schémas et routes avec la base simulée
- */
+/** Tests hors ligne d'Illusion : liens, robots, recruteur, schémas, routes */
 import { base, appeler, visiteur, fermer, appelsOpenAI, REPONSE } from './simulation.js';
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,7 +13,7 @@ import { User } from '../src/models/User.js';
 
 after(fermer);
 
-// Le front est relu à chaque test : une modification en cours de Venta/ n'empêche pas les autres de tourner
+// Front relu à chaque test : une modification en cours n'empêche pas les autres
 const front = async (fichier) => import(new URL(`../../Venta/src/lib/${fichier}`, import.meta.url).href);
 
 const JETON = 'k3f9a0x2m1';
@@ -114,7 +112,7 @@ test('front : la voix découpe en blocs de 4 phrases et de 900 caractères au pl
   const { splitTextIntoTTSBlocks } = await import(new URL('../../Venta/src/features/oeil/useTTS.ts', import.meta.url).href);
   const courtes = Array.from({ length: 8 }, (_, i) => `Phrase ${i + 1}.`).join(' ');
   assert.deepEqual(splitTextIntoTTSBlocks(courtes).map((b) => b.split('.').length - 1), [4, 4]);
-  // Quatre phrases de 250 caractères, 1 003 en tout : refusées par le backend en un seul bloc
+  // Quatre phrases de 250 caractères (1 003 en tout) refusées en un seul bloc
   const longues = Array.from({ length: 4 }, () => `${'a'.repeat(249)}.`).join(' ');
   const blocs = splitTextIntoTTSBlocks(longues);
   assert.deepEqual(blocs.map((b) => b.length), [752, 250]);
@@ -242,12 +240,12 @@ test('schémas : email absent par défaut, RedirectLog facultatif avec TTL d\'un
   assert.equal(IllusionCandidature.schema.path('lettre.fichier').instance, 'ObjectId');
 });
 
-// Ce qu'Illusion range dans la base partagée : la candidature et le PDF de son CV
+// Ce qu'Illusion range en base partagée : la candidature et le PDF du CV
 const FICHIER_CV = '665f1c2b9a1d4e0012345678';
 const PDF = Buffer.from('%PDF-1.4 CV de la candidature');
 base.candidatures.push({ ...CANDIDATURE, cv: { ...CANDIDATURE.cv, fichier: FICHIER_CV } });
 base.candidatures.push({ ...CANDIDATURE, jeton: 'a1b2c3d4e5', entreprise: { nom: '' }, langue: 'en' });
-// Lu en lean, un Buffer revient du pilote MongoDB comme un Binary qui porte le contenu dans .buffer
+// En lean, un Buffer revient du pilote comme un Binary portant .buffer
 base.fichiers.push({ _id: FICHIER_CV, donnees: { buffer: PDF }, type: 'application/pdf' });
 
 test('GET accueil : entreprise, poste et langue seulement, 404 pour un jeton inconnu ou mal formé', async () => {
@@ -278,7 +276,7 @@ test('GET cv : le PDF rangé avec la candidature, servi en ligne et jamais mis e
   assert.equal(res.headers.get('cache-control'), 'private, no-store');
   assert.deepEqual(lectures.at(-1).projection, { _id: 0, 'cv.fichier': 1 });
 
-  // Un type rangé en base n'est jamais repris : du HTML partirait exécutable sur le domaine du portfolio
+  // Un type rangé en base n'est jamais repris : du HTML s'exécuterait
   base.candidatures.push({ ...CANDIDATURE, jeton: 'h1h2h3h4h5', cv: { fichier: '665f1c2b9a1d4e0012345679' } });
   base.fichiers.push({ _id: '665f1c2b9a1d4e0012345679', donnees: Buffer.from('<script>alert(1)</script>'), type: 'text/html' });
   assert.equal((await appeler('/api/illusion/cv/h1h2h3h4h5')).headers.get('content-type'), 'application/pdf');

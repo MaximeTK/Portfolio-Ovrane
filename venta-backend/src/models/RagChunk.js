@@ -1,6 +1,4 @@
-/**
- * Passage du RAG avec son embedding, identifié par le hash du modèle et du texte préfixé
- */
+/** Passage du RAG et son embedding, identifié par le hash modèle + texte */
 import mongoose from 'mongoose';
 
 const ragChunkSchema = new mongoose.Schema({

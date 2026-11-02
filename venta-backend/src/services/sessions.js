@@ -1,6 +1,4 @@
-/**
- * Sessions opaques : le navigateur garde le jeton en cookie, la base n'en garde que l'empreinte
- */
+/** Sessions opaques : jeton en cookie, seule l'empreinte en base */
 import crypto from 'crypto';
 import { Session } from '../models/Session.js';
 
@@ -19,7 +17,7 @@ export async function creerSession(utilisateur) {
   return { jeton, expireLe };
 }
 
-// Session valide du jeton, prolongée au plus une fois par jour à l'usage ; null sinon
+// Session valide du jeton, prolongée au plus une fois par jour ; null sinon
 export async function lireSession(jeton) {
   if (!estJeton(jeton)) return null;
   const maintenant = new Date();

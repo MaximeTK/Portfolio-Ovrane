@@ -1,6 +1,4 @@
-/**
- * Relais des pages d'Illusion intégrées au site : le compte de la session, le corps brut et la réponse en flux, vers le serveur d'Illusion
- */
+/** Relais des pages d'Illusion : compte de session, corps brut, flux */
 import http from 'http';
 import https from 'https';
 import { pipeline } from 'stream';
@@ -10,15 +8,15 @@ import { limite, requireService, requireSession, sendError } from '../http.js';
 import { ERROR_MESSAGES } from '../messages.js';
 import * as log from '../log.js';
 
-// Un fichier de 15 Mo, plafond d'Illusion, pèse 20 Mo en base64, plus son enveloppe JSON
+// 15 Mo (plafond d'Illusion) pèsent 20 Mo en base64, plus l'enveloppe JSON
 const TAILLE_MAX = 21 * 1024 * 1024;
-// Seuls ces en-têtes d'Illusion reviennent au navigateur, ni ses cookies ni rien d'autre ; sa CSP isole le HTML d'un mail reçu
+// Seuls ces en-têtes reviennent au navigateur ; la CSP isole le HTML d'un mail
 const RENDUS = ['content-type', 'content-disposition', 'content-length', 'content-security-policy'];
-// Servi sur le domaine du site, un document actif sans CSP d'Illusion y exécuterait ses scripts
+// Sur le domaine du site, un document actif sans CSP exécuterait ses scripts
 const ACTIF = /^\s*(text\/html|image\/svg\+xml|application\/xhtml\+xml|text\/xml|application\/xml)/i;
-// Jamais relayés : la connexion et l'inscription d'Illusion (Ovrane a les siennes, limitées), et le canal du logiciel de bureau
+// Jamais relayés : connexion et inscription d'Illusion, canal du logiciel
 const INTERDITS = [/^POST \/api\/session\/?$/, /^[A-Z]+ \/api\/inscription\/?$/, /^[A-Z]+ \/api\/mains\/(tour|ordre)\/?$/];
-// Le chemin comme Illusion le route : %2F y redevient « / » ; un encodage malformé reste tel quel, comme chez lui
+// Chemin routé comme Illusion : %2F redevient « / », encodage malformé gardé
 const decode = (chemin) => {
   try {
     return decodeURIComponent(chemin);
@@ -29,7 +27,7 @@ const decode = (chemin) => {
 // Illusion injoignable plutôt qu'en erreur : 503, comme un service à l'arrêt
 const INJOIGNABLE = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'EHOSTUNREACH', 'ENETUNREACH', 'ETIMEDOUT']);
 
-// L'e-mail du compte de la session, prouvé par son lien : Illusion connaît ses comptes par leur adresse
+// E-mail du compte de session, prouvé par son lien : Illusion les connaît ainsi
 async function compte(req, res, next) {
   try {
     const user = await User.findOne({ id: req.user.id }, { _id: 0, email: 1, emailVerifieLe: 1 }).lean();
@@ -50,7 +48,7 @@ function relayer(req, res) {
   if (INTERDITS.some((motif) => motif.test(`${req.method} ${decode(cible.pathname)}`))) return sendError(res, 404, ERROR_MESSAGES.notFound);
   if (Number(req.get('content-length')) > TAILLE_MAX) return sendError(res, 413, ERROR_MESSAGES.illusionTooLarge);
 
-  // Liste blanche : ni cookie, ni Origin, ni Sec-Fetch-*, ni session, ni en-tête du relais venu du client
+  // Liste blanche : ni cookie, Origin, Sec-Fetch-*, session ni en-tête du client
   const amont = (cible.protocol === 'https:' ? https : http).request(cible, {
     method: req.method,
     headers: {
@@ -88,7 +86,7 @@ function relayer(req, res) {
     if (!res.writableFinished) amont.destroy();
   });
 
-  // Corps sans longueur annoncée : compté au fil de l'eau, coupé au-delà du plafond, le reste lu pour rien
+  // Corps sans longueur : compté au fil de l'eau, coupé au plafond
   let recus = 0;
   req.on('data', (morceau) => {
     recus += morceau.length;
@@ -102,6 +100,6 @@ function relayer(req, res) {
 }
 
 export function setupIllusionAppRoutes(app) {
-  // Sa propre limite par IP, hors de la limite globale : une page interroge Illusion toutes les 1,5 à 5 s, plusieurs fenêtres à la fois
+  // Limite propre par IP : une page interroge Illusion toutes les 1,5 à 5 s
   app.use('/api/illusion/app', limite(15 * 60 * 1000, config.production ? 6000 : 60000), requireService, requireSession, compte, relayer);
 }

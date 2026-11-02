@@ -1,6 +1,4 @@
-/**
- * Journalisation à quatre niveaux ; debug, le traçage par requête, reste muet sans LOG_VERBOSE=true
- */
+/** Journalisation à quatre niveaux ; debug reste muet sans LOG_VERBOSE=true */
 import { config } from './config.js';
 
 export function debug(...args) {

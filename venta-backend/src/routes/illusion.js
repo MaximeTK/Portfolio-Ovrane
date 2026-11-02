@@ -1,6 +1,4 @@
-/**
- * Illusion : accueil du recruteur et CV de sa candidature, lus dans la base partagée qu'Illusion remplit
- */
+/** Illusion : accueil du recruteur et CV de sa candidature, en base partagée */
 import { IllusionCandidature } from '../models/IllusionCandidature.js';
 import { IllusionFichier } from '../models/IllusionFichier.js';
 import { noterActivite } from '../services/conservation.js';
@@ -33,14 +31,14 @@ export function setupIllusionRoutes(app) {
       };
       const texte = MISC_MESSAGES.recruiterWelcome(accueil);
       res.json({ ...accueil, texte, voix: texte ? signerVoix(texte) : '' });
-      // Après la réponse : le recruteur n'attend pas l'écriture qui garde sa candidature active
+      // Après la réponse : le recruteur n'attend pas l'écriture d'activité
       noterActivite(jeton).catch((error) => log.error('[ILLUSION] Activité non notée :', error.message));
     } catch (error) {
       next(error);
     }
   });
 
-  // CV envoyé avec la candidature du jeton : le recruteur voit celui qu'il a reçu, pas un CV générique
+  // CV de la candidature du jeton : le recruteur voit celui qu'il a reçu
   app.get('/api/illusion/cv/:jeton', async (req, res, next) => {
     try {
       const { jeton } = req.params;
@@ -54,7 +52,7 @@ export function setupIllusionRoutes(app) {
       if (!pdf) return sendError(res, 404, ERROR_MESSAGES.illusionCvNotFound);
 
       res.set({
-        // Jamais le type rangé en base : un text/html s'exécuterait sur le domaine du portfolio
+        // Jamais le type rangé en base : un text/html s'exécuterait sur le domaine
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'inline; filename="CV.pdf"',
         'Cache-Control': 'private, no-store',

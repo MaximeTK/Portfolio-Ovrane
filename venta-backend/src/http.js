@@ -1,6 +1,4 @@
-/**
- * Réponses d'erreur, secret de service, session et limites de débit communs aux routes
- */
+/** Erreurs, secret de service, session et limites de débit des routes */
 import crypto from 'crypto';
 import net from 'net';
 import rateLimit from 'express-rate-limit';
@@ -21,13 +19,13 @@ export function egal(recu, attendu) {
 
 const serviceValide = (req) => Boolean(config.serviceSecret) && egal(req.get('x-ovrane-service') ?? '', config.serviceSecret);
 
-// IP du visiteur relayée par Next, crue seulement avec le secret de service et si c'est bien une IP
+// IP relayée par Next, crue seulement avec le secret de service
 export function ipClient(req) {
   const relayee = serviceValide(req) && req.get('x-ovrane-client-ip');
   return net.isIP(relayee || '') ? relayee : req.ip;
 }
 
-// Une machine IPv6 dispose de tout un /64 : les limites comptent ce préfixe, pas l'adresse
+// Un IPv6 dispose d'un /64 : les limites comptent ce préfixe
 function clePourLimite(req) {
   const ip = ipClient(req) || '';
   if (!net.isIPv6(ip) || ip.includes('.')) return ip;
@@ -67,7 +65,7 @@ export function limite(windowMs, limit, keyGenerator = clePourLimite, options = 
   });
 }
 
-// Erreur finale : journalisée ici, jamais détaillée au client (JSON invalide compris)
+// Erreur finale journalisée ici, jamais détaillée au client
 export function sendInternalError(err, req, res, next) {
   if (res.headersSent) return next(err);
   if (err.expose && err.status < 500) return sendError(res, err.status, ERROR_MESSAGES.badRequest);

@@ -1,6 +1,4 @@
-/**
- * Session d'un navigateur : seul le sha256 du jeton est gardé, MongoDB efface la session à expireLe
- */
+/** Session d'un navigateur : sha256 du jeton seul gardé, expire à expireLe */
 import mongoose from 'mongoose';
 
 const sessionSchema = new mongoose.Schema({

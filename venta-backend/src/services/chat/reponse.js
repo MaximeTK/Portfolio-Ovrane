@@ -1,6 +1,4 @@
-/**
- * Réponse envoyée au client : texte, commandes d'interface de la requête, fond retenu et échange enregistré
- */
+/** Réponse au client : texte, commandes, fond retenu et échange enregistré */
 import { addConversation, saveUserPreference, profilPublic } from '../utilisateurs.js';
 import { normaliser } from '../rag/recherche.js';
 import { PALETTES } from './outils.js';
@@ -13,7 +11,7 @@ const mots = (texte) => normaliser(texte).replace(/[^a-z0-9_]+/g, ' ').trim().sp
 const echapper = (texte) => texte.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const estFond = (commande) => commande.command === 'SetBackground';
 
-// Identifiants de palette découpés en mots, les plus longs d'abord (gris_ciel avant gris)
+// Identifiants de palette en mots, les plus longs d'abord
 const PALETTES_EN_MOTS = PALETTES
   .map(({ id }) => ({ id, parties: mots(id.replace(/_/g, ' ')) }))
   .filter(({ parties }) => parties.length)
@@ -29,7 +27,7 @@ function paletteDuTexte(texte) {
   return null;
 }
 
-// Demande explicite de changer le fond ; une question ou une demande de liste ne déclenche rien
+// Demande explicite de changer le fond ; question ou liste ne déclenche rien
 function demandeChangementFond(texte) {
   const t = normaliser(texte);
   if (!/background|arriere-plan|fond|palette|theme/.test(t)) return false;
@@ -48,8 +46,7 @@ export async function processResponse(texte, prompt, user, ctx, isEphemeral) {
   }
   if (!reply && commands.length) reply = MISC_MESSAGES.defaultResponse;
 
-  // Demande explicite de fond sans appel d'outil : la palette est cherchée dans la question, jamais
-  // dans la réponse, où une simple liste de thèmes changerait le fond
+  // Fond demandé sans outil : cherché dans la question, jamais dans la réponse
   if (!commands.some(estFond) && demandeChangementFond(prompt)) {
     const paletteId = paletteDuTexte(prompt);
     if (paletteId) {
@@ -61,7 +58,7 @@ export async function processResponse(texte, prompt, user, ctx, isEphemeral) {
   const vues = new Set();
   commands = commands.filter(({ command, parameter }) => !vues.has(`${command}|${parameter}`) && vues.add(`${command}|${parameter}`));
 
-  // Le fond est gardé côté serveur pour que le modèle connaisse le FOND ACTUEL au message suivant
+  // Fond gardé côté serveur pour que le modèle le connaisse au message suivant
   const fond = commands.findLast(estFond)?.parameter;
   if (fond) {
     await saveUserPreference(user.id, 'backgroundColor', fond)

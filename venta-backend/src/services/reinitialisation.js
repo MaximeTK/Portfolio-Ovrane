@@ -1,6 +1,4 @@
-/**
- * Mot de passe oublié : un lien à usage unique, valable 30 minutes, envoyé par e-mail ; la base ne garde que l'empreinte du jeton
- */
+/** Mot de passe oublié : lien unique de 30 min, la base garde l'empreinte */
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
@@ -14,7 +12,7 @@ import * as log from '../log.js';
 
 export const DUREE_LIEN = 30 * 60 * 1000;
 
-// Envoie le lien au compte de cette adresse s'il existe ; seul le dernier lien demandé reste valable
+// Envoie le lien au compte s'il existe ; seul le dernier reste valable
 export async function demanderReinitialisation(email) {
   const compte = await User.findOne({ email }, { _id: 0, id: 1, name: 1, email: 1 }).lean();
   if (!compte) return false;
@@ -30,16 +28,16 @@ export async function demanderReinitialisation(email) {
   return envoyerMail(compte.email, MAILS.reinitialisation(compte.name, `${config.siteUrl}/connexion#reinit=${jeton}`));
 }
 
-// Change le mot de passe si le lien est valable, puis le consomme et ferme toutes les sessions du compte
+// Change le mot de passe, consomme le lien, ferme les sessions du compte
 export async function reinitialiser(jeton, motDePasse) {
   if (!estJeton(jeton)) return false;
   const demande = await Reinitialisation.findOneAndDelete({ _id: empreinte(jeton), expireLe: { $gt: new Date() } }).lean();
   if (!demande) return false;
   const passwordHash = await bcrypt.hash(motDePasse, 12);
-  // motDePasseChangeLe : de quoi invalider aussi les sessions signées d'Illusion, qui partage les comptes
+  // Invalide aussi les sessions signées d'Illusion, qui partage les comptes
   const compte = await User.findOneAndUpdate(
     { id: demande.utilisateur },
-    // Un lien reçu à cette adresse prouve qu'elle est la sienne : elle vaut aussi vérification
+    // Un lien reçu prouve l'adresse : il vaut aussi vérification
     { $set: { passwordHash, motDePasseChangeLe: new Date(), emailVerifieLe: new Date() } },
     { projection: { _id: 0, name: 1, email: 1 } },
   ).lean();

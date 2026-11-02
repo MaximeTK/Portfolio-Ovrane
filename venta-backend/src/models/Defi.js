@@ -1,6 +1,4 @@
-/**
- * Défi de preuve de travail déjà présenté : un défi ne crée qu'un visiteur, MongoDB l'oublie à son échéance
- */
+/** Défi déjà présenté : ne crée qu'un visiteur, expire à son échéance */
 import mongoose from 'mongoose';
 
 const defiSchema = new mongoose.Schema({

@@ -1,6 +1,4 @@
-/**
- * Évaluation chiffrée du RAG sur scripts/rag-questions.json : recall@5, MRR@5 par variante et faux positifs de la porte
- */
+/** Évalue le RAG : recall@5, MRR@5 par variante, faux positifs de la porte */
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
@@ -36,7 +34,7 @@ const textes = [...new Set(questions.flatMap((q) => [q.question, q.precedent].fi
 const vecteurs = new Map((await embedder(textes)).map((v, i) => [textes[i], v]));
 
 const variantes = { 'dense seul': [], 'BM25 seul': [], hybride: [], 'hybride + historique': [], 'injecté (porte)': [] };
-// L'ancien corpus n'avait pas Illusion : la comparaison avant/après se fait aussi sans ces questions
+// L'ancien corpus n'avait pas Illusion : comparer aussi sans ces questions
 const sansIllusion = Object.fromEntries(Object.keys(variantes).map((nom) => [nom, []]));
 const relances = { hybride: [], 'hybride + historique': [], 'injecté (porte)': [] };
 const hors = [];

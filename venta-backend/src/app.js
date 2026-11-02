@@ -1,6 +1,4 @@
-/**
- * Application Express : en-têtes, sonde, limite globale, secret de service, routes et erreur finale
- */
+/** Application Express : en-têtes, sonde, limites, secret de service, routes */
 import express from 'express';
 import helmet from 'helmet';
 import { config } from './config.js';
@@ -18,13 +16,13 @@ import { setupIllusionAppRoutes } from './routes/illusionApp.js';
 export function createApp({ openai }) {
   const app = express();
   app.disable('x-powered-by');
-  // req.ip derrière le proxy de Render ; l'IP d'un visiteur relayé par Next arrive dans X-Ovrane-Client-Ip
+  // req.ip derrière Render ; l'IP relayée par Next vient de X-Ovrane-Client-Ip
   if (config.trustProxy) app.set('trust proxy', 1);
   app.use(helmet({ contentSecurityPolicy: false }));
 
   // Avant la limite et le secret : la sonde de Render passe toujours
   setupHealthRoute(app);
-  // Avant la limite globale et le lecteur JSON : les pages d'Illusion interrogent toutes les quelques secondes, et leur corps passe brut
+  // Avant la limite globale et le JSON : Illusion interroge souvent, corps brut
   setupIllusionAppRoutes(app);
   app.use(limite(15 * 60 * 1000, config.production ? 300 : 5000));
   app.use(requireService);

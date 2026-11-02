@@ -1,6 +1,4 @@
-/**
- * Candidature rangée par Illusion dans la base partagée : offre, fiche entreprise, CV et lettre derrière le jeton des liens suivis
- */
+/** Candidature d'Illusion en base partagée, derrière le jeton des liens */
 import mongoose from 'mongoose';
 
 // Fichier du CV ou de la lettre dans illusion_fichiers, rangé par Illusion
@@ -16,7 +14,7 @@ const illusionCandidatureSchema = new mongoose.Schema({
   utilisateur: mongoose.Schema.Types.ObjectId,
   statut: { type: String, default: '' },
   envoyee_le: Date,
-  // Dernière activité : clic humain ou retour du recruteur (Ovrane), mail reçu (Illusion) ; la conservation en part
+  // Dernière activité (clic, retour recruteur, mail reçu) : base de la purge
   activite_le: Date,
   langue: { type: String, default: '' },
   offre: {

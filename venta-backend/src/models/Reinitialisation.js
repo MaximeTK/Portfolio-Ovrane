@@ -1,6 +1,4 @@
-/**
- * Demande de nouveau mot de passe : seul le sha256 du jeton envoyé par e-mail est gardé, MongoDB l'efface à expireLe
- */
+/** Demande de mot de passe : sha256 du jeton seul gardé, expire à expireLe */
 import mongoose from 'mongoose';
 
 const reinitialisationSchema = new mongoose.Schema({

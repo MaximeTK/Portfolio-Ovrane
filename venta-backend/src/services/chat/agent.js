@@ -1,14 +1,12 @@
-/**
- * Boucle d'agent sur l'API Responses en flux : le modèle répond ou appelle des outils, en un nombre borné de tours
- */
+/** Boucle d'agent sur l'API Responses en flux, en tours bornés */
 import { config } from '../../config.js';
 import { executeToolCall } from './outils.js';
 import * as log from '../../log.js';
 
-// Même clé pour tous : les appels partagent le préfixe fixe et retombent sur le même cache
+// Même clé pour tous : le préfixe fixe retombe sur le même cache
 const CLE_CACHE = 'ovrane-chat';
 
-// Texte du modèle, tous tours réunis, vide si les tours sont épuisés ; chaque morceau part aussi dans surTexte dès qu'il arrive
+// Texte de tous les tours, vide si épuisés ; chaque morceau part dans surTexte
 export async function callOpenAI(openai, messages, outils, ctx, surTexte = () => {}) {
   const { model, verbosity, maxTours, maxOutputTokens } = config.openai;
   const effort = outils.length ? config.openai.effortOutils : config.openai.effort;

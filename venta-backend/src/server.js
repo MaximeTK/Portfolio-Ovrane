@@ -1,6 +1,4 @@
-/**
- * Démarrage : configuration, MongoDB, RAG puis écoute ; sans configuration valide ni base, le serveur s'arrête
- */
+/** Démarrage : configuration, MongoDB, RAG, écoute ; l'arrêt si invalide */
 import dns from 'dns';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -17,7 +15,7 @@ if (config.erreurs.length) {
   process.exit(1);
 }
 
-// Sous Windows, Node se rabat sur 127.0.0.1 quand il ne lit pas le DNS du réseau, et la recherche SRV de mongodb+srv échoue
+// Sous Windows, Node peut ignorer le DNS du réseau et faire échouer le SRV
 if (dns.getServers().every((serveur) => serveur === '127.0.0.1' || serveur === '::1')) dns.setServers(['1.1.1.1', '8.8.8.8']);
 
 try {
@@ -28,7 +26,7 @@ try {
 }
 log.info(`[DÉMARRAGE] Base MongoDB : ${config.mongodbDb}`);
 
-// 90 jours sans activité : purge au démarrage puis chaque jour ; un échec attend le lendemain
+// Purge des 90 jours sans activité au démarrage puis chaque jour
 async function purgerChaqueJour() {
   try {
     log.info(`[CONSERVATION] ${config.conservationJours} jours sans activité :`, JSON.stringify(await conserver()));
@@ -44,7 +42,7 @@ const openai = new OpenAI({ apiKey: config.openaiApiKey, timeout: 60_000, maxRet
 const ragDir = fileURLToPath(new URL('../rag', import.meta.url));
 initializeRAG(openai);
 
-// Seuls les passages nouveaux ou modifiés sont embeddés ; un échec laisse le chat sans RAG
+// Seuls les passages nouveaux ou modifiés sont embeddés ; échec = chat sans RAG
 async function indexer() {
   try {
     await reindexFolder(ragDir);
@@ -54,7 +52,7 @@ async function indexer() {
 }
 await indexer();
 
-// Réindexation une seconde après la dernière modification d'un .md, jamais deux à la fois
+// Réindexation 1 s après la dernière modification d'un .md, jamais en double
 let minuteur = null;
 let enCours = false;
 fs.watch(ragDir, (evenement, fichier) => {

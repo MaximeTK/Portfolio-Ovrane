@@ -1,16 +1,14 @@
-/**
- * Signature des textes que le serveur fait dire : la voix ne lit qu'un passage d'un texte signé ici, jamais un texte libre
- */
+/** Signature des textes dits par le serveur, jamais un texte libre */
 import crypto from 'crypto';
 import { config } from '../config.js';
 
-// Une réponse du modèle tient bien en dessous ; au-delà, ce n'est pas un texte du serveur
+// Une réponse du modèle tient en dessous ; au-delà, pas un texte du serveur
 export const MAX_SOURCE = 20_000;
 
 // Dérivée du secret de service, que le navigateur ne voit jamais
 const cle = () => crypto.createHmac('sha256', config.serviceSecret).update('ovrane:voix').digest();
 
-// Lettres et chiffres seulement : le découpage en passages du navigateur n'en change aucun
+// Lettres et chiffres seulement : le découpage en passages n'en change aucun
 const canon = (texte) => String(texte).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
 
 export const signerVoix = (texte) => crypto.createHmac('sha256', cle()).update(canon(texte)).digest('base64url');

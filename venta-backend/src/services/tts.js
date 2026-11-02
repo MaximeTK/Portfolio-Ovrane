@@ -1,10 +1,8 @@
-/**
- * Synthèse vocale : Cartesia, puis ElevenLabs, puis OpenAI ; null laisse la voix du navigateur lire le texte
- */
+/** Voix : Cartesia, puis ElevenLabs, puis OpenAI ; null = voix du navigateur */
 import { config } from '../config.js';
 import * as log from '../log.js';
 
-// Le texte affiché reste complet ; seul l'audio perd le code, les liens et le Markdown
+// Le texte reste complet ; l'audio perd code, liens et Markdown
 function nettoyer(text) {
   return text
     .replace(/```[\s\S]*?```/g, " Je t'ai affiché un exemple de code. ")
@@ -32,11 +30,11 @@ async function cartesia(texte) {
       signal: AbortSignal.timeout(15000),
     });
     if (!response.ok) {
-      // Crédits du mois épuisés, dépassement coupé : le fournisseur suivant prend le relais
+      // Crédits du mois épuisés, dépassement coupé : le fournisseur suivant prend
       log.warn(`[TTS] Cartesia a répondu ${response.status}`);
       return null;
     }
-    // Le corps reste un flux : la route le transmet à mesure que Cartesia synthétise
+    // Le corps reste un flux, transmis à mesure que Cartesia synthétise
     return { stream: response.body, provider: 'cartesia' };
   } catch (error) {
     log.error('[TTS] Cartesia :', error.message);
@@ -84,7 +82,7 @@ async function voixOpenAI(texte, openai) {
 const CARTESIA_WS = 'wss://api.cartesia.ai/tts/websocket?cartesia_version=2026-08-14';
 const FORMAT_FLUX = { container: 'raw', encoding: 'pcm_s16le', sample_rate: 24000 };
 
-// Morceau lisible à voix haute, espaces gardés pour que les morceaux se recollent : sans code, liens ni Markdown
+// Morceau lisible à voix haute, espaces gardés pour se recoller
 export function preparerPourVoix(segment, etat) {
   let sortie = '';
   segment.split('```').forEach((partie, i) => {
@@ -97,10 +95,7 @@ export function preparerPourVoix(segment, etat) {
   return sortie.replace(/https?:\/\/\S+/g, 'un lien').replace(/[*_#`>|]/g, '').replace(/\s+/g, ' ');
 }
 
-/**
- * Voix d'une réponse écrite en flux : les mots complets partent en continuation d'un même contexte Cartesia,
- * l'audio PCM revient à mesure ; null sans clé ; surEchec seulement si la voix tombe avant tout son
- */
+/** Voix en flux : mots complets en continuation d'un contexte Cartesia */
 export function ouvrirVoixFlux({ surAudio, surEchec }) {
   const { cartesiaKey, cartesiaVoice, cartesiaModel, navigateur } = config.tts;
   if (!cartesiaKey || navigateur) return null;
@@ -148,7 +143,7 @@ export function ouvrirVoixFlux({ surAudio, surEchec }) {
   ws.onclose = () => terminer('connexion fermée avant la fin');
 
   return {
-    // Seuls les mots complets partent : le dernier, peut-être coupé, attend le morceau suivant
+    // Seuls les mots complets partent : le dernier, peut-être coupé, attend
     dire(delta) {
       if (termine) return;
       reste += delta;

@@ -1,6 +1,4 @@
-/**
- * Découpage structurel des documents Markdown du RAG
- */
+/** Découpage structurel des documents Markdown du RAG */
 
 // ~350 tokens à 4 caractères par token
 const MAX_CARACTERES = 1400;
@@ -21,9 +19,7 @@ function regrouperParagraphes(texte) {
   return morceaux;
 }
 
-/**
- * Un passage par section #/##/### qui porte du texte, préfixé de son fil d'Ariane pour l'embedding et BM25
- */
+/** Un passage par section portant du texte, préfixé de son fil d'Ariane */
 export function decouperMarkdown(contenu, document) {
   const passages = [];
   const titres = [];

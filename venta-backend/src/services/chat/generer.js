@@ -1,6 +1,4 @@
-/**
- * Réponse du modèle : consignes fixes, visiteur, historique, puis passages du RAG et question, du plus stable au plus variable pour le cache
- */
+/** Réponse du modèle : du plus stable au plus variable pour le cache */
 import fs from 'fs';
 import { rechercher } from '../rag/ragSystem.js';
 import { aPlat } from '../utilisateurs.js';
@@ -11,13 +9,13 @@ import * as log from '../../log.js';
 
 const INSTRUCTIONS = fs.readFileSync(new URL('../../../prompts/instructions.txt', import.meta.url), 'utf8').trim();
 
-// Identique pour tous les messages : c'est le préfixe que le cache de prompt d'OpenAI réutilise
+// Identique pour tous les messages : préfixe réutilisé par le cache d'OpenAI
 export const SYSTEM_FIXE = `${SYSTEM_PROMPTS.mainContext}\n\n${INSTRUCTIONS}\n\n${SYSTEM_PROMPTS.contextRule}`;
 
 const IMAGE = /\b(montre|montrer|display|affiche|affiches|voir|voirs|afficher|images|image|photo|photos|logos|logo|visuels|visuel|illustration|screenshots|screenshot|captures|capture|interfaces|interface)\b/i;
 const COULEUR = /\b(fond|background|arriere-plan|arrière-plan|couleur|palette|themes|thèmes|theme|thème|argenté|gris|noir|doré|jaune|orange|rouge|ecarlate|vert clair|vert_clair|forêt|marée|feuille|aqua|ocean|hopa|gris ciel|gris_ciel|spectre|mauve|rose|cyberpunk|melon|goyavier|marron|vin)\b/i;
 
-// Outils d'interface proposés seulement si l'intention est claire, sinon le modèle multiplie les actions
+// Outils d'interface seulement si l'intention est claire, sinon trop d'actions
 function outilsPour(prompt) {
   const permis = new Set([
     ...(IMAGE.test(prompt) ? ['getRulePicture', 'getAvailableAssets', 'uiShowPicture'] : []),
@@ -30,7 +28,7 @@ function outilsPour(prompt) {
 
 const attribut = (valeur) => String(valeur).replace(/"/g, "'");
 
-// Bloc <contexte> des passages retrouvés pour la question et le message précédent, vide si la porte reste fermée
+// Bloc <contexte> des passages retrouvés, vide si la porte reste fermée
 export async function buildRAGContextForPrompt(prompt, precedent) {
   try {
     const { porte, passages, cosinusMax, couverture } = await rechercher(prompt, precedent);
@@ -50,7 +48,7 @@ export function buildVisitorContext(user, candidature = null) {
 }
 
 export async function generateResponse(openai, prompt, user, candidature, ctx, surTexte) {
-  // Les derniers échanges en messages : les relances courtes (« en anglais ») s'y rattachent
+  // Derniers échanges en messages : les relances courtes s'y rattachent
   const historique = aPlat(user.conversations)
     .map((message) => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: String(message.content ?? '').trim() }))
     .filter((message) => message.content);

@@ -1,7 +1,4 @@
-/**
- * Modèle pour les logs de redirection (tracking CV, etc.)
- * Indépendant des profils utilisateurs classiques.
- */
+/** Logs de redirection (tracking CV), indépendants des profils utilisateurs */
 import mongoose from 'mongoose';
 
 // Cibles des liens suivis, transmises par le middleware du frontend
@@ -11,7 +8,7 @@ const redirectLogSchema = new mongoose.Schema({
   path: {
     type: String,
     required: true,
-    index: true // Pour pouvoir filtrer par campagne facilement (ex: "combien de clics sur ubisoft")
+    index: true // Pour filtrer par campagne facilement
   },
   target: {
     type: String,
@@ -27,11 +24,11 @@ const redirectLogSchema = new mongoose.Schema({
     type: String,
     enum: REDIRECT_CIBLES
   },
-  // Déduit du user-agent par le serveur, qui ne garde que ce verdict : scanner de messagerie, aperçu, crawler...
+  // Verdict déduit du user-agent : scanner, aperçu, crawler…
   robot: {
     type: Boolean
   },
-  // Pas de TTL : la purge quotidienne suit l'activité de la candidature (services/conservation.js)
+  // Pas de TTL : la purge suit l'activité de la candidature (conservation.js)
   timestamp: {
     type: Date,
     default: Date.now

@@ -1,6 +1,4 @@
-/**
- * Tests hors ligne du relais des pages d'Illusion : session et compte, en-têtes filtrés, corps brut, réponse en flux, plafond, pannes et limite propre
- */
+/** Tests hors ligne du relais d'Illusion : session, en-têtes, flux, pannes */
 import { base, visiteur, fermer, SECRET } from './simulation.js';
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,7 +13,7 @@ const SECRET_ILLUSION = 'secret-illusion-de-test';
 const MO = 1024 * 1024;
 const FICHIER = crypto.randomBytes(3 * MO);
 
-// Faux serveur d'Illusion : il garde chaque requête reçue et répond selon le chemin
+// Faux serveur d'Illusion : garde chaque requête et répond selon le chemin
 const recues = [];
 const illusion = http.createServer((req, res) => {
   const morceaux = [];
@@ -66,7 +64,7 @@ base.users.push({ id: 'cillusion01', name: 'Essai', nameNormalized: 'essai', ema
 base.sessions.push({ _id: crypto.createHash('sha256').update(SESSION).digest('hex'), utilisateur: 'cillusion01',
   creeLe: new Date(), vuLe: new Date(), expireLe: new Date(Date.now() + 3600 * 1000) });
 
-// Requête comme Next la relaie ; un tableau part morceau par morceau, sans longueur annoncée
+// Requête comme Next la relaie ; un tableau part sans longueur annoncée
 function envoyer(chemin, { methode = 'GET', session = SESSION, secret = SECRET, entetes = {}, corps } = {}) {
   return new Promise((resolve, reject) => {
     const req = http.request({

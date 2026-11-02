@@ -1,6 +1,4 @@
-/**
- * Authentification : visiteur, inscription, connexion, mot de passe oublié, compte courant et déconnexion ; chaque profil ouvert reçoit sa session
- */
+/** Authentification : visiteur, inscription, connexion, oubli, compte */
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
@@ -22,7 +20,7 @@ const HASH_FACTICE = '$2b$12$0L1gLi8C8ektlGfx8x6i3eeeWUWee6wpIA9Yn3PDcvG/i/M3lAC
 const PROFIL = { _id: 0, id: 1, name: 1, visitCount: 1, messageCount: 1 };
 
 const identifiant = (valeur) => String(valeur ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-// 12 caractères au moins (CNIL, délibération 2022-100), comme Illusion qui partage les comptes
+// 12 caractères au moins (CNIL 2022-100), comme Illusion
 const motDePasseValide = (motDePasse) => typeof motDePasse === 'string' && motDePasse.length >= 12 && motDePasse.length <= 128;
 const sessionRecue = (req) => req.get('x-ovrane-session');
 // L'accueil part signé : la voix du serveur ne lit que ses propres textes
@@ -41,8 +39,7 @@ async function reprendreVisiteur(req, res, next) {
     const courant = session && await User.findOne({ id: session.utilisateur }, PROFIL).lean();
     if (courant) return res.json(accueil(courant));
 
-    // Migration unique de l'ancien localStorage : un visiteur à identifiant aléatoire, jamais un compte ni un profil
-    // dont l'identifiant se calcule (pseudo, IP et user-agent)
+    // Migration de l'ancien localStorage : un visiteur aléatoire, jamais un compte
     const { ancienId } = req.body || {};
     const ancien = typeof ancienId === 'string' && /^v[0-9a-f]{24}$/.test(ancienId) && await User.findOneAndUpdate(
       { id: ancienId, name: null, email: null, passwordHash: null, migreLe: null },
@@ -56,7 +53,7 @@ async function reprendreVisiteur(req, res, next) {
   }
 }
 
-// Un nouveau visiteur se paie d'une preuve de travail ; le refus porte le défi, sans aller-retour de plus
+// Un nouveau visiteur paie une preuve de travail ; le refus porte le défi
 async function exigerDefi(req, res, next) {
   try {
     const { defi, solution } = req.body || {};
@@ -67,7 +64,7 @@ async function exigerDefi(req, res, next) {
   }
 }
 
-// Le compte visé par une connexion, cherché une fois : la limite par identifiant et la vérification le lisent
+// Compte visé par la connexion, cherché une fois pour limite et vérification
 async function compteVise(req, res, next) {
   try {
     const ident = identifiant(req.body?.identifier);
@@ -80,7 +77,7 @@ async function compteVise(req, res, next) {
 
 async function creerVisiteur(req, res, next) {
   try {
-    // Né avec sa session : son identifiant, affiché au client, ne s'échange jamais contre une autre
+    // Né avec sa session : son identifiant ne s'échange jamais contre un autre
     const user = { id: `v${crypto.randomBytes(12).toString('hex')}`, migreLe: new Date(), visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] };
     await User.create(user);
     res.json({ ...dit(MISC_MESSAGES.welcomeNew()), userProfile: profilPublic(user), activeUserId: user.id, session: await creerSession(user.id) });
@@ -91,14 +88,13 @@ async function creerVisiteur(req, res, next) {
 
 export function setupAuthRoutes(app) {
   const parIp = limite(QUINZE_MINUTES, 10);
-  // 10 échecs par identifiant, d'où qu'ils viennent ; un appareil où ce compte s'est déjà connecté n'y est pas soumis :
-  // un tiers qui les épuise ne bloque plus son titulaire chez lui
+  // 10 échecs par identifiant, sauf depuis un appareil déjà connu du compte
   const parIdentifiant = limite(QUINZE_MINUTES, 10, (req) => identifiant(req.body?.identifier), {
     skip: (req) => appareilDe(req.get('x-ovrane-appareil'), req.compte?.id),
     skipSuccessfulRequests: true,
   });
 
-  // Seule la création compte dans la limite des visiteurs, pas la reprise, et seulement défi résolu
+  // Seule la création compte dans la limite des visiteurs, défi résolu
   app.post('/api/auth/visitor', reprendreVisiteur, exigerDefi, limite(60 * 60 * 1000, 10), creerVisiteur);
 
   app.post('/api/auth/register', parIp, async (req, res, next) => {
@@ -122,7 +118,7 @@ export function setupAuthRoutes(app) {
       const user = { name, nameNormalized, id, email: emailNorm, passwordHash, visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] };
       await User.create(user);
       res.json({ ...dit(MISC_MESSAGES.welcomeNew(name)), userProfile: profilPublic(user), activeUserId: id, session: await ouvrirSession(req, id), appareil: marquerAppareil(id) });
-      // Après la réponse : l'adresse se prouve par le lien envoyé, avant toute ouverture d'Illusion
+      // Après la réponse : l'adresse se prouve par le lien, avant d'ouvrir Illusion
       demanderVerification({ id, name, email: emailNorm }).catch((error) => log.error('[AUTH] vérification :', error.message));
     } catch (error) {
       if (error.code === 11000) return sendError(res, 409, ERROR_MESSAGES.accountTaken);
@@ -146,7 +142,7 @@ export function setupAuthRoutes(app) {
     }
   });
 
-  // Même réponse, aussitôt, que le compte existe ou non : la recherche et l'envoi se font après la réponse
+  // Même réponse aussitôt, compte existant ou non ; envoi après la réponse
   const parEmail = limite(60 * 60 * 1000, 3, (req) => identifiant(req.body?.email));
   app.post('/api/auth/oubli', parIp, parEmail, (req, res) => {
     const email = identifiant(req.body?.email);
@@ -167,7 +163,7 @@ export function setupAuthRoutes(app) {
     }
   });
 
-  // Le compte de la session, null pour un visiteur : la page de connexion montre qui est connecté
+  // Compte de la session, null pour un visiteur
   app.get('/api/auth/compte', async (req, res, next) => {
     try {
       const session = await lireSession(sessionRecue(req));
@@ -178,7 +174,7 @@ export function setupAuthRoutes(app) {
     }
   });
 
-  // Un nouveau lien pour l'adresse du compte de la session, 3 par heure ; même réponse si elle est déjà vérifiée
+  // Nouveau lien pour l'adresse de la session, 3 par heure ; sinon déjà vérifiée
   const parCompte = limite(60 * 60 * 1000, 3, (req) => req.user.id);
   app.post('/api/auth/verification', requireSession, parCompte, async (req, res, next) => {
     try {

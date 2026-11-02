@@ -1,6 +1,4 @@
-/**
- * Outils offerts au modèle : un objet par outil, exécuté avec le contexte de sa seule requête
- */
+/** Outils offerts au modèle, exécutés avec le contexte de leur requête */
 import fs from 'fs';
 import { isValidAssetFilename, normalizeAssetParamToFilename } from '../../validators.js';
 import * as log from '../../log.js';
@@ -22,7 +20,7 @@ for (const ligne of LIGNES_ASSETS) {
   }
 }
 
-// Une palette commence à son identifiant : ligne courte, sans « : », qui n'est pas un titre
+// Une palette commence à son identifiant : ligne courte sans « : »
 const estIdPalette = (ligne) => ligne && !ligne.includes(':') && ligne.length < 20
   && !['LISTE', '⚠️', 'RÈGLES', 'EXEMPLES', 'Si l', '-', 'PALETTES'].some((debut) => ligne.startsWith(debut));
 export const PALETTES = [];
@@ -33,8 +31,7 @@ for (const ligne of lire('colors.txt')) {
   if (palette && ligne.startsWith('Description :')) palette.description = ligne.replace('Description :', '').trim();
 }
 
-// Identifiant exact d'une palette du catalogue, retrouvé sans tenir compte de la casse, des accents ni des espaces ;
-// null sinon : rien d'autre ne s'enregistre en préférence ni ne revient au modèle comme FOND ACTUEL
+// Identifiant exact d'une palette du catalogue (casse, accents) ; sinon null
 const cleDePalette = (valeur) => String(valeur ?? '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s-]+/g, '_');
 export function paletteConnue(valeur) {
   if (typeof valeur !== 'string' || valeur.length > 64) return null;
@@ -150,7 +147,7 @@ ${PALETTES.map((p) => `${p.id} — ${p.description || p.nom || ''}`).join('\n')}
   },
 };
 
-// Les arguments du modèle sont analysés sans jamais lever ; un nom inconnu, ou hérité d'Object, est refusé
+// Arguments analysés sans lever ; nom inconnu ou hérité d'Object refusé
 export function executeToolCall(appel, ctx) {
   if (!Object.hasOwn(OUTILS, appel.name)) return resultat(false, `Outil indisponible : ${appel.name}.`);
   let args;

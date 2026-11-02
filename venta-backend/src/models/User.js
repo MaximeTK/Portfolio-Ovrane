@@ -1,6 +1,4 @@
-/**
- * Modèle Mongoose pour les utilisateurs
- */
+/** Modèle Mongoose des utilisateurs */
 import mongoose from 'mongoose';
 
 const CommandSchema = new mongoose.Schema({
@@ -21,7 +19,7 @@ const ConversationSchema = new mongoose.Schema({
   prompt: String,
   response: String,
   
-  // Commandes utilisées par l'IA (si présentes) - conserver TOUTES les commandes d'un message
+  // Commandes de l'IA : garder toutes celles d'un message
   commands: { type: [CommandSchema], default: [] },
 }, { _id: false, strict: false });
 
@@ -35,8 +33,7 @@ const UserSchema = new mongoose.Schema({
     unique: true,
     index: true 
   },
-  // Authentification
-  // Absent plutôt que null : l'index sparse unique n'admet qu'un seul null, qui bloquerait le 2e profil visiteur
+  // Absent plutôt que null : l'index sparse unique n'admet qu'un seul null
   email: { type: String },
   passwordHash: { type: String, default: null },
 
@@ -44,8 +41,7 @@ const UserSchema = new mongoose.Schema({
   ipHashes: { type: [String], default: [] },
   // Métadonnées de visite
   lastVisit: { type: Date, default: Date.now },
-  // IMPORTANT: doit être 0 par défaut pour que le 1er login (pipeline +1) donne visitCount=1
-  // et permette de détecter correctement un nouveau compte.
+  // Doit valoir 0 par défaut pour que le 1er login donne visitCount=1
   visitCount: { type: Number, default: 0 },
   
   // Historique des liens visités

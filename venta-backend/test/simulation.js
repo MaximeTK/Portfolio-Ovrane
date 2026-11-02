@@ -1,6 +1,4 @@
-/**
- * Base MongoDB simulée en mémoire, modèle OpenAI simulé et application Express éphémère pour les tests hors ligne
- */
+/** Base MongoDB, modèle OpenAI et Express simulés pour les tests hors ligne */
 import './env.js';
 import { once } from 'node:events';
 import crypto from 'node:crypto';
@@ -97,7 +95,7 @@ function projeter(doc, projection = {}) {
   return resultat;
 }
 
-// Remplace les accès d'un modèle par un tableau ; les requêtes passent par .lean() comme dans le serveur
+// Remplace les accès d'un modèle par un tableau, requêtes via .lean()
 function simuler(Modele) {
   const docs = [];
   const requete = (resultat) => ({ lean: async () => resultat });
@@ -113,7 +111,7 @@ function simuler(Modele) {
     findOneAndUpdate: (filtre, maj, options = {}) => {
       let doc = trouver(filtre);
       if (!doc && options.upsert) {
-        // Comme Mongo : le document naît des égalités du filtre, puis la mise à jour s'applique
+        // Comme Mongo : le document naît des égalités du filtre, puis la mise à jour
         doc = {};
         for (const [cle, v] of Object.entries(filtre)) if (cle !== '$or' && v?.constructor !== Object) ecrire(doc, cle, v);
         docs.push(doc);
@@ -167,7 +165,7 @@ export const base = {
 export const appelsOpenAI = [];
 export const REPONSE = 'Bonjour, bienvenue sur le portfolio.';
 export const modele = { repondre: async () => ({ output: [], output_text: REPONSE }) };
-// En flux, la réponse simulée arrive comme chez OpenAI : son texte en deux morceaux, puis la réponse complète
+// En flux, la réponse simulée arrive comme chez OpenAI : deux morceaux
 async function* enFlux(reponse) {
   const texte = String(reponse.output_text ?? '');
   const milieu = Math.ceil(texte.length / 2);
@@ -193,8 +191,7 @@ export const fermer = () => serveur.close();
 export const SECRET = process.env.SERVICE_SECRET;
 
 let adresses = 0;
-// Requête comme Next la relaie : secret de service, IP du visiteur (une nouvelle par défaut) et session
-// `brut` rend la réponse sans lire son corps, pour suivre un flux morceau par morceau
+// Requête comme Next la relaie ; `brut` rend la réponse sans lire son corps
 export async function appeler(chemin, { method = 'GET', body, session, secret = SECRET, ip = `10.0.0.${++adresses}`, headers = {}, brut = false } = {}) {
   const res = await fetch(`${url}${chemin}`, {
     method,
@@ -218,14 +215,14 @@ export async function appeler(chemin, { method = 'GET', body, session, secret = 
   return { status: res.status, json, bytes, headers: res.headers };
 }
 
-// Le plus petit nombre dont l'empreinte avec le défi commence par assez de zéros, comme le front le cherche
+// Plus petit nombre dont l'empreinte avec le défi commence par assez de zéros
 export function resoudre({ defi, difficulte }) {
   for (let n = 0; ; n += 1) {
     if (zerosEnTete(crypto.createHash('sha256').update(`${defi}:${n}`).digest()) >= difficulte) return String(n);
   }
 }
 
-// Arrivée d'un nouveau visiteur : le refus porte le défi, la seconde demande sa solution
+// Nouveau visiteur : le refus porte le défi, la seconde demande la solution
 export async function creerVisiteur(options = {}) {
   const refus = await appeler('/api/auth/visitor', { method: 'POST', body: {}, ...options });
   if (refus.status !== 403 || !refus.json?.defi) return refus;

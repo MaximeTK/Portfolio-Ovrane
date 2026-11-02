@@ -1,6 +1,4 @@
-/**
- * Mise à jour manuelle du RAG : embedde les passages nouveaux ou modifiés de rag/ et les persiste dans MONGODB_DB
- */
+/** Met à jour à la main le RAG : embedde les passages nouveaux ou modifiés */
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import OpenAI from 'openai';

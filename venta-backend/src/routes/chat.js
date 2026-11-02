@@ -1,6 +1,4 @@
-/**
- * Chat et historique de l'utilisateur de la session
- */
+/** Chat et historique de l'utilisateur de la session */
 import { IllusionCandidature } from '../models/IllusionCandidature.js';
 import { getUserProfile, historique, profilPublic, MAX_MESSAGES } from '../services/utilisateurs.js';
 import { generateResponse } from '../services/chat/generer.js';
@@ -14,7 +12,7 @@ import * as log from '../log.js';
 
 const MAX_PROMPT = 4000;
 
-// Candidature Illusion du recruteur venu par un lien suivi ; une erreur ne bloque jamais le chat
+// Candidature Illusion du recruteur ; une erreur ne bloque jamais le chat
 async function loadCandidature(jeton) {
   if (!isValidJeton(jeton)) return null;
   try {
@@ -33,7 +31,7 @@ const limiteAtteinte = (user) => ({
   tts: { isStaticFile: true, staticUrl: '/endmessage.mp3' },
 });
 
-// Plafond de dépense du jour atteint : une réponse fixe, sans appeler le modèle ni la voix
+// Plafond du jour atteint : réponse fixe, sans modèle ni voix
 const budgetDepasse = (user) => ({
   reply: ERROR_MESSAGES.budgetReached,
   userProfile: profilPublic(user),
@@ -41,7 +39,7 @@ const budgetDepasse = (user) => ({
   tts: { useClientTTS: true, text: ERROR_MESSAGES.budgetReached },
 });
 
-// Question valide et profil de la session, le message comptant avant l'appel au modèle ; null si une erreur est déjà partie
+// Question valide et profil, message compté avant le modèle ; null si erreur
 async function preparer(req, res) {
   const { prompt } = req.body || {};
   const refus = !isNonEmptyString(prompt) ? [400, ERROR_MESSAGES.promptRequired] : prompt.length > MAX_PROMPT ? [413, ERROR_MESSAGES.promptTooLong] : null;
@@ -51,7 +49,7 @@ async function preparer(req, res) {
 }
 
 export function setupChatRoutes(app, openai) {
-  // Par session, comptée sur son utilisateur ; par IP, tous ses visiteurs ensemble : en créer d'autres n'ouvre pas plus de réponses
+  // Limite par session et par IP : créer d'autres visiteurs n'ouvre rien de plus
   const parSession = limite(60 * 1000, 10, (req) => req.user.id);
   const parIp = limite(60 * 60 * 1000, 120);
 
@@ -72,7 +70,7 @@ export function setupChatRoutes(app, openai) {
     }
   });
 
-  // Même réponse en flux SSE : morceaux de texte, audio PCM de Cartesia dès les premiers mots, puis la réponse complète
+  // Même réponse en flux SSE : texte, audio PCM dès les premiers mots, réponse
   app.post('/api/chat/flux', requireSession, parIp, parSession, async (req, res, next) => {
     let user;
     try {

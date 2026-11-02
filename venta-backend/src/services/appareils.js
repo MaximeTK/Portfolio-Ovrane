@@ -1,7 +1,4 @@
-/**
- * Marque d'un appareil où un compte s'est déjà connecté : elle ne connecte personne, elle dispense seulement ce compte de
- * la limite par identifiant, qu'un tiers pourrait sinon épuiser depuis plusieurs IP pour bloquer son titulaire
- */
+/** Appareil déjà connecté du compte : dispense de la limite par identifiant */
 import crypto from 'crypto';
 import { egal } from '../http.js';
 import { config } from '../config.js';

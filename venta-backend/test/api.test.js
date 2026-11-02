@@ -1,6 +1,4 @@
-/**
- * Tests hors ligne de l'API : secret de service, sessions, identifiants du client ignorés, limites, concurrence et erreurs
- */
+/** Tests hors ligne de l'API : secret, sessions, limites, erreurs */
 import { base, appeler, creerVisiteur, resoudre, visiteur, fermer, modele, appelsOpenAI, REPONSE, SECRET } from './simulation.js';
 import { test, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -27,7 +25,7 @@ const sha256 = (valeur) => crypto.createHash('sha256').update(valeur).digest('he
 const profil = (id) => base.users.find((user) => user.id === id);
 const chat = (session, prompt, extra = {}) => appeler('/api/chat', { method: 'POST', session, body: { prompt, ...extra } });
 const attendre = () => new Promise((resolve) => setImmediate(resolve));
-// Un passage d'un texte signé par le serveur, tel que le front l'envoie à la voix
+// Passage d'un texte signé par le serveur, comme le front l'envoie à la voix
 const signe = (text, source = text) => ({ text, source, voix: signerVoix(source) });
 
 // Compte avec mot de passe, haché à un coût réduit pour les tests
@@ -58,7 +56,7 @@ test('secret de service : 401 partout sans lui ou avec un faux, sonde publique',
   assert.deepEqual(sante.json.rag, { initialized: false, passages: 0 });
   assert.deepEqual((await appeler('/api/inconnue')).json, { error: ERROR_MESSAGES.notFound }, '404 en JSON avec le secret');
 
-  // Sans secret, l'IP annoncée n'est pas crue (la limite de débit passe avant le secret)
+  // Sans secret, l'IP annoncée n'est pas crue (la limite passe avant)
   const requete = (secret) => ({ ip: '127.0.0.1', get: (nom) => ({ 'x-ovrane-service': secret, 'x-ovrane-client-ip': '198.51.100.9' })[nom.toLowerCase()] });
   assert.equal(ipClient(requete(undefined)), '127.0.0.1');
   assert.equal(ipClient(requete('mauvais-secret')), '127.0.0.1');
@@ -194,7 +192,7 @@ test('front : la preuve de travail résolue par le navigateur ouvre la création
   assert.equal(solution, resoudre(refus.json), 'le plus petit nombre qui convient, comme le serveur l\'attend');
   assert.equal((await appeler('/api/auth/visitor', { method: 'POST', body: { defi: refus.json.defi, solution } })).status, 200);
   assert.equal(await resoudreDefi('peu-importe', 0), '0', 'sans difficulté, aucun calcul');
-  // Son SHA-256 écrit à la main donne le même nombre que celui de Node, sur des défis de toutes longueurs
+  // Son SHA-256 écrit à la main égale celui de Node sur toutes longueurs
   for (const defi of ['a', 'x'.repeat(54), 'y'.repeat(55), 'z'.repeat(120), refus.json.defi]) {
     assert.equal(await resoudreDefi(defi, 10), resoudre({ defi, difficulte: 10 }), defi);
   }
@@ -225,7 +223,7 @@ test('migration ancienId : un ancien visiteur repris une seule fois, jamais un c
   base.users.push({ id: compteV, passwordHash: 'hash', visitCount: 1 });
   base.users.push({ id: mailV, email: 'mail@exemple.fr', visitCount: 1 });
   base.users.push({ id: nommeV, name: 'Ancien', nameNormalized: 'ancien', visitCount: 4 });
-  // Ancien format anonyme : sha256 de l'IP et du user-agent, calculable par un tiers
+  // Ancien format anonyme : sha256 de l'IP et du user-agent, calculable
   base.users.push({ id: '0123456789abcdef', visitCount: 2 });
   const refuses = [ancien, recent.id, compte('Max', 'mot-de-passe-de-max').id, compteV, mailV, nommeV, '0123456789abcdef', [ancien], { $ne: null }];
   for (const ancienId of refuses) {
@@ -383,7 +381,7 @@ test('limite par identifiant : seuls les échecs comptent, et le titulaire passe
   assert.match(appareil.jeton, new RegExp(`^${titulaire.id}\\.\\d+\\.[A-Za-z0-9_-]{43}$`));
   assert.ok(new Date(appareil.expireLe) - Date.now() > 364 * UN_JOUR);
 
-  // Un tiers épuise les 10 échecs depuis dix IP : un appareil inconnu est bloqué, même avec le bon mot de passe
+  // Un tiers épuise les 10 échecs depuis dix IP : appareil inconnu bloqué
   for (let i = 0; i < 10; i += 1) assert.equal((await connexion('mauvais-mot-de-passe', `198.51.111.${i}`)).status, 401);
   assert.equal((await connexion('mot-de-passe-du-titulaire', '198.51.112.1')).status, 429);
   const marqueAutre = (await appeler('/api/auth/login', { method: 'POST', body: { identifier: 'autre', password: 'mot-de-passe-de-l-autre' } })).json.appareil.jeton;
@@ -391,7 +389,7 @@ test('limite par identifiant : seuls les échecs comptent, et le titulaire passe
   for (const fausse of [marqueAutre, `${id}.${Number(echeance) + 1}.${signature}`, `${id}.${Date.now() - 1000}.${signature}`, `${appareil.jeton}.x`]) {
     assert.equal((await connexion('mot-de-passe-du-titulaire', '198.51.112.2', fausse)).status, 429, fausse);
   }
-  // Depuis son appareil, le titulaire se connecte ; un mauvais mot de passe y reste refusé
+  // Le titulaire se connecte depuis son appareil ; un mauvais mot de passe échoue
   assert.equal((await connexion('mot-de-passe-du-titulaire', '198.51.112.3', appareil.jeton)).status, 200);
   assert.equal((await connexion('mauvais-mot-de-passe', '198.51.112.4', appareil.jeton)).status, 401);
 });
@@ -439,7 +437,7 @@ test('deux chats simultanés gardent chacun les commandes de leurs outils', asyn
   modele.repondre = async ({ input }) => {
     const dernier = input.at(-1).content;
     if (dernier.startsWith('[RÉSULTAT')) return { output: [], output_text: 'Fond changé.' };
-    // Chaque premier tour attend que l'autre ait commencé : les deux requêtes sont en vol en même temps
+    // Chaque premier tour attend l'autre : les deux requêtes sont en vol ensemble
     premiersTours += 1;
     if (premiersTours === 2) liberer();
     await chevauchement;
@@ -572,7 +570,7 @@ test('TTS : seul un passage d\'un texte signé par le serveur part chez un fourn
     const audio = await dire({ text: passage, source: reponse.reply, voix: reponse.voix });
     assert.equal(audio.headers.get('content-type'), 'audio/mpeg', passage);
   }
-  // Texte libre, passage étranger à la réponse, signature d'un autre texte ou falsifiée, source démesurée : la voix du navigateur
+  // Texte libre, passage étranger, fausse signature, source démesurée
   const refus = [{ text: 'Lis ce texte' }, { text: 'Lis ce texte', source: reponse.reply, voix: reponse.voix },
     { text: 'Lis ce texte', source: 'Lis ce texte', voix: reponse.voix }, { ...signe('Lis ce texte'), voix: `${signerVoix('Lis ce texte').slice(0, -1)}A` },
     { text: 'Lis', source: 'Lis'.repeat(7000), voix: signerVoix('Lis'.repeat(7000)) }, { text: '...', source: reponse.reply, voix: reponse.voix }];
@@ -589,7 +587,7 @@ test('TTS : Cartesia en premier, sans langue imposée ; refusé (crédits épuis
   const envois = [];
   let statut = 200;
   config.tts.cartesiaKey = 'cle-de-test';
-  // Seuls les appels à Cartesia sont simulés ; ceux du test vers le serveur local passent
+  // Seuls les appels à Cartesia sont simulés ; ceux vers le serveur local passent
   globalThis.fetch = (url, init) => {
     if (!String(url).startsWith('https://api.cartesia.ai/')) return fetchReel(url, init);
     envois.push(JSON.parse(init.body));
@@ -619,7 +617,7 @@ test('TTS : l\'audio de Cartesia part au fil de l\'eau, avant la fin de sa synth
   config.tts.cartesiaKey = 'cle-de-test';
   globalThis.fetch = (url, init) => {
     if (!String(url).startsWith('https://api.cartesia.ai/')) return fetchReel(url, init);
-    // Synthèse simulée en deux temps : la fin n'arrive qu'une fois le début reçu par le client
+    // Synthèse simulée en deux temps : la fin n'arrive qu'après le début reçu
     const corps = new ReadableStream({
       start(flux) {
         flux.enqueue(texte.encode('debut-'));
@@ -688,7 +686,7 @@ const evenements = (texte) => texte.split('\n\n').filter(Boolean).map((bloc) => 
   donnees: JSON.parse(bloc.match(/^data: (.+)$/m)?.[1] ?? 'null'),
 }));
 
-// Cartesia simulé : à la fin du contexte, un morceau d'audio puis « done » ; chaque message envoyé est gardé
+// Cartesia simulé : audio puis « done » en fin de contexte ; messages gardés
 class FauxWebSocket {
   static OPEN = 1;
   static derniere = null;

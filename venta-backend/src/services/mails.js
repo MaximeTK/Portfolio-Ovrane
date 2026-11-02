@@ -1,6 +1,4 @@
-/**
- * E-mails du système par l'API de Resend ; sans clé ni expéditeur, rien ne part et l'erreur est journalisée
- */
+/** E-mails par l'API de Resend ; sans clé ni expéditeur, rien ne part */
 import { config } from '../config.js';
 import * as log from '../log.js';
 

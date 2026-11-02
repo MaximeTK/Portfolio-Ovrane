@@ -1,6 +1,4 @@
-/**
- * Système RAG : passages Markdown en mémoire, embeddings persistés dans MongoDB, recherche hybride
- */
+/** RAG : passages en mémoire, embeddings dans MongoDB, recherche hybride */
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -31,9 +29,7 @@ export async function embedder(textes) {
   return vecteurs;
 }
 
-/**
- * Découpe les .md, reprend les embeddings connus de MongoDB, n'embedde que les manquants et retire les obsolètes
- */
+/** Découpe les .md, reprend les embeddings connus, embedde les manquants */
 export async function reindexFolder(dossier) {
   const fichiers = fs.readdirSync(dossier).filter((f) => f.endsWith('.md')).sort();
   if (fichiers.length === 0) {
@@ -76,7 +72,7 @@ export async function reindexFolder(dossier) {
   return { success: true, documentsProcessed: fichiers.length, chunksIndexed: passages.length, embeddingsComputed: manquants.length, persisted: persistant, sources };
 }
 
-// La question et le message précédent partent dans un seul appel, les questions déjà vues sortent du cache
+// Question et message précédent en un appel ; questions vues en cache
 async function vecteursRequetes(textes) {
   const manquants = [...new Set(textes)].filter((t) => !cacheRequetes.has(t));
   if (manquants.length) {
@@ -89,9 +85,7 @@ async function vecteursRequetes(textes) {
   return textes.map((t) => cacheRequetes.get(t));
 }
 
-/**
- * Top passages par RRF (question poids 1, message précédent poids 0.5) ; la porte ne juge que la question
- */
+/** Top passages par RRF (question 1, précédent 0.5) ; porte sur la question */
 export async function rechercher(question, precedent = '') {
   const { passages, embeddings, bm25 } = etat;
   if (passages.length === 0) return { porte: false, passages: [], cosinusMax: 0, couverture: 0 };

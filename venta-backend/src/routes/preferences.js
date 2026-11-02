@@ -1,13 +1,11 @@
-/**
- * Préférences de l'utilisateur de la session
- */
+/** Préférences de l'utilisateur de la session */
 import { User } from '../models/User.js';
 import { saveUserPreference } from '../services/utilisateurs.js';
 import { sendError, requireSession } from '../http.js';
 import { paletteConnue } from '../services/chat/outils.js';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../messages.js';
 
-// Chaque préférence n'admet que les valeurs de son catalogue : le fond revient au modèle comme FOND ACTUEL
+// Chaque préférence admet les valeurs de son catalogue seulement
 const PREFERENCES = new Map([['backgroundColor', paletteConnue]]);
 
 export function setupPreferencesRoutes(app) {

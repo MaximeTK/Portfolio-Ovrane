@@ -1,6 +1,4 @@
-/**
- * CV ou lettre envoyés avec une candidature, rangés par Illusion dans la base partagée, contenu compris
- */
+/** CV ou lettre envoyés avec une candidature, contenu compris */
 import mongoose from 'mongoose';
 
 const illusionFichierSchema = new mongoose.Schema({

@@ -1,6 +1,4 @@
-/**
- * Profils utilisateurs dans MongoDB : visites, messages, conversations, préférences et liens d'arrivée
- */
+/** Profils : visites, messages, conversations, préférences, liens */
 import { User } from '../models/User.js';
 
 export const MAX_MESSAGES = 50;
@@ -13,7 +11,7 @@ export function profilPublic(user, nouveau) {
   return { name: user.name ?? null, visitCount, isNewUser: nouveau ?? visitCount === 1, messageCount: user.messageCount || 0 };
 }
 
-// Une visite compte si la précédente date de plus d'une heure ; l'IP ne sert qu'aux limites de débit, jamais gardée
+// Une visite compte si la précédente date de plus d'une heure ; IP non gardée
 function visite() {
   const maintenant = new Date();
   const ecart = { $subtract: [maintenant, { $ifNull: ['$lastVisit', new Date(0)] }] };
@@ -23,7 +21,7 @@ function visite() {
   };
 }
 
-// Profil du chat : compte la visite et le message avant l'appel au modèle, avec les 8 derniers échanges
+// Profil du chat : visite et message comptés avant le modèle, 8 échanges
 export function getUserProfile(id) {
   return User.findOneAndUpdate(
     { id },
@@ -40,7 +38,7 @@ export function compterVisite(id) {
   ).lean();
 }
 
-// Messages à plat ; un échange donne la question puis la réponse, l'ancien format un seul message
+// Messages à plat : un échange donne question puis réponse, l'ancien un seul
 export function aPlat(conversations = []) {
   return conversations.flatMap((conv) => {
     if (!conv.prompt && !conv.response) {
@@ -53,7 +51,7 @@ export function aPlat(conversations = []) {
   });
 }
 
-// Page de messages comptée depuis la fin ; skip + limit échanges suffisent car chacun donne au moins un message
+// Page comptée depuis la fin ; skip + limit échanges suffisent
 export async function historique(id, limit, skip) {
   const user = await User.findOne({ id }, { _id: 0, id: 1, conversations: { $slice: -(skip + limit) } }).lean();
   const messages = aPlat(user?.conversations);

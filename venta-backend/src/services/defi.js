@@ -1,7 +1,4 @@
-/**
- * Preuve de travail avant la création d'un visiteur : une fraction de seconde pour un navigateur, un coût par profil
- * pour un robot qui en crée en masse. Sans service tiers ni donnée personnelle : rien d'autre qu'un calcul.
- */
+/** Preuve de travail avant un visiteur : coût par profil pour un robot */
 import crypto from 'crypto';
 import { Defi } from '../models/Defi.js';
 import { egal } from '../http.js';
@@ -9,7 +6,7 @@ import { config } from '../config.js';
 
 export const DUREE_DEFI = 5 * 60 * 1000;
 
-// Dérivée du secret de service : le défi se vérifie sans rien garder avant sa résolution
+// Dérivée du secret de service : le défi se vérifie sans rien garder
 const cle = () => crypto.createHmac('sha256', config.serviceSecret).update('ovrane:defi').digest();
 const signer = (charge) => crypto.createHmac('sha256', cle()).update(charge).digest('base64url');
 
@@ -23,7 +20,7 @@ export function zerosEnTete(octets) {
   return bits;
 }
 
-// Sel aléatoire, échéance et difficulté, signés : trouver un nombre dont le SHA-256 de « défi:nombre » commence par assez de zéros
+// Défi signé (sel, échéance, difficulté) : SHA-256 de « défi:nombre » à zéros
 export function nouveauDefi(maintenant = Date.now()) {
   const { difficulte } = config.defi;
   const charge = `${crypto.randomBytes(16).toString('base64url')}.${maintenant + DUREE_DEFI}.${difficulte}`;

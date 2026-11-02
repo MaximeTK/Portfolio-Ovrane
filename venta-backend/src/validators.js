@@ -1,27 +1,24 @@
-/**
- * Validation des entrées
- */
+/** Validation des entrées */
 
 export function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-// Jeton de candidature Illusion : 10 caractères [a-z0-9], les liens étant passés en minuscules
+// Jeton de candidature Illusion : 10 caractères [a-z0-9], liens en minuscules
 export function isValidJeton(jeton) {
   return typeof jeton === 'string' && /^[a-z0-9]{10}$/.test(jeton);
 }
 
-// Scanners des messageries, aperçus de liens, crawlers, clients HTTP, navigateurs sans tête et
-// pré-requête de Microsoft Office (« Microsoft Office/16.0 »), que le vrai navigateur suit juste après
+// Scanners, aperçus, crawlers, clients HTTP, sans tête, pré-requête Office
 const ROBOT_USER_AGENT = /(?<!cu)bot\b|crawl|spider|slurp|preview|scanner|safelinks|proofpoint|urldefense|mimecast|barracuda|facebookexternalhit|slack|whatsapp|skype|embedly|curl|wget|python|aiohttp|httpx|go-http-client|java\/|okhttp|node-fetch|axios|headless|phantomjs|lighthouse|microsoft office|ms-office/i;
 
-// Vrai si le user-agent n'est pas celui d'un humain dans un navigateur ; absent, il compte comme robot
+// Vrai si le user-agent n'est pas un humain en navigateur ; absent = robot
 export function isRobotUserAgent(userAgent) {
   const ua = typeof userAgent === 'string' ? userAgent.trim() : '';
   return !ua || ua.toLowerCase() === 'unknown' || ROBOT_USER_AGENT.test(ua);
 }
 
-// Nom d'image sans séparateur de chemin ni caractère à risque (ex : "Pico Interface.png")
+// Nom d'image sans séparateur de chemin ni caractère à risque
 export function isValidAssetFilename(filename) {
   if (typeof filename !== 'string') return false;
   const name = filename.trim();
