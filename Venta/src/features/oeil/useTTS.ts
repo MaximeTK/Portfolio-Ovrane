@@ -28,14 +28,14 @@ export type FluxVoix = { pousser: (pcm: string) => void; terminer: () => void };
 const MAX_BLOC = 900;
 
 /** Découpe en blocs de 4 phrases et MAX_BLOC caractères au plus */
-export function splitTextIntoTTSBlocks(text: string, sentencesPerBlock = 4): string[] {
+export function splitTextIntoTTSBlocks(text: string): string[] {
   const sentences = (text.replace(/\s+/g, ' ').trim().match(/[^.]+(?:\.)|[^.]+$/g) ?? [])
     .map((s) => s.trim())
     .filter(Boolean);
   const blocks: string[] = [];
   let bloc: string[] = [];
   for (const phrase of sentences) {
-    if (bloc.length && (bloc.length === sentencesPerBlock || [...bloc, phrase].join(' ').length > MAX_BLOC)) {
+    if (bloc.length && (bloc.length === 4 || [...bloc, phrase].join(' ').length > MAX_BLOC)) {
       blocks.push(bloc.join(' '));
       bloc = [];
     }
@@ -124,49 +124,39 @@ export function useTTS() {
     audio.play().catch(fin);
   }, [stop]);
 
+  // Lecteur d'une adresse provisoire : sa fin libère l'adresse et rend la main
+  const preparerLecture = useCallback((audioUrl: string, setupVisualization: SetupVisualizationFn, resolve: () => void) => {
+    const audio = new Audio(audioUrl);
+    currentAudioRef.current = audio;
+    currentAudioUrlRef.current = audioUrl;
+    setupVisualization(audio, (level) => {
+      audioLevelRef.current = level;
+    });
+    const fin = () => {
+      audioLevelRef.current = 0;
+      URL.revokeObjectURL(audioUrl);
+      if (currentAudioUrlRef.current === audioUrl) currentAudioUrlRef.current = null;
+      if (currentAudioRef.current === audio) currentAudioRef.current = null;
+      resolve();
+    };
+    audio.onended = fin;
+    audio.onerror = fin;
+    return { audio, fin };
+  }, []);
+
   const playAudioQueued = useCallback((audioBlob: Blob, setupVisualization: SetupVisualizationFn, runId: number) =>
     new Promise<void>((resolve) => {
       if (activeRunIdRef.current !== runId) return resolve();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      currentAudioRef.current = audio;
-      currentAudioUrlRef.current = audioUrl;
-      setupVisualization(audio, (level) => {
-        audioLevelRef.current = level;
-      });
-      const fin = () => {
-        audioLevelRef.current = 0;
-        URL.revokeObjectURL(audioUrl);
-        if (currentAudioUrlRef.current === audioUrl) currentAudioUrlRef.current = null;
-        if (currentAudioRef.current === audio) currentAudioRef.current = null;
-        resolve();
-      };
-      audio.onended = fin;
-      audio.onerror = fin;
+      const { audio, fin } = preparerLecture(URL.createObjectURL(audioBlob), setupVisualization, resolve);
       audio.play().catch(fin);
-    }), []);
+    }), [preparerLecture]);
 
   // Le flux se lit à l'arrivée : la lecture attend les morceaux en retard
   const playStreamQueued = useCallback((body: ReadableStream<Uint8Array>, setupVisualization: SetupVisualizationFn, runId: number) =>
     new Promise<void>((resolve) => {
       if (activeRunIdRef.current !== runId) return resolve();
       const source = new MediaSource();
-      const audioUrl = URL.createObjectURL(source);
-      const audio = new Audio(audioUrl);
-      currentAudioRef.current = audio;
-      currentAudioUrlRef.current = audioUrl;
-      setupVisualization(audio, (level) => {
-        audioLevelRef.current = level;
-      });
-      const fin = () => {
-        audioLevelRef.current = 0;
-        URL.revokeObjectURL(audioUrl);
-        if (currentAudioUrlRef.current === audioUrl) currentAudioUrlRef.current = null;
-        if (currentAudioRef.current === audio) currentAudioRef.current = null;
-        resolve();
-      };
-      audio.onended = fin;
-      audio.onerror = fin;
+      const { audio, fin } = preparerLecture(URL.createObjectURL(source), setupVisualization, resolve);
       source.addEventListener('sourceopen', async () => {
         const tampon = source.addSourceBuffer('audio/mpeg');
         const verser = (morceau: Uint8Array) => new Promise<void>((ok, echec) => {
@@ -191,7 +181,7 @@ export function useTTS() {
         if (source.readyState === 'open' && !tampon.updating) source.endOfStream();
         if (!lance) fin();
       }, { once: true });
-    }), []);
+    }), [preparerLecture]);
 
   // Chaque morceau PCM suit le précédent : la voix ne s'interrompt pas
   const ouvrirFlux = useCallback((onEnd: () => void, onStart?: () => void): FluxVoix => {
