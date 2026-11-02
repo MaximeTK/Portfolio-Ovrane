@@ -8,7 +8,7 @@ import { config } from '../config.js';
 import { MAILS } from '../messages.js';
 import * as log from '../log.js';
 
-export const DUREE_LIEN = 24 * 3600 * 1000;
+const DUREE_LIEN = 24 * 3600 * 1000;
 
 // Envoie le lien à l'adresse du compte ; seul le dernier reste valable
 export async function demanderVerification({ id, name, email }) {

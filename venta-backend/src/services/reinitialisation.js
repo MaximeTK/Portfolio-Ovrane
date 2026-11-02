@@ -10,7 +10,7 @@ import { config } from '../config.js';
 import { MAILS } from '../messages.js';
 import * as log from '../log.js';
 
-export const DUREE_LIEN = 30 * 60 * 1000;
+const DUREE_LIEN = 30 * 60 * 1000;
 
 // Envoie le lien au compte s'il existe ; seul le dernier reste valable
 export async function demanderReinitialisation(email) {

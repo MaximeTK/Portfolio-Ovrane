@@ -4,7 +4,7 @@ import { Defi } from '../models/Defi.js';
 import { egal } from '../http.js';
 import { config } from '../config.js';
 
-export const DUREE_DEFI = 5 * 60 * 1000;
+const DUREE_DEFI = 5 * 60 * 1000;
 
 // Dérivée du secret de service : le défi se vérifie sans rien garder
 const cle = () => crypto.createHmac('sha256', config.serviceSecret).update('ovrane:defi').digest();

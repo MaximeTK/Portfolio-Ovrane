@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { config } from '../config.js';
 
 // Une réponse du modèle tient en dessous ; au-delà, pas un texte du serveur
-export const MAX_SOURCE = 20_000;
+const MAX_SOURCE = 20_000;
 
 // Dérivée du secret de service, que le navigateur ne voit jamais
 const cle = () => crypto.createHmac('sha256', config.serviceSecret).update('ovrane:voix').digest();

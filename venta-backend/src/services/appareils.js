@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { egal } from '../http.js';
 import { config } from '../config.js';
 
-export const DUREE_APPAREIL = 365 * 24 * 3600 * 1000;
+const DUREE_APPAREIL = 365 * 24 * 3600 * 1000;
 
 // Dérivée du secret de service : rien n'est gardé en base, la signature suffit
 const cle = () => crypto.createHmac('sha256', config.serviceSecret).update('ovrane:appareil').digest();

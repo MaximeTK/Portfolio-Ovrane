@@ -6,14 +6,14 @@ import mongoose from 'mongoose';
 import * as log from '../../log.js';
 import { RagChunk } from '../../models/RagChunk.js';
 import { decouperMarkdown } from './chunker.js';
-import { indexerBm25, listesClassees, fusionner, porteOuverte, SEUILS } from './recherche.js';
+import { indexerBm25, listesClassees, fusionner, porteOuverte } from './recherche.js';
 
 const MODELE = 'text-embedding-3-small';
 const TOP_K = 6;
 const CACHE_MAX = 200;
 
 let client = null;
-let etat = { passages: [], embeddings: [], bm25: indexerBm25([]), persistant: false, calcules: 0 };
+let etat = { passages: [], embeddings: [], bm25: indexerBm25([]) };
 const cacheRequetes = new Map();
 
 export function initializeRAG(openai) {
@@ -34,7 +34,7 @@ export async function reindexFolder(dossier) {
   const fichiers = fs.readdirSync(dossier).filter((f) => f.endsWith('.md')).sort();
   if (fichiers.length === 0) {
     log.warn('[RAG] Aucun document .md trouvé dans', dossier);
-    return { success: false, documentsProcessed: 0, chunksIndexed: 0 };
+    return { success: false };
   }
   const passages = fichiers.flatMap((f) => decouperMarkdown(fs.readFileSync(path.join(dossier, f), 'utf8'), path.basename(f, '.md')));
   const ids = passages.map((p) => crypto.createHash('sha256').update(`${MODELE}\n${p.prefixe}`).digest('hex'));
@@ -64,12 +64,10 @@ export async function reindexFolder(dossier) {
     passages,
     embeddings: ids.map((id) => connus.get(id)),
     bm25: indexerBm25(passages.map((p) => p.prefixe)),
-    persistant,
-    calcules: manquants.length,
   };
   const sources = fichiers.map((f) => path.basename(f, '.md'));
   log.info(`✅ [RAG] ${passages.length} passage(s) de ${sources.join(', ')} ; ${manquants.length} embedding(s) calculé(s)${persistant ? ', persistés dans MongoDB' : ', en mémoire'}`);
-  return { success: true, documentsProcessed: fichiers.length, chunksIndexed: passages.length, embeddingsComputed: manquants.length, persisted: persistant, sources };
+  return { success: true, chunksIndexed: passages.length, embeddingsComputed: manquants.length, persisted: persistant, sources };
 }
 
 // Question et message précédent en un appel ; questions vues en cache
@@ -106,14 +104,4 @@ export async function rechercher(question, precedent = '') {
 
 export function etatIndex() {
   return etat;
-}
-
-export function getSystemStats() {
-  const sources = [...new Set(etat.passages.map((p) => p.document))];
-  return {
-    initialized: etat.passages.length > 0,
-    config: { embeddingModel: MODELE, topK: TOP_K, seuils: SEUILS },
-    index: { itemCount: etat.passages.length, sourceCount: sources.length, sources, persisted: etat.persistant, embeddingsComputed: etat.calcules },
-    cache: { size: cacheRequetes.size, maxSize: CACHE_MAX },
-  };
 }

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
 import { config } from '../src/config.js';
-import { initializeRAG, reindexFolder, rechercher, getSystemStats } from '../src/services/rag/ragSystem.js';
+import { initializeRAG, reindexFolder, rechercher, etatIndex } from '../src/services/rag/ragSystem.js';
 import { buildRAGContextForPrompt, generateResponse, SYSTEM_FIXE } from '../src/services/chat/generer.js';
 import { processResponse } from '../src/services/chat/reponse.js';
 import { User } from '../src/models/User.js';
@@ -20,7 +20,7 @@ test('index : cinq documents découpés et embeddés en mémoire sans MongoDB', 
   assert.equal(result.persisted, false);
   assert.deepEqual(result.sources, ['Hikup', 'Illusion', 'Ovrane', 'Pico', 'Profil']);
   assert.equal(result.embeddingsComputed, result.chunksIndexed);
-  assert.equal(getSystemStats().index.itemCount, result.chunksIndexed);
+  assert.equal(etatIndex().passages.length, result.chunksIndexed);
 });
 
 test('recherche : le bon document en tête, la relance suit le message précédent', async () => {
