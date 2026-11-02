@@ -14,8 +14,10 @@ export const empreinte = (jeton) => crypto.createHash('sha256').update(jeton).di
 // 32 octets en base64url, comme les jetons de réinitialisation
 export const estJeton = (jeton) => typeof jeton === 'string' && /^[A-Za-z0-9_-]{43}$/.test(jeton);
 
+export const nouveauJeton = () => crypto.randomBytes(32).toString('base64url');
+
 export async function creerSession(utilisateur) {
-  const jeton = crypto.randomBytes(32).toString('base64url');
+  const jeton = nouveauJeton();
   const maintenant = new Date();
   const expireLe = new Date(maintenant.getTime() + DUREE);
   await Session.create({ _id: empreinte(jeton), utilisateur, creeLe: maintenant, vuLe: maintenant, expireLe });

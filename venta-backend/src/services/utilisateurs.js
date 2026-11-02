@@ -4,6 +4,7 @@ import { User } from '../models/User.js';
 export const MAX_MESSAGES = 50;
 const UNE_HEURE = 3_600_000;
 const MAX_LIENS = 100;
+export const PROFIL = { _id: 0, id: 1, name: 1, visitCount: 1, messageCount: 1 };
 
 // Ce que le client voit d'un profil
 export function profilPublic(user, nouveau) {
@@ -26,7 +27,7 @@ export function getUserProfile(id) {
   return User.findOneAndUpdate(
     { id },
     [{ $set: { ...visite(), messageCount: { $min: [{ $add: [{ $ifNull: ['$messageCount', 0] }, 1] }, MAX_MESSAGES + 1] } } }],
-    { returnDocument: 'after', updatePipeline: true, projection: { _id: 0, id: 1, name: 1, visitCount: 1, messageCount: 1, preferences: 1, conversations: { $slice: -8 } } },
+    { returnDocument: 'after', updatePipeline: true, projection: { ...PROFIL, preferences: 1, conversations: { $slice: -8 } } },
   ).lean();
 }
 
@@ -34,7 +35,7 @@ export function compterVisite(id) {
   return User.findOneAndUpdate(
     { id },
     [{ $set: visite() }],
-    { returnDocument: 'after', updatePipeline: true, projection: { _id: 0, id: 1, name: 1, visitCount: 1, messageCount: 1 } },
+    { returnDocument: 'after', updatePipeline: true, projection: PROFIL },
   ).lean();
 }
 

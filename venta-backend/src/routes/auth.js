@@ -5,7 +5,7 @@ import { User } from '../models/User.js';
 import { creerSession, lireSession, revoquerSession } from '../services/sessions.js';
 import { demanderReinitialisation, reinitialiser } from '../services/reinitialisation.js';
 import { demanderVerification, verifier } from '../services/verification.js';
-import { compterVisite, profilPublic } from '../services/utilisateurs.js';
+import { compterVisite, profilPublic, PROFIL } from '../services/utilisateurs.js';
 import { signerVoix } from '../services/voix.js';
 import { defiResolu, nouveauDefi } from '../services/defi.js';
 import { appareilDe, marquerAppareil } from '../services/appareils.js';
@@ -17,20 +17,24 @@ import * as log from '../log.js';
 const QUINZE_MINUTES = 15 * 60 * 1000;
 // Comparé quand le compte n'existe pas : la réponse prend le même temps
 const HASH_FACTICE = '$2b$12$0L1gLi8C8ektlGfx8x6i3eeeWUWee6wpIA9Yn3PDcvG/i/M3lACEe';
-const PROFIL = { _id: 0, id: 1, name: 1, visitCount: 1, messageCount: 1 };
 
 const identifiant = (valeur) => String(valeur ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 // 12 caractères au moins (CNIL 2022-100), comme Illusion
 const motDePasseValide = (motDePasse) => typeof motDePasse === 'string' && motDePasse.length >= 12 && motDePasse.length <= 128;
+// Longueur bornée avant la regex, quadratique sur une longue suite de points
+const emailValide = (email) => email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const sessionRecue = (req) => req.get('x-ovrane-session');
 // L'accueil part signé : la voix du serveur ne lit que ses propres textes
 const dit = (reply) => ({ reply, voix: signerVoix(reply) });
 const accueil = (user) => ({ ...dit(MISC_MESSAGES.welcomeBack(user.name)), userProfile: profilPublic(user, false), activeUserId: user.id });
+const bienvenue = (user) => ({ ...dit(MISC_MESSAGES.welcomeNew(user.name)), userProfile: profilPublic(user), activeUserId: user.id });
+// Compteurs et listes d'un profil neuf, visite d'arrivée comptée
+const neuf = () => ({ visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] });
 
-// Nouvelle session ; celle reçue est révoquée (rotation)
+// Nouvelle session et marque d'appareil ; celle reçue est révoquée (rotation)
 async function ouvrirSession(req, utilisateur) {
   await revoquerSession(sessionRecue(req));
-  return creerSession(utilisateur);
+  return { session: await creerSession(utilisateur), appareil: marquerAppareil(utilisateur) };
 }
 
 async function reprendreVisiteur(req, res, next) {
@@ -78,9 +82,9 @@ async function compteVise(req, res, next) {
 async function creerVisiteur(req, res, next) {
   try {
     // Né avec sa session : son identifiant ne s'échange jamais contre un autre
-    const user = { id: `v${crypto.randomBytes(12).toString('hex')}`, migreLe: new Date(), visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] };
+    const user = { id: `v${crypto.randomBytes(12).toString('hex')}`, migreLe: new Date(), ...neuf() };
     await User.create(user);
-    res.json({ ...dit(MISC_MESSAGES.welcomeNew()), userProfile: profilPublic(user), activeUserId: user.id, session: await creerSession(user.id) });
+    res.json({ ...bienvenue(user), session: await creerSession(user.id) });
   } catch (error) {
     next(error);
   }
@@ -102,9 +106,8 @@ export function setupAuthRoutes(app) {
       const { pseudo, email, password, inviteCode } = req.body || {};
       if (!pseudo || !email || !password || !inviteCode) return sendError(res, 400, ERROR_MESSAGES.fieldsRequired);
       if (!config.inviteCode || !egal(String(inviteCode).trim(), config.inviteCode)) return sendError(res, 403, ERROR_MESSAGES.inviteInvalid);
-      // Longueur bornée avant la regex, quadratique sur une longue suite de points
       const emailNorm = identifiant(email);
-      if (emailNorm.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) return sendError(res, 400, ERROR_MESSAGES.emailInvalid);
+      if (!emailValide(emailNorm)) return sendError(res, 400, ERROR_MESSAGES.emailInvalid);
       if (!motDePasseValide(password)) return sendError(res, 400, ERROR_MESSAGES.passwordLength);
       const name = String(pseudo).trim();
       if (!/^[a-zA-Z0-9\s\-_]{1,25}$/.test(name)) return sendError(res, 400, ERROR_MESSAGES.pseudoInvalid);
@@ -115,9 +118,9 @@ export function setupAuthRoutes(app) {
       if (await User.exists({ $or: [{ nameNormalized }, { email: emailNorm }] })) return sendError(res, 409, ERROR_MESSAGES.accountTaken);
 
       const id = crypto.createHash('sha256').update(`name:${nameNormalized}`).digest('hex').slice(0, 16);
-      const user = { name, nameNormalized, id, email: emailNorm, passwordHash, visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] };
+      const user = { name, nameNormalized, id, email: emailNorm, passwordHash, ...neuf() };
       await User.create(user);
-      res.json({ ...dit(MISC_MESSAGES.welcomeNew(name)), userProfile: profilPublic(user), activeUserId: id, session: await ouvrirSession(req, id), appareil: marquerAppareil(id) });
+      res.json({ ...bienvenue(user), ...await ouvrirSession(req, id) });
       // Après la réponse : l'adresse se prouve par le lien, avant d'ouvrir Illusion
       demanderVerification({ id, name, email: emailNorm }).catch((error) => log.error('[AUTH] vérification :', error.message));
     } catch (error) {
@@ -136,7 +139,7 @@ export function setupAuthRoutes(app) {
       if (!compte?.passwordHash || !valide) return sendError(res, 401, ERROR_MESSAGES.invalidCredentials);
 
       const user = await compterVisite(compte.id);
-      res.json({ ...dit(MISC_MESSAGES.welcomeBack(user.name)), userProfile: profilPublic(user, false), activeUserId: user.id, session: await ouvrirSession(req, user.id), appareil: marquerAppareil(user.id) });
+      res.json({ ...accueil(user), ...await ouvrirSession(req, user.id) });
     } catch (error) {
       next(error);
     }
@@ -147,9 +150,7 @@ export function setupAuthRoutes(app) {
   app.post('/api/auth/oubli', parIp, parEmail, (req, res) => {
     const email = identifiant(req.body?.email);
     res.json({ envoye: true });
-    if (email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      demanderReinitialisation(email).catch((error) => log.error('[AUTH] mot de passe oublié :', error.message));
-    }
+    if (emailValide(email)) demanderReinitialisation(email).catch((error) => log.error('[AUTH] mot de passe oublié :', error.message));
   });
 
   app.post('/api/auth/reinitialiser', parIp, async (req, res, next) => {

@@ -1,10 +1,9 @@
 /** Mot de passe oublié : lien unique de 30 min, la base garde l'empreinte */
-import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { Session } from '../models/Session.js';
 import { Reinitialisation } from '../models/Reinitialisation.js';
-import { empreinte, estJeton, oublierComptes } from './sessions.js';
+import { empreinte, estJeton, nouveauJeton, oublierComptes } from './sessions.js';
 import { envoyerMail } from './mails.js';
 import { config } from '../config.js';
 import { MAILS } from '../messages.js';
@@ -21,7 +20,7 @@ export async function demanderReinitialisation(email) {
     return false;
   }
   await Reinitialisation.deleteMany({ utilisateur: compte.id });
-  const jeton = crypto.randomBytes(32).toString('base64url');
+  const jeton = nouveauJeton();
   const maintenant = new Date();
   await Reinitialisation.create({ _id: empreinte(jeton), utilisateur: compte.id, creeLe: maintenant, expireLe: new Date(maintenant.getTime() + DUREE_LIEN) });
   // Dans le fragment : le jeton n'atteint jamais un serveur ni ses journaux

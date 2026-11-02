@@ -1,8 +1,7 @@
 /** Vérification d'e-mail : lien unique de 24 h, requise pour ouvrir Illusion */
-import crypto from 'crypto';
 import { User } from '../models/User.js';
 import { Verification } from '../models/Verification.js';
-import { empreinte, estJeton } from './sessions.js';
+import { empreinte, estJeton, nouveauJeton } from './sessions.js';
 import { envoyerMail } from './mails.js';
 import { config } from '../config.js';
 import { MAILS } from '../messages.js';
@@ -18,7 +17,7 @@ export async function demanderVerification({ id, name, email }) {
     return false;
   }
   await Verification.deleteMany({ utilisateur: id });
-  const jeton = crypto.randomBytes(32).toString('base64url');
+  const jeton = nouveauJeton();
   const maintenant = new Date();
   await Verification.create({ _id: empreinte(jeton), utilisateur: id, email, creeLe: maintenant, expireLe: new Date(maintenant.getTime() + DUREE_LIEN) });
   // Dans le fragment : le jeton n'atteint jamais un serveur ni ses journaux
