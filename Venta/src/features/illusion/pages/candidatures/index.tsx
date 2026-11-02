@@ -1,7 +1,7 @@
 'use client';
 
 import './candidatures.css';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useUIStore } from '@/lib/uiStore';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
@@ -38,9 +38,23 @@ const ICONES = {
   plus: <svg {...TRAIT} strokeWidth={2.6}><path d="M12 5v14M5 12h14" /></svg>,
 };
 
+// Une seule minuterie pour tous les chronos, lancée tant qu'il y en a un
+const abonnesHorloge = new Set<() => void>();
+let minuteurHorloge: ReturnType<typeof setInterval>;
+const abonnerHorloge = (f: () => void) => {
+  if (!abonnesHorloge.size) minuteurHorloge = setInterval(() => document.visibilityState === 'visible' && abonnesHorloge.forEach((a) => a()), 1000);
+  abonnesHorloge.add(f);
+  return () => {
+    abonnesHorloge.delete(f);
+    if (!abonnesHorloge.size) clearInterval(minuteurHorloge);
+  };
+};
+const lireSeconde = () => Math.floor(Date.now() / 1000);
+
 // « 6:04:47:12 » : jours, heures, minutes, secondes depuis l'envoi
-function chrono(iso: string, maintenant: number) {
-  const s = Math.max(0, Math.floor((maintenant - dateUtc(iso).getTime()) / 1000));
+function Chrono({ iso }: { iso: string }) {
+  const seconde = useSyncExternalStore(abonnerHorloge, lireSeconde, lireSeconde);
+  const s = Math.max(0, seconde - Math.floor(dateUtc(iso).getTime() / 1000));
   const deux = (n: number) => String(n).padStart(2, '0');
   return `${Math.floor(s / 86400)}:${deux(Math.floor(s / 3600) % 24)}:${deux(Math.floor(s / 60) % 60)}:${deux(s % 60)}`;
 }
@@ -107,15 +121,9 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
   const [confirmation, setConfirmation] = useState<'supprimer' | 'vider' | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [menu, setMenu] = useState<keyof Filtres | null>(null);
-  const [maintenant, setMaintenant] = useState(() => Date.now());
   const [aller, setAller] = useState('');
   const defile = useRef<HTMLDivElement>(null);
 
-  // Les compteurs des offres envoyées tournent à la seconde, sans le serveur
-  useEffect(() => {
-    const t = setInterval(() => document.visibilityState === 'visible' && setMaintenant(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
   // « Maintenant » d'une autre page mène ici avec ?panneau=direct
   useEffect(() => {
     if (!direct) return;
@@ -292,7 +300,7 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
                   <td className="d">{libelleSource(o.source)}</td>
                   <td title={o.raison || undefined}><span className={`eo ${etape.classe}`}>{etape.nom}</span></td>
                   <td className={`chrono${o.postule_le ? '' : ' vide'}`} title={o.postule_le ? "Temps écoulé depuis l'envoi : jours:heures:minutes:secondes" : undefined}>
-                    {o.postule_le ? chrono(o.postule_le, maintenant) : '—'}
+                    {o.postule_le ? <Chrono iso={o.postule_le} /> : '—'}
                   </td>
                 </tr>
               );
