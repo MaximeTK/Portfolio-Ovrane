@@ -2,6 +2,7 @@
 import { base, appeler, visiteur, fermer, appelsOpenAI, REPONSE } from './simulation.js';
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { registerHooks } from 'node:module';
 import { isValidJeton, isRobotUserAgent } from '../src/validators.js';
 import { formatCandidatureContext, MISC_MESSAGES } from '../src/messages.js';
 import { signerVoix } from '../src/services/voix.js';
@@ -113,7 +114,12 @@ test('accueil du recruteur en français, en anglais, ou vide, écrit par le serv
 });
 
 test('front : la voix découpe en blocs de 4 phrases et de 900 caractères au plus, entre deux phrases', async () => {
+  // Le front importe sans extension : Node essaie .ts le temps du chargement
+  const crochet = registerHooks({
+    resolve: (nom, contexte, suite) => suite(/^\.\.?\/[^.]+$/.test(nom) ? `${nom}.ts` : nom, contexte),
+  });
   const { splitTextIntoTTSBlocks } = await import(new URL('../../Venta/src/features/oeil/useTTS.ts', import.meta.url).href);
+  crochet.deregister();
   const courtes = Array.from({ length: 8 }, (_, i) => `Phrase ${i + 1}.`).join(' ');
   assert.deepEqual(splitTextIntoTTSBlocks(courtes).map((b) => b.split('.').length - 1), [4, 4]);
   // Quatre phrases de 250 caractères (1 003 en tout) refusées en un seul bloc
