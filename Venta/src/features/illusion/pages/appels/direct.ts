@@ -84,8 +84,12 @@ function arreterFlux() {
   enCours.contexte = null;
 }
 
+// Comptée : une analyse finie après la déconnexion n'écrit plus son avis.
+let generation = 0;
+
 // Déconnexion : micro et flux coupés, l'appel reste à clore côté serveur.
 aOublier(() => {
+  generation += 1;
   clearInterval(enCours.minuteur);
   for (const piste of enCours.pistes) piste.ws.close(1000);
   arreterFlux();
@@ -244,12 +248,14 @@ export async function terminer(): Promise<number | null> {
   Object.assign(enCours, { appel: null, pistes: [], fin: false });
   window.removeEventListener('beforeunload', retenir);
   changer({ cloture: false, analyse: appel.id, ...(avis ? { avis } : {}) });
+  const depart = generation;
   try {
     const fini = await appeler<{ analyse_redigee: boolean }>(`/appels/${appel.id}/fin`, { methode: 'POST', corps });
     avis ??= fini.analyse_redigee ? { texte: 'Appel analysé.' } : { texte: "Appel enregistré ; l'analyse n'a pas pu se faire.", erreur: true };
   } catch (erreur) {
     avis = { texte: (erreur as Error).message, erreur: true };
   }
+  if (generation !== depart) return null;
   changer({ analyse: null, avis });
   return appel.id;
 }
