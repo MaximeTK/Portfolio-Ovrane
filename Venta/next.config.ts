@@ -17,6 +17,8 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Tout chemin inconnu est rendu : sur disque, un anonyme remplirait le VPS
+  experimental: { isrFlushToDisk: false },
   async headers() {
     const communs = [
       { key: "X-Frame-Options", value: "DENY" },
