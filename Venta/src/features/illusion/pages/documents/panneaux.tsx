@@ -16,12 +16,12 @@ const STATUTS: Record<string, string> = {
   IGNOREE: 'Écartée', EN_COURS: 'En cours',
 };
 const REPONSES: Record<string, string> = { positive: 'réponse positive', refus: 'refus', reponse: 'réponse reçue' };
-// Ce que Nouveau CV et Nouvelle lettre se repassent, comme dans l'ancien dashboard
+// Ce que Nouveau CV et Nouvelle lettre se repassent
 const PARTAGES = ['profil', 'offre', 'poste', 'entreprise', 'deja_postule'] as const;
 const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 const hexa = (v?: string) => /^#[0-9a-f]{3,8}$/i.test(v ?? '');
 
-// Le panneau : les éléments (pièce, fiche de poste, modèle de CV spontané), puis chaque sous-fenêtre de la page en onglet ; l'ajout d'une compétence n'y est qu'avec son objet
+// Éléments, puis sous-fenêtres en onglets ; ajout de compétence avec objet
 export function PanneauDocuments({ d }: { d: Documents }) {
   const { onglet, ouvrir } = usePanneau();
   const ouverts = useVues().vues[0].objets;
@@ -44,7 +44,7 @@ export function PanneauDocuments({ d }: { d: Documents }) {
       } : null;
     },
     'fiche-offre': (c) => ongletFicheOffre(c, { ajouterAuProfil: (dm) => ajouter(dm, 'fiche-offre', c) }),
-    // Un modèle renommé garde sa fenêtre jusqu'à ce qu'elle passe à son nouveau nom : la fiche ne disparaît pas si son nom manque
+    // Un modèle renommé garde sa fenêtre : la fiche ne disparaît pas sans nom
     spontane: (nom) => ({
       cle: 'spontane', titre: `Modèle ${court(nom, 14)}`, label: `Modèle de CV spontané · ${nom}`,
       corps: d.parametres ? <FicheModele depart={d.parametres.cv_spontanes?.find((m) => m.nom === nom)} d={d} enregistre={(n) => n !== nom && ouvrir('spontane', n)} />
@@ -60,7 +60,7 @@ export function PanneauDocuments({ d }: { d: Documents }) {
     corps: <FicheModele key={d.vierge} depart={MODELE_VIDE} d={d} enregistre={(nom) => { d.viderModele(); ouvrir('spontane', nom); }} />, pied: true,
   };
   const objets = Object.keys(elements).filter((c) => ouverts[c] !== undefined && elements[c](ouverts[c])).length + (demande ? 1 : 0);
-  // Deux objets ouverts : les onglets de geste ne restent que s'ils sont ouverts, sinon la tête du panneau déborde
+  // Deux objets ouverts : un onglet de geste ne reste que s'il est ouvert
   const peu = objets <= 1;
   const voulu = (o: Onglet, montre: boolean) => (montre || onglet === o.cle ? [o] : []);
   const onglets: Onglet[] = [
@@ -81,7 +81,7 @@ export function PanneauDocuments({ d }: { d: Documents }) {
   return <Panneau elements={elements} onglets={onglets} />;
 }
 
-// Fiche de fabrication d'une pièce, une par fenêtre, avec son pied (Supprimer, Exporter les paramètres, Télécharger) pour que sa confirmation reste la sienne
+// Fiche d'une pièce, une par fenêtre : son pied garde sa confirmation
 function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (dm: DemandeAjout) => void }) {
   const { ouvrir, fermer } = usePanneau();
   const [confirmer, setConfirmer] = useState(false);
@@ -104,7 +104,7 @@ function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (
   };
   const supprimer = async () => {
     setOccupe(true);
-    // La fiche parle d'UNE pièce : c'est elle qu'on supprime, pas ce qui reste coché dans la galerie ; partie, sa fenêtre se ferme
+    // La fiche supprime sa pièce, pas la sélection de la galerie
     if (await d.supprimer([p])) fermer();
     setOccupe(false);
   };
@@ -185,7 +185,7 @@ function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (
   );
 }
 
-// Nouveau CV et Nouvelle lettre : l'atelier de la brique, ses champs, Exécuter qui devient Arrêter, et l'état du lancement
+// Atelier de la brique : champs, Exécuter devenu Arrêter, état du lancement
 function useOngletFabrication(d: Documents, nom: NomAtelier): Onglet {
   const f = d.formulaires[nom];
   const etat = d.etats[nom];
@@ -273,7 +273,7 @@ function useOngletFabrication(d: Documents, nom: NomAtelier): Onglet {
   };
 }
 
-// Réglages · Documents : ce qui vaut pour tous les CV et toutes les lettres du compte ; les fichiers de renfort partent aussitôt
+// Réglages de tous les CV et lettres ; les renforts partent aussitôt
 function useOngletReglages(d: Documents, actif: boolean): Onglet {
   const p = d.parametres;
   const depart = () => ({ fond: p?.constructeur_fond ?? '', palette: p?.constructeur_palette ?? [], modele: p?.constructeur_modele ?? '',
@@ -283,7 +283,7 @@ function useOngletReglages(d: Documents, actif: boolean): Onglet {
   const pieces = useFichiers('/pieces-lettre', d.dire, actif, 'documents');
   useEffect(() => {
     if (actif) setBrouillon(depart());
-    // Le brouillon repart des réglages à l'ouverture de l'onglet et après chaque enregistrement
+    // Le brouillon repart des réglages à l'ouverture et à l'enregistrement
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actif, p]);
   const change = JSON.stringify(brouillon) !== JSON.stringify(depart());
@@ -342,7 +342,7 @@ function useOngletReglages(d: Documents, actif: boolean): Onglet {
   };
 }
 
-// Modèle de CV spontané, un par fenêtre (vierge pour « Nouveau modèle ») : à qui il s'adresse, ce qu'il met en avant, sa mise en page, les échanges avec le Constructeur ; sa saisie et son pied sont les siens
+// Modèle de CV spontané, un par fenêtre, vierge pour « Nouveau modèle »
 function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents; enregistre: (nom: string) => void }) {
   const { fermer } = usePanneau();
   const [m, setM] = useState<(Modele & { original: string }) | null>(() => (depart ? { ...depart, original: depart.nom } : null));
@@ -355,7 +355,7 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
     if (!profil) return setRubriques([]);
     let vivant = true;
     setRubriques(null);
-    // Les compétences d'un profil comme le Constructeur les lit : par rubrique, en liste ou en texte à virgules
+    // Compétences lues comme le Constructeur : par rubrique, liste ou texte
     appeler<{ contenu: string }>(`/profils-candidature/${encodeURIComponent(profil)}`).then((r) => {
       const lues = Object.entries((JSON.parse(r.contenu)?.competences ?? {}) as Record<string, string | string[]>)
         .map(([rub, l]): [string, string[]] => [rub, (typeof l === 'string' ? l.split(',') : l ?? []).map((c) => String(c).trim()).filter(Boolean)])
@@ -371,7 +371,7 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
     // Relues quand le profil choisi change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profil]);
-  // Supprimé ailleurs, ou jamais trouvé : la fenêtre le dit ; renommé, il est retrouvé sous son nouveau nom
+  // Modèle supprimé ailleurs ou introuvable : la fenêtre le dit
   if (!m || (m.original && !d.parametres?.cv_spontanes?.some((x) => x.nom === m.original))) return <p className="texte-f">Ce modèle n&apos;existe plus.</p>;
   const changer = (champs: Partial<Modele>) => setM({ ...m, ...champs });
   const choisies = new Set(m.competences.map((c) => c.toLowerCase()));
@@ -395,7 +395,7 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
     if (nom) enregistre(nom);
   };
   const batir = async () => {
-    // Ce qui est saisi part d'abord : le serveur bâtit le modèle tel qu'il est écrit à l'écran
+    // La saisie part d'abord : le serveur bâtit le modèle tel qu'à l'écran
     const nom = await enregistrer(false);
     if (!nom) return;
     setBatit(true);
@@ -404,7 +404,7 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
       d.setParametres(await appeler<Parametres>('/parametres'));
       setM({ ...bati, original: bati.nom });
       d.dire(`CV spontané « ${bati.nom} » bâti.`);
-      // Nouveau ou renommé, il ne passe à la fenêtre de son nom qu'une fois bâti, pour que « Mise en page… » reste sous les yeux
+      // Il ne change de fenêtre qu'une fois bâti, pour garder « Mise en page… »
       enregistre(bati.nom);
     } catch (e) {
       d.dire(message(e), true);
@@ -419,7 +419,7 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
   };
   const envoyer = async () => {
     d.changerFormulaire('constructeur', { ...(d.profils.includes(m.profil) ? { profil: m.profil } : {}), poste: m.poste, ...(m.constructeur ? {} : { palette: m.palette }) });
-    // Le fond du Constructeur est un réglage du compte : l'envoyer le change pour tous ses CV
+    // Le fond du Constructeur est un réglage du compte, pour tous ses CV
     const fond = !m.constructeur && m.fond !== (d.parametres?.constructeur_fond ?? '');
     if (fond && !await d.enregistrer({ constructeur_fond: m.fond }, '')) return;
     d.dire(`Profil, poste${m.constructeur ? '' : ' et palette'} envoyés au Constructeur${fond ? `, et son fond réglé sur « ${m.fond || 'tiré au sort'} »` : ''}.`);

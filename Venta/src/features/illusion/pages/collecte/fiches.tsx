@@ -28,15 +28,14 @@ const CHEVRON = <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stro
 const BARRES = <span className="barres vivant" aria-hidden="true"><i /><i /><i /><i /></span>;
 export const FLECHE = <span className="ico">{ICONES.fleche}</span>;
 
-// Rangée de départ des trois pages : Activité | fiches | panneau, le panneau à la largeur que la page donne pour cet écran ;
-// fiches et panneau partagent leur propre rangée, pour que l'Activité garde sa largeur quand le panneau se ferme
+// Fiches et panneau partagent leur rangée : l'Activité garde sa largeur
 export const arbreFiches = (panneau: (largeurEcran: number) => number | null): ArbreDepart => (zone, style) => {
   const lp = panneau(window.innerWidth) ?? (parseFloat(style.getPropertyValue('--panneau')) || 440);
   const reste = zone.w - 228 - ECART;
   return { dir: 'row', enfants: [{ id: 'activite' }, { dir: 'row', enfants: [{ id: 'fiches' }, { id: 'panneau' }], parts: [Math.max(reste - lp - ECART, 470), lp] }], parts: [228, reste] };
 };
 
-// Relance `lire` toutes les `ms` tant que l'onglet du navigateur est visible, et dès qu'il le redevient ; `null` coupe
+// Relance `lire` toutes les `ms` tant que l'onglet est visible ; `null` coupe
 export function useSondage(lire: () => void, ms: number | null) {
   const courant = useRef(lire);
   useEffect(() => {
@@ -55,7 +54,7 @@ export function useSondage(lire: () => void, ms: number | null) {
 }
 
 export type Avis = { texte: string; erreur: boolean } | null;
-// L'avis du dernier geste, 3,5 s comme les notifications de l'ancien dashboard, plus longtemps pour une erreur
+// Avis du dernier geste, plus long pour une erreur
 export function useAvis() {
   const [avis, setAvis] = useState<Avis>(null);
   const minuteur = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -68,7 +67,7 @@ export function useAvis() {
 }
 export type Dire = (texte: string, erreur?: boolean) => void;
 
-// Les briques qui tournent au nom du compte, lues comme le bandeau de l'ancien dashboard, toutes les 5 s
+// Briques qui tournent au nom du compte, relues toutes les 5 s
 export function useBriques(section: string) {
   const [actives, setActives] = useState(() => repris(`${section}:briques:actives`, new Set<string>()));
   useGarder(`${section}:briques`, { actives });
@@ -77,7 +76,7 @@ export function useBriques(section: string) {
       const vu = await appeler<{ briques_en_cours: { nom: string }[] }>('/pipeline');
       setActives(new Set(vu.briques_en_cours.map((b) => b.nom)));
     } catch {
-      // Serveur injoignable : les lots restent comme ils étaient jusqu'à la prochaine lecture
+      // Serveur injoignable : les lots restent jusqu'à la prochaine lecture
     }
   }, []);
   useEffect(() => {
@@ -137,7 +136,7 @@ type Ligne = {
 };
 type ReponseFiches = { page: number; taille: number; total_filtre: number; pages: number; total: number; comptes: Record<string, number>; lignes: Ligne[] };
 
-// Les pages à montrer : les trois premières et les trois dernières, la courante et ses voisines, « … » où taper la page voulue
+// Pages montrées : les bords, la courante et ses voisines
 function numeros(page: number, pages: number): (number | null)[] {
   const vus = [...new Set([1, 2, 3, page - 1, page, page + 1, pages - 2, pages - 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
   const sortie: (number | null)[] = [];
@@ -149,7 +148,7 @@ function numeros(page: number, pages: number): (number | null)[] {
 }
 
 type ProprietesTableau = {
-  // La section qui monte le tableau : ses choix et ses fiches sont gardés sous son nom
+  // La section qui monte le tableau garde ses choix et ses fiches sous son nom
   section: string;
   titre: string;
   actions: React.ReactNode;
@@ -163,12 +162,12 @@ type ProprietesTableau = {
   choisir: (selection: Set<string>) => void;
 };
 
-// Le tableau des fiches, le même dans Collecte, Parser et Audit : états filtrants, canaux, recherche, sélection, pagination
+// Tableau des fiches commun à Collecte, Parser et Audit
 export function TableauFiches({ section, titre, actions, confirmation, annuler, avis, note, version, selection, choisir }: ProprietesTableau) {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const question = useQuestionsFiche();
   const versionFiche = useFicheEntreprise((s) => s.version);
-  // Ce qui a été lu et choisi reste d'une visite à l'autre, sous le nom de la section : en revenant, tout s'affiche aussitôt et se relit derrière
+  // Le lu et le choisi restent d'une visite à l'autre et se relisent derrière
   const garde = `${section}:fiches`;
   const [etat, setEtat] = useState(() => repris(`${garde}:etat`, ''));
   const [canal, setCanal] = useState(() => repris(`${garde}:canal`, ''));
@@ -185,7 +184,7 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
   const rang = useRef(0);
   const parPage = taille === 'auto' ? auto : taille;
 
-  // La frappe se pose avant de partir : « developpement » ne lance pas douze requêtes, et une recherche déjà posée (celle gardée au retour) garde sa page
+  // La frappe se pose avant de partir ; une recherche gardée garde sa page
   useEffect(() => {
     if (saisie.trim() === cherche) return;
     const minuteur = setTimeout(() => {
@@ -195,7 +194,7 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
     return () => clearTimeout(minuteur);
   }, [saisie, cherche]);
 
-  // « auto » : autant de lignes que la hauteur de la fenêtre en tient, dix au moins comme le serveur l'exige ; remesuré quand les lignes arrivent
+  // « auto » : lignes selon la hauteur de la fenêtre, dix au moins
   const mesurer = useCallback(() => {
     const el = defile.current;
     if (!el) return;
@@ -315,7 +314,7 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
                 </td>
                 <td className={l.email ? 'd' : 'vide'}>{l.email ?? '—'}</td>
                 <td className={l.telephone ? 'd' : 'vide'}>{l.telephone ?? '—'}</td>
-                {/* Une fiche à peine collectée n'a pas encore été cherchée : « — » plutôt qu'un zéro */}
+                {/* Fiche à peine collectée, pas encore cherchée : un tiret plutôt qu'un zéro */}
                 <td className={!l.offres && l.etat === 'COLLECTEE' ? 'vide' : undefined}>
                   {l.offres ? <span className="nb">{l.offres}</span> : l.etat === 'COLLECTEE' ? '—' : <span className="nb zero">0</span>}
                 </td>
@@ -361,10 +360,10 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
   );
 }
 
-// Onglets ouverts par un geste (une fiche, une offre, une question) ; les autres sont ceux des actions de la page
+// Onglets d'un geste (fiche, offre, question) ; les autres, ceux des actions
 const OUVERTS_PAR_UN_GESTE = new Set(['fiche-entreprise', 'deja-audit', 'fiche-offre', 'deja-base']);
 
-// Le panneau des trois pages : les fiches, leurs onglets propres, « Déjà audité » s'il attend ; après un geste, un onglet d'action ne reste que s'il est ouvert
+// Après un geste, un onglet d'action ne reste que s'il est ouvert
 export function PanneauFiches({ avant = [], apres = [] }: { avant?: Onglet[]; apres?: Onglet[] }) {
   const { onglet, ouvrir } = usePanneau();
   const objets = useVues().vues[0].objets;
@@ -373,7 +372,7 @@ export function PanneauFiches({ avant = [], apres = [] }: { avant?: Onglet[]; ap
     'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre: (c) => ouvrir('fiche-offre', c), dejaEnOnglet: true }),
     'fiche-offre': (c: string) => ongletFicheOffre(c, { ouvrirEntreprise: (s) => ouvrir('fiche-entreprise', s) }),
   };
-  // « Voir l'audit » rouvre aussitôt la fiche sans objet : celle de l'audit passe après
+  // « Voir l'audit » rouvre la fiche sans objet : celle de l'audit passe après
   const onglets = [...avant, ...(deja ? [ongletDejaAudite()] : []), ...apres];
   const parGeste = Object.keys(elements).some((cle) => objets[cle] !== undefined) || onglets.some((o) => OUVERTS_PAR_UN_GESTE.has(o.cle));
   return <Panneau elements={elements} onglets={onglets.filter((o) => !parGeste || OUVERTS_PAR_UN_GESTE.has(o.cle) || o.cle === onglet)} />;
@@ -381,7 +380,7 @@ export function PanneauFiches({ avant = [], apres = [] }: { avant?: Onglet[]; ap
 
 export type Lot = { brique: string; famille: string; libelle: string; aide: string; icone: React.ReactNode; plein?: boolean };
 
-// Les lots d'une page : un par brique, ceux d'une même famille bloqués entre eux ; celui qui tourne s'arrête au clic, deux fois pour abandonner la fiche en cours
+// Lots bloqués par famille ; un clic arrête, deux abandonnent la fiche
 export function Lots({ lots, actives, selection, dire, relire, demander }: {
   lots: Lot[]; actives: Set<string>; selection: Set<string>; dire: Dire; relire: () => void; demander: (c: Confirmation) => void;
 }) {
@@ -419,7 +418,7 @@ export function Lots({ lots, actives, selection, dire, relire, demander }: {
     const bloque = occupees.has(lot.famille);
     const titre = bloque ? `${lot.aide}. Un autre temps de l'audit tourne : ils écrivent la même fiche et ne peuvent pas se croiser.`
       : `${lot.aide}. Cliquer pour lancer sur ${n ? `les ${n} fiche(s) cochées` : 'toutes les fiches éligibles'} ; le résultat est écrit en base.`;
-    // Sans sélection, la brique prend toutes les fiches éligibles : la question est posée d'abord
+    // Sans sélection, la brique prend toutes les fiches éligibles : on demande
     const clic = () => (n ? lancer(lot) : demander({
       question: `Lancer la brique « ${lot.brique} » sur toutes les fiches éligibles ?`, detail: `${lot.aide}.`, action: 'Lancer', faire: () => lancer(lot),
     }));
@@ -435,7 +434,7 @@ export function Lots({ lots, actives, selection, dire, relire, demander }: {
   });
 }
 
-// Une action de la rangée qui ouvre un onglet du panneau, allumée tant qu'il est ouvert
+// Action de la rangée qui ouvre un onglet du panneau, allumée tant qu'il l'est
 export function ActionOnglet({ cle, libelle, icone, titre }: { cle: string; libelle: string; icone: React.ReactNode; titre?: string }) {
   const { onglet, ouvrir } = usePanneau();
   return (
@@ -445,14 +444,14 @@ export function ActionOnglet({ cle, libelle, icone, titre }: { cle: string; libe
   );
 }
 
-/* Réglages globaux d'une brique : lus et écrits dans les réglages du compte, « Enregistrer » éteint tant que rien ne change */
+/* Réglages globaux d'une brique ; « Enregistrer » éteint sans changement */
 
 export type ChampReglage = {
   cle: string; libelle: string; type: 'nombre' | 'texte' | 'liste' | 'booleen' | 'catalogue' | 'modele';
   catalogue?: string; exemple?: string; aide?: string; admin?: boolean;
 };
 type Parametres = Record<string, unknown> & { modeles?: { nom: string }[] };
-// Une liste se tape en texte, « .fr, .com » : elle ne redevient une liste qu'à l'envoi
+// Une liste se tape en texte et ne redevient liste qu'à l'envoi
 const versSaisie = (champ: ChampReglage, valeur: unknown) => (champ.type === 'liste' ? ((valeur as string[] | undefined) ?? []).join(', ') : valeur);
 const versReglage = (champ: ChampReglage, valeur: unknown) => (champ.type === 'liste' ? String(valeur ?? '').split(',').map((v) => v.trim()).filter(Boolean) : valeur);
 
@@ -460,7 +459,7 @@ export function useReglages(section: string, champs: ChampReglage[], dire: Dire,
   const [parametres, setParametres] = useState(() => repris<Parametres | null>(`${section}:reglages:parametres`, null));
   useGarder(`${section}:reglages`, { parametres });
   const depuis = useCallback((p: Parametres) => Object.fromEntries(champs.map((c) => [c.cle, versSaisie(c, p[c.cle])])), [champs]);
-  // Les réglages gardés remplissent le formulaire dès l'arrivée, la lecture qui suit le remet à jour
+  // Les réglages gardés remplissent le formulaire, la lecture le met à jour
   const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => (parametres ? depuis(parametres) : {}));
   useEffect(() => {
     appeler<Parametres>('/parametres').then((p) => {
@@ -488,7 +487,7 @@ export function useReglages(section: string, champs: ChampReglage[], dire: Dire,
 }
 type Reglages = ReturnType<typeof useReglages>;
 
-// Les puces choisies et la recherche dans le même champ ; Entrée prend le premier résultat
+// Puces et recherche dans un champ ; Entrée prend le premier résultat
 function Catalogue({ id, nom, codes, poser }: { id: string; nom: string; codes: string[]; poser: (codes: string[]) => void }) {
   const [libelles, setLibelles] = useState<Record<string, string>>({});
   const [question, setQuestion] = useState('');
@@ -510,7 +509,7 @@ function Catalogue({ id, nom, codes, poser }: { id: string; nom: string; codes: 
   }, [trouves.length]);
   const proposer = async (q: string) => {
     setQuestion(q);
-    // Les réponses n'arrivent pas dans l'ordre des frappes : seule la dernière compte
+    // Les réponses arrivent dans le désordre : seule la dernière compte
     const n = ++rang.current;
     if (!q.trim()) return setTrouves([]);
     try {
@@ -580,7 +579,7 @@ function ChampReglageVue({ champ, r }: { champ: ChampReglage; r: Reglages }) {
   );
 }
 
-// Les catalogues pleine largeur, puis les nombres et textes deux par deux, puis les interrupteurs
+// Catalogues d'abord, puis nombres et textes par deux, puis interrupteurs
 export function CorpsReglages({ champs, r, aide }: { champs: ChampReglage[]; r: Reglages; aide?: React.ReactNode }) {
   if (!r.parametres) return <p className="texte-f">Chargement des réglages…</p>;
   const catalogues = champs.filter((c) => c.type === 'catalogue');
@@ -611,7 +610,7 @@ export function PiedReglages({ r }: { r: Reglages }) {
   );
 }
 
-/* Exécuter une brique à la main : ses arguments, le mode test, le lancement suivi toutes les 1,5 s, sa sortie */
+/* Lancement manuel d'une brique, suivi toutes les 1,5 s */
 
 type Argument = { cle: string; libelle: string; type: string; requis: boolean; aide: string; exemple: string; parametre: string; separe: boolean; valeur: unknown };
 type EtatAtelier = { en_cours: boolean; ok: boolean | null; erreur: string; rapport: Record<string, unknown>; depuis_s: number; duree_s: number };
@@ -643,7 +642,7 @@ const valeursDe = (nom: string, b: BriqueAtelier): Valeurs => {
 };
 
 export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () => void) {
-  // La brique, sa sortie et ce qu'elle a produit restent d'une visite à l'autre, sous le nom de la section
+  // La brique, sa sortie et son résultat restent d'une visite à l'autre
   const [brique, setBrique] = useState(() => repris<BriqueAtelier | null>(`${nom}:atelier:brique`, null));
   const [valeurs, setValeurs] = useState<Valeurs>(() => (brique ? valeursDe(nom, brique) : {}));
   const [test, setTest] = useState(true);
@@ -761,7 +760,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
     }
     const siren = String(valeurs.siren ?? '').trim();
     try {
-      // Hors mode test, l'audit passe par le pipeline : le résultat est écrit sur la fiche nommée par son SIREN
+      // Hors mode test, l'audit passe par le pipeline qui écrit sur la fiche du SIREN
       if (nom === 'audit' && !test) {
         if (!/^\d{9}$/.test(siren)) return dire('Hors mode test, renseignez le SIREN de la fiche à mettre à jour.', true);
         const r = await appeler<{ lancee: boolean }>(`/entreprises/${siren}/briques/audit`, { methode: 'POST' });
@@ -775,7 +774,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
         }
         return partir(valeurs);
       }
-      // Le parser s'accorde avec la fiche avant de partir : c'est le seul moment où l'on peut encore changer ce qu'il lira
+      // Le parser s'accorde avec la fiche avant de partir, pas après
       const vu = await appeler<{ fiche: VueFiche | null; reprises: { champ: string; fiche: string }[]; divergences: Divergence[] }>('/atelier/parser/fiche', {
         methode: 'POST', corps: { siren, nom: valeurs.nom ?? '', url: valeurs.url ?? '' },
       });
@@ -815,7 +814,7 @@ const LIBELLES_RAPPORT: Record<string, string> = {
   offres_preuve_dure: 'Preuve dure', spontanee_url: 'Candidature spontanée', spontanee_raison: 'Repérée par', email: 'Email principal', emails: 'Emails',
   telephone: 'Téléphone principal', implantations: 'Implantations', couleurs: "Couleurs de l'identité",
 };
-// Le détail page par page pèse des milliers de lignes et ne dit rien de plus que son compte
+// Le détail page par page pèse des milliers de lignes : le compte suffit
 const RAPPORT_MASQUE = new Set(['pages', 'offres_details', '_prealable']);
 const libelleRapport = (cle: string) => LIBELLES_RAPPORT[cle] ?? cle.replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase());
 
@@ -825,7 +824,7 @@ function ValeurRapport({ cle, v }: { cle: string; v: unknown }): React.ReactNode
   if (typeof v === 'string') return lienSur(v) ? <a className="lien" href={lienSur(v)} target="_blank" rel="noopener noreferrer" title={v}>{sansProtocole(v)}</a> : v;
   if (Array.isArray(v)) {
     if (cle === 'couleurs') return <span className="couleurs">{v.filter((c) => /^#[0-9a-f]{6}$/i.test(String(c))).map((c) => <span key={c}><i style={{ background: c }} />{c}</span>)}</span>;
-    // Une adresse trouvée vaut par elle-même ; une implantation, par son numéro, sa ville et son adresse
+    // Une adresse vaut seule ; une implantation, par numéro, ville et adresse
     const textes = v.map((x) => (x && typeof x === 'object' ? (cle === 'emails' ? String((x as { email?: string }).email ?? '') : Object.values(x).filter((y) => y !== null && y !== '' && typeof y !== 'object').join(' — ')) : String(x))).filter(Boolean);
     return textes.length > 1 && v.some((x) => x && typeof x === 'object') && cle !== 'emails' ? textes.map((t) => <span key={t}>{t}</span>) : textes.join(' · ');
   }
@@ -916,14 +915,14 @@ export function CorpsAtelier({ at }: { at: Atelier }) {
 export function PiedAtelier({ at }: { at: Atelier }) {
   const { ouvrir } = usePanneau();
   const enCours = !!at.etat?.en_cours;
-  // Une brique qui tourne s'arrête toujours : le grisage ne vaut que pour le lancement
+  // Une brique qui tourne s'arrête toujours : seul le lancement se grise
   return (
     <button type="button" className="action plein" disabled={!enCours && at.motifs.length > 0} title={!enCours && at.motifs.length ? `Impossible de lancer : ${at.motifs.join(' ; ')}.` : undefined}
       onClick={() => at.executer(ouvrir)}>{enCours ? 'Arrêter' : 'Exécuter'}<span className="ico">{enCours ? ICONES.croix : ICONES.executer}</span></button>
   );
 }
 
-// « Cette entreprise est déjà en base » : ce qui est repris de la fiche, et ce qui diffère, champ par champ
+// « Déjà en base » : ce qui est repris de la fiche et ce qui diffère, par champ
 export function CorpsDejaBase({ at }: { at: Atelier }) {
   const d = at.dejaBase;
   if (!d) return <p className="texte-f">Rien à trancher.</p>;

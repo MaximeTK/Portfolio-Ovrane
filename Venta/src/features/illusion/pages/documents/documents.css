@@ -1,8 +1,8 @@
-/* Page Documents : la galerie des CV, lettres et CV spontanés, ses filtres et ses actions, puis les onglets du panneau qui lui sont propres. */
+/* Documents : galerie, filtres, actions et onglets propres au panneau */
 
 .ov .docs-galerie{display:flex;flex-direction:column;padding:2px 0 0}
 
-/* Filtres en texte seul, chacun son menu ; quand la rangée déborde, elle se replie par paliers : écarts et libellés des filtres, textes des actions, « Tout voir ». */
+/* Filtres en texte seul ; trop à l'étroit, la rangée se replie par paliers */
 .ov .docs-galerie .filtre-doc+.filtre-doc{margin-left:18px}
 .ov .docs-galerie .tout-voir{flex:none;margin-left:14px;white-space:nowrap}
 .ov .docs-galerie .outils:not([data-repli="0"]) .filtre-doc+.filtre-doc{margin-left:12px}
@@ -14,12 +14,12 @@
 .ov .docs-galerie .outils[data-repli="3"] .actions{gap:10px}
 .ov .docs-galerie .outils[data-repli="3"] .action.plein .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-/* Galerie : autant de colonnes que la largeur en tient, deux rangées (trois sur un grand écran) à la hauteur de la fenêtre ; la suite défile, barre masquée. */
+/* Galerie : colonnes selon la largeur, deux rangées, la suite défile */
 .ov .docs-galerie .galerie{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--cols,6),minmax(0,1fr));grid-auto-rows:var(--haut,240px);gap:14px;align-content:start;padding:6px 14px 14px;overflow-y:auto;scrollbar-width:none}
 .ov .docs-galerie .galerie::-webkit-scrollbar{display:none}
 .ov .docs-galerie .vide-g{grid-column:1/-1;padding:10px 4px;font-size:12.5px;color:rgb(255 255 255 / .6)}
 
-/* Vignette : une tuile pleine, la case hexagone et l'œil en tête, l'aperçu au centre, le poste et ses repères dessous ; cochée ou ouverte, elle s'allume en blanc. */
+/* Vignette : tuile pleine, allumée en blanc si cochée ou ouverte */
 .ov .docs-galerie .vignette{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;gap:7px;padding:8px 9px 9px}
 .ov .docs-galerie .v-ouvrir{position:absolute;inset:0;z-index:0;cursor:pointer}
 .ov .docs-galerie .v-ouvrir:focus-visible{outline:1px solid #fff;outline-offset:-3px}
@@ -39,7 +39,7 @@
 .ov .docs-galerie .modele .v-texte span:not(.prof){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .ov .docs-galerie .choix.vignette.ouverte{background:rgb(255 255 255 / .1);border-color:rgba(255,255,255,.85);color:#fff;text-shadow:0 0 8px rgb(255 255 255 / .5);box-shadow:inset 0 0 14px rgb(255 255 255 / .16)}
 
-/* Aperçu : l'image de la première page à son format A4 ; sans capture, une page sombre à la couleur du tirage et le format du fichier. */
+/* Aperçu : première page au format A4 ; sans capture, une page sombre */
 .ov :is(.docs-galerie,.docs-f) .page-img{display:block;aspect-ratio:210/297;height:min(100cqh,141.4cqw);width:auto;max-width:100%;object-fit:contain;border:1px solid rgb(255 255 255 / .14);background:rgb(8 8 12 / .72)}
 .ov :is(.docs-galerie,.docs-f) .page{--t:#6E8FFE;--bloc:0 0/32% 100%;position:relative;flex:none;display:grid;place-items:end center;aspect-ratio:210/297;height:min(100cqh,141.4cqw);border:1px solid rgb(255 255 255 / .14);background:linear-gradient(rgb(255 255 255 / .78) 0 0) 88% 8%/50% 6px no-repeat,linear-gradient(rgb(255 255 255 / .42) 0 0) 74% 13%/34% 3px no-repeat,linear-gradient(rgb(255 255 255 / .26) 0 0) 92% 24%/56% 2px no-repeat,linear-gradient(rgb(255 255 255 / .26) 0 0) 92% 28%/56% 2px no-repeat,linear-gradient(rgb(255 255 255 / .26) 0 0) 86% 32%/48% 2px no-repeat,linear-gradient(rgb(255 255 255 / .5) 0 0) 70% 42%/26% 3px no-repeat,linear-gradient(rgb(255 255 255 / .26) 0 0) 92% 47%/56% 2px no-repeat,linear-gradient(rgb(255 255 255 / .26) 0 0) 92% 51%/56% 2px no-repeat,linear-gradient(rgb(255 255 255 / .26) 0 0) 88% 55%/50% 2px no-repeat,linear-gradient(rgb(255 255 255 / .36) 0 0) 6% 7%/20% 14% no-repeat,linear-gradient(rgb(255 255 255 / .34) 0 0) 6% 30%/20% 2px no-repeat,linear-gradient(rgb(255 255 255 / .34) 0 0) 6% 34%/15% 2px no-repeat,linear-gradient(color-mix(in srgb,var(--t) 32%,transparent) 0 0) var(--bloc) no-repeat,rgb(8 8 12 / .72)}
 .ov :is(.docs-galerie,.docs-f) .page.lettre{background:linear-gradient(rgb(255 255 255 / .55) 0 0) 9% 6%/34% 3px no-repeat,linear-gradient(rgb(255 255 255 / .3) 0 0) 9% 9%/26% 2px no-repeat,linear-gradient(rgb(255 255 255 / .3) 0 0) 91% 17%/30% 2px no-repeat,linear-gradient(color-mix(in srgb,var(--t) 75%,transparent) 0 0) 9% 25%/42% 2px no-repeat,linear-gradient(rgb(255 255 255 / .22) 0 0) 50% 34%/82% 2px no-repeat,linear-gradient(rgb(255 255 255 / .22) 0 0) 50% 38%/82% 2px no-repeat,linear-gradient(rgb(255 255 255 / .22) 0 0) 50% 42%/82% 2px no-repeat,linear-gradient(rgb(255 255 255 / .22) 0 0) 41% 46%/64% 2px no-repeat,rgb(8 8 12 / .72)}
@@ -47,19 +47,19 @@
 .ov :is(.docs-galerie,.docs-f) .page .format{margin-bottom:8%;font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgb(255 255 255 / .6)}
 .ov .docs-galerie .page.a-batir .format{margin:0}
 
-/* Pied de la galerie : tout sélectionner et le compte à gauche, « Charger la suite » à droite. */
+/* Pied de la galerie : tout sélectionner et le compte, « Charger la suite » */
 .ov .docs-galerie .tout{display:inline-flex;align-items:center;gap:10px;font-size:12.5px;color:rgb(255 255 255 / .82);white-space:nowrap;cursor:pointer}
 .ov .docs-galerie .compte{color:rgb(255 255 255 / .55);white-space:nowrap}
 
-/* Panneau de la page : ses onglets passent à la ligne plutôt que de se couper. */
+/* Les onglets du panneau passent à la ligne plutôt que de se couper */
 .ov:has(.docs-galerie) [data-fen=panneau] .p-tete{height:auto;min-height:44px;align-items:flex-start}
 .ov:has(.docs-galerie) [data-fen=panneau] .p-onglets{flex-wrap:wrap;column-gap:16px;row-gap:0}
 .ov:has(.docs-galerie) [data-fen=panneau] .p-onglet{flex:none;height:42px}
 .ov:has(.docs-galerie) [data-fen=panneau] .p-tete .f-btn{margin-top:7px}
-/* Pied de la fiche sous 1700 px : Exporter les paramètres se replie sur son icône. */
+/* Sous 1700 px, Exporter les paramètres se replie sur son icône */
 @media (max-width:1699px){.ov:has(.docs-galerie) [data-fen=panneau] .f-pied .action:not(.plein,.rouge) .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
 
-/* Fiche de fabrication : la page en grand au-dessus, ce qui l'a faite dessous, les compétences en une colonne. */
+/* Fiche de fabrication : la page en grand, ce qui l'a faite dessous */
 .ov .docs-f .confirmer{margin:0 0 12px}
 .ov .docs-f .fiche{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;gap:18px}
 .ov .docs-f .fiche>div:last-child{justify-self:stretch}

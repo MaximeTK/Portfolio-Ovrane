@@ -1,6 +1,6 @@
-/* Page Profil : les cartes des profils en colonne étroite à gauche, l'éditeur du profil ouvert à droite. */
+/* Profil : cartes à gauche en colonne étroite, éditeur ouvert à droite */
 .ov [data-fen=profils]{--cartes:220px;display:flex;flex-direction:column}
-/* Panneau ouvert : les cartes se resserrent, leur fichier passe en infobulle. */
+/* Panneau ouvert : cartes resserrées, fichier en infobulle */
 .ov [data-fen=profils].resserre{--cartes:180px}
 .ov [data-fen=profils].resserre .profil .chemin{display:none}
 .ov [data-fen=profils].resserre .profil{min-height:48px}
@@ -20,7 +20,7 @@
 .ov [data-fen=profils] .editeur>.f-corps{padding:0 0 0 16px}
 .ov [data-fen=profils] .editeur.vide{padding:4px 0 0 16px}
 
-/* Profil incomplet : un bandeau d'alerte au trait rouge en haut de la fenêtre ; Fermer le replie. */
+/* Profil incomplet : bandeau d'alerte au trait rouge, que Fermer replie */
 .ov [data-fen=profils] .bandeau{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;margin:12px 14px 0;padding:8px 12px;border-left:2px solid #ffb0b0;background:rgb(255 176 176 / .06)}
 .ov [data-fen=profils] .bandeau>.f-corps{flex:1 1 360px;min-width:0;padding:0;overflow:visible}
 .ov [data-fen=profils] .bandeau .texte-f{margin:0 0 2px !important;font-weight:600;color:#fff}
@@ -29,11 +29,11 @@
 .ov [data-fen=profils] .bandeau .liste-f .d{margin:0 8px}
 .ov [data-fen=profils] .bandeau>.f-pied{flex-wrap:wrap;margin-left:auto;padding:0;border:0}
 
-/* Dupliquer : une barre à la place des outils, au trait blanc ; le nom de la copie s'y saisit. */
+/* Dupliquer : barre au trait blanc à la place des outils */
 .ov [data-fen=profils] .confirmer.copie{border-left-color:#fff;background:rgb(255 255 255 / .06)}
 .ov [data-fen=profils] .confirmer.copie .saisie{flex:none;width:170px;height:28px}
 .ov [data-fen=profils] .confirmer.copie .lib-champ{margin-right:-10px}
-/* Fenêtre étroite : les barres passent sur deux lignes plutôt que de couper leur question. */
+/* Fenêtre étroite : les barres passent sur deux lignes */
 .ov [data-fen=profils]:not([data-l=l]) .confirmer{flex-wrap:wrap;height:auto;min-height:36px;row-gap:4px;padding:6px 12px}
 .ov [data-fen=profils]:not([data-l=l]) .confirmer p{flex:1 1 100%;white-space:normal}
 
@@ -41,7 +41,7 @@
 .ov [data-fen=profils] .avis{position:absolute;left:14px;right:14px;bottom:14px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid #fff;background:rgb(14 14 18 / .92);font-size:12.5px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
 .ov [data-fen=profils] .avis.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
 
-/* Éditeur de profil : deux colonnes quand la place le permet, sections repliables au titre en capitales ; fermées, elles se rangent en étiquettes à la suite. */
+/* Éditeur : deux colonnes si possible, sections fermées en étiquettes */
 .ov .ed-profil .nom-profil{margin-bottom:10px}
 .ov .ed-profil .colonnes-p{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;align-items:start}
 .ov .ed-profil .champ{margin-bottom:10px}
@@ -62,7 +62,7 @@
 .ov .ed-profil .sec:not([open])>summary .chevron{margin-left:0;width:10px;height:10px}
 .ov .ed-profil .en-vol{opacity:.45}
 
-/* Encarts : « À compléter » au trait jaune des choses à faire, profil inutilisable au trait rouge. */
+/* Encarts : « À compléter » au trait jaune, profil inutilisable au rouge */
 .ov .ed-profil .encart{margin-bottom:12px;padding:10px 12px;border-left:2px solid var(--c-afaire);background:rgb(255 245 141 / .05)}
 .ov .ed-profil .encart.rouge{border-left-color:#ffb0b0;background:rgb(255 176 176 / .06)}
 .ov .ed-profil .encart h3{margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff}
@@ -86,7 +86,7 @@
 .ov .ed-profil .zone-r:empty::before{content:attr(data-exemple);color:rgb(255 255 255 / .4)}
 .ov .ed-profil .zone-r ul{margin-top:4px;padding-left:16px;list-style:disc}
 
-/* Entrées répétables : une carte chacune, sa poignée à gauche ; deux par deux quand la section a la place. */
+/* Entrées répétables : une carte chacune, deux par deux si possible */
 .ov .ed-profil .bloc{position:relative;margin-bottom:10px;padding:12px 12px 8px 30px;border:1px solid rgb(255 255 255 / .12);background:rgb(0 0 0 / .18)}
 .ov .ed-profil .bloc .poignee-b{position:absolute;left:10px;top:12px}
 .ov .ed-profil .grille-6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 12px}

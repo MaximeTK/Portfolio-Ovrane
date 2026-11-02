@@ -28,7 +28,7 @@ const ICONES = {
   plus: <svg {...SVG}><path d="M12 5v14M5 12h14" /></svg>,
 };
 const ico = (i: React.ReactNode) => <span className="ico">{i}</span>;
-// Un profil sans expérience est refusé par le constructeur : la carte vide le dit d'entrée
+// Le constructeur refuse un profil sans expérience : la carte le dit
 const neuve = (): Profil => ({ experiences: [{}] });
 
 export default function PageProfil({ compte, recherche }: ProprietesPage) {
@@ -45,7 +45,7 @@ export default function PageProfil({ compte, recherche }: ProprietesPage) {
 
 function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: string | null; champ: string | null; libelle: string | null }) {
   const { onglet, ouvrir, fermer } = usePanneau();
-  // Les profils lus et celui qui était ouvert restent d'une visite à l'autre : en revenant, il s'affiche aussitôt et se relit derrière
+  // Profils lus et profil ouvert gardés d'une visite à l'autre
   const [profils, setProfils] = useState(() => repris<ProfilDispo[] | null>('profil:profils', null));
   const [incomplets, setIncomplets] = useState(() => repris<Record<string, Manque[]>>('profil:incomplets', {}));
   const [schema, setSchema] = useState(() => repris<ChampSchema[]>('profil:schema', []));
@@ -61,7 +61,7 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
   const editeur = useEditeur(origine, schema);
   const dire = useCallback<Dire>((texte, erreur = false) => setAvis({ texte, erreur }), []);
 
-  // Un avis se lit 3,5 s, une erreur 8 s, comme les notifications de l'ancien dashboard
+  // Avis 3,5 s, erreur 8 s, comme les notifications de l'ancien dashboard
   useEffect(() => {
     if (!avis) return;
     const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
@@ -72,7 +72,7 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
     const [liste, inc, sch] = await Promise.all([
       appeler<ProfilDispo[]>('/profils-candidature'),
       appeler<{ profils: Record<string, Manque[]> }>('/profils-incomplets').catch(() => ({ profils: {} })),
-      // Sans base partagée, ni champ ajouté ni manque à dire : l'éditeur s'ouvre comme avant
+      // Sans base partagée ni manque à dire, l'éditeur s'ouvre comme avant
       appeler<{ champs: ChampSchema[] }>('/schema-profil').catch(() => ({ champs: [] })),
     ]);
     setProfils(liste);
@@ -93,7 +93,7 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
     }
   }, [dire]);
 
-  // Le profil demandé par l'adresse, sinon celui déjà ouvert (gardé de la visite d'avant), sinon le premier
+  // Le profil demandé par l'adresse, sinon l'ouvert gardé, sinon le premier
   useEffect(() => {
     let vivant = true;
     relireListe().then((liste) => {
@@ -124,7 +124,7 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
     try {
       const r = await appeler<{ workflows: number }>(`/profils-candidature/${encodeURIComponent(choisi)}`,
         { methode: 'PUT', corps: { contenu: JSON.stringify(editeur.lire(), null, 2) } });
-      // Le changement se voit dans le workflow des sites : les réponses qu'il remet en cause seront refaites
+      // Les réponses que le changement remet en cause seront refaites
       dire(r.workflows ? `${choisi} enregistré — ${r.workflows} réponse(s) du workflow des sites marquée(s) à refaire ou rétablie(s).` : `${choisi} enregistré.`);
       await relireListe();
       await ouvrirProfil(choisi);
@@ -152,7 +152,7 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
     setOccupe(false);
   };
 
-  // Une copie du profil enregistré, à son propre titre et à son propre identifiant : le serveur refuse un titre déjà pris
+  // Copie à son propre titre et identifiant : le serveur refuse un titre pris
   const dupliquer = async () => {
     if (!nomCopie.trim()) return dire('Donnez un nom à la copie.', true);
     setOccupe(true);
@@ -170,7 +170,7 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
     setOccupe(false);
   };
 
-  // Une donnée que JADE avait dû déduire ou inventer, rangée dans le profil : il se rouvre à jour
+  // Donnée déduite par JADE rangée dans le profil, qui se rouvre à jour
   const completer = async (cle: string, valeur: string) => {
     if (!valeur) {
       dire('Donnez la valeur à garder.', true);
@@ -280,7 +280,7 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
   );
 }
 
-// Un profil neuf n'existe qu'à l'enregistrement : tant qu'il n'a pas de nom il n'y a rien à nommer, et une saisie abandonnée ne laisse rien derrière elle
+// Un profil neuf n'existe qu'à l'enregistrement : l'abandon ne laisse rien
 function useNouveau({ schema, dire, apres }: { schema: ChampSchema[]; dire: Dire; apres: (nom: string) => Promise<void> }) {
   const { fermer } = usePanneau();
   const [origine, setOrigine] = useState(neuve);
@@ -295,7 +295,7 @@ function useNouveau({ schema, dire, apres }: { schema: ChampSchema[]; dire: Dire
     if (!nom.trim()) return dire('Donnez un nom au profil.', true);
     setOccupe(true);
     try {
-      // La création seule sait attribuer l'identifiant qui rend le nom unique ; la saisie remplace aussitôt le squelette
+      // Seule la création attribue l'identifiant qui rend le nom unique
       const cree = await appeler<ProfilDispo>('/profils-candidature', { methode: 'POST', corps: { nom: nom.trim() } });
       await appeler(`/profils-candidature/${encodeURIComponent(cree.nom)}`, { methode: 'PUT', corps: { contenu: JSON.stringify(editeur.lire(), null, 2) } });
       dire(`${cree.nom} créé.`);
@@ -321,7 +321,7 @@ function useNouveau({ schema, dire, apres }: { schema: ChampSchema[]; dire: Dire
   };
 }
 
-// Le champ du profil de tous qu'un admin crée ou rend obligatoire, comme Workflows · Vérification le proposait ; ?champ=<clé>&libelle=… le préremplit
+// Champ créé ou rendu obligatoire par un admin ; ?champ=<clé> le préremplit
 function useNouveauChamp({ admin, champ, libelle, schema, dire, apres }: {
   admin: boolean; champ: string | null; libelle: string | null; schema: ChampSchema[]; dire: Dire; apres: () => Promise<void>;
 }) {
@@ -330,7 +330,7 @@ function useNouveauChamp({ admin, champ, libelle, schema, dire, apres }: {
   const [f, setF] = useState({ ...vierge, cle: champ ?? '', libelle: libelle ?? '' });
   const [sites, setSites] = useState<string[]>([]);
   const [occupe, setOccupe] = useState(false);
-  // Une donnée demandée par les formulaires donne son libellé et les sites qui l'ont demandée
+  // Une donnée demandée par les formulaires donne son libellé et ses sites
   useEffect(() => {
     if (!admin || onglet !== 'champ' || !f.cle.trim()) return setSites([]);
     let vivant = true;

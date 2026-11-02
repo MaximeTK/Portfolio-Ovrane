@@ -1,11 +1,11 @@
 import type { Compte } from '../api';
 
-// Ce que reçoit chaque page d'Illusion, avec la recherche de son adresse (« fiche=… »)
+// Ce que reçoit chaque page d'Illusion, avec la recherche de son adresse
 export type ProprietesPage = { compte: Compte; recherche?: string };
 
 export type InfoPage = { slug: string; titre: string };
 
-// Pages des canaux, sans leurs composants : l'en-tête les liste sans les charger
+// Pages des canaux sans composants : l'en-tête les liste sans les charger
 export const MON_ESPACE: InfoPage[] = [
   { slug: 'offres', titre: 'Offres' },
   { slug: 'candidatures', titre: 'Candidatures' },

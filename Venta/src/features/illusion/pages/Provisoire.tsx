@@ -4,7 +4,7 @@ import { Activite } from '../activite/Activite';
 import { Dock, Fenetre } from '../dock/Dock';
 import { Panneau } from '../dock/Panneau';
 
-// Page pas encore construite : l'Activité, une fenêtre principale vide et un panneau vide
+// Page pas construite : l'Activité, une fenêtre vide et un panneau vide
 export function Provisoire({ slug, titre }: { slug: string; titre: string }) {
   return (
     <Dock id={slug} panneau="vide">

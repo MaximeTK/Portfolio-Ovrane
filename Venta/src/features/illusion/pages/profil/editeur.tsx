@@ -22,7 +22,7 @@ type Saisie = {
   residence: Lieu | null;
 };
 
-// Entrées ajoutées à la main ; celles d'un profil lu se numérotent pareil au serveur et au navigateur
+// Numérotation des entrées identique au serveur et au navigateur
 let uid = 1_000_000_000;
 const neuf = () => ++uid;
 const texte = (v: unknown) => (v === undefined || v === null ? '' : String(v));
@@ -31,11 +31,11 @@ const estObjet = (v: unknown): v is Profil => typeof v === 'object' && v !== nul
 
 /* ------------------------------------------------- rédiger, pas remplir */
 
-// Ce qu'une entrée rédigée a le droit de porter : de la mise en forme, rien qui s'exécute
+// Une entrée rédigée porte de la mise en forme, rien d'exécutable
 const BALISES_RICHES = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'BR', 'P', 'DIV', 'SPAN', 'UL', 'OL', 'LI']);
 const STYLES_RICHES = ['color', 'font-size', 'font-family', 'font-weight', 'font-style', 'text-decoration'];
 
-// Le HTML d'une entrée réduit à sa mise en forme, par un DOMParser qui n'exécute ni ne charge rien
+// HTML réduit à sa mise en forme par un DOMParser qui n'exécute rien
 function assainir(html: string) {
   const bac = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html').body;
   for (const noeud of [...bac.querySelectorAll<HTMLElement>('*')]) {
@@ -52,19 +52,19 @@ function assainir(html: string) {
 
 const echapper = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// Ce qui a été rédigé, sinon l'ancienne description et ses puces remises en page
+// Texte rédigé, sinon l'ancienne description et ses puces mises en page
 function contenuEntree(v: Profil) {
   if (v.contenu) return texte(v.contenu);
   const puces = Array.isArray(v.puces) ? v.puces.map(texte) : [];
   return (v.description ? `<p>${echapper(texte(v.description))}</p>` : '') + (puces.length ? `<ul>${puces.map((p) => `<li>${echapper(p)}</li>`).join('')}</ul>` : '');
 }
 
-// Le texte NU d'une entrée : le modèle qui remplit les formulaires lit ça, pas les balises
+// Texte NU d'une entrée : le modèle de remplissage ne lit pas les balises
 function projeter(html: string) {
   const bac = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html').body;
   const puces = [...bac.querySelectorAll('li')].map((li) => (li.textContent ?? '').replace(/\s+/g, ' ').trim()).filter(Boolean);
   for (const liste of [...bac.querySelectorAll('ul, ol')]) liste.remove();
-  // Un saut de ligne par bloc : la description garde les phrases que l'auteur a séparées
+  // Un saut de ligne par bloc : on garde les phrases séparées par l'auteur
   for (const bloc of [...bac.querySelectorAll('p, div, br')]) bloc.after('\n');
   const description = (bac.textContent ?? '').split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n');
   return { description, puces };
@@ -72,7 +72,7 @@ function projeter(html: string) {
 
 /* ------------------------------------------------- lire et relire le profil */
 
-// La valeur d'un champ, prise à sa clé ou à son repli — « identite.nom » descend d'un cran
+// Valeur d'un champ par sa clé ou son repli ; « a.b » descend d'un cran
 function valeurChamp(source: Profil, champ: Champ): unknown {
   if (champ.type === 'riche') return contenuEntree(source);
   const direct = source[champ.cle];
@@ -120,7 +120,7 @@ function sansVidesInedits(edite: Profil, base: Profil) {
 
 const FORMES: Record<string, Forme> = { text: 'text', texte_long: 'texte_long', nombre: 'nombre', choix: 'choix', liste: 'liste', email: 'email', lieu: 'lieu' };
 
-// Les champs d'une section à plat : les siens, puis ceux que la correction y a ajoutés ; un champ rendu obligatoire pour tous le dit
+// Champs d'une section : les siens, puis ceux que la correction y a ajoutés
 export function champsDe(section: string, champs: Champ[], schema: ChampSchema[]): Champ[] {
   const ajoutes: Champ[] = schema.filter((c) => c.section === section && !champs.some((x) => x.cle === c.cle))
     .map((c) => ({ cle: c.cle, libelle: c.libelle, type: FORMES[c.type] ?? 'text', choix: c.choix, portee: 'commune', large: c.type === 'texte_long' }));
@@ -134,7 +134,7 @@ function initial(origine: Profil, schema: ChampSchema[], gen: number): Saisie {
   for (const g of GROUPES) Object.assign(plats, versSaisie(origine, champsDe(g.cle, g.champs, schema)));
   Object.assign(plats, versSaisie(origine, CHAMPS_DIVERS));
   const rubriques = Object.fromEntries(RUBRIQUES.map((r) => {
-    // « Français (courant) » : le squelette écrit les langues en une chaîne, l'éditeur en deux champs
+    // « Français (courant) » : une chaîne dans le squelette, deux champs ici
     const entrees = (Array.isArray(origine[r.cle]) ? (origine[r.cle] as unknown[]) : []).map((v) => (typeof v === 'string'
       ? { langue: v.replace(/\s*\(.*$/, ''), niveau: (/\(([^)]*)\)/.exec(v) ?? [])[1] ?? '' } : estObjet(v) ? v : {}));
     return [r.cle, entrees.map((v, rang): Bloc => ({ uid: suivant(), origine: rang, valeurs: versSaisie(v, r.champs) }))];
@@ -169,7 +169,7 @@ export function useEditeur(origine: Profil, schema: ChampSchema[]) {
     Object.assign(profil, sansVidesInedits({ recherche: { ...recherche, ...sansVidesInedits(lireChamps(saisie.recherche, CHAMPS_RECHERCHE), recherche) } }, origine));
     for (const r of RUBRIQUES) {
       const anciennes = Array.isArray(origine[r.cle]) ? (origine[r.cle] as unknown[]) : [];
-      // Chaque entrée reposée sur celle qu'elle remplace : une expérience relue garde son `id`, une entrée vide disparaît
+      // Chaque entrée repose sur l'ancienne : une expérience relue garde son `id`
       const entrees = saisie.rubriques[r.cle].map((bloc) => {
         const edite = lireChamps(bloc.valeurs, r.champs);
         if (Object.values(edite).every((v) => v === '' || (Array.isArray(v) && !v.length))) return null;
@@ -183,7 +183,7 @@ export function useEditeur(origine: Profil, schema: ChampSchema[]) {
     Object.assign(profil, sansVidesInedits({ competences }, origine));
     Object.assign(profil, sansVidesInedits(lireChamps(saisie.plats, CHAMPS_DIVERS), origine));
     profil.ordre_sections = saisie.ordre;
-    // L'adresse choisie dans la liste garde ses détails (département, région) ; réécrite à la main, ils ne valent plus
+    // Une adresse choisie garde ses détails ; réécrite à la main, ils tombent
     const choisie = saisie.residence;
     if (choisie && profil.adresse === (choisie.voie || choisie.libelle)) profil.residence = choisie;
     else if (profil.adresse !== origine.adresse) delete profil.residence;
@@ -221,7 +221,7 @@ function Riche({ id, initiale, exemple, libelle, changer }: { id: string; initia
   }, []);
   const agir = (commande: string, valeur?: string) => {
     zone.current?.focus();
-    // En CSS, pas en <font> : un style s'assainit et s'imprime, une balise morte non
+    // En CSS plutôt qu'en <font> : un style s'assainit et s'imprime
     document.execCommand('styleWithCSS', false, 'true');
     document.execCommand(commande, false, valeur);
     if (zone.current) changer(zone.current.innerHTML);
@@ -230,7 +230,7 @@ function Riche({ id, initiale, exemple, libelle, changer }: { id: string; initia
     <div>
       <div className="barre-r" role="toolbar" aria-label={`Mise en forme : ${libelle}`}>
         {OUTILS.map((o) => (
-          // mousedown : au clic, la zone a déjà perdu le curseur et la commande ne vise plus rien
+          // mousedown : au clic, la zone a déjà perdu le curseur
           <button key={o.commande} type="button" className={`outil-r${o.classe}`} title={o.titre} aria-label={o.titre}
             onMouseDown={(e) => {
               e.preventDefault();
@@ -256,7 +256,7 @@ function Riche({ id, initiale, exemple, libelle, changer }: { id: string; initia
   );
 }
 
-//: Les pays par leur code ISO 3166-1 ; leur nom vient du navigateur, en français
+// Pays par code ISO 3166-1, nommés en français par le navigateur
 const CODES_PAYS = ('AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY '
   + 'BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB '
   + 'GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI '
@@ -266,19 +266,19 @@ const CODES_PAYS = ('AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE
   + 'VU WF WS YE YT ZA ZM ZW').split(' ');
 const aplati = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-// Les lieux qui répondent à une saisie, selon la liste de référence du champ : adresses de la Base Adresse Nationale, communes, pays
+// Lieux proposés selon la liste de référence du champ
 async function lieuxProposes(portee: string, saisie: string): Promise<Lieu[]> {
   if (portee === 'pays') {
     const noms = new Intl.DisplayNames(['fr'], { type: 'region' });
     return CODES_PAYS.map((code) => ({ libelle: noms.of(code) ?? code, code_pays: code })).filter((p) => aplati(p.libelle).includes(aplati(saisie))).slice(0, 8);
   }
   if (portee === 'adresse') return appeler<Lieu[]>(`/lieux?q=${encodeURIComponent(saisie)}`);
-  // Une commune s'écrit sans son département : « Saint-Étienne », proposée « Saint-Étienne (42) »
+  // Une commune s'écrit sans son département, même proposée avec lui
   const communes = await appeler<{ code: string; libelle: string }[]>(`/catalogues/communes?q=${encodeURIComponent(saisie)}&limite=8`);
   return communes.map((c) => ({ libelle: c.libelle.replace(/\s*\([^)]*\)$/, ''), detail: c.libelle, code_insee: c.code }));
 }
 
-// Un lieu se choisit dans une liste de référence (adresse, commune, pays) : chacun l'écrit pareil ; seule la dernière saisie compte
+// Un lieu vient d'une liste de référence ; seule la dernière saisie compte
 function ChampLieu({ id, valeur, portee, exemple, changer, choisir }: { id: string; valeur: string; portee: string; exemple?: string; changer: (v: string) => void; choisir: (l: Lieu) => void }) {
   const [lieux, setLieux] = useState<Lieu[]>([]);
   const rang = useRef(0);
@@ -342,7 +342,7 @@ const PLUS = <span className="ico"><svg viewBox="0 0 24 24" fill="none" stroke="
 
 type Vol = { sorte: 'section'; cle: string } | { sorte: 'bloc'; rubrique: string; uid: number } | null;
 
-// Où lâcher : avant ou après la cible, selon la moitié de son rectangle que survole la main
+// Où lâcher : avant ou après la cible, selon la moitié survolée
 const avant = (e: React.DragEvent, horizontal: boolean) => {
   const r = e.currentTarget.getBoundingClientRect();
   return horizontal ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
@@ -365,11 +365,11 @@ type ProprietesEditeur = {
   completer?: (cle: string, valeur: string) => Promise<boolean>;
   // Sections ouvertes à l'arrivée
   ouvertes: string[];
-  // Début des id de l'éditeur : l'éditeur principal et celui du panneau se côtoient sur la page
+  // Préfixe des id : l'éditeur principal et celui du panneau cohabitent
   prefixe: string;
 };
 
-// L'éditeur d'un profil de candidature : sections repliables et déplaçables, entrées répétables, compétences, éditeur riche
+// Éditeur d'un profil de candidature : sections, entrées, compétences
 export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ouvertes: depart, prefixe: base }: ProprietesEditeur) {
   const { saisie, setSaisie, schema } = e;
   const racine = useRef<HTMLElement>(null);
@@ -377,14 +377,14 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
   const [colonnes, setColonnes] = useState(false);
   const [completions, setCompletions] = useState<Record<string, string>>({});
   const vol = useRef<Vol>(null);
-  // Relu après un enregistrement, le profil garde ses sections ouvertes ; un autre profil remonte l'éditeur
+  // Relu après enregistrement, le profil garde ses sections ouvertes
   const [gen, setGen] = useState(saisie.gen);
   if (gen !== saisie.gen) {
     setGen(saisie.gen);
     setCompletions({});
   }
 
-  // Deux colonnes quand la fenêtre en laisse la place : l'identité à gauche, le reste à droite
+  // Deux colonnes si la place le permet : identité à gauche, le reste à droite
   useEffect(() => {
     const el = racine.current;
     if (!el) return;
@@ -398,7 +398,7 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
   const poserBloc = (rubrique: string, id: number, cle: string, v: string) => setSaisie((s) => ({
     ...s, rubriques: { ...s.rubriques, [rubrique]: s.rubriques[rubrique].map((b) => (b.uid === id ? { ...b, valeurs: { ...b.valeurs, [cle]: v } } : b)) },
   }));
-  // Une adresse choisie remplit aussi code postal, ville et pays, et le profil garde ses détails
+  // Une adresse choisie remplit aussi code postal, ville et pays
   const choisirLieu = (champ: Champ, l: Lieu, bloc?: { rubrique: string; uid: number }) => {
     if (bloc) return poserBloc(bloc.rubrique, bloc.uid, champ.cle, l.libelle);
     if (champ.portee !== 'adresse') return poser('plats', champ.cle, l.libelle);
@@ -408,7 +408,7 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
     }));
   };
 
-  // Un champ obligatoire vide mène à sa saisie : sa section s'ouvre, le curseur s'y pose
+  // Un champ obligatoire vide ouvre sa section et y pose le curseur
   const aller = (cle: string) => {
     const sections = [...GROUPES, { cle: 'recherche', champs: CHAMPS_RECHERCHE }, { cle: 'divers', champs: CHAMPS_DIVERS }];
     const g = sections.find((x) => champsDe(x.cle, x.champs, schema).some((c) => c.cle === cle));
@@ -484,7 +484,7 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
   const corps = (cle: string) => {
     const g = GROUPES.find((x) => x.cle === cle);
     if (g || cle === 'recherche' || cle === 'divers') {
-      // La recherche et le savoir-être passent aussi par le schéma : obligatoires pour tous, ils le disent
+      // Recherche et savoir-être suivent le schéma : obligatoires pour tous
       const champs = champsDe(cle, g ? g.champs : cle === 'recherche' ? CHAMPS_RECHERCHE : CHAMPS_DIVERS, schema);
       const quoi = cle === 'recherche' ? 'recherche' : 'plats';
       return <div className="grille-2">{champs.map((c) => champ(cle, c, saisie[quoi][c.cle] ?? '', (v) => poser(quoi, c.cle, v)))}</div>;

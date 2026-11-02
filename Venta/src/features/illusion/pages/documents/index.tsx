@@ -44,14 +44,14 @@ export const MODELE_VIDE = { nom: '', destination: '', profil: '', poste: '', co
 export const clePiece = (p: Production) => `${p.candidature}:${p.nature}`;
 export const sansJson = (nom: string) => nom.replace(/\.json$/i, '');
 export const nomFichier = (chemin: string) => String(chemin || '').split(/[\\/]/).pop() ?? '';
-// « 28/10 14:02 », à l'heure du poste ; une date d'Illusion sans fuseau est en UTC
+// « 28/10 14:02 » à l'heure du poste ; une date sans fuseau est en UTC
 export const quand = (iso: string) => (iso ? new Date(/(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : `${iso}Z`)
   .toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') : '—');
-// Pièces lues depuis l'arrivée dans Illusion, par clé : une fenêtre retrouve la sienne quand la galerie montre un autre genre, se relit ou revient
+// Pièces lues par clé, pour qu'une fenêtre retrouve la sienne
 const PIECES = new Map<string, Production>();
 aOublier(() => PIECES.clear());
 
-// Ce qu'on a tapé dans un formulaire de fabrication reste d'une visite à l'autre, comme dans l'ancien dashboard
+// La saisie d'un formulaire de fabrication reste d'une visite à l'autre
 const lireMemoire = (nom: NomAtelier): Partial<Formulaire> => {
   try {
     return JSON.parse(localStorage.getItem(cleBrouillon(`documents:${nom}`)) ?? '{}');
@@ -62,7 +62,7 @@ const lireMemoire = (nom: NomAtelier): Partial<Formulaire> => {
 
 function useDocuments(admin: boolean) {
   const { dire, vue: avis } = useAvis();
-  // Ce qui a été lu et choisi reste d'une visite à l'autre : en revenant, la galerie et les fenêtres s'affichent aussitôt et se relisent derrière
+  // Le lu et le choisi restent d'une visite à l'autre et se relisent derrière
   const [genre, setGenre] = useState(() => repris<Genre>('documents:genre', 'cv'));
   const [filtres, setFiltres] = useState(() => repris<Filtres>('documents:filtres', VIDES));
   const [lot, setLot] = useState(() => repris<Lot | null>('documents:lot', null));
@@ -74,7 +74,7 @@ function useDocuments(admin: boolean) {
   useGarder('documents', { genre, filtres, lot, total, options, parametres, profils, etats });
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
   const [formulaires, setFormulaires] = useState<Record<NomAtelier, Formulaire>>({ constructeur: FORMULAIRE_VIDE, lettre: FORMULAIRE_VIDE });
-  // Rang du « Nouveau modèle » vierge : chaque clic sur le bouton en repart d'un neuf
+  // Rang du « Nouveau modèle » vierge : chaque clic en repart d'un neuf
   const [vierge, setVierge] = useState(0);
   const chargement = useRef(false);
   const generation = useRef(0);
@@ -83,7 +83,7 @@ function useDocuments(admin: boolean) {
 
   const requete = useCallback((f: Filtres) => new URLSearchParams(Object.entries(f).filter(([, v]) => v)), []);
 
-  // Une tranche de plus à la suite de `depuis` ; sans lui, la galerie repart de zéro, comme à un filtre, sur `lignes` lignes
+  // Tranche suivante à partir de `depuis` ; sans lui, la galerie repart de zéro
   const charger = useCallback(async (g: Genre, f: Filtres, depuis: Lot | null, lignes = TRANCHE) => {
     if (g === 'spontanes' || (chargement.current && depuis)) return null;
     const n = depuis ? generation.current : ++generation.current;
@@ -107,7 +107,7 @@ function useDocuments(admin: boolean) {
     }
   }, [requete, dire]);
 
-  // `lignes` à 0, la galerie se vide et relit sa première tranche ; sinon elle reste affichée et se relit sur autant de lignes, 200 au plus comme l'API
+  // `lignes` à 0 vide la galerie ; sinon elle se relit, 200 lignes au plus
   const relireTout = useCallback(async (g: Genre, f: Filtres, lignes = 0) => {
     setSelection(new Set());
     if (g === 'spontanes') return;
@@ -118,7 +118,7 @@ function useDocuments(admin: boolean) {
       appeler<Options>('/productions/filtres').then(setOptions).catch((e) => dire(message(e), true)),
     ]);
   }, [requete, charger, dire]);
-  // Au montage, la galerie gardée se relit en place ; comparés au passage d'avant (le double passage du mode strict aussi), un autre genre ou d'autres filtres la vident
+  // Au montage, la galerie gardée se relit, sauf autre genre ou filtres
   const precedent = useRef({ genre, filtres, lignes: lot ? lot.suivant || TRANCHE : 0 });
   useEffect(() => {
     const meme = precedent.current.genre === genre && precedent.current.filtres === filtres;
@@ -154,7 +154,7 @@ function useDocuments(admin: boolean) {
     return { ...fs, [nom]: neuf };
   }), []);
 
-  // Un lancement à la main se relit toutes les 1,5 s tant qu'il tourne ; fini, ce qu'il a bâti entre dans la galerie
+  // Lancement manuel relu toutes les 1,5 s ; fini, il entre dans la galerie
   const lireEtat = useCallback(async (nom: NomAtelier) => {
     let etat: EtatAtelier;
     try {
@@ -181,7 +181,7 @@ function useDocuments(admin: boolean) {
         return dire(r.arretee ? "Brique arrêtée — ce qu'elle avait déjà fait reste." : 'Aucun lancement en cours.', !r.arretee);
       }
       const f = formulaires[nom];
-      // Les réglages de la brique partent avec le lancement, comme quand ils vivaient à côté du formulaire
+      // Les réglages de la brique partent avec le lancement
       const valeurs: Record<string, unknown> = {
         profil: f.profil, offre: f.offre.trim(), poste: f.poste.trim(), entreprise: f.entreprise.trim(), deja_postule: f.deja_postule,
         essai: admin && !f.deja_postule && f.essai, silencieux: f.silencieux,
@@ -212,7 +212,7 @@ function useDocuments(admin: boolean) {
         methode: 'POST', corps: { pieces: pieces.map((p) => ({ candidature: p.candidature, nature: p.nature })) } });
       dire(`${r.fichiers} pièce(s) supprimée(s).`);
       pieces.forEach((p) => PIECES.delete(clePiece(p)));
-      // La galerie se relit sans retenir la fiche qui supprime : sa fenêtre se ferme aussitôt
+      // Relecture sans retenir la fiche qui supprime : sa fenêtre se ferme
       void relire.current();
       return true;
     } catch (e) {
@@ -221,7 +221,7 @@ function useDocuments(admin: boolean) {
     }
   }, [dire]);
 
-  // Une compétence ajoutée au profil : les pièces de cette offre la montrent « ajoutée depuis », sans relire la galerie
+  // Compétence ajoutée : les pièces de l'offre la montrent sans relire
   const marquerAjoutee = useCallback((offre: string, competence: string) => {
     PIECES.forEach((p, cle) => {
       if (p.offre === offre && !p.ajoutees.includes(competence)) PIECES.set(cle, { ...p, ajoutees: [...p.ajoutees, competence] });
@@ -259,7 +259,7 @@ export default function PageDocuments({ compte }: ProprietesPage) {
   );
 }
 
-// Autant de colonnes que la largeur en tient, deux rangées (trois sur un grand écran) à la hauteur de la fenêtre ; la suite défile
+// Colonnes selon la largeur, deux rangées (trois en grand), la suite défile
 const LARGEUR_MIN = 145, HAUTEUR_MIN = 220, ECART = 14;
 function useGrille(galerie: React.RefObject<HTMLDivElement | null>) {
   useLayoutEffect(() => {
@@ -280,7 +280,7 @@ function useGrille(galerie: React.RefObject<HTMLDivElement | null>) {
   }, [galerie]);
 }
 
-// La rangée d'outils se replie par paliers tant qu'elle déborde, et se déplie dès qu'elle a de la place
+// La rangée d'outils se replie par paliers tant qu'elle déborde
 function useRepli(outils: React.RefObject<HTMLDivElement | null>) {
   const ajuster = useCallback(() => {
     const el = outils.current;
@@ -320,14 +320,14 @@ function Galerie({ d }: { d: Documents }) {
     : lot.fini ? `${n} CV` : `${n} CV chargé${s} sur ${total}`;
   const liees = choisies.filter((p) => p.offre_reelle).length;
 
-  // Arrivé en bas de la galerie, la tranche suivante part toute seule ; le bouton reste
+  // En bas de la galerie, la tranche suivante part seule ; le bouton reste
   const defiler = () => {
     const el = galerie.current;
     if (el && lot && !lot.fini && el.scrollTop + el.clientHeight >= el.scrollHeight - 8) void d.charger(genre, filtres, lot);
   };
   const toutCocher = async (coche: boolean) => {
     if (!coche) return d.setSelection(new Set());
-    // Tout, c'est tout ce que les filtres retiennent : les tranches pas encore chargées le sont d'abord
+    // « Tout » charge d'abord les tranches que les filtres retiennent
     let courant = lot;
     while (courant && !courant.fini) courant = await d.charger(genre, filtres, courant);
     d.setSelection(new Set((courant ?? lot)?.lignes.map(clePiece) ?? []));
@@ -420,7 +420,7 @@ function Galerie({ d }: { d: Documents }) {
   );
 }
 
-// Vignette d'une pièce : la case et l'œil en tête, la première page au centre, le poste et ses repères dessous ; la carte ouvre sa fiche
+// Vignette d'une pièce ; la carte ouvre sa fiche
 function Vignette({ p, cochee, ouverte, cocher, ouvrir }: { p: Production; cochee: boolean; ouverte: boolean; cocher: (c: boolean) => void; ouvrir: () => void }) {
   const lien = `${RELAIS}/productions/${p.candidature}/${p.nature}`;
   const titre = `${p.poste || '(sans intitulé)'} · ${p.entreprise || '—'}`;
@@ -445,7 +445,7 @@ function Vignette({ p, cochee, ouverte, cocher, ouvrir }: { p: Production; coche
   );
 }
 
-// Vignette d'un modèle de CV spontané : sa première page une fois bâti, « à bâtir » sinon ; la carte l'ouvre, au clic droit dans une nouvelle fenêtre
+// Vignette d'un modèle spontané, « à bâtir » tant que sa page manque
 function VignetteModele({ m, ouverte, ouvrir }: { m: Modele; ouverte: boolean; ouvrir: () => void }) {
   const lien = `${RELAIS}/cv-spontanes/${encodeURIComponent(m.nom)}`;
   return (

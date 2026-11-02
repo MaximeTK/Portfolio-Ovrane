@@ -27,7 +27,7 @@ const ARBRE = arbreFiches(() => null);
 
 type Candidat = { siren: string; nom: string; secteur: string | null; localisation: string | null; effectif: string | null; deja_en_base: boolean };
 
-// Importer une société nommément : par SIREN elle est créée, par nom Sirene propose des candidats
+// Par SIREN la société est créée, par nom Sirene propose des candidats
 function useImport(dire: Dire, relire: () => void) {
   // La recherche et ses candidats restent d'une visite à l'autre
   const [requete, setRequete] = useState(() => repris('collecte:import:requete', ''));

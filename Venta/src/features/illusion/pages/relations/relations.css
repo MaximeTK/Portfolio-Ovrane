@@ -1,6 +1,6 @@
-/* Page Relations : le nuage de l'entourage, un point carré par personne, et sa fiche dans le panneau. */
+/* Relations : nuage de points carrés, fiche d'une personne au panneau */
 
-/* Recherche en texte seul, première dans la rangée des outils : une loupe, puis la saisie sans cadre. */
+/* Recherche première de la rangée : loupe, puis saisie sans cadre */
 .ov [data-fen=nuage] .recherche{display:inline-flex;align-items:center;gap:8px;min-width:0;height:34px;color:rgba(255,255,255,.6);cursor:text}
 .ov [data-fen=nuage] .recherche svg{flex:none;width:13px;height:13px}
 .ov [data-fen=nuage] .recherche input{width:190px;min-width:0;height:28px;border:0;background:none;padding:0;font-size:12.5px;color:#fff}
@@ -16,7 +16,7 @@
 .ov [data-fen=nuage] .nuage-r{position:relative;flex:1;min-height:0;padding:0 14px 6px}
 .ov [data-fen=nuage] .nuage-r svg{display:block;width:100%;height:100%;cursor:grab;touch-action:none;user-select:none}
 .ov [data-fen=nuage] .nuage-r svg.glisse{cursor:grabbing}
-/* Points carrés de la couleur de leur première étiquette, grossis par les échanges ; la personne ouverte s'allume en blanc dans un carré fin. */
+/* Points à la couleur de la première étiquette ; l'ouvert s'allume en blanc */
 .ov [data-fen=nuage] .point-r{fill:oklch(76% .14 var(--t));stroke:rgb(10 10 14 / .55);stroke-width:1.5;cursor:pointer;transition:opacity .2s}
 .ov [data-fen=nuage] .point-r:hover,.ov [data-fen=nuage] .point-r:focus-visible{stroke:#fff;outline:none}
 .ov [data-fen=nuage] .point-r.choisi{fill:#fff;filter:drop-shadow(0 0 6px #fff)}
@@ -28,7 +28,7 @@
 .ov [data-fen=nuage] .nom-r.choisi{fill:#fff;font-weight:600}
 .ov [data-fen=nuage] .vide-r{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:0 40px;margin:0;text-align:center;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6)}
 .ov [data-fen=nuage] .vide-r b{color:#fff;font-weight:600}
-/* Légende en bas, à la place de la pagination : une pastille par étiquette et son nombre, puis le total. */
+/* Légende en bas à la place de la pagination : étiquettes et total */
 .ov [data-fen=nuage] .legende-r{flex:none;min-height:44px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 18px;border-top:1px solid rgba(255,255,255,.08);padding:8px 14px;font-size:12px}
 .ov [data-fen=nuage] .cle-r{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;color:rgba(255,255,255,.82)}
 .ov [data-fen=nuage] .cle-r i{flex:none;width:8px;height:8px;background:oklch(76% .14 var(--t))}
@@ -36,11 +36,11 @@
 .ov [data-fen=nuage] .total-r{font-weight:600;color:#fff;white-space:nowrap}
 .ov [data-fen=nuage]:not([data-l=l]) .legende-r .note-r{display:none}
 .ov [data-fen=nuage]:not([data-l=l]) .legende-r{gap:4px 12px}
-/* L'avis d'un geste : en bas à droite, au-dessus de la légende ; un clic le ferme. */
+/* Avis d'un geste : en bas à droite, au-dessus de la légende */
 .ov [data-fen=nuage] .avis-r{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(520px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
 .ov [data-fen=nuage] .avis-r.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
 
-/* Fiche : ce qu'on sait en tête, les sujets en puces de texte, les faits datés. */
+/* Fiche : ce qu'on sait en tête, sujets en puces de texte, faits datés */
 .ov .rel-f .meta-f{margin-bottom:12px !important;font-size:12px;color:rgba(255,255,255,.7)}
 .ov .rel-f .resume-r{font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.92)}
 .ov .rel-f .sujets-r{margin-top:8px !important;font-size:12px;color:rgba(255,255,255,.75)}
@@ -49,7 +49,7 @@
 .ov .rel-f .faits-r li{position:relative;padding-left:14px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.82)}
 .ov .rel-f .faits-r li::before{content:"";position:absolute;left:2px;top:.62em;width:4px;height:4px;background:rgba(255,255,255,.5)}
 .ov .rel-f .faits-r small{margin-left:6px;font-size:10.5px;color:rgba(255,255,255,.45)}
-/* Liens et échanges : une ligne par lien avec sa croix, puis la saisie et son bouton sur une rangée. */
+/* Liens et échanges : une ligne par lien avec sa croix, puis la saisie */
 .ov .rel-f .lien-r{font-weight:600;color:#fff;text-align:left;text-decoration:underline;text-decoration-color:rgb(255 255 255 / .25);text-underline-offset:3px}
 .ov .rel-f .liste-f .x-r{display:grid;place-items:center;width:22px;height:22px;font-size:15px;color:rgba(255,255,255,.55)}
 .ov .rel-f .liste-f .x-r:hover{color:#ffb0b0}

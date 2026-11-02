@@ -1,6 +1,6 @@
-/* Collecte, Parser et Audit : le tableau des fiches, ses filtres, ses lots, et les onglets d'une brique (réglages, exécution, import). */
+/* Tableau des fiches de Collecte, Parser et Audit, et onglets des briques */
 
-/* Tableau des fiches : chaque colonne prend son contenu le plus large plus le même écart, qui grandit avec la fenêtre. */
+/* Colonnes à la largeur de leur contenu, avec un écart qui suit la fenêtre */
 .ov [data-fen=fiches] .fiches thead th:nth-child(1){width:46px}
 .ov [data-fen=fiches] .fiches thead th:nth-child(2){width:calc(72px + (100cqw - 926px) / 10)}
 .ov [data-fen=fiches] .fiches thead th:nth-child(3){width:calc(158px + (100cqw - 926px) / 10)}
@@ -13,7 +13,7 @@
 .ov [data-fen=fiches] .fiches thead th:nth-child(10){width:calc(71px + (100cqw - 926px) / 10)}
 .ov [data-fen=fiches] .fiches thead th:nth-child(11){width:calc(82px + (100cqw - 926px) / 10)}
 @media (max-width:1366px){.ov [data-fen=fiches] .fiches{font-size:12px}}
-/* Fenêtre resserrée : Localisation, Effectif, Site, Email et Téléphone se retirent, les autres gardent un écart égal. */
+/* Fenêtre étroite : des colonnes se retirent, l'écart reste égal */
 @container (max-width:925px){
   .ov [data-fen=fiches] .fiches :is(th,td):is(:nth-child(4),:nth-child(5),:nth-child(6),:nth-child(7),:nth-child(8)){display:none}
   .ov [data-fen=fiches] .fiches thead th:nth-child(2){width:calc(72px + (100cqw - 476px) / 5)}
@@ -22,13 +22,13 @@
   .ov [data-fen=fiches] .fiches thead th:nth-child(10){width:calc(71px + (100cqw - 476px) / 5)}
   .ov [data-fen=fiches] .fiches thead th:nth-child(11){width:calc(82px + (100cqw - 476px) / 5)}
 }
-/* Entreprise : le nom puis le SIREN dessous, sans changer la hauteur de ligne. */
+/* Entreprise : le nom, le SIREN dessous, sans changer la hauteur de ligne */
 .ov [data-fen=fiches] td.ent2{line-height:1.15}
 .ov [data-fen=fiches] td.ent2 .ent{display:block;overflow:hidden;text-overflow:ellipsis}
 .ov [data-fen=fiches] td.vide{color:rgba(255,255,255,.28)}
 .ov [data-fen=fiches] .vide-tableau td{height:auto;padding:28px 20px;white-space:normal;color:rgba(255,255,255,.6);cursor:default}
 .ov [data-fen=fiches] .vide-tableau:hover td{background:none}
-/* Recherche en texte de la rangée d'outils : sans cadre, un trait fin dessous. */
+/* Recherche sans cadre, un trait fin dessous */
 .ov [data-fen=fiches] .cherche{display:inline-flex;align-items:center;gap:7px;height:28px;margin-left:20px;border-bottom:1px solid rgb(255 255 255 / .2);color:rgba(255,255,255,.6)}
 .ov [data-fen=fiches] .cherche:focus-within{border-color:#fff;color:#fff}
 .ov [data-fen=fiches] .ico-cherche svg{display:block;width:13px;height:13px}
@@ -37,16 +37,16 @@
 .ov [data-fen=fiches] .cherche input:focus{outline:none}
 .ov [data-fen=fiches]:is([data-l=s],[data-l=xs]) .cherche{flex:0 1 auto;min-width:0;margin-left:14px}
 .ov [data-fen=fiches]:is([data-l=s],[data-l=xs]) .cherche input{width:136px;min-width:0}
-/* Menus des filtres : sous le filtre, alignés sur sa gauche, chaque choix avec son compte. */
+/* Menus des filtres sous le filtre, alignés à gauche, avec leur compte */
 .ov [data-fen=fiches] .menu{left:0;right:auto;min-width:190px}
 .ov [data-fen=fiches] .menu-option .compte{margin-left:auto;padding-left:18px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.55)}
-/* Lots : celui qui tourne s'écrit en cyan avec son signal, ceux qu'il bloque s'effacent ; le nombre n'apparaît qu'avec des lignes cochées. */
+/* Le lot qui tourne s'écrit en cyan, ceux qu'il bloque s'effacent */
 .ov [data-fen=fiches] .action.encours{color:var(--accent)}
 .ov [data-fen=fiches] .action.encours .ico .barres{height:11px}
 .ov [data-fen=fiches] .etat-a{margin-left:2px;font-size:10.5px;font-weight:500;color:rgb(147 244 255 / .75)}
 .ov [data-fen=fiches] .action:disabled{opacity:.38}
 .ov [data-fen=fiches]:not(:has(tbody .case:checked)) .nb-sel{display:none}
-/* Note discrète au bout de la pagination ; un avis la remplace le temps d'être lu. */
+/* Note discrète après la pagination, remplacée par un avis */
 .ov [data-fen=fiches] .note-bas{margin-left:auto;font-size:11.5px;color:rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .ov [data-fen=fiches] .note-bas b{font-weight:500;color:rgba(255,255,255,.75)}
 .ov [data-fen=fiches] .note-bas.avis{color:rgba(255,255,255,.85)}
@@ -80,7 +80,7 @@
 .ov .pf .couleurs{display:inline-flex;align-items:center;gap:10px}
 .ov .pf .couleurs span{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.75)}
 .ov .pf .couleurs i{width:12px;height:12px;border:1px solid rgb(255 255 255 / .3)}
-/* Sortie d'une exécution : son badge, terminé en vert, en cours en cyan, en échec en rouge. */
+/* Badge de sortie : vert terminé, cyan en cours, rouge en échec */
 .ov .pf .titre-badge{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
 .ov .pf .titre-badge h3{margin:0}
 .ov .pf .badge{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -93,13 +93,13 @@
 .ov .pf .cmd>summary::-webkit-details-marker{display:none}
 .ov .pf .cmd>summary::after{content:" +";color:rgba(255,255,255,.5)}
 .ov .pf .cmd[open]>summary{margin-bottom:10px}
-/* Résultats de l'import : la société et son SIREN, puis secteur et lieu, puis le geste. */
+/* Résultats de l'import : société et SIREN, secteur et lieu, puis le geste */
 .ov .pf .resultats>li{gap:14px;padding:7px 0}
 .ov .pf .soc{flex:none;width:112px;display:flex;flex-direction:column;line-height:1.25;min-width:0}
 .ov .pf .soc b{overflow-wrap:anywhere}
 .ov .pf .soc-d{flex:1;min-width:0;font-size:12px;line-height:1.35;color:rgba(255,255,255,.72)}
 .ov .pf .tag-f{padding:2px 6px;border:1px solid rgb(255 255 255 / .2);font-size:8.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);white-space:nowrap}
-/* Arbitrage d'un doublon : pour chaque champ, deux tuiles ; la retenue s'allume en blanc. */
+/* Arbitrage d'un doublon : deux tuiles par champ, la retenue en blanc */
 .ov .pf .arb{margin:0 0 6px !important}
 .ov .pf .arbitre{gap:8px;margin-bottom:12px}
 .ov .pf .arbitre:last-child{margin-bottom:0}
@@ -107,5 +107,5 @@
 .ov .pf .tr-lib{font-size:11px;color:rgba(255,255,255,.62);white-space:nowrap}
 .ov .pf .tranche:has(:checked) .tr-lib{color:#fff}
 .ov .pf .tr-val{font-size:12.5px;overflow-wrap:anywhere}
-/* Comme sur la planche, l'action pleine garde son libellé jusque dans une fenêtre étroite ; seules les secondaires passent à l'icône. */
+/* En fenêtre étroite, seules les actions secondaires passent à l'icône */
 .ov [data-fen=fiches][data-l=xs] .outils .action.plein .txt{position:static;width:auto;height:auto;overflow:visible;clip:auto}

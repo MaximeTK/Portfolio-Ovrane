@@ -1,4 +1,4 @@
-// Forme d'un profil de candidature, reprise de l'éditeur de l'ancien dashboard (cf. src/profil/normalisation.py)
+// Forme d'un profil de candidature, reprise de l'ancien dashboard
 export type Forme = 'text' | 'email' | 'nombre' | 'choix' | 'liste' | 'lignes' | 'texte_long' | 'riche' | 'lieu';
 export type Champ = {
   cle: string;
@@ -10,12 +10,12 @@ export type Champ = {
   exemple?: string;
   portee?: 'adresse' | 'commune' | 'pays';
   obligatoire?: boolean;
-  // Colonnes prises sur six dans une entrée répétable : 3 par défaut, 2 pour trois par ligne, 6 pour toute la largeur
+  // Colonnes sur six d'une entrée répétable : 3 par défaut, 6 pleine largeur
   col?: 2 | 3 | 6;
   large?: boolean;
 };
 
-// La réponse qui ne dit rien d'une question sensible : JADE la rend par l'option « Prefer not to say » du formulaire
+// Réponse neutre à une question sensible, rendue par « Prefer not to say »
 export const SANS_REPONSE = 'Je préfère ne pas répondre';
 
 export const CHAMPS_IDENTITE: Champ[] = [
@@ -33,7 +33,7 @@ export const CHAMPS_IDENTITE: Champ[] = [
   { cle: 'pays', libelle: 'Pays', type: 'lieu', portee: 'pays', exemple: 'France' },
   { cle: 'nationalite', libelle: 'Nationalité', exemple: 'Française' },
   { cle: 'genre', libelle: 'Genre', type: 'choix', choix: ['Homme', 'Femme', 'Ne pas préciser'] },
-  // Les formulaires américains la demandent : « Je préfère ne pas répondre » leur suffit
+  // Demandée par les formulaires américains : « Je préfère ne pas répondre »
   { cle: 'origine', libelle: 'Origine (formulaires américains)', type: 'choix', choix: [SANS_REPONSE, 'Hispanique ou latino', 'Blanc',
     'Noir ou afro-américain', 'Asiatique', 'Océanien (Hawaï, îles du Pacifique)', "Amérindien ou natif d'Alaska", 'Plusieurs origines'] },
   { cle: 'linkedin', libelle: 'LinkedIn', repli: 'identite.linkedin', exemple: 'linkedin.com/in/prenomnom' },
@@ -63,7 +63,7 @@ export const CHAMPS_SITUATION: Champ[] = [
   { cle: 'ancien_combattant', libelle: 'Ancien combattant (formulaires américains)', type: 'choix', choix: ['non', 'oui', SANS_REPONSE] },
 ];
 
-// Le salaire en chiffres : un formulaire demande un nombre, une lettre une phrase
+// Salaire en chiffres : un formulaire veut un nombre, une lettre une phrase
 export const CHAMPS_REMUNERATION: Champ[] = [
   { cle: 'salaire_actuel', libelle: 'Salaire actuel', type: 'nombre', exemple: '34000' },
   { cle: 'salaire_minimum', libelle: 'Salaire minimum', type: 'nombre', exemple: '36000' },
@@ -80,7 +80,7 @@ export const CHAMPS_REPONSES_FIXES: Champ[] = [
   { cle: 'consentement_communications', libelle: 'Recevoir e-mails et actualités', type: 'choix', choix: ['oui', 'non'], large: true },
 ];
 
-// La matière des lettres et des questions ouvertes : ce que le candidat veut, dit une fois pour toutes
+// Matière des lettres et questions ouvertes : ce que veut le candidat
 export const CHAMPS_MOTIVATIONS: Champ[] = [
   { cle: 'projet_professionnel', libelle: 'Projet professionnel', type: 'texte_long', large: true, exemple: 'Deux ou trois phrases : où vous allez, et pourquoi.' },
   { cle: 'motivation_esn', libelle: 'Pourquoi une ESN', type: 'texte_long', large: true },
@@ -104,7 +104,7 @@ export const CHAMPS_DIVERS: Champ[] = [
 
 export type Rubrique = { cle: string; titre: string; singulier: string; champs: Champ[] };
 
-// Les rubriques qui se répètent : une entrée par carte, ajoutée et retirée à la main
+// Rubriques répétées : une entrée par carte, ajoutée et retirée à la main
 export const RUBRIQUES: Rubrique[] = [
   { cle: 'experiences', titre: 'Expériences', singulier: 'une expérience', champs: [
     { cle: 'poste', libelle: 'Poste', repli: 'intitule', exemple: 'Développeur backend' },
@@ -163,7 +163,7 @@ export const RUBRIQUES: Rubrique[] = [
     { cle: 'action', libelle: 'Action', type: 'texte_long', col: 6 },
     { cle: 'resultat', libelle: 'Résultat', type: 'texte_long', col: 6, exemple: 'Avec un chiffre si possible.' },
   ] },
-  // La version courte sert sous une limite de caractères, la longue partout ailleurs
+  // La version courte sert sous une limite de caractères, la longue ailleurs
   { cle: 'reponses_types', titre: 'Réponses types', singulier: 'une réponse', champs: [
     { cle: 'question', libelle: 'Question', exemple: 'Pourquoi quitter votre poste ?', col: 6 },
     { cle: 'courte', libelle: 'Réponse courte', type: 'texte_long', col: 6, exemple: '300 caractères au plus.' },
@@ -181,7 +181,7 @@ export const GROUPES: { cle: string; titre: string; champs: Champ[] }[] = [
   { cle: 'reponses_fixes', titre: 'Réponses fixes des formulaires', champs: CHAMPS_REPONSES_FIXES },
 ];
 
-// L'ordre par défaut des sections ; celui du profil passe devant, et le CV le suit
+// Ordre par défaut des sections ; celui du profil passe devant, le CV le suit
 export const SECTIONS = ['identite', 'presentation', 'situation', 'remuneration', 'recherche', 'experiences', 'projets', 'formations',
   'certifications', 'langues', 'competences', 'divers', 'motivations', 'forces', 'realisations', 'histoires', 'reponses_types', 'reponses_fixes'];
 
@@ -193,17 +193,17 @@ export const TITRES: Record<string, string> = {
 // Les champs ajoutés au profil de tous, tels que /schema-profil les rend
 export type ChampSchema = { cle: string; libelle: string; section: string; type: string; obligatoire: boolean; choix?: string[] };
 
-// Formes et sections d'un champ ajouté, comme Workflows · Vérification les proposait
+// Formes et sections d'un champ ajouté, comme Workflows · Vérification
 export const SECTIONS_DE_CHAMP: Record<string, string> = { identite: 'Identité', presentation: 'Présentation', situation: 'Situation',
   remuneration: 'Rémunération', motivations: 'Motivations', reponses_fixes: 'Réponses fixes' };
 export const FORMES_CHAMP: Record<string, string> = { text: 'Texte', texte_long: 'Texte long', nombre: 'Nombre', choix: 'Choix', liste: 'Liste',
   email: 'E-mail', lieu: 'Lieu (commune)' };
 
-// Le nom lisible d'une donnée de la fiche : celui de l'éditeur, celui que la correction lui a donné, sinon sa clé
+// Nom lisible d'une donnée : éditeur, correction, sinon sa clé
 export function libelleDonnee(cle: string, schema: ChampSchema[]) {
   const connus = [...GROUPES.flatMap((g) => g.champs), ...schema];
   return connus.find((c) => c.cle === cle)?.libelle ?? cle.replace(/_/g, ' ').replace(/^./, (l) => l.toUpperCase());
 }
 
-// « developpeur-python-1561.json » → « developpeur-python », comme le titre d'un profil côté serveur
+// « developpeur-python-1561.json » → « developpeur-python », comme le serveur
 export const titreProfil = (nom: string) => nom.replace(/\.json$/i, '').replace(/-\d{4}$/, '');

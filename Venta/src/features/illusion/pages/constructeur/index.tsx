@@ -12,7 +12,7 @@ import { Couleurs, ICONES, ListeFichiers, message, poids, useAvis, useFichiers, 
 
 type Reglages = { constructeur_fond: string; constructeur_palette: string[] };
 type Sorte = 'background' | 'structure' | 'title';
-// Les trois sortes d'éléments que le Constructeur tire au sort, dans l'ordre de la planche
+// Les trois sortes d'éléments tirés au sort, dans l'ordre de la planche
 const SORTES: { cle: Sorte; titre: string; sorte: string; accept: string; apercu: 'image' | 'feuille' | 'police'; aide: string; mot: string }[] = [
   { cle: 'background', titre: 'Images de fond', sorte: 'Image de fond', accept: '.jpg,.jpeg,.png,.webp', apercu: 'image', mot: 'image de fond',
     aide: 'Photos mises derrière la feuille. JPEG, PNG ou WebP, 10 Mo au plus.' },
@@ -34,7 +34,7 @@ export default function PageConstructeur(_: ProprietesPage) {
   );
 }
 
-// Les éléments des CV, pour tous les comptes : trois gestionnaires de fichiers côte à côte, puis le fond et la palette imposés
+// Éléments des CV de tous les comptes : gestionnaires, fond et palette
 function Elements() {
   const { dire, vue } = useAvis();
   const gestions: Record<Sorte, ReturnType<typeof useFichiers>> = {
@@ -44,7 +44,7 @@ function Elements() {
   };
   const [aSupprimer, setASupprimer] = useState<{ sorte: Sorte; f: Fichier } | null>(null);
   const [occupe, setOccupe] = useState(false);
-  // Le fond et la palette lus restent d'une visite à l'autre et le formulaire en repart, avant d'être relus
+  // Fond et palette lus restent d'une visite à l'autre, relus ensuite
   const [reglages, setReglages] = useState(() => repris<Reglages | null>('constructeur:reglages', null));
   useGarder('constructeur', { reglages });
   const [fond, setFond] = useState(reglages?.constructeur_fond ?? '');

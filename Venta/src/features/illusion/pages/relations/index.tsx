@@ -22,7 +22,7 @@ type AppelCourt = { id: number; titre: string; debut: string };
 type Avis = { texte: string; erreur?: boolean } | null;
 type Vue = { x: number; y: number; l: number; h: number };
 
-// Une couleur par étiquette, dans l'ordre des grappes ; au-delà, elles se répètent
+// Une couleur par étiquette, dans l'ordre des grappes, répétées au-delà
 const TEINTES = [265, 150, 25, 200, 330, 85, 0, 115, 230, 300];
 const LARGEUR = 1150;
 const HAUTEUR = 620;
@@ -51,7 +51,7 @@ const ICONES = {
   supprimer: <svg {...TRAIT}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
 };
 
-// Le nuage : une grappe par première étiquette, chaque personne posée en spirale de tournesol autour de son centre
+// Une grappe par première étiquette, ses personnes en spirale de tournesol
 function disposer(personnes: Personne[]) {
   const groupes = new Map<string, Personne[]>();
   for (const p of personnes) groupes.set(groupe(p), [...(groupes.get(groupe(p)) ?? []), p]);
@@ -60,7 +60,7 @@ function disposer(personnes: Personne[]) {
   const pas = Math.max(14, Math.min(34, 300 / Math.sqrt(personnes.length || 1)));
   const positions = new Map<number, { x: number; y: number }>();
   ordre.forEach(([, membres], rang) => {
-    // Les grappes elles-mêmes s'enroulent en spirale autour du centre, la plus grosse au milieu
+    // Les grappes s'enroulent en spirale autour du centre, la plus grosse au milieu
     const rayon = rang ? 120 + 95 * Math.sqrt(rang) : 0;
     const cx = LARGEUR / 2 + rayon * Math.cos(rang * angle * 2);
     const cy = HAUTEUR / 2 + rayon * 0.62 * Math.sin(rang * angle * 2);
@@ -73,7 +73,7 @@ function disposer(personnes: Personne[]) {
 }
 
 export default function PageRelations(_: ProprietesPage) {
-  // Le nuage lu reste d'une visite à l'autre : en revenant, il s'affiche aussitôt et se relit derrière
+  // Le nuage lu reste d'une visite à l'autre, relu derrière
   const [donnees, setDonnees] = useState(() => repris<Donnees | null>('relations:donnees', null));
   useGarder('relations', { donnees });
   const [erreur, setErreur] = useState('');
@@ -104,7 +104,7 @@ type ProprietesNuage = { donnees: Donnees | null; erreur: string; avis: Avis; se
 
 function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
-  // La recherche, le zoom et le déplacement choisis restent d'une visite à l'autre
+  // La recherche, le zoom et le déplacement restent d'une visite à l'autre
   const [recherche, setRecherche] = useState(() => repris('relations:recherche', ''));
   const [vue, setVue] = useState(() => repris<Vue | null>('relations:vue', null));
   useGarder('relations', { recherche, vue });
@@ -122,7 +122,7 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
   const trouvees = cherche ? personnes.filter((p) => [p.nom, p.entreprise, p.poste, ...(p.etiquettes ?? [])].join(' ').toLowerCase().includes(cherche)) : [];
   const allumee = onglet === 'fiche' && objet !== null ? Number(objet) : null;
 
-  // Échap ferme le panneau, sauf celui qu'une confirmation a gardé pour elle ; un avis se lit 3,5 s, une erreur 8 s
+  // Échap ferme le panneau, sauf celui qu'une confirmation garde pour elle
   useEffect(() => {
     const echap = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !e.defaultPrevented) fermer();
@@ -146,7 +146,7 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
     return () => observateur.disconnect();
   }, []);
 
-  // Sans zoom ni déplacement, la vue cadre tous les points ; sinon elle garde son centre et sa largeur à la forme de la fenêtre
+  // Sans zoom ni déplacement, la vue cadre tous les points
   const courante = useMemo<Vue>(() => {
     const rapport = cadre.h / cadre.w;
     if (vue) {
@@ -156,7 +156,7 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
     if (!positions.size) return { x: 0, y: 0, l: LARGEUR, h: LARGEUR * rapport };
     const xs = [...positions.values()].map((p) => p.x), ys = [...positions.values()].map((p) => p.y);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-    // Une marge à l'écran autour des points : 30 px, et 130 px à droite pour les noms
+    // Marge de 30 px autour des points, et 130 px à droite pour les noms
     const l = Math.max((x1 - x0) / Math.max(1 - 160 / cadre.w, 0.3), (y1 - y0) / Math.max(1 - 60 / cadre.h, 0.3) / rapport, 200);
     const u = l / cadre.w, h = l * rapport;
     return { x: x0 - 30 * u - (l - (x1 - x0) - 160 * u) / 2, y: (y0 + y1 - h) / 2, l, h };
@@ -180,7 +180,7 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
   }, [courante]);
 
   const ouvrirFiche = (n: number) => ouvrir('fiche', String(n));
-  // Glisser déplace la vue ; un clic sans glisser sur un point ouvre sa fiche, le clic droit dans une nouvelle fenêtre (par le dock)
+  // Glisser déplace la vue ; clic sur un point : fiche, clic droit : fenêtre
   const presser = (e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
     const point = (e.target as Element).closest('[data-objet]');
@@ -316,7 +316,7 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
 
 type ProprietesPanneau = { donnees: Donnees | null; setAvis: (a: Avis) => void; relire: () => Promise<void> };
 
-// Le panneau : la fiche de chaque personne ouverte (une par fenêtre), ou une fiche vierge à créer
+// Panneau : une fiche par personne ouverte, ou une fiche vierge à créer
 function PanneauRelations({ donnees, setAvis, relire }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const [occupe, setOccupe] = useState(false);
@@ -360,7 +360,7 @@ function PanneauRelations({ donnees, setAvis, relire }: ProprietesPanneau) {
 
 type ProprietesFicheRelation = { numero: number; donnees: Donnees | null; setAvis: (a: Avis) => void; relire: () => Promise<void> };
 
-// La fiche d'une personne, une par fenêtre : elle lit sa personne et ses appels, et rend son pied pour que ses gestes, sa confirmation et son formulaire restent les siens
+// Fiche d'une personne, une par fenêtre, avec son propre pied
 function FicheRelation({ numero, donnees, setAvis, relire }: ProprietesFicheRelation) {
   const { ouvrir, fermer } = usePanneau();
   const [fiche, setFiche] = useState<Fiche | null>(null);
@@ -469,7 +469,7 @@ type ProprietesFiche = {
   geste: (faire: () => Promise<Fiche>, texte?: string) => Promise<boolean>; formulaire: string; ouvrirFiche: (n: number) => void;
 };
 
-// La fiche : ce qu'on sait, les champs, les liens, les échanges ; `formulaire`, l'id propre à sa fenêtre que son pied vise
+// `formulaire` : l'id propre à la fenêtre, que son pied vise
 function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, formulaire, ouvrirFiche }: ProprietesFiche) {
   const [vers, setVers] = useState('');
   const [nature, setNature] = useState('');

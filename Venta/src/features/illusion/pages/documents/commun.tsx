@@ -6,9 +6,9 @@ import './commun.css';
 import { appeler, televerser } from '../../api';
 import { repris, useGarder } from '../../stockage';
 
-// Ce que Documents et Constructeur partagent : icônes, poids, menus de filtre, couleurs, gestionnaire de fichiers, avis
+// Partagé par Documents et Constructeur : icônes, menus, couleurs, fichiers
 
-// Les fichiers servis tels quels (aperçus, polices, PDF ouverts) passent par le même relais que appeler()
+// Les fichiers servis tels quels passent par le même relais que appeler()
 export const RELAIS = '/api/illusion/app';
 export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -40,7 +40,7 @@ export function poids(octets: number) {
   return `${v.toLocaleString('fr-FR', { maximumFractionDigits: v < 10 ? 1 : 0 })} ${u}`;
 }
 
-// L'avis d'un geste, 3,5 s comme l'ancien dashboard, une erreur un peu plus ; un clic le ferme
+// Avis d'un geste, plus long pour une erreur ; un clic le ferme
 export type Dire = (texte: string, erreur?: boolean) => void;
 export function useAvis() {
   const [avis, setAvis] = useState<{ texte: string; erreur: boolean; n: number } | null>(null);
@@ -56,7 +56,7 @@ export function useAvis() {
   return { dire, vue };
 }
 
-// Menu d'un filtre en texte : une colonne de choix, le courant allumé ; un clic ailleurs ou Échap le referme
+// Menu de filtre : choix courant allumé, un clic ailleurs ou Échap le ferme
 export type Choix = { cle: string; libelle: string };
 export function MenuFiltre({ lib, valeur, actif, choix, courant, choisir, titre, children }: {
   lib?: string; valeur: string; actif: boolean; choix?: Choix[]; courant?: string; choisir?: (cle: string) => void; titre?: string; children?: React.ReactNode;
@@ -111,7 +111,7 @@ export function MenuFiltre({ lib, valeur, actif, choix, courant, choisir, titre,
 // Une valeur longue de filtre se raccourcit, entière dans son infobulle
 export const court = (texte: string, n = 16) => (texte.length > n ? `${texte.slice(0, n - 1).trimEnd()}…` : texte);
 
-// Quatre couleurs au plus : chaque pastille ouvre le sélecteur du navigateur, « + Couleur » en ajoute une
+// Quatre couleurs au plus : chaque pastille ouvre le sélecteur du navigateur
 export function Couleurs({ valeurs, changer, libelle, grand }: { valeurs: string[]; changer: (v: string[]) => void; libelle: string; grand?: boolean }) {
   const nouvelle = useRef<HTMLInputElement>(null);
   return (
@@ -138,7 +138,7 @@ export function Couleurs({ valeurs, changer, libelle, grand }: { valeurs: string
   );
 }
 
-// Les fichiers qu'Illusion range lui-même derrière une route : chaque geste part aussitôt, sans « Enregistrer » ; sous la `section` qui la monte, la liste lue reste d'une visite à l'autre
+// Chaque geste sur ces fichiers part aussitôt, sans « Enregistrer »
 export type Fichier = { nom: string; taille: number };
 export function useFichiers(route: string, dire: Dire, actif = true, section = '') {
   const [fichiers, setFichiers] = useState(() => (section ? repris<Fichier[] | null>(`${section}:fichiers:${route}`, null) : null));
@@ -189,7 +189,7 @@ export function useFichiers(route: string, dire: Dire, actif = true, section = '
   return { fichiers, relire, envoyer, renommer, supprimer };
 }
 
-// Une police téléversée, chargée sous un nom à elle : deux fichiers ne se volent jamais leur rendu
+// Nom de police propre à chaque fichier : aucun rendu volé
 let numeroPolice = 0;
 function Echantillon({ adresse }: { adresse: string }) {
   const [famille, setFamille] = useState('');
@@ -205,7 +205,7 @@ function Echantillon({ adresse }: { adresse: string }) {
   return <span className={`ap police${illisible ? ' illisible' : ''}`} style={famille ? { fontFamily: `"${famille}"` } : undefined} aria-hidden="true">Aa</span>;
 }
 
-// Gestionnaire de fichiers : aperçu, nom, poids, ✎ renommer sur place, × supprimer (la confirmation revient à la page), puis Téléverser…
+// Gestionnaire de fichiers ; la confirmation de suppression revient à la page
 export function ListeFichiers({ route, accept, apercu, compact, sorte, portee, gestion, aSupprimer, vise }: {
   route: string; accept: string; apercu?: 'image' | 'feuille' | 'police'; compact?: boolean; sorte: string; portee: string;
   gestion: ReturnType<typeof useFichiers>; aSupprimer: (f: Fichier) => void; vise?: string | null;

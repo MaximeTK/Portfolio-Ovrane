@@ -19,7 +19,7 @@ import Lapis from './lapis';
 import Metriques from './metriques';
 import ParametresServeur from './parametres-serveur';
 
-// Slug de l'adresse → export par défaut du dossier de la page ; une page ne change que les fichiers de son dossier
+// Slug de l'adresse → export par défaut du dossier de la page
 export const REGISTRE: Record<string, ComponentType<ProprietesPage>> = {
   accueil: Accueil,
   offres: Offres,

@@ -1,10 +1,10 @@
-/* Page Métriques : neuf tuiles chiffrées, la grille des cartes, puis les petites cartes ; tout tient sans défiler. */
-/* Panneau de 440 px, 400 px jusqu'à 1366 px, 360 px sous 1300 px pour laisser place aux cartes, 560 px sur les grands écrans pour le tableau des coûts. */
+/* Métriques : neuf tuiles, grille de cartes, petites cartes, sans défiler */
+/* Panneau de 440 px, resserré sous 1366 px, élargi à 560 px pour les coûts */
 .ov .coquille:has(>[data-fen=metriques]){--panneau:440px}
 @media (max-width:1366px){.ov .coquille:has(>[data-fen=metriques]){--panneau:400px}}
 @media (max-width:1300px){.ov .coquille:has(>[data-fen=metriques]){--panneau:360px}}
 @media (min-width:1700px){.ov .coquille:has(>[data-fen=metriques]){--panneau:560px}}
-/* Ses onglets (un détail, une fiche d'offre, une fiche d'entreprise) passent à la ligne plutôt que de se couper. */
+/* Onglets du panneau à la ligne plutôt que coupés */
 .ov .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-tete{height:auto;min-height:44px;align-items:flex-start}
 .ov .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-onglets{flex-wrap:wrap;column-gap:16px;row-gap:0}
 .ov .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-onglet{flex:none;height:42px}
@@ -15,7 +15,7 @@
 .ov [data-fen=metriques] .raccourcis .filtre+.filtre{margin-left:18px}
 .ov [data-fen=metriques]:is([data-l=s],[data-l=xs]) .raccourcis{margin-left:14px;padding-left:14px}
 .ov [data-fen=metriques]:is([data-l=s],[data-l=xs]) .raccourcis .filtre+.filtre{margin-left:12px}
-/* Choix d'une date : sous son filtre, la date puis Afficher ; le calcul ne part qu'à la validation. */
+/* Choix d'une date : le calcul ne part qu'à la validation */
 .ov [data-fen=metriques] .menu-periode{top:46px;right:auto;min-width:0;padding:12px 14px}
 .ov [data-fen=metriques] .menu-periode form{display:flex;align-items:center;gap:12px}
 .ov [data-fen=metriques] .menu-periode .saisie{width:150px;height:30px}
@@ -23,7 +23,7 @@
 .ov [data-fen=metriques] .attente-m.erreur{color:#ffd0d0}
 
 .ov [data-fen=metriques] .metriques{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:2px 14px 14px;container:metriques/inline-size}
-/* Tuiles chiffrées : une rangée entre deux filets, sans verre ; le trait de couleur des sortes d'activité sur celles qui en sont une. */
+/* Tuiles : rangée entre deux filets sans verre, trait coloré par sorte */
 .ov [data-fen=metriques] .tuiles-m{flex:none;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));border-top:1px solid rgb(255 255 255 / .12);border-bottom:1px solid rgb(255 255 255 / .12)}
 .ov [data-fen=metriques] .tuile-m{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:4px;min-width:0;padding:9px 12px}
 .ov [data-fen=metriques] .tuile-m+.tuile-m{border-left:1px solid rgb(255 255 255 / .08)}
@@ -35,7 +35,7 @@
 .ov [data-fen=metriques] .tuile-m.c-reponse{--c:var(--c-reponse)}
 .ov [data-fen=metriques] .tuile-m.c-entretien{--c:var(--c-entretien)}
 
-/* Grille des cartes : des sous-blocs à filet, pas en verre ; un clic ouvre leur détail. */
+/* Grille des cartes : sous-blocs à filet, sans verre */
 .ov [data-fen=metriques] .cartes{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:12px}
 .ov [data-fen=metriques] .carte{min-width:0;min-height:0;display:flex;flex-direction:column;padding:9px 14px 10px;border:1px solid rgb(255 255 255 / .1);cursor:pointer;transition:border-color .2s;container:carte/inline-size}
 .ov [data-fen=metriques] .carte:hover{border-color:rgb(255 255 255 / .3)}
@@ -50,7 +50,7 @@
 .ov [data-fen=metriques] .corps-carte{flex:1;min-height:0;overflow:hidden}
 .ov [data-fen=metriques] .vide-m{font-size:12px;color:rgb(255 255 255 / .55)}
 
-/* Tableaux compacts des cartes et du panneau : lignes basses, chiffres alignés à droite, en-têtes sur deux lignes au besoin. */
+/* Tableaux compacts : chiffres à droite, en-têtes sur deux lignes */
 .ov :is([data-fen=metriques],.metriques-f) .compact{table-layout:auto;font-size:12px}
 .ov :is([data-fen=metriques],.metriques-f) .compact thead th{width:auto;height:auto;padding:0 0 5px 12px;font-size:8.5px;line-height:1.25;letter-spacing:.1em;text-align:right;white-space:normal;vertical-align:bottom}
 .ov :is([data-fen=metriques],.metriques-f) .compact td{height:22px;padding:0 0 0 12px;text-align:right;font-variant-numeric:tabular-nums;color:rgb(255 255 255 / .82);border-top:0}
@@ -61,7 +61,7 @@
 .ov :is([data-fen=metriques],.metriques-f) .compact tbody tr:hover td{background:none}
 .ov :is([data-fen=metriques],.metriques-f) .compact tfoot td{height:26px;border-top:1px solid rgb(255 255 255 / .3);font-weight:600;color:#fff}
 
-/* Histogramme des coûts : une barre par jour, une seule série, grille discrète ; le survol donne le jour et le montant. */
+/* Histogramme des coûts : une barre par jour, survol : jour et montant */
 .ov [data-fen=metriques] .histo{flex:1;min-height:56px;display:flex;gap:6px}
 .ov [data-fen=metriques] .histo-y{flex:none;display:flex;flex-direction:column;justify-content:space-between;width:40px;white-space:nowrap;margin:-5px 0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:9.5px;text-align:right;color:rgb(255 255 255 / .5)}
 .ov [data-fen=metriques] .histo-y i{font-style:normal}
@@ -74,17 +74,17 @@
 .ov [data-fen=metriques] .postes li{display:flex;justify-content:space-between;gap:10px;height:18px;font-size:11.5px;white-space:nowrap;color:rgb(255 255 255 / .75)}
 .ov [data-fen=metriques] .postes span{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:#fff}
 
-/* Winrate : entretiens sur envois, une barre rose par profil, l'échelle va de 0 à 10 %. */
+/* Winrate : une barre rose par profil, échelle de 0 à 10 % */
 .ov :is([data-fen=metriques],.metriques-f) .sous-carte{margin:2px 0 3px;font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgb(255 255 255 / .5)}
 .ov [data-fen=metriques] .winrate li{display:flex;align-items:center;gap:8px;height:22px;font-size:12px}
 .ov [data-fen=metriques] .w-nom{flex:0 1 auto;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ov [data-fen=metriques] .w-barre{flex:1 1 0;min-width:0;height:6px;background:rgb(255 255 255 / .08)}
 .ov [data-fen=metriques] .w-barre i{display:block;height:100%;background:var(--c-entretien)}
 .ov [data-fen=metriques] .w-val{flex:none;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;white-space:nowrap;color:rgb(255 255 255 / .8)}
-/* Carte assez large : les noms prennent une colonne commune, les barres partent du même bord. */
+/* Carte large : noms en colonne commune, barres du même bord */
 @container carte (min-width:300px){.ov [data-fen=metriques] .w-nom{flex:none;min-width:118px}.ov [data-fen=metriques] .w-barre{flex-basis:30px}}
 
-/* Petites cartes : les autres mesures, un chiffre chacune, qui ouvrent leur détail. */
+/* Petites cartes : un chiffre chacune, qui ouvre son détail */
 .ov [data-fen=metriques] .mini-cartes-m{flex:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
 .ov [data-fen=metriques] .mini-m{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;padding:7px 10px 8px;border:1px solid rgb(255 255 255 / .1);text-align:left;transition:border-color .2s}
 .ov [data-fen=metriques] .mini-m:hover,.ov [data-fen=metriques] .mini-m:focus-visible{border-color:rgb(255 255 255 / .3)}
@@ -100,7 +100,7 @@
   .ov [data-fen=metriques] .winrate li{height:20px}
   .ov [data-fen=metriques] .postes li{height:16px}
 }
-/* Écran de 720 px de haut : cartes, tableaux, tuiles et petites cartes se serrent pour tenir sans défiler. */
+/* Écran de 720 px de haut : tout se serre pour tenir sans défiler */
 @media (max-height:740px){
   .ov [data-fen=metriques] .metriques{gap:8px}
   .ov [data-fen=metriques] .carte{padding:6px 10px}
@@ -110,7 +110,7 @@
   .ov [data-fen=metriques] .mini-m{padding:5px 8px}
 }
 
-/* Place réduite : les tuiles passent sur deux rangées de cinq et quatre, les petites cartes à la largeur de leur chiffre, les cartes sur deux colonnes. */
+/* Place réduite : tuiles sur deux rangées, cartes sur deux colonnes */
 @container metriques (max-width:760px){
   .ov [data-fen=metriques] .tuiles-m{grid-template-columns:repeat(5,minmax(0,1fr))}
   .ov [data-fen=metriques] .tuile-m:nth-child(6){border-left:0}
@@ -121,7 +121,7 @@
   .ov [data-fen=metriques] .cartes{grid-template-columns:minmax(273px,1fr) minmax(0,1.3fr)}
   .ov [data-fen=metriques] .carte.large{grid-column:auto}
 }
-/* Tableaux des cartes : quand la carte se resserre, ils retirent d'abord leurs colonnes secondaires, puis les moins parlantes. */
+/* Tableaux resserrés : colonnes secondaires retirées d'abord */
 @container carte (max-width:566px){.ov [data-fen=metriques] .t-jobs :is(th,td):is(:nth-child(3),:nth-child(7),:nth-child(8)){display:none}}
 @container carte (max-width:388px){.ov [data-fen=metriques] .t-jobs :is(th,td):nth-child(2){display:none}}
 @container carte (max-width:337px){.ov [data-fen=metriques] .t-jobs :is(th,td):nth-child(5){display:none}}
@@ -134,7 +134,7 @@
 .ov [data-fen=metriques] .avis{position:absolute;left:14px;right:14px;bottom:14px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid #fff;background:rgb(14 14 18 / .92);font-size:12.5px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
 .ov [data-fen=metriques] .avis.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
 
-/* Sous-fenêtres du panneau : le tableau des coûts garde Poste et Coût et retire d'abord ses colonnes « dont », puis Appels, selon la largeur. */
+/* Coûts du panneau : Poste et Coût restent, les autres colonnes partent */
 .ov .metriques-f{container:metriques-f/inline-size}
 .ov .metriques-f .intro-f{margin-bottom:10px;font-size:12.5px;line-height:1.5;color:rgb(255 255 255 / .85)}
 .ov .metriques-f .alerte-f{margin-bottom:10px;font-size:12px;line-height:1.45;color:#ffb0b0}
@@ -147,7 +147,7 @@
 @container metriques-f (max-width:388px){.ov .metriques-f .tab-couts :is(th,td):nth-child(2){display:none}}
 @container metriques-f (max-width:348px){.ov .metriques-f .tab-couts :is(th,td):nth-child(6){display:none}}
 .ov .metriques-f .tab-couts td:first-child{white-space:nowrap}
-/* Bilans et listes du panneau : le nom passe à la ligne plutôt que d'être coupé. */
+/* Bilans et listes : le nom passe à la ligne plutôt que d'être coupé */
 .ov .metriques-f :is(.tab-bilans,.tab-liste) td{height:auto;min-height:26px;padding-top:5px;padding-bottom:5px;line-height:1.35;white-space:normal;overflow:visible;border-top:1px solid rgb(255 255 255 / .07)}
 .ov .metriques-f :is(.tab-bilans,.tab-liste) td:not(:first-child){white-space:nowrap}
 .ov .metriques-f .tab-liste td{text-align:left;vertical-align:top}

@@ -16,7 +16,7 @@ const CHAMPS: ChampReglage[] = [
   { cle: 'audit_modele', libelle: 'Modèle', type: 'modele', admin: true, aide: 'Un des modèles définis dans les Paramètres serveur.' },
   { cle: 'audit_analyse', libelle: 'Analyse par le modèle', type: 'booleen', aide: 'Désactivé : collecte seule, fiche préalable sans dépenser de tokens.' },
 ];
-// Les trois temps de l'audit écrivent la même fiche : une même famille, bloqués entre eux
+// Les trois temps de l'audit écrivent la même fiche : bloqués entre eux
 const LOTS: Lot[] = [
   { brique: 'audit-agregation', famille: 'audit', libelle: 'Audit Brut', icone: ICONES.loupe,
     aide: "Rassemble registres, site et actualités SANS appeler le modèle : aucun token dépensé. Prend les fiches qui n'ont pas encore de brut" },
@@ -25,7 +25,7 @@ const LOTS: Lot[] = [
   { brique: 'audit-actualisation', famille: 'audit', libelle: 'Actualiser Audit', icone: ICONES.actualiser,
     aide: "Refait le brut de toutes les fiches qui en ont un — et refait l'analyse seulement là où il y en avait une" },
 ];
-// La fiche s'ouvre dans un panneau élargi à 560 px, 480 px à 1366 px et moins : ses gestes tiennent sur leur ligne
+// Panneau élargi à 560 px (480 px sous 1366 px) pour que les gestes tiennent
 const ARBRE = arbreFiches((l) => (l <= 1366 ? 480 : 560));
 
 export default function PageAudit(_: ProprietesPage) {

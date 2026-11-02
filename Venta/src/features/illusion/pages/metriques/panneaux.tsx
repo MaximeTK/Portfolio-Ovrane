@@ -98,7 +98,7 @@ export function CorpsCouts({ page }: { page: PageMetriques }) {
   );
 }
 
-// Un bloc par ligne du tableau de la carte : le panneau est trop étroit pour toutes ses colonnes
+// Un bloc par ligne : le panneau est trop étroit pour toutes les colonnes
 function Bloc({ titre, lignes }: { titre: string; lignes: [string, React.ReactNode][] }) {
   return (
     <section className="bloc-m">
@@ -159,7 +159,7 @@ export function CorpsWorkflows({ page }: { page: PageMetriques }) {
   );
 }
 
-// Un tableau de bilans : détectées, envoyées, réponses et entretiens ; `sans` retire les détectées, qui ne comptent que les envoyées
+// Tableau de bilans ; `sans` retire la colonne des détectées
 function TableBilans<T extends Bilan>({ titre, lignes, nom, sans }: { titre: string; lignes: T[]; nom: (b: T) => React.ReactNode; sans?: boolean }) {
   return (
     <table className="compact tab-bilans">

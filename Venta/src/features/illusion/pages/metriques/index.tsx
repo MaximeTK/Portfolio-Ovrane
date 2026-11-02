@@ -19,7 +19,7 @@ type Periode = { debut: string; fin: string };
 type Avis = { texte: string; erreur?: boolean } | null;
 
 const RACCOURCIS: [number, string][] = [[7, '7 jours'], [30, '30 jours'], [90, '90 jours'], [0, 'Tout']];
-// Les N derniers jours, aujourd'hui compris, en dates locales ; 0 : tout l'historique
+// Les N derniers jours, aujourd'hui compris, en dates locales ; 0 : tout
 const iso = (d: Date) => d.toLocaleDateString('sv-SE');
 const plage = (j: number): Periode => (j ? { debut: iso(new Date(Date.now() - (j - 1) * 864e5)), fin: iso(new Date()) } : { debut: '', fin: '' });
 const enClair = (d: string) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : '—');
@@ -29,7 +29,7 @@ const requete = (p: Periode) => {
 };
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const pluriel = (n: number, mot: string) => `${nombre(n)} ${mot}${n > 1 ? 's' : ''}`;
-// Le haut de l'échelle de l'histogramme : la valeur ronde juste au-dessus du jour le plus cher
+// Haut de l'échelle : la valeur ronde au-dessus du jour le plus cher
 const arrondi = (v: number) => {
   if (v <= 0) return 0.1;
   const p = 10 ** Math.floor(Math.log10(v));
@@ -42,7 +42,7 @@ const CHEVRON = <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stro
 const DOSSIER = <svg {...TRAIT}><path d="M3 6h6l2 2h10v11H3z" /><path d="M3 11h18" /></svg>;
 const VALIDER = <svg {...TRAIT}><path d="m5 12 5 5 9-10" /></svg>;
 
-// Les détails, éléments de la page ouverts par leur carte ou leur petite carte : un par fenêtre, chacun lu par son nom
+// Détails ouverts par leur carte : un par fenêtre, chacun lu par son nom
 const DETAILS: Record<string, string> = {
   couts: 'Coûts · détail', jobboards: 'Jobboards · détail', winrate: 'Winrate des profils · détail', workflows: 'Workflows · détail',
   metiers: 'Métiers et postes', fantomes: 'Offres fantômes', liens: 'Liens suivis', partage: 'Base partagée', cv: 'Mise en page des CV', appels: 'Appels · détail',
@@ -58,7 +58,7 @@ export default function PageMetriques(_: ProprietesPage) {
   );
 }
 
-// Les lignes d'une carte qui ne tiennent pas entières se cachent : mesurées une fois les premières lignes posées, puis à chaque changement de taille
+// Lignes qui ne tiennent pas cachées, remesurées au changement de taille
 function useLignesQuiTiennent(cle: unknown) {
   const boite = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -84,7 +84,7 @@ function useLignesQuiTiennent(cle: unknown) {
 
 function Metriques() {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
-  // La période choisie et ce qu'elle a lu restent d'une visite à l'autre : en revenant, tout s'affiche aussitôt et se relit derrière
+  // Période et lecture gardées d'une visite à l'autre, relues derrière
   const [periode, setPeriode] = useState(() => repris<Periode>('metriques:periode', plage(30)));
   const [raccourci, setRaccourci] = useState(() => repris<number | null>('metriques:raccourci', 30));
   const [brouillon, setBrouillon] = useState<Periode>(periode);
@@ -104,7 +104,7 @@ function Metriques() {
   const menu = useRef<HTMLDivElement>(null);
   const bouton = menuDate === 'debut' ? boutonDebut : boutonFin;
 
-  // La période ne change qu'à la validation, le calcul relisant tout le compte ; les dossiers partagés et les fantômes la suivent
+  // Période changée à la validation seule : le calcul relit tout le compte
   useEffect(() => {
     let vivant = true;
     const q = requete(periode);
@@ -134,7 +134,7 @@ function Metriques() {
     };
   }, [periode, version]);
 
-  // À l'ouverture, les dossiers pas encore rangés partent ensuite, sans faire attendre la page : une base injoignable met des secondes à le dire
+  // Rangement après l'ouverture : une base injoignable met des secondes
   useEffect(() => {
     let vivant = true;
     appeler<{ mongodb_uri: boolean }>('/parametres')
@@ -155,7 +155,7 @@ function Metriques() {
     return () => clearTimeout(t);
   }, [avis]);
 
-  // Échap ferme le choix d'une date, sinon le panneau ; un clic ailleurs ferme le choix
+  // Échap ferme le choix d'une date, sinon le panneau
   useEffect(() => {
     const echap = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
@@ -285,7 +285,7 @@ type ProprietesTableau = { page: PageMetriques; suivi: Suivi | null; erreurSuivi
 
 function Tableau({ page, suivi, erreurSuivi, ouvert, ouvrir }: ProprietesTableau) {
   const r = page.resume;
-  // Rien de mesuré encore : un coût par candidature à zéro dirait qu'elles n'ont rien coûté
+  // Rien de mesuré : un coût à zéro dirait qu'elles n'ont rien coûté
   const unitaire = (v: number | null) => (r.cout_total ? dollars(v) : '—');
   const tuiles: [string, string, string, string?][] = [
     ['c-offres', 'Offres détectées', nombre(r.offres)], ['c-envoi', 'Envoyées', nombre(r.envoyees)],
@@ -331,7 +331,7 @@ function Tableau({ page, suivi, erreurSuivi, ouvert, ouvrir }: ProprietesTableau
 
 type ProprietesCarte = { page: PageMetriques; ouvert: string | null; ouvrir: (d: string) => void };
 
-// Une carte : sa tête, son chiffre, son lien Détail ; un clic n'importe où sur elle ouvre son détail (`detail`, son nom)
+// Une carte : un clic n'importe où ouvre son détail (`detail`, son nom)
 function Carte({ titre, detail, d, large, ouvert, ouvrir, className, children }: {
   titre: string; detail: string; d?: string; large?: boolean; ouvert: string | null; ouvrir: (d: string) => void; className?: string; children: React.ReactNode;
 }) {
