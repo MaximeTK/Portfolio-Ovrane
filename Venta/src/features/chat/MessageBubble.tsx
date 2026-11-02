@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -44,7 +45,7 @@ interface MessageBubbleProps {
   onImageLoad: () => void;
 }
 
-export function MessageBubble({ message, time, dateDivider, onImageClick, onImageLoad }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, time, dateDivider, onImageClick, onImageLoad }: MessageBubbleProps) {
   const { role, content } = message;
   const isUser = role === 'user';
   const images = messageImages(content, message.commands);
@@ -154,4 +155,4 @@ export function MessageBubble({ message, time, dateDivider, onImageClick, onImag
       </div>
     </>
   );
-}
+});

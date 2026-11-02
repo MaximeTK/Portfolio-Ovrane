@@ -58,6 +58,8 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     if (scrollTrigger > 0) scrollToBottom();
   }, [scrollTrigger, scrollToBottom]);
 
+  const ouvrirGalerie = useCallback((images: string[], index: number) => setGallery({ images, index }), []);
+
   // Une image chargée allonge la liste : on reste en bas si on y était
   const stickToBottomIfNeeded = useCallback(() => {
     if (!visible || !shouldScrollToBottom || stickRafRef.current !== null) return;
@@ -175,7 +177,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
                   ? formatDateDivider(msg.timestamp)
                   : undefined
               }
-              onImageClick={(images, i) => setGallery({ images, index: i })}
+              onImageClick={ouvrirGalerie}
               onImageLoad={stickToBottomIfNeeded}
             />
           ))}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { memo, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,7 +10,7 @@ import { useUIStore, type Fenetre } from '@/lib/uiStore';
 const MAX_ZOOM = 50 / 31;
 
 /** Fenêtre en verre : Markdown ou image, déplaçable, zoomable, repliable */
-function Window({ fenetre }: { fenetre: Fenetre }) {
+const Window = memo(function Window({ fenetre }: { fenetre: Fenetre }) {
   const { closeWindow, moveWindow, focusWindow } = useUIStore.getState();
   const titleId = useId();
   const [isMinimized, setIsMinimized] = useState(false);
@@ -22,6 +22,26 @@ function Window({ fenetre }: { fenetre: Fenetre }) {
   const title = fenetre.kind === 'image' ? `Image: ${fenetre.content}` : 'Réponse';
   // Assez large pour le titre et les quatre boutons
   const minWidth = Math.max(300, Math.max(150, title.length * 8) + 200);
+  // Un glissé ne réanalyse rien ; un texte en flux cède la main à l'écran
+  const texte = useDeferredValue(fenetre.content);
+  const rendu = useMemo(
+    () => (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Seules les images du site s'affichent dans une réponse
+          img: ({ src, alt }) =>
+            typeof src === 'string' && src.startsWith('/assets/') ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={src} alt={alt ?? ''} />
+            ) : null,
+        }}
+      >
+        {texte}
+      </ReactMarkdown>
+    ),
+    [texte],
+  );
 
   // Pointer Events : souris, tactile, stylet ; la capture garde le glissé
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -99,27 +119,13 @@ function Window({ fenetre }: { fenetre: Fenetre }) {
               }}
             />
           ) : (
-            <div className="text-window-markdown">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  // Seules les images du site s'affichent dans une réponse
-                  img: ({ src, alt }) =>
-                    typeof src === 'string' && src.startsWith('/assets/') ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={src} alt={alt ?? ''} />
-                    ) : null,
-                }}
-              >
-                {fenetre.content}
-              </ReactMarkdown>
-            </div>
+            <div className="text-window-markdown">{rendu}</div>
           )}
         </div>
       </div>
     </section>
   );
-}
+});
 
 /** Fenêtres du tableau de bord ; Échap ferme celle du dessus. */
 export function WindowsManager() {
