@@ -19,7 +19,7 @@ type Piste = {
   tours: Map<number, Tour>; partiel: string; terminee: boolean; facturees?: number;
 };
 type Acces = { jeton: string; flux: string; modele: string };
-export type AppelOuvert = { id: number; titre: string; mode: Mode; offre: string };
+type AppelOuvert = { id: number; titre: string; mode: Mode; offre: string };
 type MessageFlux = {
   type: string; end_of_turn?: boolean; transcript?: string; turn_order: number; speaker_label?: string;
   words?: { start: number; end: number }[]; revisions?: { turn_order: number; speaker_label: string }[]; session_duration_seconds?: number;

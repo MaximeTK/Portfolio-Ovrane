@@ -9,7 +9,7 @@ import { Confirmer } from '../../dock/Panneau';
 export type Passage = { source: string; statut?: number; vues?: number; lues?: number; erreur?: string; sans_objet?: boolean };
 export type Source = { nom: string; active?: boolean; prete?: boolean; manquantes?: string[]; bloquee?: string };
 export type Cycle = { date?: string; ok?: boolean; erreur?: string; journal?: string; sources?: Source[]; passages?: Passage[]; dernieres_offres?: Record<string, string> };
-export type EtatVeille = {
+type EtatVeille = {
   en_cours: boolean; etape: string; rotation_armee: boolean; rotation_minutes: number; tri_en_cours: boolean;
   prochain_dans: number | null; cycle: Cycle; stock: { offres: number };
 };
@@ -23,7 +23,7 @@ export type Parametres = {
   veille_socle_avant: string; veille_tri_modele: string; veille_ats_par_cycle: number; modeles: { nom: string; modele?: string }[];
   [cle: string]: unknown;
 };
-export type ReponseParametres = Parametres & { rejeu_bannis?: { ecartees?: number } };
+type ReponseParametres = Parametres & { rejeu_bannis?: { ecartees?: number } };
 
 // Les plateformes de la brique Veille, dans l'ordre de l'ancien dashboard
 export const SOURCES: Record<string, string> = {

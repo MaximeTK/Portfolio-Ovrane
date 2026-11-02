@@ -19,7 +19,7 @@ let uid = 0;
 export const lignesDe = (comptes: Identifiant[]): Ligne[] =>
   (comptes.some((c) => c.site === SITE_GLOBAL) ? comptes : [{ site: SITE_GLOBAL, identifiant: '', secret: false, actif: true }, ...comptes])
     .map((c) => ({ uid: ++uid, site: c.site, identifiant: c.identifiant ?? '', actif: c.actif !== false, enregistre: !!c.secret, saisie: '', effacer: false }));
-export const ligneNeuve = (site: string, identifiant: string, saisie: string, actif: boolean): Ligne =>
+const ligneNeuve = (site: string, identifiant: string, saisie: string, actif: boolean): Ligne =>
   ({ uid: ++uid, site, identifiant, actif, enregistre: false, saisie, effacer: false });
 
 // Mot de passe non retapé : le serveur garde celui du coffre ; effacé, vide.

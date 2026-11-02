@@ -43,7 +43,7 @@ const POSTES: Record<string, string> = {
 };
 export const nomPoste = (p: string) => POSTES[p] ?? p;
 const CIBLES: Record<string, string> = { linkedin: 'LinkedIn', github: 'GitHub', portfolio: 'Portfolio', site: 'Portfolio', cv: 'CV', cvdesign: 'CV design' };
-export const nomCible = (c: string) => CIBLES[c] ?? c;
+const nomCible = (c: string) => CIBLES[c] ?? c;
 const DIMENSIONS: Record<string, string> = { mode: 'Fond', structure: 'Structure', photo: 'Photo', famille: 'Police' };
 const STATUTS: Record<string, string> = { POSTULEE: 'Envoyée', ECHEC: 'Échec', A_LA_MAIN: 'À la main', INADAPTEE: 'Inadaptée', IGNOREE: 'Écartée', PRETE: 'Prête' };
 
