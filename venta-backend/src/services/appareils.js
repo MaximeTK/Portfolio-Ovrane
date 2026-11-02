@@ -1,13 +1,10 @@
 /** Appareil déjà connecté du compte : dispense de la limite par identifiant */
-import crypto from 'crypto';
-import { egal } from '../http.js';
-import { config } from '../config.js';
+import { egal, signataire } from '../http.js';
 
 const DUREE_APPAREIL = 365 * 24 * 3600 * 1000;
 
-// Dérivée du secret de service : rien n'est gardé en base, la signature suffit
-const cle = () => crypto.createHmac('sha256', config.serviceSecret).update('ovrane:appareil').digest();
-const signer = (charge) => crypto.createHmac('sha256', cle()).update(charge).digest('base64url');
+// Rien n'est gardé en base, la signature suffit
+const signer = signataire('appareil');
 
 export function marquerAppareil(id, maintenant = Date.now()) {
   const charge = `${id}.${maintenant + DUREE_APPAREIL}`;

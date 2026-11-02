@@ -17,6 +17,12 @@ export function egal(recu, attendu) {
   return crypto.timingSafeEqual(empreinte(recu), empreinte(attendu));
 }
 
+// Signature sous une clé dérivée du secret de service, une clé par usage
+export const signataire = (usage) => (charge) => {
+  const cle = crypto.createHmac('sha256', config.serviceSecret).update(`ovrane:${usage}`).digest();
+  return crypto.createHmac('sha256', cle).update(charge).digest('base64url');
+};
+
 const serviceValide = (req) => Boolean(config.serviceSecret) && egal(req.get('x-ovrane-service') ?? '', config.serviceSecret);
 
 // IP relayée par Next, crue seulement avec le secret de service

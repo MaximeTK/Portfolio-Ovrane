@@ -1,14 +1,13 @@
 /** Preuve de travail avant un visiteur : coût par profil pour un robot */
 import crypto from 'crypto';
 import { Defi } from '../models/Defi.js';
-import { egal } from '../http.js';
+import { egal, signataire } from '../http.js';
 import { config } from '../config.js';
 
 const DUREE_DEFI = 5 * 60 * 1000;
 
-// Dérivée du secret de service : le défi se vérifie sans rien garder
-const cle = () => crypto.createHmac('sha256', config.serviceSecret).update('ovrane:defi').digest();
-const signer = (charge) => crypto.createHmac('sha256', cle()).update(charge).digest('base64url');
+// Le défi se vérifie sans rien garder
+const signer = signataire('defi');
 
 // Bits à zéro en tête d'une empreinte
 export function zerosEnTete(octets) {
