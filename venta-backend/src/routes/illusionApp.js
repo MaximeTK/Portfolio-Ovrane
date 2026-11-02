@@ -80,7 +80,7 @@ function relayer(req, res) {
       const csp = reponse.headers['content-security-policy'];
       if (!csp) res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
       // Sans sandbox, un mail hostile s'afficherait seul sous l'URL du site
-      else if (!csp.includes('sandbox')) res.setHeader('Content-Disposition', 'attachment');
+      else if (!csp.includes('sandbox') && !/^\s*attachment/i.test(reponse.headers['content-disposition'] || '')) res.setHeader('Content-Disposition', 'attachment');
     }
     res.setHeader('Cache-Control', 'no-store');
     pipeline(reponse, res, () => {});
