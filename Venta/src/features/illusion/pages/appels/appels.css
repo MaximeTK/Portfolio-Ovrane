@@ -1,10 +1,10 @@
-/* Page Appels : la liste des appels, l'appel choisi à sa droite, que le panneau remplace quand il s'ouvre. */
+/* Page Appels : la liste à gauche, le détail de l'appel choisi à droite. */
 
-/* Liste : le rappel de ce qui est gardé à gauche des outils, sur deux lignes ou plus plutôt que coupé. */
+/* La liste du rappel passe à la ligne plutôt que d'être coupée. */
 .ov [data-fen=appels]{--ligne:46px}
 .ov [data-fen=appels] .outils{height:auto;min-height:36px}
 .ov [data-fen=appels] .note-outils{min-width:0;font-size:11.5px;line-height:1.3;color:rgba(255,255,255,.55)}
-/* Deux lignes par appel, son titre puis son offre ; l'appel choisi s'allume en blanc tant que son détail est affiché. */
+/* Un appel : titre puis offre ; l'appel choisi s'allume. */
 .ov [data-fen=appels] thead th:nth-child(1){width:calc(98px + (100cqw - 466px) / 4)}
 .ov [data-fen=appels] thead th:nth-child(2){width:calc(188px + (100cqw - 466px) / 4)}
 .ov [data-fen=appels] td.mono{font-size:11px}
@@ -24,15 +24,15 @@
 .ov [data-fen=appels] .direct-c::before,.ov .ruby-f .voyant-live{content:"";flex:none;width:6px;height:6px;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:ov-pouls 1.4s infinite}
 .ov [data-fen=appels] tr.vide-f td{height:auto;padding:16px 20px;white-space:normal;color:rgb(255 255 255 / .6);cursor:default}
 .ov [data-fen=appels] tr.vide-f:hover td{background:none}
-/* L'avis d'un geste : en bas à droite, au-dessus de la pagination ; un clic le ferme. */
+/* L'avis d'un geste, en bas à droite ; un clic le ferme. */
 .ov [data-fen=appels] .avis-appels{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(520px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
 .ov [data-fen=appels] .avis-appels.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
 @media (max-height:780px){.ov [data-fen=appels]{--ligne:42px}}
 
-/* Détail : titre modifiable posé comme un titre, la méta dessous, l'offre et les noms des voix, puis la conversation qui défile. */
+/* Détail : titre, méta, offre et voix, puis la conversation qui défile. */
 .ov [data-fen=appel]{display:flex;flex-direction:column;padding:14px 20px 12px}
 .ov .appel-d{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
-/* Dans une fenêtre à lui, le contenu tient la hauteur du corps : seule la conversation défile. */
+/* Dans sa fenêtre, seule la conversation défile. */
 .ov .p-vue>.f-corps:has(>.appel-d){display:flex;flex-direction:column}
 .ov .appel-d .confirmer{margin:0}
 .ov .appel-d .titre-appel{width:100%;height:30px;border:0;border-bottom:1px solid transparent;background:none;padding:0;font-size:17px;font-weight:600;color:#fff}
@@ -48,7 +48,7 @@
 .ov .appel-d .defile-appel{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;overflow:auto;scrollbar-width:none}
 .ov .appel-d .defile-appel::-webkit-scrollbar{display:none}
 .ov .appel-d .defile-appel h3{margin-bottom:-4px !important}
-/* Transcription : l'heure en chasse fixe, la voix en couleur (moi en vert, l'interlocuteur en cyan), puis ce qui a été dit. */
+/* Transcription : heure en chasse fixe, voix en couleur, puis le texte. */
 .ov .appel-d .transcription{display:flex;flex-direction:column;gap:5px}
 .ov .appel-d .transcription li{padding-left:44px;text-indent:-44px;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.88);overflow-wrap:anywhere}
 .ov .appel-d .transcription time{display:inline-block;width:44px;text-indent:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.5)}
@@ -60,12 +60,12 @@
 .ov .appel-d .analyse dt{font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.62)}
 .ov .appel-d .analyse dd{margin:0;white-space:pre-line;overflow-wrap:anywhere}
 .ov .appel-d .analyse-brute{font-size:12.5px;line-height:1.45;white-space:pre-line;color:rgba(255,255,255,.88);overflow-wrap:anywhere}
-/* Gestes de l'appel en bas : Supprimer l'appel reste visible, l'appel choisi tenant lieu de sélection. */
+/* Supprimer l'appel reste visible en bas. */
 .ov .appel-d .pied-appel{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 22px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
 .ov .appel-d .vide-appel{margin:auto 0 !important;text-align:center;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6)}
 .ov .appel-d .vide-appel b{display:block;color:#fff;font-weight:600}
 
-/* Panneau : où se passe l'appel en deux boutons pleins, le direct et les réglages de RUBY. */
+/* Panneau : le direct et les réglages de RUBY en deux boutons pleins. */
 .ov .ruby-f .lieux-f{display:flex;flex-direction:column;gap:6px}
 .ov .ruby-f .lieu-f{display:flex;flex-direction:column;gap:1px;padding:8px 12px;cursor:pointer}
 .ov .ruby-f .lieu-f b{font-size:12.5px;font-weight:600}
@@ -75,7 +75,7 @@
 .ov .ruby-f .champ>label .marque-admin{vertical-align:1px}
 .ov .ruby-f .avis-f{margin:0 0 12px !important;padding-left:10px;border-left:2px solid rgba(255,255,255,.5);font-size:12px;line-height:1.4;color:rgba(255,255,255,.88)}
 .ov .ruby-f .avis-f.erreur{border-color:#ff8a8a;color:#ffb0b0}
-/* Appel en cours : le voyant et le temps écoulé, puis la transcription qui arrive, la phrase en cours estompée. */
+/* Appel en cours : voyant et durée, puis la transcription qui arrive. */
 .ov .ruby-f .live-tete{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600}
 .ov .ruby-f .live-titre{flex:1;min-width:0}
 .ov .ruby-f .live-tete time{flex:none;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:12px;font-weight:500;color:var(--accent)}

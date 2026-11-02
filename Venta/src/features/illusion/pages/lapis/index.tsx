@@ -10,7 +10,7 @@ import { MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
 import { jourMois, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 
-// Ce que /lapis rend : les personnes trouvées, les offres et les événements repérés dans les posts, les derniers posts lus
+// Ce que /lapis rend : personnes, offres, événements et derniers posts lus.
 type Personne = {
   profil_url: string; nom: string; titre: string; photo: string; entreprise: string; poste: string;
   origine: { genre?: 'post' | 'offre'; url?: string; cle?: string; texte?: string };
@@ -57,7 +57,7 @@ function Sortie({ href, children, className = 'lien', fleche = true }: { href?: 
   return <a className={className} href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>{children}{fleche && ICONES.sortie}</a>;
 }
 
-// La photo de LinkedIn, ses initiales derrière : un lien expiré les laisse paraître
+// La photo de LinkedIn, ses initiales derrière si le lien a expiré.
 function Photo({ url, nom }: { url?: string; nom: string }) {
   const [vue, setVue] = useState(true);
   return (
@@ -69,7 +69,7 @@ function Photo({ url, nom }: { url?: string; nom: string }) {
 }
 
 export default function PageLapis({ compte }: ProprietesPage) {
-  // Ce que LAPIS a trouvé reste d'une visite à l'autre : en revenant, la galerie s'affiche aussitôt et se relit derrière
+  // Ce que LAPIS a trouvé est gardé d'une visite à l'autre et relu derrière.
   const [donnees, setDonnees] = useState(() => repris<Lapis | null>('lapis:donnees', null));
   useGarder('lapis', { donnees });
   const [erreur, setErreur] = useState('');
@@ -96,7 +96,7 @@ export default function PageLapis({ compte }: ProprietesPage) {
 
 type ProprietesGalerie = { donnees: Lapis | null; erreur: string; avis: Avis; setAvis: (a: Avis) => void };
 
-// La fenêtre principale : les quatre onglets de ce que LAPIS a trouvé, ce que la passe cherche, la galerie paginée
+// Fenêtre principale : quatre onglets, ce que la passe cherche, la galerie.
 function Galerie({ donnees, erreur, avis, setAvis }: ProprietesGalerie) {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const [sorte, setSorte] = useState(() => repris<Sorte>('lapis:sorte', 'personnes'));
@@ -126,7 +126,7 @@ function Galerie({ donnees, erreur, avis, setAvis }: ProprietesGalerie) {
   const pages = Math.max(1, Math.ceil(cartes.length / parPage));
   const courante = Math.min(page, pages);
   const visibles = cartes.slice((courante - 1) * parPage, courante * parPage);
-  // « auto » : autant de cartes que la galerie en montre sans en couper une, mesuré une fois les premières cartes posées
+  // « auto » : autant de cartes que la galerie en montre sans en couper une.
   const posees = visibles.length > 0;
   useLayoutEffect(() => {
     const g = grille.current;
@@ -272,7 +272,7 @@ function Galerie({ donnees, erreur, avis, setAvis }: ProprietesGalerie) {
   );
 }
 
-// Le panneau : les offres repérées et les fiches des offres pour lesquelles une personne a été cherchée (une par fenêtre), puis Réglages
+// Panneau : offres repérées, fiches des offres cherchées, puis Réglages.
 function PanneauLapis({ admin, donnees, setAvis, relire }: { admin: boolean; donnees: Lapis | null; setAvis: (a: Avis) => void; relire: () => Promise<void> }) {
   const { onglet, fermer } = usePanneau();
   const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, setAvis, relire });
@@ -285,11 +285,11 @@ function PanneauLapis({ admin, donnees, setAvis, relire }: { admin: boolean; don
 
 type Formulaire = { recherches: string; postes: string; posts: string; personnes: string; employeurs: string; modele: string };
 
-// Réglages · LAPIS : recherches, postes et volumes ; le modèle qui lit les posts n'appartient qu'à l'admin
+// Réglages LAPIS : recherches, postes et volumes ; le modèle est à l'admin.
 function useOngletReglages({ admin, actif, fermer, setAvis, relire }: {
   admin: boolean; actif: boolean; fermer: () => void; setAvis: (a: Avis) => void; relire: () => Promise<void>;
 }): Onglet {
-  // Les réglages lus restent d'une visite à l'autre et le formulaire en repart ; ils se relisent quand même à la première ouverture de chaque visite
+  // Réglages gardés d'une visite à l'autre, relus à la première ouverture.
   const [lu, setLu] = useState(() => repris<Formulaire | null>('lapis:reglages', null));
   const [f, setF] = useState<Formulaire | null>(lu);
   const [modeles, setModeles] = useState(() => repris<string[]>('lapis:modeles', []));
@@ -377,10 +377,10 @@ function useOngletReglages({ admin, actif, fermer, setAvis, relire }: {
   };
 }
 
-// Offre repérée : le post qui l'annonce, de quoi chercher des contacts chez l'employeur ou la mettre dans la file ; personne n'est contacté
+// Offre repérée : son post, contacts chez l'employeur ou file ; aucun contact.
 function ongletOffre(urn: string, donnees: Lapis | null, setAvis: (a: Avis) => void): Onglet | null {
   const post = donnees?.offres.find((o) => o.urn === urn);
-  // LAPIS pas encore relu (retour sur la page) : la fenêtre attend ; relu sans ce post, elle n'a plus rien à montrer
+  // Pas encore relu : la fenêtre attend ; relu sans ce post, elle est vide.
   if (!post) return donnees ? null : { cle: 'offre', titre: 'Offre', label: 'Offre repérée', corps: <p className="texte-f">Lecture de LAPIS…</p> };
   const o = post.offre;
   const entreprise = o.entreprise || post.entreprise;
@@ -402,7 +402,7 @@ function ongletOffre(urn: string, donnees: Lapis | null, setAvis: (a: Avis) => v
   };
 }
 
-// Les gestes d'une offre repérée, chacun occupé dans sa fenêtre le temps de son appel
+// Chaque geste d'une offre repérée occupe sa fenêtre le temps de son appel.
 function PiedOffre({ post, setAvis }: { post: Post; setAvis: (a: Avis) => void }) {
   const [occupe, setOccupe] = useState(false);
   const o = post.offre;

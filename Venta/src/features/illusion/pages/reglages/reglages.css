@@ -1,4 +1,4 @@
-/* Page Réglages : sous la rangée d'outils, la colonne des groupes à gauche et le contenu du groupe choisi à droite. */
+/* Page Réglages : colonne des groupes à gauche, contenu du groupe à droite. */
 .ov [data-fen=reglages]{display:flex;flex-direction:column}
 .ov [data-fen=reglages] .titre-groupe{cursor:default;color:#fff}
 .ov [data-fen=reglages] .filtre .chevron{width:12px;height:12px}
@@ -45,7 +45,7 @@
 .ov [data-fen=reglages] .fichiers .mini:hover{color:#fff}
 @media (max-height:780px){.ov [data-fen=reglages] .form-colonnes .champ{gap:4px;margin-bottom:8px}.ov [data-fen=reglages] .form-colonnes .saisie{height:28px}.ov [data-fen=reglages] .form-colonnes .inter,.ov [data-fen=reglages] .reglage-n{min-height:30px}.ov [data-fen=reglages] .form-colonnes textarea.saisie{min-height:58px}}
 
-/* Comptes des plateformes : le défileur sert de repère de largeur aux colonnes. */
+/* Comptes des plateformes : le défileur sert de repère de largeur. */
 .ov [data-fen=reglages] .grille-tab{container-type:inline-size}
 .ov [data-fen=reglages] .tab-comptes thead th:nth-child(1){width:44px}
 .ov [data-fen=reglages] .tab-comptes thead th:nth-child(2){width:26px}
@@ -68,17 +68,17 @@
 .ov [data-fen=reglages] .epingle{font-size:13px;color:#fff;text-shadow:0 0 8px rgb(255 255 255 / .5)}
 .ov [data-fen=reglages] .inter.seul{display:inline-flex;min-height:0}
 .ov [data-fen=reglages] .sous-tab{max-width:460px;padding:12px 20px 14px}
-/* Fenêtre resserrée par un onglet ouvert : Ordre, Actif, Identifiant et Mot de passe se retirent des comptes. */
+/* Onglet ouvert : Ordre, Actif, Identifiant et Mot de passe se retirent. */
 .ov [data-fen=reglages].resserre:not([data-l=l]) .tab-comptes :is(th,td):is(:nth-child(2),:nth-child(3),:nth-child(6),:nth-child(7)),.ov [data-fen=reglages]:is([data-l=s],[data-l=xs]) .tab-comptes :is(th,td):is(:nth-child(2),:nth-child(3),:nth-child(6),:nth-child(7)){display:none}
 .ov [data-fen=reglages].resserre:not([data-l=l]) .tab-comptes thead th:nth-child(5),.ov [data-fen=reglages]:is([data-l=s],[data-l=xs]) .tab-comptes thead th:nth-child(5){width:auto}
 
-/* Voyant d'un compte : cyan la session s'ouvre, rouge elle est refusée, gris jamais testé. */
+/* Voyant d'un compte : cyan ouverte, rouge refusée, gris jamais testé. */
 .ov :is([data-fen=reglages],.tester) .voyant{display:inline-block;flex:none;width:8px;height:8px;background:rgb(255 255 255 / .28);vertical-align:middle}
 .ov :is([data-fen=reglages],.tester) .voyant.ok{background:var(--accent);box-shadow:0 0 6px var(--accent)}
 .ov :is([data-fen=reglages],.tester) .voyant.encours{background:var(--accent);animation:ov-pouls 1.2s infinite}
 .ov :is([data-fen=reglages],.tester) .voyant.ko{background:#ffb0b0;box-shadow:0 0 6px rgb(255 176 176 / .6)}
 
-/* Tester un site : le verdict en tête, les faits du test, le message de la brique. */
+/* Tester un site : verdict, faits du test, message de la brique. */
 .ov .tester .etat-test{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:14px;font-weight:600;color:rgb(255 255 255 / .75)}
 .ov .tester .etat-test:is(.ok,.encours){color:var(--accent);text-shadow:0 0 8px rgb(147 244 255 / .35)}
 .ov .tester .etat-test.ko{color:#ffb0b0}
@@ -101,7 +101,7 @@
 .ov .apparence .apercu-mat.m-verre{background:linear-gradient(135deg,rgb(255 255 255 / .35),transparent 55%),linear-gradient(180deg,var(--haut),var(--bas));border:1px solid rgb(255 255 255 / .7)}
 .ov .apparence .apercu-mat.m-teinte{background:rgb(12 12 13 / .85);border:1px solid rgb(255 255 255 / .16)}
 
-/* Fenêtre étroite : la confirmation passe sur deux lignes plutôt que de couper sa question. */
+/* Fenêtre étroite : la confirmation passe sur deux lignes. */
 .ov [data-fen=reglages]:not([data-l=l]) .confirmer{flex-wrap:wrap;height:auto;min-height:36px;row-gap:4px;padding:6px 12px}
 .ov [data-fen=reglages]:not([data-l=l]) .confirmer p{flex:1 1 100%;white-space:normal}
 

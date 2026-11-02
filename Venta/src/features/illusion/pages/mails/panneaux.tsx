@@ -16,7 +16,7 @@ export type MailLu = {
   offre_cle: string | null; rattachement: string; reponse: string; reponse_erreur: string; a_repondre?: boolean;
 };
 
-// Les libellés des tags, et la couleur de chacun : celle du libellé de la boîte (palette de Proton), comme l'ancien dashboard
+// Libellés des tags, de la couleur du libellé de la boîte (palette Proton).
 export const NATURES: Record<string, string> = {
   candidature_recue: 'Candidature reçue', refus: 'Refus', proposition: "Proposition d'embauche", rendez_vous: 'Rendez-vous',
   prise_information: "Prise d'information", inscription: 'Inscription', relance: 'Relance', accuse_reception: 'Accusé',
@@ -38,7 +38,7 @@ const NATURES_POSABLES = ['candidature_recue', 'refus', 'proposition', 'rendez_v
 // L'ordre de ETIQUETTES_PAR_MOTS (app/services/mails.py)
 const MOTS_ETIQUETTES = ['candidature_recue', 'refus', 'proposition', 'rendez_vous', 'prise_information', 'inscription',
   'relance', 'absence_bureau', 'rebond', 'inutile', 'hors_sujet', 'question_recruteur'];
-// Le relais refuse un corps de plus de 21 Mo : 15 Mo de fichiers, une fois en base64
+// Le relais refuse plus de 21 Mo : 15 Mo de fichiers en base64.
 const PLAFOND_PIECES = 15 * 1024 * 1024;
 
 export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -77,7 +77,7 @@ export function Nature({ tag }: { tag: string }) {
 type PieceEnvoi = { nom: string; contenu: string; taille: number };
 type Depart = { destinataire: string; sujet: string; corps: string; repond_a: string };
 
-// Le formulaire d'envoi, partagé par Répondre et Nouveau message : ses champs vont dans le corps, Joindre et Envoyer dans le pied
+// Formulaire d'envoi de Répondre et Nouveau message, boutons au pied.
 function useEnvoi({ id, cle, depart, titre, aide, setAvis, apres }: {
   id: string; cle: string; depart: Depart; titre?: string; aide?: string; setAvis: (a: Avis) => void; apres: () => void;
 }) {
@@ -91,7 +91,7 @@ function useEnvoi({ id, cle, depart, titre, aide, setAvis, apres }: {
   const lecture = useRef<Promise<void>>(Promise.resolve());
   const fichiers = useRef<HTMLInputElement>(null);
   const { destinataire: d0, sujet: s0, corps: c0 } = depart;
-  // Un autre fil, un brouillon réécrit ou un envoi fait : le formulaire repart de ce qu'il propose
+  // Un autre fil, un brouillon réécrit ou un envoi remet le formulaire à zéro.
   useEffect(() => {
     setDestinataire(d0);
     setSujet(s0);
@@ -103,7 +103,7 @@ function useEnvoi({ id, cle, depart, titre, aide, setAvis, apres }: {
     pieces.current = p;
     setListe(p);
   };
-  // Les fichiers se lisent dans le navigateur ; au-delà de 15 Mo au total, le relais refuserait l'envoi : on le dit tout de suite
+  // Au-delà de 15 Mo de fichiers le relais refuserait : on le dit tout de suite.
   const joindre = (choisis: File[]) => {
     let total = pieces.current.reduce((s, p) => s + p.taille, 0) + attente.current;
     const retenus: File[] = [], refuses: string[] = [];
@@ -128,7 +128,7 @@ function useEnvoi({ id, cle, depart, titre, aide, setAvis, apres }: {
       }
     });
   };
-  // L'envoi attend la lecture des fichiers : un clic juste après le choix ne part pas sans ses pièces
+  // L'envoi attend la lecture des fichiers pour ne pas partir sans ses pièces.
   const envoyer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (occupe) return;
@@ -185,7 +185,7 @@ function useEnvoi({ id, cle, depart, titre, aide, setAvis, apres }: {
   return { champs, pied };
 }
 
-// Le corps mis en page d'un mail : lu en texte puis posé en srcdoc d'un cadre qui n'exécute rien, jamais injecté dans la page
+// Corps lu en texte et posé en srcdoc d'un cadre inerte, jamais injecté.
 function CorpsHtml({ id, sujet }: { id: string; sujet: string }) {
   const [html, setHtml] = useState('');
   useEffect(() => {
@@ -202,7 +202,7 @@ function CorpsHtml({ id, sujet }: { id: string; sujet: string }) {
 
 function Message({ m, replie }: { m: MailLu; replie: boolean }) {
   const corps = m.a_html ? <CorpsHtml id={m.message_id} sujet={m.sujet} /> : <p className="msg-corps">{m.corps}</p>;
-  // Une pièce dont le fichier n'est pas gardé, celle d'un mail parti à la main, se lit sans se télécharger
+  // Une pièce non gardée, d'un mail parti à la main, se lit sans se télécharger.
   const pieces = m.pieces_jointes.length > 0 && (
     <p className="pieces">
       {m.pieces_jointes.map((p, rang) => {
@@ -236,7 +236,7 @@ function Message({ m, replie }: { m: MailLu; replie: boolean }) {
 type Rattachable = { cle: string; titre: string; entreprise: string; statut: string; date: string };
 type FilLu = { fil?: MailLu[]; offres?: Rattachable[]; erreur?: string };
 
-// Les fils lus, par identifiant : le titre et le corps de chaque fenêtre qui en montre un les partagent
+// Fils lus par identifiant, partagés par les fenêtres qui en montrent un.
 const fils = new Map<string, FilLu>();
 aOublier(() => fils.clear());
 const abonnes = new Set<() => void>();
@@ -254,7 +254,7 @@ const useFilLu = (id: string) => useSyncExternalStore(abonner, () => fils.get(id
 
 type ProprietesFil = { setAvis: (a: Avis) => void; relire: () => void; voirFiche: (siren: string) => void; voirOffre: (cle: string) => void; fermer: () => void };
 
-// Fil · <entreprise> : l'échange entier, l'offre où il est rangé, et la réponse au dernier mail reçu ; un élément par fil, chaque fenêtre a sa réponse
+// Fil : échange, offre où il est rangé, réponse au dernier mail reçu.
 export function ongletFil(id: string, proprietes: ProprietesFil): Onglet {
   return {
     cle: 'fil', titre: <TitreFil id={id} />, label: `Fil · ${fils.get(id)?.fil?.[0]?.sujet || '(sans objet)'}`,
@@ -284,7 +284,7 @@ function CorpsFil({ id, setAvis, relire, voirFiche, voirOffre, fermer }: Proprie
   useEffect(() => {
     let vivant = true;
     if (fils.get(id)?.erreur) poserFil(id, { erreur: '' });
-    // La liste des offres manque : le fil se lit quand même, il ne se range simplement pas d'ici
+    // Sans la liste des offres, le fil se lit mais ne se range pas d'ici.
     Promise.all([appeler<{ fil: MailLu[] }>(`/mails/fil/${encodeURIComponent(id)}`), appeler<Rattachable[]>('/mails/offres').catch(() => [])])
       .then(([f, offres]) => {
         if (!vivant) return;
@@ -300,7 +300,7 @@ function CorpsFil({ id, setAvis, relire, voirFiche, voirOffre, fermer }: Proprie
   const fil = lu?.fil ?? [];
   const erreur = lu?.erreur ?? '';
   const racine = fil[0], dernier = fil[fil.length - 1];
-  // On répond au dernier mail REÇU ; un brouillon qui attend sur un mail plus ancien passe devant
+  // On répond au dernier mail reçu ; un brouillon sur un plus ancien d'abord.
   const dernierRecu = [...fil].reverse().find((m) => m.sens === 'entrant');
   const aRelire = [...fil].reverse().find((m) => m.sens === 'entrant' && m.reponse) ?? dernierRecu;
   const offres = lu?.offres ?? [];
@@ -383,7 +383,7 @@ function CorpsFil({ id, setAvis, relire, voirFiche, voirOffre, fermer }: Proprie
       {aRelire ? envoi.champs : <p className="texte-f repondre">Ce fil ne contient aucun message reçu : il n&apos;y a personne à qui répondre.</p>}
     </>
   );
-  // Joindre et Envoyer vont au pied de la fenêtre qui montre ce corps : le formulaire et son envoi restent propres à chaque fenêtre
+  // Joindre et Envoyer vont au pied de la fenêtre, propres à chacune.
   return (
     <>
       {corps}
@@ -458,7 +458,7 @@ export function useOngletEtiqueter({ selection, setAvis, relire, fermer }: { sel
   };
 }
 
-// Nouveau message : un mail neuf, hors de tout fil, depuis l'adresse des candidatures
+// Nouveau message : un mail neuf depuis l'adresse des candidatures.
 export function useOngletEcrire({ adresse, setAvis, apres }: { adresse: string; setAvis: (a: Avis) => void; apres: () => void }): Onglet {
   const [envois, setEnvois] = useState(0);
   const envoi = useEnvoi({
@@ -507,7 +507,7 @@ type Parametres = Record<string, unknown> & { modeles?: { nom: string; modele?: 
 const texteMots = (mots?: Record<string, string[]>) => Object.fromEntries(MOTS_ETIQUETTES.map((t) => [t, (mots?.[t] ?? []).join(', ')]));
 
 export function useOngletReglages({ admin, actif, fermer, setAvis, relire }: { admin: boolean; actif: boolean; fermer: () => void; setAvis: (a: Avis) => void; relire: () => void }): Onglet {
-  // Les réglages lus restent d'une visite à l'autre : la saisie en repart aussitôt, puis ils se relisent à l'ouverture
+  // Réglages gardés d'une visite à l'autre, relus à l'ouverture.
   const [lus, setLus] = useState(() => repris<Parametres | null>('mails:reglages', null));
   const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
   const [mots, setMots] = useState<Record<string, string>>(() => (lus ? texteMots(lus.mail_mots_etiquettes) : {}));
@@ -542,7 +542,7 @@ export function useOngletReglages({ admin, actif, fermer, setAvis, relire }: { a
     if (MOTS_ETIQUETTES.some((t) => mots[t] !== avant[t])) {
       changes.mail_mots_etiquettes = Object.fromEntries(MOTS_ETIQUETTES.map((t) => [t, (mots[t] ?? '').split(',').map((m) => m.trim()).filter(Boolean)]));
     }
-    // Un secret ne part que tapé ou effacé : vide, le champ garde celui déjà enregistré
+    // Un secret ne part que tapé ou effacé ; vide, le champ garde l'enregistré.
     if (secret !== null) changes.mail_secret = secret;
   }
   const enregistrer = async (e: React.FormEvent) => {
@@ -632,12 +632,12 @@ export function useOngletReglages({ admin, actif, fermer, setAvis, relire }: { a
   };
 }
 
-// Brique Mail · exécuter (admin) : un lancement à la main, en mode test par l'atelier, sinon par le pipeline
+// Exécuter (admin) : à la main, par l'atelier en test, sinon le pipeline.
 type Argument = { cle: string; libelle: string; type: string; aide: string; valeur: unknown; details: { valeur: string; libelle: string; texte: string }[] };
 type Course = { en_cours: boolean; journal: string; ok: boolean | null; erreur: string; depuis_s: number; duree_s: number };
 
 export function useOngletExecuter({ actif, fermer, setAvis }: { actif: boolean; fermer: () => void; setAvis: (a: Avis) => void }): Onglet {
-  // La brique lue et son lancement restent d'une visite à l'autre ; ils se relisent quand même à la première ouverture de chaque visite
+  // Brique et lancement gardés d'une visite à l'autre, relus à l'ouverture.
   const [args, setArgs] = useState(() => repris<Argument[] | null>('mails:arguments', null));
   const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => Object.fromEntries((args ?? []).map((a) => [a.cle, a.valeur])));
   const [test, setTest] = useState(true);
@@ -660,7 +660,7 @@ export function useOngletExecuter({ actif, fermer, setAvis }: { actif: boolean; 
       setErreur(message(e));
     });
   }, [actif]);
-  // Le lancement se suit toutes les 1,5 s tant qu'il tourne, comme l'atelier de l'ancien dashboard
+  // Le lancement est suivi toutes les 1,5 s tant qu'il tourne.
   useSondage(async () => {
     try {
       setCourse(await appeler<Course>('/atelier/mail'));
@@ -674,7 +674,7 @@ export function useOngletExecuter({ actif, fermer, setAvis }: { actif: boolean; 
         const r = await appeler<{ arretee: boolean }>('/atelier/mail/arreter', { methode: 'POST' });
         setAvis(r.arretee ? { texte: "Brique tuée — ce qu'elle avait dit reste affiché." } : { texte: 'Aucun lancement en cours.', erreur: true });
       } else if (!test) {
-        // Hors mode test, le pipeline lance la brique : sa sortie va au journal et le résultat est écrit en base
+        // Hors test, le pipeline lance la brique : journal, résultat écrit en base.
         const r = await appeler<{ lancee: boolean }>('/briques/mail/lancer', { methode: 'POST' });
         setAvis(r.lancee ? { texte: 'Brique mail lancée par le pipeline — le résultat est écrit en base, suivez le journal.' } : { texte: 'Brique mail déjà en cours.', erreur: true });
         return;

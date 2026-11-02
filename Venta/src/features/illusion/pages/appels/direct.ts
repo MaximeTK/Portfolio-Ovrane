@@ -3,9 +3,9 @@
 import { useSyncExternalStore } from 'react';
 import { appeler } from '../../api';
 
-// RUBY en direct : micro et son de l'appel sur PC, micro seul au téléphone ; l'audio ne quitte le navigateur que vers AssemblyAI, jamais gardé
+// RUBY en direct : l'audio ne quitte le navigateur que vers AssemblyAI.
 
-// Le flux attend du PCM 16 bits mono à 16 kHz ; les tours finis partent au serveur toutes les trois secondes, par tranches de 500
+// Le flux veut du PCM 16 bits mono 16 kHz, envoyé par tranches de 500.
 const FREQUENCE_FLUX = 16000;
 const ENVOI_TOURS_MS = 3000;
 const TRANCHE_TOURS = 500;
@@ -37,7 +37,7 @@ export type EtatDirect = {
   avis: Avis;
 };
 
-// L'appel en cours vit hors de la page : il survit à un changement de page, la transcription ne doit rien perdre
+// L'appel en cours vit hors de la page pour survivre à un changement de page.
 const enCours = {
   appel: null as AppelOuvert | null, pistes: [] as Piste[], contexte: null as AudioContext | null, flux: [] as MediaStream[],
   minuteur: 0, debut: 0, aEnvoyer: new Set<string>(), envoi: false, fin: false,
@@ -64,13 +64,13 @@ const abonner = (f: () => void) => {
 export const useDirect = () => useSyncExternalStore(abonner, () => etat, () => etat);
 export const oublierAvis = () => changer({ avis: null });
 
-// Le nom d'une voix en direct : « Moi » pour le micro d'un appel sur PC, sinon sa piste et sa lettre
+// Nom d'une voix en direct : « Moi » pour le micro sur PC, sinon sa lettre.
 export function nomEnDirect(piste: NomPiste, locuteur: string, mode: Mode | undefined) {
   if (mode === 'pc' && piste === 'micro') return 'Moi';
   return `${piste === 'appel' ? 'Interlocuteur' : 'Voix'} ${locuteur || '?'}`;
 }
 
-// Quitter le site pendant un appel couperait la transcription : le navigateur le demande d'abord
+// Quitter pendant un appel couperait la transcription : on demande d'abord.
 function retenir(e: BeforeUnloadEvent) {
   e.preventDefault();
   e.returnValue = '';
@@ -97,12 +97,12 @@ export async function demarrer(demande: { mode: Mode; offre_cle: string; titre: 
     }
     const acces = await appeler<Acces>('/appels/jeton', { methode: 'POST' });
     enCours.contexte = new AudioContext();
-    // Créé après les fenêtres d'autorisation, il peut naître suspendu : sans reprise, aucun son ne partirait
+    // Créé après les autorisations, il peut naître suspendu : on le reprend.
     await enCours.contexte.resume();
     await enCours.contexte.audioWorklet.addModule('/illusion/echantillonneur.js');
     enCours.appel = await appeler<AppelOuvert>('/appels', { methode: 'POST', corps: demande });
     enCours.debut = performance.now();
-    // Sur PC, le micro n'est que vous ; l'appel peut porter plusieurs voix, et au téléphone le micro les entend toutes
+    // Sur PC le micro n'est que vous ; au téléphone il entend toutes les voix.
     enCours.pistes = [ouvrirPiste('micro', enCours.flux[0], demande.mode === 'telephone', acces)];
     if (demande.mode === 'pc') enCours.pistes.push(ouvrirPiste('appel', enCours.flux[1], true, acces));
   } catch (erreur) {
@@ -126,7 +126,7 @@ function ouvrirPiste(nom: NomPiste, flux: MediaStream, voix: boolean, acces: Acc
   const source = contexte.createMediaStreamSource(new MediaStream(flux.getAudioTracks()));
   const noeud = new AudioWorkletNode(contexte, 'echantillonneur');
   source.connect(noeud);
-  // Relié à la sortie pour être tiré par le graphe ; il n'y écrit rien, l'appel n'est pas rejoué dans les haut-parleurs
+  // Relié à la sortie pour être tiré par le graphe, sans rien y écrire.
   noeud.connect(contexte.destination);
   noeud.port.onmessage = (e) => {
     if (ws.readyState === WebSocket.OPEN) ws.send(e.data);
@@ -161,7 +161,7 @@ function recevoir(piste: Piste, message: MessageFlux) {
       enCours.aEnvoyer.add(`${piste.nom}:${message.turn_order}`);
     }
   } else if (message.type === 'SpeakerRevision') {
-    // La séparation des voix se corrige en cours d'appel : seuls les tours dont la lettre change reviennent
+    // Une correction des voix ne renvoie que les tours dont la lettre change.
     for (const revision of message.revisions ?? []) {
       const tour = piste.tours.get(revision.turn_order);
       if (!tour) continue;
@@ -177,7 +177,7 @@ function recevoir(piste: Piste, message: MessageFlux) {
 }
 
 async function envoyerTours() {
-  // Un envoi à la fois : deux envois croisés réécrivaient la transcription l'un par-dessus l'autre
+  // Un envoi à la fois, sinon deux envois réécrivent la transcription.
   if (!enCours.appel || enCours.envoi || !enCours.aEnvoyer.size) return;
   enCours.envoi = true;
   try {
@@ -191,7 +191,7 @@ async function envoyerTours() {
       try {
         await appeler(`/appels/${enCours.appel.id}/segments`, { methode: 'POST', corps: { segments } });
       } catch {
-        // Un envoi raté repart au suivant : la transcription reste dans la page en attendant
+        // Un envoi raté repart au suivant ; la transcription reste dans la page.
         for (const cle of cles) enCours.aEnvoyer.add(cle);
         break;
       }
@@ -203,20 +203,20 @@ async function envoyerTours() {
 
 const attendre = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Termine l'appel : clôture des flux, derniers tours envoyés, puis l'appel clos et analysé ; rend son numéro
+// Clôt les flux, envoie les derniers tours puis clôt l'appel ; rend son numéro.
 export async function terminer(): Promise<number | null> {
   const appel = enCours.appel;
   if (!appel || etat.cloture) return null;
   enCours.fin = true;
   changer({ cloture: true });
   for (const piste of enCours.pistes) if (piste.ws.readyState === WebSocket.OPEN) piste.ws.send(JSON.stringify({ type: 'Terminate' }));
-  // Les derniers tours et la dernière révision des voix arrivent après la demande de clôture
+  // Les derniers tours et la révision des voix arrivent après la clôture.
   const limite = performance.now() + 5000;
   while (enCours.pistes.some((p) => !p.terminee) && performance.now() < limite) await attendre(200);
   for (const piste of enCours.pistes) if (piste.ws.readyState <= WebSocket.OPEN) piste.ws.close(1000);
   clearInterval(enCours.minuteur);
   arreterFlux();
-  // L'envoi en cours d'abord, puis le reste : clore avant lui perdrait ses derniers tours
+  // L'envoi en cours d'abord : clore avant perdrait ses derniers tours.
   while (enCours.envoi) await attendre(100);
   await envoyerTours();
   let avis: Avis = null;

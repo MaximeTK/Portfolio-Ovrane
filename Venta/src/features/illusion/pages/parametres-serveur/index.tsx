@@ -18,7 +18,7 @@ type Champ = { cle: string; libelle: string; sorte: 'nombre' | 'texte' | 'secret
 type Groupe = { cle: string; titre: string; aide: string; champs: Champ[] };
 type Avis = { texte: string; erreur?: boolean } | null;
 
-// Les groupes de la page, repris de la partie serveur des Paramètres de l'ancien dashboard ; Réinitialiser ouvre son onglet
+// Groupes repris de l'ancien dashboard ; Réinitialiser ouvre son onglet.
 const GROUPES: Groupe[] = [
   { cle: 'modeles', titre: "Modèles d'IA", champs: [],
     aide: 'Ceux du serveur, avec ses clés, pour tous les comptes. Un modèle saturé ou tombé passe aussitôt la demande à sa réserve.' },
@@ -42,7 +42,7 @@ const GROUPES: Groupe[] = [
       aide: 'Le quota atteint, la file du compte attend le lendemain, et son journal le dit une fois. 0 : sans limite.' },
   ] },
 ];
-// Le modèle de chaque brique : son réglage, son libellé, et ce que vaut le choix vide
+// Modèle de chaque brique : réglage, libellé et sens du choix vide.
 const BRIQUES: [string, string, string][] = [
   ['audit_modele', 'Audit', 'Aucun'], ['candidature_modele', 'Candidature', 'Aucun'], ['jade_modele', 'JADE', 'Celui de la candidature'],
   ['constructeur_modele', 'Lettre', 'Aucun : le gabarit'], ['mail_modele', 'Mail', 'Aucun'], ['lapis_modele', 'LAPIS', 'Celui des mails'],
@@ -52,7 +52,7 @@ const CHAMPS: Champ[] = [...GROUPES.flatMap((g) => g.champs), ...BRIQUES.map(([c
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const decimal = (t: string) => parseFloat(t.replace(',', '.')) || 0;
-// Un modèle tel qu'il part au serveur : sans clé, celle du coffre est gardée ; vide, elle est effacée
+// Un modèle tel qu'il part : sans clé, celle du coffre reste ; vide, effacée.
 const sansCle = ({ cle_api: _, ...m }: Modele) => m;
 const versEnvoi = (b: Brouillon) => ({
   nom: b.nom.trim(), fournisseur: b.fournisseur, modele: b.modele.trim(), base_url: b.base_url.trim(), reserve: b.reserve,
@@ -84,7 +84,7 @@ export default function PageParametresServeur(_: ProprietesPage) {
 function Serveur() {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const { fermerVue } = useVues();
-  // Les paramètres lus, le groupe, le filtre et les derniers essais restent d'une visite à l'autre ; le formulaire repart de ce qui est lu
+  // Paramètres, groupe, filtre et derniers essais gardés d'une visite à l'autre.
   const [lus, setLus] = useState(() => repris<Parametres | null>('parametres-serveur:lus', null));
   const [erreurLecture, setErreurLecture] = useState('');
   const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
@@ -93,7 +93,7 @@ function Serveur() {
   const [filtre, setFiltre] = useState(() => repris('parametres-serveur:filtre', ''));
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [essais, setEssais] = useState(() => repris<Record<string, Essai>>('parametres-serveur:essais', {}));
-  // Un essai encore en cours ne se garde pas : sa réponse arriverait sur une page quittée et le laisserait en cours
+  // Un essai en cours ne se garde pas : sa réponse viendrait trop tard.
   useGarder('parametres-serveur', { lus, groupe, filtre, essais: Object.fromEntries(Object.entries(essais).filter(([, e]) => e.etat !== 'encours')) });
   // Change à chaque ajout entamé : le formulaire d'ajout repart vierge
   const [ajout, setAjout] = useState(0);
@@ -142,7 +142,7 @@ function Serveur() {
     return () => document.removeEventListener('keydown', echap);
   }, [confirmation, onglet, fermer]);
 
-  // Ce qui partira : chaque champ dans sa forme, les secrets seulement retapés ou effacés
+  // Ce qui partira : chaque champ dans sa forme, secrets retapés ou effacés.
   const envoi = (c: Champ): unknown => (c.sorte === 'nombre' ? (valeurs[c.cle] === '' ? 0 : Number(valeurs[c.cle])) : valeurs[c.cle]);
   const changes = lus ? CHAMPS.filter((c) => (c.sorte === 'secret' ? !!(secrets[c.cle]?.saisie || secrets[c.cle]?.effacer) : envoi(c) !== lus[c.cle])) : [];
 
@@ -164,7 +164,7 @@ function Serveur() {
     setOccupe(false);
   };
 
-  // Le catalogue part entier ; les autres changements en cours restent à enregistrer
+  // Le catalogue part entier ; les autres changements restent à enregistrer.
   const enregistrerModeles = async (modeles: Record<string, unknown>[], texte: string) => {
     setOccupe(true);
     try {
@@ -183,7 +183,7 @@ function Serveur() {
     }
   };
 
-  // Un appel minuscule avec ce qui est saisi, la clé du coffre si elle n'est pas retapée : seul un modèle qui appelle les outils a sa place dans Illusion
+  // Appel minuscule avec la saisie ; seul un modèle à outils a sa place ici.
   const tester = async (saisi: Record<string, unknown>, poser: (e: Essai) => void) => {
     poser({ etat: 'encours', detail: 'essai en cours…' });
     try {
@@ -420,7 +420,7 @@ type ProprietesEdition = {
   enregistrer: (modeles: Record<string, unknown>[], texte: string) => Promise<boolean>; tester: (saisi: Record<string, unknown>, poser: (e: Essai) => void) => Promise<void>;
 };
 
-// Un modèle à ajouter (`ancien` nul) ou à modifier : brouillon, erreur et essai sont ceux de sa fenêtre, ses boutons vont dans le pied de celle-ci
+// Modèle à ajouter (`ancien` nul) ou modifier ; ses boutons vont au pied.
 function EditionModele({ ancien, depart, essai: essaiLu, modeles, fournisseurs, occupe, enregistrer, tester }: ProprietesEdition) {
   const { fermer } = usePanneau();
   const id = useId();

@@ -12,7 +12,7 @@ import { dateUtc, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { demarrer, nomEnDirect, oublierAvis, terminer, useDirect, type Avis, type Mode, type Tour } from './direct';
 
-// Ce que /vues/appels rend : les appels, chacun avec son offre en deux parts, et les offres envoyées avec le jour de leur candidature
+// Ce que /vues/appels rend : appels, offres et jour de candidature.
 type LigneAppel = {
   id: number; titre: string; mode: Mode; debut: string; duree_s: number; analyse: boolean; cout: number; fin: string | null;
   offre_cle: string; entreprise: string; intitule: string;
@@ -47,14 +47,14 @@ const ICONES = {
   arreter: <svg {...TRAIT}><rect x="6" y="6" width="12" height="12" /></svg>,
 };
 
-// Activité | liste | détail | panneau : la part d'une fenêtre cachée revient à la liste ; panneau fermé, liste 48 % et détail 52 %, ouvert, il prend la place du détail
+// Activité | liste | détail | panneau : le panneau ouvert prend le détail.
 const ARBRE: ArbreDepart = (zone, style) => {
   const lp = parseFloat(style.getPropertyValue('--panneau')) || 440;
   const reste = zone.w - 228 - 2 * ECART;
   return { dir: 'row', enfants: [{ id: 'activite' }, { id: 'appels' }, { id: 'appel' }, { id: 'panneau' }], parts: [228, Math.max(reste * 0.48 - lp, 1), reste * 0.52, lp] };
 };
 
-// L'analyse en parties titrées (« RÉSUMÉ — … ») ; sans titre reconnu, le texte tel quel
+// L'analyse en parties titrées ; sans titre reconnu, le texte tel quel.
 function parties(texte: string) {
   const lues: { titre: string; corps: string }[] = [];
   for (const brute of texte.split('\n')) {
@@ -69,7 +69,7 @@ function parties(texte: string) {
 
 export default function PageAppels({ compte }: ProprietesPage) {
   const direct = useDirect();
-  // Les appels lus et celui choisi restent d'une visite à l'autre : en revenant, ils s'affichent aussitôt et se relisent derrière
+  // Appels lus et choisi gardés d'une visite à l'autre, relus derrière.
   const [vue, setVue] = useState(() => repris<Vue | null>('appels:vue', null));
   const [erreurVue, setErreurVue] = useState('');
   const [choisi, setChoisiEtat] = useState(() => repris<number | null>('appels:choisi', null));
@@ -93,7 +93,7 @@ export default function PageAppels({ compte }: ProprietesPage) {
     }
     setVersion((v) => v + 1);
   }, [setChoisi]);
-  // Lus à l'arrivée et après chaque geste, comme dans l'ancien dashboard ; l'appel qu'on vient de terminer s'affiche pendant son analyse, puis se relit
+  // Lus à l'arrivée et après chaque geste ; l'appel terminé s'affiche vite.
   useEffect(() => {
     if (direct.analyse !== null) setChoisi(direct.analyse);
     else void relire();
@@ -165,7 +165,7 @@ function Liste({ vue, erreurVue, choisi, setChoisi, avis, setAvis }: ProprietesL
   const courante = Math.min(page, pages);
   const visibles = appels.slice((courante - 1) * parPage, courante * parPage);
 
-  // L'appel en cours rouvre son direct ; un autre va dans la fenêtre en plus qui a le focus, sinon s'affiche à la place du panneau
+  // L'appel en cours rouvre son direct ; un autre va dans la fenêtre active.
   const ouvrirLigne = (a: LigneAppel) => {
     if (direct.appel?.id === a.id) {
       ouvrir('direct');
@@ -256,7 +256,7 @@ function Detail({ vue, choisi, version, setChoisi, setAvis, relire }: Proprietes
 
 type ProprietesContenu = { id: number; vue: Vue | null; version: number; setAvis: (a: Avis) => void; relire: () => Promise<void>; supprime: () => void };
 
-// Un appel, dans la fenêtre de l'appel choisi ou dans une fenêtre à lui : titre, offre, noms des voix, transcription, analyse ; sa confirmation et ses gestes sont les siens
+// Un appel en fenêtre : titre, offre, voix, transcription, analyse, gestes.
 function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: ProprietesContenu) {
   const { ouvrir } = usePanneau();
   const direct = useDirect();
@@ -318,7 +318,7 @@ function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: Propriete
     }
   };
   const clore = () => faire('clore', async (a) => {
-    // La durée facturée est perdue avec la page : celle de la transcription la remplace, sur chaque piste ouverte
+    // La durée facturée est perdue avec la page : la transcription la remplace.
     const secondes = Math.max(0, ...a.segments.map((s) => s.fin)) / 1000;
     await appeler(`/appels/${a.id}/fin`, { methode: 'POST', corps: { secondes: secondes * (a.mode === 'pc' ? 2 : 1), secondes_voix: secondes, analyser: a.segments.length > 0 } });
     return 'Appel clos.';
@@ -435,7 +435,7 @@ function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: Propriete
   );
 }
 
-// Le panneau : les éléments (un appel, la fiche de son offre), puis Nouvel appel ou En direct, et les Réglages
+// Panneau : éléments, Nouvel appel ou En direct, puis Réglages.
 function PanneauAppels({ admin, vue, version, setAvis, relire }: { admin: boolean; vue: Vue | null; version: number; setAvis: (a: Avis) => void; relire: () => Promise<void> }) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const ouverts = useVues().vues[0].objets;
@@ -445,7 +445,7 @@ function PanneauAppels({ admin, vue, version, setAvis, relire }: { admin: boolea
     ouvrir('direct');
     void relire();
   }, fermer);
-  // L'appel terminé, son direct disparaît : le panneau se ferme et rend la place au détail
+  // L'appel terminé, le panneau se ferme et rend la place au détail.
   useEffect(() => {
     if (onglet === 'direct' && !direct.appel) fermer();
   }, [onglet, direct.appel, fermer]);
@@ -460,7 +460,7 @@ function PanneauAppels({ admin, vue, version, setAvis, relire }: { admin: boolea
     },
     'fiche-offre': (c) => ongletFicheOffre(c),
   };
-  // Un élément ouvert : les onglets des actions ne restent que s'ils sont ouverts, leur bouton de la liste les rouvre
+  // Les onglets d'actions ne restent que s'ils sont ouverts.
   const parGeste = Object.keys(elements).some((c) => ouverts[c] !== undefined);
   const onglets = [direct.appel ? ongletDirect() : nouvel, reglages].filter((o) => !parGeste || o.cle === onglet);
   return <Panneau elements={elements} onglets={onglets} />;
@@ -524,7 +524,7 @@ function ongletDirect(): Onglet {
   return { cle: 'direct', titre: 'En direct', label: 'Appel en cours', corps: <EnDirect />, pied: <PiedDirect /> };
 }
 
-// La transcription qui arrive : les tours finis, puis la phrase en cours, estompée
+// La transcription qui arrive : tours finis, puis la phrase en cours estompée.
 function EnDirect() {
   const direct = useDirect();
   const [maintenant, setMaintenant] = useState(() => Date.now());
@@ -544,8 +544,7 @@ function EnDirect() {
       <p className="live-tete"><span className="voyant-live" aria-hidden="true" /><span className="live-titre">{appel.titre || 'Appel'} — transcription en cours</span>
         <time aria-label="Durée de l'appel">{minutes(Math.max(0, maintenant - direct.debut))}</time></p>
       <p className="meta-f">{[mode === 'pc' ? "Sur le PC · micro et son de l'appel" : 'Téléphone en haut-parleur · micro seul, voix séparées', appel.offre].filter(Boolean).join(' · ')}</p>
-      {/* Dite à voix haute, l'annonce entre dans la transcription avec la réponse : prévenu, l'interlocuteur qui ne s'y oppose pas
-          est présumé d'accord (C. pén., art. 226-1) ; s'il refuse, on termine l'appel et on le supprime */}
+      {/* L'annonce dite à voix haute vaut prévention (C. pén., art. 226-1). */}
       <p className="aide-champ">À dire en premier : « Je prends des notes avec un outil de transcription, cela vous convient ? » S&apos;il refuse, terminez l&apos;appel puis supprimez-le.</p>
       <ol className="tours-direct" ref={liste} aria-live="polite">
         {direct.tours.map((t) => (
@@ -573,9 +572,9 @@ function PiedDirect() {
   );
 }
 
-// Réglages · Appels : la clé AssemblyAI et le modèle de transcription du compte ; le modèle de l'analyse, celui du serveur, pour l'admin
+// Réglages Appels : clé et modèle de transcription ; l'analyse est à l'admin.
 function useOngletReglages(admin: boolean, actif: boolean, fermer: () => void, setAvis: (a: Avis) => void): Onglet {
-  // Les réglages lus restent d'une visite à l'autre : la saisie en repart aussitôt, puis ils se relisent à l'ouverture
+  // Réglages gardés d'une visite à l'autre, relus à l'ouverture.
   const [lus, setLus] = useState(() => repris<Parametres | null>('appels:reglages', null));
   const [cle, setCle] = useState('');
   const [parole, setParole] = useState(() => lus?.ruby_modele_parole ?? '');

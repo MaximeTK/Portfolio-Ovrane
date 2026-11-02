@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Onglet } from '../../dock/Panneau';
 
-// Un compte d'une plateforme tel que /parametres le rend : le mot de passe dit seulement s'il est enregistré
+// Compte d'une plateforme : le mot de passe dit s'il est enregistré.
 export type Identifiant = { site: string; identifiant: string; secret: boolean; actif: boolean };
 export type Ligne = { uid: number; site: string; identifiant: string; actif: boolean; enregistre: boolean; saisie: string; effacer: boolean };
 export type Essai = { site: string; en_cours: boolean; ok: boolean | null; detail: string; identifiant: string; depuis_s: number; duree_s: number; teste_le: string };
@@ -22,13 +22,13 @@ export const lignesDe = (comptes: Identifiant[]): Ligne[] =>
 export const ligneNeuve = (site: string, identifiant: string, saisie: string, actif: boolean): Ligne =>
   ({ uid: ++uid, site, identifiant, actif, enregistre: false, saisie, effacer: false });
 
-// Un mot de passe non retapé ne part pas : le serveur garde celui du coffre ; effacé, il part vide
+// Mot de passe non retapé : le serveur garde celui du coffre ; effacé, vide.
 export const versEnvoi = (lignes: Ligne[]) => lignes.filter((l) => l.site.trim()).map((l) => ({
   site: l.site.trim(), identifiant: l.identifiant.trim(), actif: l.actif,
   ...(l.saisie ? { secret: l.saisie } : l.effacer ? { secret: '' } : {}),
 }));
 
-// Le voyant d'un compte : cyan la session s'ouvre, rouge elle est refusée, muet on n'a pas encore demandé
+// Voyant d'un compte : cyan ouverte, rouge refusée, muet pas encore testé.
 export function voyant(essai?: Essai): [string, string] {
   if (!essai || (essai.ok === null && !essai.en_cours)) return ['', 'jamais testé'];
   if (essai.en_cours) return ['encours', `test en cours… ${essai.depuis_s ?? 0} s`];
@@ -55,7 +55,7 @@ type ProprietesTable = {
   tester: (site: string) => void;
 };
 
-// Les comptes des plateformes : l'ordre des lignes, changé par ⠿, est celui des essais ; la ligne « * » reste épinglée en tête
+// Comptes : l'ordre des lignes est celui des essais ; « * » reste en tête.
 export function TableComptes({ lignes, setLignes, essais, filtre, selection, setSelection, teste, tester }: ProprietesTable) {
   const vol = useRef<number | null>(null);
   const garde = FILTRES.find((f) => f.cle === filtre)?.garde ?? (() => true);
@@ -184,7 +184,7 @@ export function ongletTester({ site, essai, ligne, occupe, tester, fermer }: {
   };
 }
 
-// Ajouter un site : la ligne rejoint la liste, à enregistrer avec le reste du groupe
+// Ajouter un site : la ligne est à enregistrer avec le reste du groupe.
 export function useOngletAjout({ actif, lignes, ajouter, fermer, dire }: {
   actif: boolean; lignes: Ligne[]; ajouter: (l: Ligne) => void; fermer: () => void; dire: (t: string, e?: boolean) => void;
 }): Onglet {

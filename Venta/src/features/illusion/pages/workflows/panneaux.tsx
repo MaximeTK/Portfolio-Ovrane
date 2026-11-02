@@ -7,7 +7,7 @@ import { repris, useGarder } from '../../stockage';
 import { AuPied, type Onglet } from '../../dock/Panneau';
 import { jourMois, nomProfil } from '../../partage/FicheOffre';
 
-// Ce que /workflows/rejeu rend : le dernier passage du compte, l'étape qui attend son ordre, une étape du journal, sa fin
+// Ce que /workflows/rejeu rend : dernier passage, étape en attente, journal.
 export type Saisie = { question?: string; valeur?: string; source?: { sorte?: string; donnee?: string }; signalement?: string; site?: string; ligne?: string; page?: string };
 type Geste = { geste?: string; cible?: string; valeur?: string; ligne?: string; jade?: boolean };
 type Comparaison = { arbres?: { page: string; identiques: string[]; nouvelles: string[]; changees: string[]; absentes: string[] }[] };
@@ -56,9 +56,9 @@ function Source({ s }: { s?: { sorte?: string; donnee?: string } }) {
   return <><span className={`src${A_VERIFIER.includes(sorte) ? ' att' : ''}`}>{SOURCES_SAISIE[sorte] ?? sorte}</span>{s?.donnee && <> <code>{s.donnee}</code></>}</>;
 }
 
-// Rejouer : l'offre, le profil, lot par lot ou d'une traite, puis la sorte de passage ; rien n'est jamais envoyé
+// Rejouer : offre, profil, mode de lot ; rien n'est jamais envoyé.
 export function useOngletRejouer({ actif, adresse, site, lancer }: { actif: boolean; adresse: string; site: string; lancer: (d: DemandeRejeu) => Promise<void> }): Onglet {
-  // Les profils lus restent d'une visite à l'autre ; ils se relisent à la première ouverture de chaque visite
+  // Profils lus gardés d'une visite à l'autre, relus à la première ouverture.
   const [profils, setProfils] = useState(() => repris<string[] | null>('workflows:profils', null));
   useGarder('workflows', { profils });
   const lus = useRef(false);
@@ -125,7 +125,7 @@ type ProprietesRejeu = {
   lirePas: (sens: number) => void; ordonner: (ordre: 'suivant' | 'auto' | 'arreter') => void; signaler: (n: number) => void;
 };
 
-// Rejeu : l'état allumé tant qu'il tourne, l'offre rejouée, le journal pas à pas, le lot qui attend et ce qui a été saisi
+// Rejeu : état allumé, offre rejouée, journal pas à pas, lot en attente.
 export function ongletRejeu({ rejeu: e, occupe, signales, lirePas, ordonner, signaler }: ProprietesRejeu): Onglet {
   const total = e.pas_total ?? 0;
   const dit = e.en_cours
@@ -197,7 +197,7 @@ export function ongletRejeu({ rejeu: e, occupe, signales, lirePas, ordonner, sig
   };
 }
 
-// Comparaison : le workflow refait de zéro face à celui en base, page par page, à fusionner, mettre à sa place ou annuler
+// Comparaison : le refait de zéro face à celui en base, à fusionner ou annuler.
 export function ongletComparaison(rejeu: EtatRejeu, occupe: boolean, conclure: (geste: 'fusionner' | 'remplacer' | 'annuler') => void): Onglet {
   const noms = (liste: string[]) => (liste.length ? liste.map((n) => <code key={n}>{n}</code>) : '—');
   return {
@@ -231,7 +231,7 @@ export function ongletComparaison(rejeu: EtatRejeu, occupe: boolean, conclure: (
   };
 }
 
-// Vérification : les valeurs signalées fausses, puis les données demandées qu'aucun profil ne porte ; rien ne change avant validation
+// Vérification : valeurs signalées fausses, données sans profil.
 export function ongletVerification({ verif, erreur, occupe, valider, rejeter, fermer }: {
   verif: Verification | null; erreur: string; occupe: boolean; valider: (s: Signalement) => void; rejeter: (s: Signalement) => void; fermer: () => void;
 }): Onglet {
@@ -288,7 +288,7 @@ export function ongletVerification({ verif, erreur, occupe, valider, rejeter, fe
 
 type ProprietesChamp = { champs: { cle: string; libelle: string }[]; valider: (s: Signalement, champ: Champ) => Promise<void>; annuler: () => void };
 
-// Champ du profil : la validation d'un signalement crée ce champ au profil de tous, ou le rend obligatoire ; une fenêtre par signalement
+// Champ du profil : valider un signalement le crée ou le rend obligatoire.
 export function ongletChamp(cible: Signalement, proprietes: ProprietesChamp): Onglet {
   return { cle: 'champ', titre: 'Champ du profil', admin: true, corps: <ChampDuProfil cible={cible} {...proprietes} />, pied: true };
 }
@@ -346,7 +346,7 @@ function ChampDuProfil({ cible, champs, valider, annuler }: ProprietesChamp & { 
   );
 }
 
-// Profil incomplet : le profil choisi a des champs obligatoires vides, aucun passage ne part avec lui
+// Profil incomplet : champs obligatoires vides, aucun passage ne part avec.
 export function ongletIncomplet(incomplet: Incomplet | null, fermer: () => void): Onglet {
   return {
     cle: 'profil-incomplet', titre: 'Profil incomplet', label: 'Profil incomplet : aucun passage ne part',

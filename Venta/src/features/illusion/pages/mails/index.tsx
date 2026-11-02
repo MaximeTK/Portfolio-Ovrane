@@ -27,7 +27,7 @@ const TAILLES = [25, 50];
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
 export default function PageMails({ compte }: ProprietesPage) {
-  // La boîte lue et ce qui l'a choisie restent d'une visite à l'autre : en revenant, elle s'affiche aussitôt et se relit derrière
+  // Boîte lue et son choix gardés d'une visite à l'autre, relus derrière.
   const [etat, setEtat] = useState(() => repris<EtatBoite | null>('mails:etat', null));
   const [erreurBoite, setErreurBoite] = useState('');
   const [filtres, setFiltres] = useState(() => repris<Filtres>('mails:filtres', { etiquette: '', sens: '', recherche: '' }));
@@ -37,7 +37,7 @@ export default function PageMails({ compte }: ProprietesPage) {
   useGarder('mails', { etat, filtres, page, taille, auto });
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
   const [avis, setAvis] = useState<Avis>(null);
-  // L'API lit au moins 10 lignes ; en « auto », le défileur garde celles qui ne tiennent pas
+  // L'API lit au moins 10 lignes ; en « auto », le défileur garde le reste.
   const adresse = `/mails?${new URLSearchParams({ ...filtres, page: String(page), taille: String(taille === 'auto' ? Math.max(10, auto) : taille) })}`;
   const relire = useCallback(async () => {
     try {
@@ -49,7 +49,7 @@ export default function PageMails({ compte }: ProprietesPage) {
       setErreurBoite(message(e));
     }
   }, [adresse]);
-  // La boîte et l'état de l'écoute relus toutes les 5 s, comme le bandeau et l'écoute de l'ancien dashboard
+  // Boîte et écoute relues toutes les 5 s.
   useSondage(relire, 5000, true, adresse);
   const relireVite = useCallback(() => void relire(), [relire]);
 
@@ -79,7 +79,7 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
   const [aller, setAller] = useState('');
   const defile = useRef<HTMLDivElement>(null);
 
-  // La recherche part au serveur quand la frappe se pose, sinon chaque lettre lancerait une requête aussitôt périmée
+  // La recherche part quand la frappe se pose, pas à chaque lettre.
   useEffect(() => {
     if (saisie === filtres.recherche) return;
     const t = setTimeout(() => setFiltres({ ...filtres, recherche: saisie }), 250);
@@ -102,7 +102,7 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
     const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
     return () => clearTimeout(t);
   }, [avis, setAvis]);
-  // « auto » : autant de lignes que la hauteur du défileur en montre sans en couper une ; remesuré quand les premières lignes donnent leur hauteur
+  // « auto » : autant de lignes que le défileur en montre, remesuré au rendu.
   const garnie = !!etat?.mails.length;
   useLayoutEffect(() => {
     const zone = defile.current;
@@ -176,7 +176,7 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
     if (Number.isInteger(x) && x >= 1 && x <= pages) setPage(x);
     setAller('');
   };
-  // Les numéros proches du début, de la page et de la fin ; le premier trou devient le « … » où taper la page voulue
+  // Numéros proches du début, de la page et de la fin ; le trou devient « … ».
   const boutons: React.ReactNode[] = [];
   let trou = false;
   numeros.forEach((x, i) => {
@@ -361,7 +361,7 @@ type ProprietesPanneau = { admin: boolean; adresseBoite: string; selection: Set<
 // Les onglets du courrier ; les autres sont les outils de la boîte
 const COURRIER = ['fil', 'etiqueter', 'fiche-offre', 'fiche-entreprise'];
 
-// Le panneau : les éléments (fils et fiches, un par fenêtre), puis l'étiquetage dans le courrier ou les outils (Exécuter chez l'admin, Écrire, Réglages), selon l'onglet ouvert
+// Panneau : fils et fiches, puis étiquetage ou outils selon l'onglet ouvert.
 function PanneauDePage({ admin, adresseBoite, selection, setAvis, relire, setPage }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const voirFiche = useCallback((s: string) => ouvrir('fiche-entreprise', s), [ouvrir]);

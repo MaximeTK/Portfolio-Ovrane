@@ -14,7 +14,7 @@ import {
   type Cycle, type Jobboard, type Parametres,
 } from '../offres/commun';
 
-// Les clés de chaque plateforme, une fois pour toutes les veilles ; les boards employeurs se règlent en nombre
+// Clés de chaque plateforme, valables pour toutes les veilles.
 type Champ = { cle: string; libelle: string; nombre?: boolean };
 const CLES: Record<string, Champ[]> = {
   france_travail: [{ cle: 'veille_ft_id', libelle: 'Identifiant' }, { cle: 'veille_ft_secret', libelle: 'Secret' }],
@@ -33,7 +33,7 @@ function voyant(nom: string, cycle: Cycle): [string, string] {
   if (source?.prete === false) return ['jaune', `clés manquantes : ${(source.manquantes ?? []).join(', ')}`];
   if (source?.bloquee) return ['jaune', source.bloquee];
   if (!passage) return ['rouge', 'aucune réponse au dernier cycle'];
-  // Rien à faire n'est pas rien obtenu : les boards employeurs se nourrissent des pages « nos offres » que le parser trouve
+  // Rien à faire n'est pas rien obtenu : les boards lisent « nos offres ».
   if (passage.sans_objet) return ['muette', passage.erreur || 'rien à interroger'];
   if (passage.erreur) return ['jaune', passage.erreur];
   if (!passage.statut) return ['rouge', 'aucune réponse au dernier cycle'];
@@ -70,7 +70,7 @@ function Veille() {
   const { dire, vue: avis } = useAvis();
   const [etat, relire] = useEtatVeille(dire);
   const gestes = useGestesStock(etat, relire, dire, () => {});
-  // Les réglages lus restent d'une visite à l'autre, comme l'état de la veille (gardé par son crochet)
+  // Réglages gardés d'une visite à l'autre, comme l'état de la veille.
   const [parametres, setParametres] = useState(() => repris<Parametres | null>('veille:parametres', null));
   useGarder('veille', { parametres });
   // L'onglet « Nouveau jobboard », de « Ajouter un jobboard » jusqu'à l'ajout
@@ -139,7 +139,7 @@ function Veille() {
       corps: <EditionJobboard origine={null} liste={jobboards} enregistrer={enregistrer} ajoute={() => setAjoutJb(false)} />, pied: true }] : []),
     { cle: 'veilles', titre: 'Veilles', label: 'Profils de veille', corps: veilles.corps, pied: veilles.pied },
   ];
-  // Une plateforme par son nom, un jobboard par son adresse ; chaque fenêtre a sa saisie
+  // Une plateforme par son nom, un jobboard par son adresse ; saisie par fenêtre.
   const elements = {
     plateforme: (nom: string): Onglet => ({
       cle: 'plateforme', titre: libelleSource(nom), label: `Plateforme · ${libelleSource(nom)}`,
@@ -265,7 +265,7 @@ function Veille() {
   );
 }
 
-// Une plateforme : son voyant, ses clés (jamais réaffichées : « enregistrée » ou « non renseignée ») ou son nombre de boards
+// Plateforme : voyant, clés jamais réaffichées, ou nombre de boards.
 function Plateforme({ nom, parametres, cycle, enregistrer }: { nom: string; parametres: Parametres | null; cycle: Cycle; enregistrer: (m: Partial<Parametres>) => Promise<boolean> }) {
   const id = useId();
   const [saisies, setSaisies] = useState<Record<string, string>>({});
@@ -386,7 +386,7 @@ function useReglages(parametres: Parametres | null, enregistrer: (m: Partial<Par
   return { corps, pied };
 }
 
-// Sélecteur de catalogue : les départements choisis en puces, la recherche dans le même champ
+// Sélecteur de catalogue : départements en puces, recherche dans le même champ.
 function Catalogue({ id, codes, changer }: { id: string; codes: string[]; changer: (codes: string[]) => void }) {
   type Entree = { code: string; libelle: string };
   const [libelles, setLibelles] = useState<Record<string, string>>({});
@@ -451,7 +451,7 @@ function Catalogue({ id, codes, changer }: { id: string; codes: string[]; change
 
 const VIERGE: Jobboard = { url: '', nom: '', actif: true, veille: false, siren: '' };
 
-// Un jobboard à ajouter (`origine` nulle) ou à modifier : son adresse, son nom, s'il passe pendant la veille ou par son cycle, s'il est récolté
+// Jobboard à ajouter (`origine` nulle) ou modifier : adresse, nom, cycle.
 function EditionJobboard({ origine, liste, enregistrer, ajoute }: { origine: Jobboard | null; liste: Jobboard[]; enregistrer: (m: Partial<Parametres>) => Promise<boolean>; ajoute?: () => void }) {
   const { ouvrir, fermer } = usePanneau();
   const id = useId();
@@ -465,7 +465,7 @@ function EditionJobboard({ origine, liste, enregistrer, ajoute }: { origine: Job
     const propre = { ...form, url: form.url.trim(), nom: form.nom.trim() };
     if (!(await enregistrer({ jobboards: origine ? liste.map((j, i) => (i === rang ? propre : j)) : [...liste, propre] }))) return;
     ajoute?.();
-    // Le jobboard se suit par son adresse : neuf ou réadressé, sa fenêtre passe à la nouvelle
+    // Le jobboard se suit par son adresse : une nouvelle déplace sa fenêtre.
     if (propre.url !== origine?.url) ouvrir('jobboard', propre.url);
   };
   const retirer = async () => {

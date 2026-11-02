@@ -12,13 +12,13 @@ const MATIERES: { cle: Matiere; nom: string; detail: string }[] = [
   { cle: 'teinte', nom: 'Teinte', detail: 'Fond sombre uni' },
 ];
 
-// Apparence : la palette d'Ovrane, gardée dans le compte d'Ovrane, et la matière des fenêtres, gardée dans les réglages d'Illusion ; le choix s'essaie sur la page derrière, Fermer sans enregistrer le défait
+// Palette d'Ovrane (compte) et matière des fenêtres ; Fermer défait l'essai.
 export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fermer: () => void; dire: (t: string, e?: boolean) => void }): Onglet {
   const palette = useBackgroundStore((s) => s.currentPalette);
   const matiere = useApparence((s) => s.matiere);
   const gardee = useRef<string | null>(null);
 
-  // À l'ouverture, la palette en place est celle du compte ; à la fermeture, ce qui n'a pas été enregistré se défait
+  // À la fermeture, ce qui n'a pas été enregistré se défait.
   useEffect(() => {
     if (actif) {
       gardee.current = useBackgroundStore.getState().currentPalette.id;

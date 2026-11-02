@@ -22,7 +22,7 @@ export const versBrouillon = (m: Modele): Brouillon => ({
   ...m, max_tokens: m.max_tokens ? String(m.max_tokens) : '', prix_entree: String(m.prix_entree ?? 0), prix_cache: String(m.prix_cache ?? 0),
   prix_ecriture: String(m.prix_ecriture ?? 0), prix_sortie: String(m.prix_sortie ?? 0), cle: '', effacerCle: false, avaitCle: m.cle_api, ancien: m.nom,
 });
-// « Claude (Anthropic) » → « Claude » : le nom court du fournisseur, pour une colonne étroite
+// « Claude (Anthropic) » devient « Claude », pour une colonne étroite.
 export const nomCourt = (fournisseurs: Record<string, Fournisseur>, cle: string) => (fournisseurs[cle]?.nom ?? cle).replace(/\s*\(.*\)$/, '') || '—';
 
 // Ce que l'effacement emporte, dans l'ordre où on le lit
@@ -46,7 +46,7 @@ type ProprietesForm = {
   id: string; brouillon: Brouillon; poser: (b: Brouillon) => void; fournisseurs: Record<string, Fournisseur>; autres: string[]; erreur: string; valider: () => void;
 };
 
-// Le formulaire d'un modèle du catalogue : le fournisseur d'abord, ses réglages et son adresse en découlent
+// Formulaire d'un modèle : le fournisseur d'abord, le reste en découle.
 export function FormModele({ id, brouillon: b, poser, fournisseurs, autres, erreur, valider }: ProprietesForm) {
   const f = fournisseurs[b.fournisseur];
   const champ = (cle: keyof Brouillon) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => poser({ ...b, [cle]: e.target.value });
@@ -63,7 +63,7 @@ export function FormModele({ id, brouillon: b, poser, fournisseurs, autres, erre
         <div className="grille-2">
           <div className="champ"><label htmlFor={`${id}-nom`}>Nom</label><input id={`${id}-nom`} className="saisie" placeholder="Audit" value={b.nom} onChange={champ('nom')} /></div>
           <div className="champ"><label htmlFor={`${id}-four`}>Fournisseur</label>
-            {/* Un autre fournisseur, d'autres réglages : seuls les siens restent, une valeur qu'il ne propose pas tombe */}
+            {/* Un autre fournisseur ne garde que ses réglages ; une valeur absente tombe. */}
             <select id={`${id}-four`} className="saisie" value={b.fournisseur} onChange={(e) => {
               const neuf = fournisseurs[e.target.value];
               poser({ ...b, fournisseur: e.target.value, reglages: Object.fromEntries(Object.entries(b.reglages)
@@ -118,7 +118,7 @@ export function FormModele({ id, brouillon: b, poser, fournisseurs, autres, erre
   );
 }
 
-// Le filtre Fournisseur : un menu en colonne, le choix courant allumé ; un clic ailleurs ou Échap le referme
+// Filtre Fournisseur : menu en colonne ; un clic ailleurs ou Échap le referme.
 export function MenuFournisseur({ valeur, choix, courant, choisir }: { valeur: string; choix: { cle: string; libelle: string; n: number }[]; courant: string; choisir: (c: string) => void }) {
   const [ouvert, setOuvert] = useState(false);
   const hote = useRef<HTMLDivElement>(null);

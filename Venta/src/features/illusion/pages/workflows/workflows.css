@@ -1,6 +1,6 @@
-/* Page Workflows : l'arbre appris d'un site, page par page, puis le panneau du rejeu et de la vérification. */
+/* Page Workflows : l'arbre appris d'un site par page, puis le panneau. */
 
-/* Panneau de 480 px, la place que demandent les deux tableaux de la Vérification ; 540 px sur les grands écrans. */
+/* Panneau de 480 px pour les tableaux de la Vérification, 540 en grand. */
 .ov:has([data-fen=arbre].workflows){--panneau:480px}
 @media (min-width:1700px){.ov:has([data-fen=arbre].workflows){--panneau:540px}}
 /* Ses onglets passent à la ligne plutôt que de se couper. */
@@ -9,7 +9,7 @@
 .ov:has([data-fen=arbre].workflows) [data-fen=panneau] .p-onglet{flex:none;height:42px}
 .ov:has([data-fen=arbre].workflows) [data-fen=panneau] .p-tete .f-btn{margin-top:7px}
 
-/* Recherche en texte seul, une loupe devant, sans cadre ; un trait fin paraît sous le texte quand on écrit. */
+/* Recherche en texte seul avec loupe ; un trait fin paraît à la saisie. */
 .ov .workflows .outils{position:relative}
 .ov .workflows .cherche{display:inline-flex;align-items:center;gap:8px;min-width:0;height:34px;color:rgba(255,255,255,.7)}
 .ov .workflows .cherche .loupe{display:grid;place-items:center;height:34px;color:inherit}
@@ -17,26 +17,26 @@
 .ov .workflows .cherche input{width:262px;height:26px;border:0;border-bottom:1px solid transparent;background:none;padding:0;font:inherit;font-size:12.5px;color:#fff}
 .ov .workflows .cherche input::placeholder{color:rgba(255,255,255,.6)}
 .ov .workflows .cherche input:focus{outline:none;border-bottom-color:rgba(255,255,255,.6)}
-/* Résumé du site sur deux lignes : son nom, puis ses pages et ses candidatures apprises. */
+/* Résumé du site : son nom, puis pages et candidatures apprises. */
 .ov .workflows .resume{display:flex;flex-direction:column;justify-content:center;margin:0 26px 0 18px;padding-left:18px;border-left:1px solid rgba(255,255,255,.14);font-size:12px;line-height:1.3;white-space:nowrap}
 .ov .workflows .resume b{font-weight:600}
 .ov .workflows .resume span{font-size:11px;color:rgba(255,255,255,.62)}
 .ov .workflows .action .compteur{margin-left:-2px}
-/* Le menu des pages s'ouvre sous la rangée d'outils, dans le verre ; une clé de page longue passe à la ligne. */
+/* Menu des pages sous la rangée d'outils ; une clé longue passe à la ligne. */
 .ov .workflows .filtre-hote{position:static}
 .ov .workflows .filtre-hote .menu{left:14px;right:auto;top:calc(100% + 2px);max-width:calc(100% - 28px);max-height:min(360px,calc(100vh - 260px));overflow-y:auto;scrollbar-width:none}
 .ov .workflows .menu-option{height:auto;min-height:32px;padding:6px 16px;white-space:normal;text-align:left}
 .ov .workflows .menu-option .num{flex:none;width:14px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.55)}
 .ov .workflows .menu-option .adr{min-width:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11.5px;overflow-wrap:anywhere}
 .ov .workflows .menu-option .compteur{margin-left:auto;padding-left:16px}
-/* Fenêtre resserrée : la recherche se replie sur sa loupe et s'ouvre à la place du résumé ; le résumé se rapproche. */
+/* Fenêtre resserrée : la recherche se replie sur sa loupe. */
 .ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .cherche:not(.ouverte) input{display:none}
 .ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .outils:has(.cherche.ouverte) :is(.resume,.filtre-hote){display:none}
 .ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .cherche input{width:220px}
 .ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .resume{margin:0 12px 0 8px;padding-left:10px}
 .ov [data-fen].workflows:is([data-l=s],[data-l=xs]) .outils .actions{gap:14px}
 
-/* L'arbre d'une page : une ligne par geste ; rang, geste, libellé et marques à gauche, cible et source calées à droite à toute profondeur. */
+/* Arbre d'une page : cible et source calées à droite à toute profondeur. */
 .ov .workflows .arbre{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 16px 0 20px;--h-l:28px;container:arbre/inline-size}
 .ov .workflows .arbre-defile{flex:1;min-height:0;overflow-y:auto;padding-bottom:12px;scrollbar-width:none}
 .ov .workflows .arbre-defile::-webkit-scrollbar{display:none}
@@ -54,12 +54,12 @@
 .ov .workflows .lb{display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;padding:3px 0}
 .ov .workflows .lb b{font-weight:600;overflow-wrap:anywhere}
 .ov .workflows .lb b em{font-style:normal;margin-left:3px;color:rgba(255,255,255,.6)}
-/* Marques d'une ligne (si…, facultatif, pour chaque…, →) : de petites étiquettes au trait fin ; le changement de page plus clair. */
+/* Marques d'une ligne : petites étiquettes au trait fin. */
 .ov .workflows .mq{max-width:100%;min-height:18px;padding:0 6px;border:1px solid rgba(255,255,255,.22);font-size:10.5px;line-height:16px;color:rgba(255,255,255,.75)}
 .ov .workflows .mq.vers{border-color:rgba(255,255,255,.6);color:#fff}
-/* Section du formulaire : un titre en capitales espacées au-dessus de ses lignes. */
+/* Section du formulaire : titre en capitales espacées. */
 .ov .workflows .arbre-l>li.sec{display:flex;align-items:flex-end;height:30px;padding:0 0 6px 36px;border-top:1px solid rgba(255,255,255,.08);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.62)}
-/* Ce qu'un geste ouvre et les voies d'un aiguillage : en retrait sous la ligne, un fil vertical les relie à elle. */
+/* Ouvertures d'un geste et voies d'un aiguillage : en retrait, avec un fil. */
 .ov .workflows .sous{margin-left:11px;padding-left:25px;border-left:1px solid rgba(255,255,255,.16)}
 .ov .workflows .portee>summary{display:block;min-height:var(--h-l);padding:6px 0 5px;border-top:1px solid rgba(255,255,255,.08);list-style:none;cursor:pointer;font-size:11.5px;line-height:16px;color:rgba(255,255,255,.66)}
 .ov .workflows .portee>summary::-webkit-details-marker{display:none}
@@ -82,7 +82,7 @@
 .ov .workflows .avis-wf{position:absolute;right:14px;bottom:14px;z-index:3;max-width:min(560px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
 .ov .workflows .avis-wf.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
 
-/* Tableaux du panneau : largeurs au contenu, les textes longs passent à la ligne au lieu d'être coupés. */
+/* Tableaux du panneau : largeurs au contenu, textes longs à la ligne. */
 .ov .wf-p .tab-wf{table-layout:auto;font-size:12px}
 .ov .wf-p .tab-wf th{height:28px;padding:0 12px 0 0;letter-spacing:.14em}
 .ov .wf-p .tab-wf td{height:auto;padding:6px 12px 6px 0;white-space:normal;overflow:visible;line-height:1.35;vertical-align:top;overflow-wrap:break-word}
@@ -95,7 +95,7 @@
 .ov .wf-p .saisi thead th:nth-child(2){width:25%}
 .ov .wf-p code{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.62)}
 .ov .wf-p .src.att{color:#FFF58D}
-/* Petits boutons de texte dans les lignes (Signaler, Valider…, Rejeter, Ajouter au profil…). */
+/* Petits boutons de texte dans les lignes (Signaler, Valider…, Rejeter). */
 .ov .wf-p .btn-l{font-size:11.5px;font-weight:600;color:rgba(255,255,255,.85);text-align:right}
 .ov .wf-p .btn-l:hover{color:#fff}
 .ov .wf-p .btn-l:disabled{opacity:.45;cursor:default}
@@ -106,7 +106,7 @@
 .ov .wf-p .erreur-f{margin-top:10px !important;padding:8px 10px;border-left:2px solid #ff8a8a;background:rgb(255 138 138 / .08);font-size:12px;line-height:1.4;color:#ffd0d0;overflow-wrap:anywhere}
 .ov .wf-verif .erreur-f{margin:0 0 12px !important}
 
-/* Rejeu : l'état allumé en cyan tant qu'il tourne, l'offre rejouée dessous, puis le journal pas à pas. */
+/* Rejeu : état en cyan tant qu'il tourne, offre, puis journal. */
 .ov .wf-rejeu .etat-rejeu{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:12.5px;line-height:1.4}
 .ov .wf-rejeu .etat-rejeu b{font-weight:600}
 .ov .wf-rejeu .etat-rejeu .on{color:var(--accent)}
@@ -116,7 +116,7 @@
 .ov .wf-rejeu .journal .pl{min-width:18px;height:22px}
 .ov .wf-rejeu .lignes-journal{margin-top:8px}
 .ov .wf-rejeu .lignes-journal pre{max-height:180px;margin:0;padding:8px 10px;overflow:auto;background:rgb(0 0 0 / .25);font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;color:rgba(255,255,255,.75);scrollbar-width:none}
-/* Lot à jouer : les gestes du prochain envoi à gauche, la capture de la page à droite. */
+/* Lot à jouer : gestes du prochain envoi à gauche, capture à droite. */
 .ov .wf-rejeu .lot{display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:14px;align-items:start}
 .ov .wf-rejeu .lot-page{margin-bottom:6px !important;font-size:11px;color:rgba(255,255,255,.55);overflow-wrap:anywhere}
 .ov .wf-rejeu .gestes{display:flex;flex-direction:column;gap:5px;font-size:12px;line-height:1.35}
@@ -126,7 +126,7 @@
 .ov .wf-rejeu .gestes small{font-size:10px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.55)}
 .ov .wf-rejeu .capture{display:block;width:132px;height:96px;object-fit:cover;object-position:top;border:1px solid rgba(255,255,255,.22);background:rgb(255 255 255 / .06)}
 
-/* Comparaison : chaque page du refait, ses lignes identiques, nouvelles et absentes. */
+/* Comparaison : pages du refait, lignes identiques, nouvelles, absentes. */
 .ov .wf-p .comparaison+.comparaison{margin-top:14px}
 .ov .wf-p .page-c{margin-bottom:6px !important;overflow-wrap:anywhere}
 .ov .wf-p .comparaison .def{grid-template-columns:150px minmax(0,1fr)}

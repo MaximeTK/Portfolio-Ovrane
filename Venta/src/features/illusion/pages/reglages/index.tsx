@@ -37,7 +37,7 @@ const ICONES = {
 const ico = (i: React.ReactNode) => <span className="ico">{i}</span>;
 const FONDS: [string, string][] = [['', 'Aléatoire'], ...['aplat', 'degrade', 'photo', 'photo-teintee', 'blanc'].map((f): [string, string] => [f, f])];
 
-// Les réglages du compte, groupe par groupe, repris des Paramètres de l'ancien dashboard ; les champs « Modèle » et ceux du serveur sont à l'admin
+// Réglages du compte par groupe ; « Modèle » et ceux du serveur sont à l'admin.
 const GROUPES: Groupe[] = [
   { cle: 'comptes', titre: 'Comptes des plateformes' },
   { cle: 'liens', titre: 'Liens suivis',
@@ -114,7 +114,7 @@ export default function PageReglages({ compte }: ProprietesPage) {
 
 function Reglages({ admin }: { admin: boolean }) {
   const { onglet, ouvrir, fermer } = usePanneau();
-  // Les réglages lus, le groupe et le filtre choisis, les tests et les pièces restent d'une visite à l'autre ; le formulaire repart de ce qui a été lu
+  // Réglages, groupe, filtre, tests et pièces gardés d'une visite à l'autre.
   const [lus, setLus] = useState(() => repris<Parametres | null>('reglages:lus', null));
   const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
   const [secrets, setSecrets] = useState<Record<string, { saisie: string; effacer: boolean }>>({});
@@ -152,7 +152,7 @@ function Reglages({ admin }: { admin: boolean }) {
     appeler<Parametres>('/parametres').then(poserLus).catch((e) => dire(message(e), true));
   }, [poserLus, dire]);
 
-  // Les verdicts des tests ; suivis toutes les 2 s seulement pendant qu'un test tourne, comme l'ancien dashboard
+  // Verdicts des tests suivis toutes les 2 s tant qu'un test tourne.
   const lireTests = useCallback(async () => {
     try {
       const vu = await appeler<{ essais: Record<string, Essai>; occupe: string }>('/vues/reglages/tests');
@@ -196,7 +196,7 @@ function Reglages({ admin }: { admin: boolean }) {
     return () => document.removeEventListener('keydown', echap);
   }, [confirmation, onglet, fermer]);
 
-  // Ce qui partira : chaque champ dans sa forme, les secrets seulement retapés ou effacés
+  // Ce qui partira : chaque champ dans sa forme, secrets retapés ou effacés.
   const champsVus = GROUPES.flatMap((g) => (g.sections ?? []).filter((s) => admin || !s.admin).flatMap((s) => s.champs.filter((c) => admin || !c.admin)));
   const envoi = (c: Champ): unknown => {
     const v = valeurs[c.cle];
@@ -217,7 +217,7 @@ function Reglages({ admin }: { admin: boolean }) {
       const r = await appeler<Parametres & { rejeu_bannis?: { ecartees?: number }; rejeu_mails?: number }>('/parametres', { methode: 'PUT', corps });
       poserLus(r);
       setConfirmation(null);
-      // Les mots bannis sont rejoués sur le stock : le dire, sinon des offres disparaissent de la file sans qu'on sache pourquoi
+      // Mots bannis rejoués sur le stock : on le dit, sinon des offres disparaissent.
       const bannis = r.rejeu_bannis?.ecartees ? ` — mots bannis rejoués : ${r.rejeu_bannis.ecartees} offre(s) sortie(s) de la file` : '';
       dire(`Réglages enregistrés${bannis || ' — les lots les reprennent aussitôt'}.`);
     } catch (e) {
@@ -279,7 +279,7 @@ function Reglages({ admin }: { admin: boolean }) {
     } else if (c.sorte === 'texte_long') {
       saisie = <textarea id={id} className="saisie" rows={3} value={String(v ?? '')} onChange={(e) => poser(e.target.value)} />;
     } else if (c.sorte === 'couleurs') {
-      // Une couleur se choisit, elle ne se tape pas ; le bouton disparaît au quatrième
+      // Une couleur se choisit sans se taper ; le bouton disparaît au quatrième.
       const couleurs = (Array.isArray(v) ? v : []).map(String).slice(0, 4);
       saisie = (
         <div className="couleurs" id={id}>
@@ -336,7 +336,7 @@ function Reglages({ admin }: { admin: boolean }) {
           const choisis = [...(e.target.files ?? [])];
           e.target.value = '';
           for (const f of choisis) {
-            // Lu en base64 sur le poste, il part au serveur, qui le range dans la base sous ce compte
+            // Lu en base64 sur le poste, rangé par le serveur dans la base sous ce compte.
             await pieceGeste(async () => appeler('/pieces-lettre', { methode: 'POST', corps: await televerser(f) }), `${f.name} téléversé.`);
           }
         }} />
@@ -350,7 +350,7 @@ function Reglages({ admin }: { admin: boolean }) {
   const ligneTestee = lignes.find((l) => l.site === teste);
   const apparence = useOngletApparence({ actif: onglet === 'apparence', fermer, dire });
   const ajout = useOngletAjout({ actif: onglet === 'ajout', lignes, ajouter: (l) => setLignes((ls) => [...ls, l]), fermer, dire });
-  // Seul l'onglet ouvert se montre, comme sur les planches : chacun a son ouvreur dans la page, et trois ne tiennent pas dans 400 px
+  // Seul l'onglet ouvert se montre ; trois ouvreurs ne tiennent pas dans 400 px.
   const onglets: Onglet[] = [apparence, ...(teste ? [ongletTester({ site: teste, essai: essais[teste], ligne: ligneTestee, occupe: testEnCours !== '', tester, fermer })] : []), ajout]
     .filter((o) => o.cle === onglet);
 
@@ -442,7 +442,7 @@ function BoutonGroupe({ g, courant, choisir }: { g: Groupe; courant: string; cho
   return <button type="button" className={`rubrique${g.cle === courant ? ' actif' : ''}`} aria-current={g.cle === courant ? 'page' : undefined} onClick={() => choisir(g.cle)}>{g.titre}</button>;
 }
 
-// Le filtre « État » des comptes : un menu en colonne, le choix courant allumé ; un clic ailleurs ou Échap le referme
+// Filtre « État » des comptes : menu en colonne, fermé par un clic ailleurs.
 function MenuEtat({ valeur, choix, courant, actif, choisir }: { valeur: string; choix: { cle: string; libelle: string; n: number }[]; courant: string; actif: boolean; choisir: (c: string) => void }) {
   const [ouvert, setOuvert] = useState(false);
   const hote = useRef<HTMLDivElement>(null);

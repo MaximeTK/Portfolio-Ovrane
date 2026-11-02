@@ -15,7 +15,7 @@ import {
   type Champ, type DemandeRejeu, type EtatRejeu, type Incomplet, type Signalement, type Verification,
 } from './panneaux';
 
-// L'arbre d'un site tel que /workflows/site le rend : ses pages, leurs lignes de haut en bas, mes réponses par profil
+// Arbre d'un site comme /workflows/site le rend, réponses par profil.
 type Valeur = { fiche?: string; avec?: string; format?: string; ia?: unknown; reponse?: unknown; fixe?: string; cv?: unknown; lettre?: unknown } | null;
 type Voie = { lignes?: Ligne[]; suspecte?: number; cle?: string };
 type Ligne = {
@@ -31,7 +31,7 @@ type Avis = { texte: string; erreur?: boolean } | null;
 type Retrait = { cle: string; aiguillage: string; voie: string };
 type Contexte = { site: string; cle: string; reponses: Carte['reponses']; nomPage: (adresse: string) => string; retirer: (r: Retrait) => void };
 
-// Le rejeu se relit chaque seconde tant qu'il tourne, comme dans l'ancien dashboard
+// Le rejeu est relu chaque seconde tant qu'il tourne.
 const PAS_REJEU_MS = 1000;
 
 const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', 'aria-hidden': true } as const;
@@ -43,7 +43,7 @@ const ICONES = {
   jouer: <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>,
 };
 
-// D'où une ligne tire sa valeur, et la cible qu'elle vise, dits comme l'ancien dashboard
+// D'où une ligne tire sa valeur et la cible qu'elle vise.
 function source(v: Valeur): string {
   if (v == null) return 'laissé vide';
   if (v.fiche) return `fiche : ${v.fiche}${v.avec ? ` + ${v.avec}` : ''}${v.format ? ` (${v.format})` : ''}`;
@@ -58,7 +58,7 @@ const cible = (c: Record<string, unknown>) => Object.entries(c).map(([k, v]) => 
 
 export default function PageWorkflows({ compte }: ProprietesPage) {
   const admin = compte.admin;
-  // Ce qui a été lu et choisi reste d'une visite à l'autre : en revenant, tout s'affiche aussitôt et se relit derrière
+  // Lecture et choix gardés d'une visite à l'autre, relus derrière.
   const [recherche, setRecherche] = useState(() => repris('workflows:recherche', ''));
   const [adresse, setAdresse] = useState(() => repris('workflows:adresse', ''));
   const [carte, setCarte] = useState(() => repris<Carte | null>('workflows:carte', null));
@@ -74,7 +74,7 @@ export default function PageWorkflows({ compte }: ProprietesPage) {
   const [avis, setAvis] = useState<Avis>(null);
   const erreur = (e: unknown) => setAvis({ texte: message(e), erreur: true });
 
-  // L'arbre d'un site ou de l'adresse d'une de ses offres ; `garder` reste sur la même page après une correction
+  // Arbre d'un site ou d'une offre ; `garder` reste sur la page.
   const afficher = useCallback(async (voulue: string, garder = false) => {
     const a = voulue.trim();
     if (!a) return;
@@ -106,7 +106,7 @@ export default function PageWorkflows({ compte }: ProprietesPage) {
     }
   }, []);
 
-  // Au retour, l'arbre et l'étape du journal gardés se relisent sur place ; sans arbre gardé, un passage lancé avant se retrouve avec l'arbre de son site
+  // Au retour, l'arbre et l'étape gardés se relisent ; sinon l'arbre du passage.
   const depart = useRef({ adresse, pas: pasLu });
   useEffect(() => {
     const { adresse: gardee, pas } = depart.current;
@@ -126,14 +126,14 @@ export default function PageWorkflows({ compte }: ProprietesPage) {
     }
   }, [pasLu]);
   useSondage(lireRejeu, PAS_REJEU_MS, rejeu.en_cours, pasLu);
-  // Un autre passage efface les signalements marqués ; ceux du passage gardé restent au retour
+  // Un autre passage efface les signalements marqués ; ceux du gardé restent.
   const urlSignales = useRef(rejeu.url);
   useEffect(() => {
     if (urlSignales.current !== rejeu.url) setSignales(new Set());
     urlSignales.current = rejeu.url;
   }, [rejeu.url]);
 
-  // Une étape du journal à la fois ; revenue à la dernière, elle suit de nouveau le passage
+  // Une étape du journal à la fois ; revenue à la dernière, elle suit le passage.
   const lirePas = async (sens: number) => {
     const total = rejeu.pas_total ?? 1;
     const voulu = Math.max(0, Math.min(total - 1, (pasLu ?? total - 1) + sens));
@@ -190,7 +190,7 @@ export default function PageWorkflows({ compte }: ProprietesPage) {
     }
     setOccupe(false);
   };
-  // Validé, le signalement pose un champ du profil de tous sur la ligne ; ce qu'on y avait répondu ne vaut plus
+  // Un signalement validé pose un champ du profil de tous ; la réponse tombe.
   const valider = async (s: Signalement, champ: Champ) => {
     const fait = await appeler<{ champ: { libelle: string }; reponses_caduques: number }>(`/signalements/${encodeURIComponent(s.cle)}/valider`, { methode: 'POST', corps: champ });
     setAvis({ texte: `La ligne pose désormais « ${fait.champ.libelle} » ; ${fait.reponses_caduques} réponse(s) caduque(s).` });
@@ -218,7 +218,7 @@ type ProprietesArbre = {
   avis: Avis; setAvis: (a: Avis) => void;
 };
 
-// La fenêtre principale : la recherche d'un site, son résumé, la page choisie et son arbre, une ligne par geste
+// Fenêtre principale : recherche, résumé, page choisie et arbre.
 function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurCarte, rang, setRang, nbVerif, rejeuEnCours, avis, setAvis }: ProprietesArbre) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const [menu, setMenu] = useState(false);
@@ -315,7 +315,7 @@ function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurC
   );
 }
 
-// Le filtre de page et son menu : chaque page du site, sa clé et ses candidatures ; un clic ailleurs le referme
+// Filtre de page : pages, clés et candidatures ; un clic ailleurs le ferme.
 function MenuPages({ carte, rang, ouvert, basculer, fermer, choisir }: {
   carte: Carte; rang: number; ouvert: boolean; basculer: () => void; fermer: () => void; choisir: (i: number) => void;
 }) {
@@ -348,7 +348,7 @@ function MenuPages({ carte, rang, ouvert, basculer, fermer, choisir }: {
   );
 }
 
-// Les lignes d'une portée, de haut en bas ; chaque section du formulaire passe en titre au-dessus des siennes
+// Lignes d'une portée ; chaque section du formulaire passe en titre.
 function Lignes({ lignes, ctx, label }: { lignes: Ligne[]; ctx: Contexte; label?: string }) {
   const morceaux: React.ReactNode[] = [];
   let section = '';
@@ -362,7 +362,7 @@ function Lignes({ lignes, ctx, label }: { lignes: Ligne[]; ctx: Contexte; label?
   return <ol className="arbre-l" aria-label={label}>{morceaux}</ol>;
 }
 
-// Une ligne : rang, geste, libellé et marques, cible, source ; ce qu'un clic ouvre et les voies d'un aiguillage se replient dessous
+// Ligne : rang, geste, libellé, marques, cible, source ; le reste se replie.
 function LigneArbre({ ligne, rang, ctx }: { ligne: Ligne; rang: number; ctx: Contexte }) {
   const marques = [ligne.si && `si ${ligne.si}`, ligne.facultatif && 'facultatif', ligne.ferme && 'ferme',
     ligne.pour_chaque && `pour chaque ${ligne.pour_chaque.liste} · ${ligne.pour_chaque.ordre}`].filter(Boolean) as string[];
@@ -415,13 +415,13 @@ type ProprietesPanneau = {
   rejeter: (s: Signalement) => void; valider: (s: Signalement, champ: Champ) => Promise<void>;
 };
 
-// Le panneau : Rejouer, le Rejeu en cours ou fini, sa Comparaison, la Vérification de l'admin et les fenêtres d'un geste, en onglets
+// Panneau en onglets : Rejouer, Rejeu, Comparaison, Vérification, gestes.
 function PanneauWorkflows({ admin, adresse, carte, afficher, rejeu, setRejeu, rejeuIci, setPasLu, occupe, signales, lirePas, ordonner, signaler, conclure, verif, erreurVerif, rejeter, valider }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const { focus } = useVues();
   const [incomplet, setIncomplet] = useState<Incomplet | null>(null);
 
-  // Lancé, le passage s'ouvre dans son onglet ; un profil aux champs obligatoires vides ouvre « Profil incomplet »
+  // Lancé, le passage a son onglet ; un profil incomplet ouvre son avis.
   const lancer = async (d: DemandeRejeu) => {
     try {
       const e = await appeler<EtatRejeu>('/workflows/rejeu', { methode: 'POST', corps: d });
@@ -437,9 +437,9 @@ function PanneauWorkflows({ admin, adresse, carte, afficher, rejeu, setRejeu, re
     }
   };
   const rejouer = useOngletRejouer({ actif: onglet === 'rejouer', adresse, site: carte?.site ?? '', lancer });
-  // Validé ou abandonné, le champ rend la main : le panneau revient à la Vérification, une fenêtre en plus se ferme
+  // Validé ou abandonné, le champ rend la main : retour à la Vérification.
   const rendre = () => (focus === 'panneau' ? ouvrir('verification') : fermer());
-  // Un signalement par sa clé ; traité, il le dit, sans que le panneau se ferme avant de revenir à la Vérification
+  // Un signalement par sa clé ; traité, il le dit sans fermer le panneau.
   const elements = {
     champ: (cle: string) => {
       const s = verif?.signalements.find((x) => x.cle === cle);
