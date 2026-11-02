@@ -1,6 +1,4 @@
-/**
- * Études de cas des projets : contenu tiré du RAG (Hikup, Pico, Ovrane) et de la présentation d'Illusion.
- */
+/** Études de cas des projets, tirées du RAG et de la présentation d'Illusion */
 
 export interface Visuel {
   src: string;
@@ -27,7 +25,7 @@ export interface Section {
   blocs: Bloc[];
 }
 
-// Scène du premier écran : des mots touchés qui deviennent une phrase, et le nombre de touches avant/après
+// Scène du premier écran : mots touchés en phrase, touches avant/après
 export interface Scene {
   mots: string[];
   phrase: string;

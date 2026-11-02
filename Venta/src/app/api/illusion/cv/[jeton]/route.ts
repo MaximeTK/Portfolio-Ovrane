@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { forward } from '@/lib/proxy';
 import { REDIRECT_TARGETS, isValidJeton } from '@/lib/redirections';
 
-// CV envoyé avec la candidature du jeton, lu dans la base partagée ; à défaut, le CV générique du portfolio.
+// CV de la candidature du jeton, lu en base partagée ; sinon le CV générique
 export async function GET(request: NextRequest, { params }: { params: Promise<{ jeton: string }> }) {
   const { jeton } = await params;
   if (isValidJeton(jeton)) {

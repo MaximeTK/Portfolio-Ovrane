@@ -1,17 +1,14 @@
-/**
- * Relai vers le backend : seul ce module connaît son adresse et le secret de service.
- * Le navigateur ne parle qu'aux routes Next /api/*.
- */
+/** Relai vers le backend : seul ce module connaît son adresse et le secret */
 import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
 import { INDISPONIBLE } from '@/lib/messages';
 import { JETON_COOKIE, isValidJeton } from '@/lib/redirections';
 
 const SESSION_COOKIE = 'ovrane_session';
-// Marque d'un appareil où un compte s'est déjà connecté : un tiers qui épuise la limite de connexion ne bloque pas son titulaire ici
+// Marque d'appareil déjà connecté : un tiers ne bloque pas le titulaire
 const APPAREIL_COOKIE = 'ovrane_appareil';
 
-// En production, le secret de service et les sessions ne partent qu'en https, sauf vers la machine elle-même ; vide sinon
+// En production, secret et sessions ne partent qu'en https, sauf en local
 function backendUrl(): string {
   const url = process.env.BACKEND_URL || 'http://127.0.0.1:3001';
   if (process.env.NODE_ENV !== 'production' || /^https:\/\//i.test(url) || /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/i.test(url)) return url;
@@ -19,13 +16,13 @@ function backendUrl(): string {
   return '';
 }
 
-// Une route relaie sa requête, une page serveur ses en-têtes et ses cookies (next/headers) : les deux suffisent
+// Une route relaie sa requête, une page serveur ses en-têtes et cookies
 type Source = Pick<NextRequest, 'headers'> & { cookies: { get(nom: string): { value: string } | undefined } };
 
-// Seuls ces en-têtes d'une réponse d'Illusion reviennent au navigateur ; sa CSP isole le HTML d'un mail reçu
+// Seuls ces en-têtes d'Illusion reviennent ; sa CSP isole le HTML des mails
 const RENDUS_ILLUSION = ['content-type', 'content-disposition', 'content-length', 'content-security-policy'];
 
-/** En-têtes de tout appel au backend ; null en production sans SERVICE_SECRET. */
+/** En-têtes des appels au backend ; null en production sans SERVICE_SECRET */
 function enTetes(request: Source): Record<string, string> | null {
   const secret = process.env.SERVICE_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-ovrane-service');
   if (!secret) return null;
@@ -43,7 +40,7 @@ function enTetes(request: Source): Record<string, string> | null {
   };
 }
 
-/** Jeton Illusion de la session, posé en cookie par le middleware, jamais lu du corps. */
+/** Jeton Illusion de la session, cookie posé par le middleware */
 export function sessionJeton(request: NextRequest): string | undefined {
   const jeton = request.cookies.get(JETON_COOKIE)?.value;
   return isValidJeton(jeton) ? jeton : undefined;
@@ -51,7 +48,7 @@ export function sessionJeton(request: NextRequest): string | undefined {
 
 type ForwardInit = { method?: string; body?: unknown; timeout?: number };
 
-/** Appel brut : null sans secret en production, exception si le backend est injoignable. */
+/** Appel brut : null sans secret en production, exception si injoignable */
 export async function forward(request: Source, path: string, init: ForwardInit = {}): Promise<Response | null> {
   const headers = enTetes(request);
   const base = backendUrl();
@@ -65,7 +62,7 @@ export async function forward(request: Source, path: string, init: ForwardInit =
   });
 }
 
-/** Relai des pages d'Illusion : méthode, corps brut et son type tels quels, réponse en flux (téléversements et téléchargements compris). */
+/** Relai des pages d'Illusion : corps et type tels quels, réponse en flux */
 export async function relayerIllusion(request: NextRequest, path: string): Promise<Response> {
   const headers = enTetes(request);
   const base = backendUrl();
@@ -80,7 +77,7 @@ export async function relayerIllusion(request: NextRequest, path: string): Promi
         body: request.body,
         // Node exige ce mode pour envoyer un corps en flux sans le lire d'abord
         duplex: 'half',
-        // Au-delà des 120 s du backend vers Illusion : c'est lui qui répond le premier ; un navigateur parti coupe la chaîne
+        // Au-delà des 120 s du backend vers Illusion, qui répond le premier
         signal: AbortSignal.any([request.signal, AbortSignal.timeout(130_000)]),
       } as RequestInit);
       const rendus = new Headers({ 'Cache-Control': 'no-store' });
@@ -96,10 +93,7 @@ export async function relayerIllusion(request: NextRequest, path: string): Promi
   return NextResponse.json({ error: INDISPONIBLE }, { status: 503 });
 }
 
-/**
- * Relai JSON : statut et corps du backend, sauf `session` et `appareil`, qui deviennent des cookies
- * httpOnly ; `deconnexion: true` efface celui de la session, la marque d'appareil reste.
- */
+/** Relai JSON : session et appareil deviennent des cookies httpOnly */
 export async function relayerJson(request: NextRequest, path: string, init: ForwardInit = {}): Promise<NextResponse> {
   let response: Response | null = null;
   try {
@@ -112,7 +106,7 @@ export async function relayerJson(request: NextRequest, path: string, init: Forw
 
   const { session, appareil, ...corps } = data;
   const relaye = NextResponse.json(corps, { status: response.status });
-  // La session et la marque d'appareil deviennent des cookies httpOnly, jamais lus par la page
+  // Cookies httpOnly pour la session et la marque d'appareil, hors de la page
   for (const [nom, cookie] of [[SESSION_COOKIE, session], [APPAREIL_COOKIE, appareil]] as const) {
     const { jeton, expireLe } = (cookie ?? {}) as { jeton?: string; expireLe?: string };
     if (!jeton) continue;

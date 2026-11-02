@@ -45,7 +45,7 @@ const ACTIVITE: DonneesActivite = {
   ],
 };
 
-// Publiée, entreprise, intitulé, lieu, profil, profil auto, source, étape (classe, texte, infobulle), timer
+// Colonnes : publiée, entreprise, intitulé, lieu, profil, source, étape, timer
 type Ligne = [string, string, string, string, string, boolean, string, string, string, string, string];
 const W = 'Welcome to the Jungle', P = 'developpeur-python', B = 'backend-en';
 const LIGNES: Ligne[] = [
@@ -241,7 +241,7 @@ const AJOUT = (
   </>
 );
 
-// La planche du prototype : Activité, Candidatures et panneau à onglets, mêmes données fixes
+// Planche du prototype : Activité, Candidatures et onglets, données fixes
 export function Planche() {
   return (
     <Dock id="essai-candidatures" principal="tableau" panneau="fiche">

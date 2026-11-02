@@ -1,5 +1,5 @@
-/* Propre à la planche Candidatures du prototype, rejouée par le banc d'essai. */
-/* Publiée et Timer restent en place ; entre les deux, chaque colonne prend son contenu le plus large plus le même écart. */
+/* Planche Candidatures du prototype, rejouée par le banc d'essai */
+/* Publiée et Timer fixes ; chaque colonne prend son contenu le plus large */
 .ov [data-fen=tableau] thead th:nth-child(1){width:57px}
 .ov [data-fen=tableau] thead th:nth-child(2){width:calc(45px + (100cqw - 903px) / 7)}
 .ov [data-fen=tableau] thead th:nth-child(3){width:calc(66px + (100cqw - 903px) / 7)}
@@ -10,7 +10,7 @@
 .ov [data-fen=tableau] thead th:nth-child(8){width:calc(101px + (100cqw - 903px) / 7)}
 .ov [data-fen=tableau] thead th:nth-child(9){width:80px}
 .ov [data-fen=tableau] th:is(:nth-child(2),:nth-child(3)){letter-spacing:.06em}
-/* La fenêtre se resserre : ses colonnes secondaires se retirent, sans rien couper. */
+/* Fenêtre resserrée : les colonnes secondaires se retirent */
 .ov [data-fen=tableau][data-l=m] :is(th,td):is(:nth-child(6),:nth-child(7)){display:none}
 .ov [data-fen=tableau][data-l=m] thead th:nth-child(2){width:calc(45px + (100cqw - 620px) / 5)}
 .ov [data-fen=tableau][data-l=m] thead th:nth-child(3){width:calc(66px + (100cqw - 620px) / 5)}

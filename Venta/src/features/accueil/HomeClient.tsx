@@ -16,10 +16,10 @@ import { IntroSequence } from './IntroSequence';
 
 const MessagingView = dynamic(() => import('@/features/chat/MessagingView').then((m) => m.MessagingView));
 
-// Page actualisée par le visiteur, et non ouverte : l'accueil s'affiche sans être redit
+// Page actualisée et non ouverte : l'accueil s'affiche sans être redit
 const estRechargement = () => (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload';
 
-// Réponse dite pendant qu'elle s'écrit : sa voix, sa fenêtre ouverte au premier son, le texte reçu et le texte final
+// Réponse dite pendant qu'elle s'écrit : sa voix, sa fenêtre, ses textes
 type ReponseEnFlux = { texte: string; final: string | null; voix: FluxVoix | null; fenetre: string | null; secours: boolean };
 
 export default function HomeClient() {
@@ -28,7 +28,7 @@ export default function HomeClient() {
   const [lastProcessedTranscript, setLastProcessedTranscript] = useState('');
   const [messagingOpened, setMessagingOpened] = useState(false);
   const [messagingHint, setMessagingHint] = useState(false);
-  // Astuce de messagerie d'un nouveau profil : armée à sa création, due à son premier message, montrée quand la réponse commence
+  // Astuce de messagerie d'un nouveau profil, montrée quand la réponse commence
   const hintStepRef = useRef<'armed' | 'due' | null>(null);
   // Seules les réponses à une question ouvrent une fenêtre, pas l'accueil
   const questionAskedRef = useRef(false);
@@ -45,7 +45,7 @@ export default function HomeClient() {
   const setAppState = useUIStore((state) => state.setAppState);
   const viewMode = useUIStore((state) => state.viewMode);
   const page = useUIStore((state) => state.page);
-  // Les canaux d'Illusion montrés, l'œil logé dans le header leur laisse sa place ; au centre de l'accueil, il reste
+  // Si les canaux d'Illusion sont montrés, l'œil leur laisse sa place
   const oeilEfface = useUIStore((state) => state.cote === 'illusion' && (state.page !== null || state.viewMode === 'messaging'));
   const isAppLocked = useUIStore((state) => state.isAppLocked);
   const sonCoupe = useUIStore((state) => state.sonCoupe);
@@ -54,12 +54,12 @@ export default function HomeClient() {
   // La messagerie n'est chargée et rendue qu'à sa première ouverture
   if (viewMode === 'messaging' && !messagingOpened) setMessagingOpened(true);
 
-  // Voix du navigateur, en secours de la synthèse : leur liste se charge à l'avance
+  // Voix du navigateur en secours de la synthèse : liste chargée à l'avance
   useEffect(() => {
     window.speechSynthesis?.getVoices();
   }, []);
 
-  // Préférences de ce navigateur (voix coupée, teinte des boîtes), relues avant le premier accueil
+  // Préférences du navigateur (voix coupée, teinte des boîtes), relues d'abord
   useEffect(() => {
     try {
       if (localStorage.getItem(CLE_SON) === '1') useUIStore.setState({ sonCoupe: true });
@@ -98,14 +98,14 @@ export default function HomeClient() {
     setCurrentAnimation((animation) => (animation === 'speak' ? 'standby' : animation));
   }, [page, sonCoupe, stopTTS]);
 
-  // Garde-fou : 6 s après l'accueil, l'œil s'éveille même si la voix n'a pas démarré
+  // Garde-fou : 6 s après l'accueil, l'œil s'éveille même sans voix
   useEffect(() => {
     if (appState !== 'processing' || !currentTranscript) return;
     const timer = setTimeout(() => setAppState('awake'), 6000);
     return () => clearTimeout(timer);
   }, [appState, currentTranscript, setAppState]);
 
-  // Astuce de messagerie, due depuis le premier message d'un nouveau profil, montrée quand la réponse commence
+  // Astuce de messagerie due au premier message d'un nouveau profil
   const montrerAstuce = useCallback(() => {
     const ui = useUIStore.getState();
     if (hintStepRef.current !== 'due' || ui.viewMode === 'messaging' || ui.isAppLocked) return;
@@ -113,7 +113,7 @@ export default function HomeClient() {
     setMessagingHint(true);
   }, []);
 
-  // Chaque réponse : fenêtre et voix au tableau de bord, fenêtre seule en messagerie ou sur une page
+  // Chaque réponse : fenêtre et voix au tableau de bord, fenêtre seule ailleurs
   useEffect(() => {
     if (status !== 'idle' || !currentTranscript || currentTranscript === lastProcessedTranscript) return;
     setLastProcessedTranscript(currentTranscript);
@@ -131,12 +131,12 @@ export default function HomeClient() {
       stopTTS();
       openWindow();
       onEnd();
-      // Arrivée sur une page (/connexion, une adresse d'Illusion) : l'accueil reçu réveille l'œil sans attendre
+      // Arrivée sur une page : l'accueil reçu réveille l'œil sans attendre
       if (!isAnswer && useUIStore.getState().appState === 'processing') setAppState('awake');
       return;
     }
 
-    // Réponse déjà dite pendant qu'elle s'écrivait : sa fenêtre, ouverte au premier son, prend le texte final
+    // Réponse déjà dite en flux : sa fenêtre prend le texte final
     const enFlux = isAnswer ? reponseRef.current : null;
     if (enFlux?.voix) {
       enFlux.final = currentTranscript;
@@ -152,14 +152,14 @@ export default function HomeClient() {
       if (useUIStore.getState().appState === 'processing') setAppState('awake');
     };
 
-    // Voix coupée : fenêtre, astuce et réveil arrivent aussitôt, sans le son ni la synthèse
+    // Voix coupée : fenêtre, astuce et réveil arrivent aussitôt, sans son
     if (sonCoupe) {
       onStart();
       onEnd();
       return;
     }
 
-    // L'accueil réveille l'œil dès qu'il arrive ; sa voix suit quand la synthèse est prête, sauf après une actualisation
+    // L'accueil réveille l'œil tout de suite ; sa voix suit quand elle est prête
     if (!isAnswer) {
       if (useUIStore.getState().appState === 'processing') setAppState('awake');
       if (estRechargement()) return onEnd();
@@ -177,7 +177,7 @@ export default function HomeClient() {
     questionAskedRef.current = true;
     if (hintStepRef.current === 'armed') hintStepRef.current = 'due';
 
-    // Voix en flux : la fenêtre s'ouvre au premier son, puis le texte s'y allonge à mesure qu'il arrive
+    // Voix en flux : la fenêtre s'ouvre au premier son, le texte s'y allonge
     const reponse: ReponseEnFlux = { texte: '', final: null, voix: null, fenetre: null, secours: false };
     reponseRef.current = reponse;
     const auPremierSon = () => {

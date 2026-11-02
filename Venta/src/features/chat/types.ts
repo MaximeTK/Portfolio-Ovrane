@@ -1,6 +1,4 @@
-/**
- * Types du chat avec l'IA
- */
+/** Types du chat avec l'IA */
 export type MessageRole = 'user' | 'assistant';
 
 export interface Command {
@@ -16,7 +14,7 @@ export interface Message {
   commands?: Command[];
 }
 
-/** Voix de la réponse : un fichier statique remplace la synthèse, ex. le message de fin de session. */
+/** Voix de la réponse : un fichier statique remplace la synthèse */
 export interface TTSData {
   isStaticFile?: boolean;
   staticUrl?: string;
@@ -24,7 +22,7 @@ export interface TTSData {
 
 export type ChatStatus = 'idle' | 'streaming';
 
-/** Accueil public d'une candidature Illusion (GET /api/illusion/accueil?jeton=) : son texte, écrit et signé par le serveur. */
+/** Accueil public d'une candidature Illusion, écrit et signé par le serveur */
 export interface IllusionAccueil {
   entreprise: string;
   poste: string;
@@ -33,7 +31,7 @@ export interface IllusionAccueil {
   voix?: string;
 }
 
-/** Un texte à dire et sa signature : la voix du serveur ne lit que les textes qu'il a signés. */
+/** Texte à dire et sa signature : le serveur ne lit que ce qu'il a signé */
 export interface TexteSigne {
   texte: string;
   voix: string;

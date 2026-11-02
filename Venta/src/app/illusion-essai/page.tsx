@@ -10,7 +10,7 @@ export const metadata = { title: "Banc d'essai · Illusion" };
 
 type Recherche = { searchParams: Promise<{ page?: string; admin?: string; matiere?: string; palette?: string }> };
 
-// Banc d'essai sans connexion ni relais, jamais en production : ?page=<slug> montre une page du registre, sinon la planche du prototype ; ?admin=0, ?matiere=verre, ?palette=<id>
+// Banc d'essai sans connexion ni relais, jamais en production
 export default async function BancIllusion({ searchParams }: Recherche) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { page, admin, matiere, palette = 'ecarlate' } = await searchParams;

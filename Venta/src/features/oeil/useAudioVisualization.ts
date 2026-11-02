@@ -1,10 +1,4 @@
-/**
- * Hook pour la visualisation audio
- * Analyse directement la source audio fournie (HTMLAudioElement) au lieu de capturer le flux système/micro.
- * Cela permet de visualiser le TTS même si le son de l'ordinateur est coupé.
- * 
- * Fusionne les anciennes fonctionnalités de audioGraph.ts et audioLoop.ts pour simplifier la structure.
- */
+/** Visualisation audio : analyse la source fournie, même son du PC coupé */
 import { useEffect, useRef } from 'react';
 
 // === TYPES ===

@@ -13,7 +13,7 @@ import { ReglagesPage } from './ReglagesPage';
 import { ConnexionPage } from './ConnexionPage';
 import type { useChatController } from '@/features/chat/useChatController';
 
-// Illusion ne se charge que pour un compte qui y a accès : le portfolio des visiteurs n'en porte rien
+// Illusion ne se charge que pour un compte qui y a accès
 const chargerIllusion = () => import('@/features/illusion/ossature/RacineIllusion');
 const VueIllusion = dynamic(chargerIllusion);
 
@@ -38,11 +38,11 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
   const compteIllusion = useUIStore((s) => s.compteIllusion);
   const erreurIllusion = useUIStore((s) => s.erreurIllusion);
   const conteneurRef = useRef<HTMLDivElement>(null);
-  // Jeton du lien « mot de passe oublié », lu dans le fragment de /connexion avant que l'URL redevienne celle de base
+  // Jeton du lien de mot de passe oublié, lu dans le fragment de /connexion
   const [reinit, setReinit] = useState(() =>
     typeof window !== 'undefined' && window.location.pathname === '/connexion' ? new URLSearchParams(window.location.hash.slice(1)).get('reinit') : null,
   );
-  // Arrivée par une adresse d'Illusion (/illusion/<page>?…) : sa page s'ouvre une fois le compte connu
+  // Adresse d'Illusion à l'arrivée : sa page s'ouvre une fois le compte connu
   const [entree] = useState(() => {
     const morceaux = typeof window !== 'undefined' ? /^\/illusion(?:\/([^/]*))?\/?$/.exec(window.location.pathname) : null;
     return morceaux ? { slug: morceaux[1] ?? '', recherche: window.location.search.slice(1) } : null;
@@ -58,16 +58,16 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
     conteneurRef.current.focus({ preventScroll: true });
   }, [page]);
 
-  // Une vue ouverte ajoute une entrée d'historique, à l'adresse d'Illusion pour ses pages, et nomme l'onglet
+  // Une vue ouverte ajoute une entrée d'historique et nomme l'onglet
   useEffect(() => {
     const illusion = partiesIllusion(page);
     if (page && window.history.state?.page !== page) window.history.pushState({ page }, '', illusion ? `/${page}` : '/');
-    // Revenu à l'accueil depuis une page d'Illusion : l'adresse redevient celle du site
+    // Retour à l'accueil depuis Illusion : l'adresse redevient celle du site
     else if (!page && window.history.state?.page && window.location.pathname !== '/') window.history.pushState({ page: null }, '', '/');
     const nom = illusion ? `${titreDe(illusion.slug)} · Illusion` : page ? VUES[page] ?? trouverProjet(page)?.nom : undefined;
     const titre = nom ? `${nom} — Ovrane` : 'Ovrane';
     document.title = titre;
-    // Next réécrit son titre, plus tard, quand l'URL change (arrivée par /connexion) : celui de la vue est remis
+    // Next réécrit son titre au changement d'URL : celui de la vue est remis
     const veille = new MutationObserver(() => {
       if (document.title !== titre) document.title = titre;
     });
@@ -91,7 +91,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
     return () => clearTimeout(minuteur);
   }, [setPage]);
 
-  // Le compte d'Illusion, relu à chaque connexion ou déconnexion ; un visiteur sans compte Ovrane ne demande rien à Illusion ; son code se prépare dès que l'accès est ouvert
+  // Compte d'Illusion relu à chaque connexion ; code préparé dès l'accès ouvert
   useEffect(() => {
     let actif = true;
     fetch('/api/auth/compte')
@@ -108,7 +108,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
     };
   }, [utilisateur]);
 
-  // Une adresse d'Illusion ouvre sa page, l'accueil des canaux pour une page inconnue ou réservée ; sans accès, la vue Compte
+  // Adresse d'Illusion : sa page, ou l'accueil des canaux ; sans accès, Compte
   useEffect(() => {
     if (!entree || entreeFaite.current || compteIllusion === undefined) return;
     entreeFaite.current = true;
@@ -124,7 +124,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
     setPage(vue);
   }, [entree, compteIllusion, erreurIllusion, setPage]);
 
-  // Sans accès à Illusion (déconnexion, retour arrière), ses pages laissent place à la vue Compte
+  // Sans accès à Illusion, ses pages laissent place à la vue Compte
   useEffect(() => {
     if (partiesIllusion(page) && compteIllusion === null && !erreurIllusion) setPage('connexion');
   }, [page, compteIllusion, erreurIllusion, setPage]);
@@ -133,7 +133,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
   const projet = affichee && !VUES[affichee] && !illusion ? trouverProjet(affichee) : undefined;
   const rang = projet ? PROJETS.indexOf(projet) : -1;
 
-  // Le header n'a plus de fond : le texte qui remonte s'efface avant d'atteindre les onglets ; Illusion range ses fenêtres elle-même
+  // Header sans fond : le texte qui remonte s'efface avant les onglets
   return (
     <>
     <div

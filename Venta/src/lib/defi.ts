@@ -1,7 +1,4 @@
-/**
- * Preuve de travail demandée par le serveur avant de créer un visiteur : le plus petit nombre dont le SHA-256 de
- * « défi:nombre » commence par assez de bits à zéro. Une fraction de seconde ici, un coût par profil pour un robot.
- */
+/** Preuve de travail demandée avant de créer un visiteur */
 
 // Constantes de SHA-256 (FIPS 180-4)
 const K = new Uint32Array([
@@ -18,8 +15,7 @@ const W = new Uint32Array(64);
 
 const rotr = (x: number, n: number) => (x >>> n) | (x << (32 - n));
 
-// Premier mot de 32 bits du SHA-256, assez pour compter les bits à zéro en tête : cinq fois plus rapide ici que Web Crypto,
-// qui paie un aller-retour par empreinte
+// Premier mot de 32 bits du SHA-256, cinq fois plus rapide que Web Crypto
 function premierMot(octets: Uint8Array): number {
   const m = new Uint8Array(Math.ceil((octets.length + 9) / 64) * 64);
   m.set(octets);
@@ -44,9 +40,9 @@ function premierMot(octets: Uint8Array): number {
   return h0;
 }
 
-// Assez d'essais par tranche pour avancer, assez peu pour que l'animation d'arrivée ne saccade pas
+// Assez d'essais par tranche pour avancer, pas assez pour saccader l'animation
 const TRANCHE = 2048;
-// Au-delà, le défi est hors de portée d'un navigateur : mieux vaut l'erreur qu'une attente sans fin
+// Au-delà, défi hors de portée : mieux vaut l'erreur qu'une attente sans fin
 const MAX_ESSAIS = 1 << 26;
 
 export async function resoudreDefi(defi: string, difficulte: number): Promise<string> {

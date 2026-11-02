@@ -4,7 +4,7 @@ import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'r
 import { useUIStore } from '@/lib/uiStore';
 import { CENTRE_HEADER_PX } from '@/features/site/SiteHeader';
 
-// Largeur du conteneur une fois l'œil logé dans le header : l'hexagone visible y fait ~29 px de haut
+// Largeur du conteneur une fois l'œil logé dans le header (hexagone ~29 px)
 const LARGEUR_EN_HAUT_PX = 96;
 const HEX_POINTS = '0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6';
 const MAX_WAVES = 3;
@@ -53,11 +53,11 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
   const cote = useUIStore((state) => state.cote);
   const setCote = useUIStore((state) => state.setCote);
   const isSleep = mode === 'sleep';
-  // Messagerie ou page ouverte : l'œil quitte le centre pour l'emplacement du header
+  // Messagerie ou page ouverte : l'œil quitte le centre pour le header
   const enHaut = !isSleep && (viewMode === 'messaging' || page !== null);
-  // Les canaux d'Illusion montrés, leur logo prend la place de l'œil logé dans le header
+  // Si les canaux d'Illusion sont montrés, leur logo remplace l'œil du header
   const isInteractive = !isSleep && !isAppLocked && !(cote === 'illusion' && enHaut);
-  // Endormi, l'œil respire entre deux gris ; éveillé, il est blanc, jaune pâle quand il réfléchit
+  // Endormi : deux gris ; éveillé : blanc ; en réflexion : jaune pâle
   const hexColor = isSleep ? (isBreathingIn ? '#A9A9A9' : '#333333') : currentAnimation === 'thinking' ? '#fff9c4' : '#ffffff';
   const libelle = page ? "Revenir à l'accueil" : viewMode === 'messaging' ? 'Fermer la messagerie' : 'Ouvrir la messagerie';
 
@@ -70,7 +70,7 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
     return () => clearInterval(interval);
   }, [isSleep, awake]);
 
-  // Le parent n'est jamais transformé : son centre est la position de repos de l'œil
+  // Le parent n'est jamais transformé : son centre est le repos de l'œil
   useEffect(() => {
     const conteneur = containerRef.current;
     if (isSleep || !conteneur) return;
@@ -84,7 +84,7 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
     };
     mesurer();
     window.addEventListener('resize', mesurer);
-    // Une fois l'œil monté ou redescendu, le suivi de la souris repart de sa nouvelle place
+    // Œil monté ou redescendu : le suivi de la souris repart de sa nouvelle place
     conteneur.addEventListener('transitionend', mesurerRect);
     return () => {
       window.removeEventListener('resize', mesurer);
@@ -129,7 +129,7 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
     else setViewMode(viewMode === 'dashboard' ? 'messaging' : 'dashboard');
   };
 
-  // Compte d'Illusion : le clic droit bascule l'en-tête entre les canaux d'Ovrane et ceux d'Illusion, comme sur le logo d'Illusion
+  // Compte d'Illusion : le clic droit bascule les canaux d'Ovrane et d'Illusion
   const handleContextMenu = (e: React.MouseEvent) => {
     if (!isInteractive || !compteIllusion) return;
     e.preventDefault();
@@ -153,7 +153,7 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [currentAnimation, isSleep, placerOeil]);
 
-  // En parole, l'œil se centre ; en réflexion, il regarde les quatre coins toutes les 800 ms
+  // En parole il se centre ; en réflexion il regarde les coins toutes les 800 ms
   useEffect(() => {
     if (currentAnimation === 'speak') placerOeil(0, 0);
     if (isSleep || currentAnimation !== 'thinking') return;
@@ -167,7 +167,7 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
     return () => clearInterval(interval);
   }, [currentAnimation, isSleep, placerOeil]);
 
-  // Ondes au rythme de la voix : plus elle est forte, plus elles se rapprochent (de 250 à 25 ms)
+  // Ondes au rythme de la voix : plus elle est forte, plus elles se rapprochent
   useEffect(() => {
     lastWaveTimeRef.current = 0;
     if (isSleep || currentAnimation !== 'speak' || !isSpeaking) return;

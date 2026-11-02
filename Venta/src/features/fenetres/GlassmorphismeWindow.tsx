@@ -9,7 +9,7 @@ import { useUIStore, type Fenetre } from '@/lib/uiStore';
 // Zoom de 1 à 50/31 : une image passe de 31 à 50 vh sur son petit côté
 const MAX_ZOOM = 50 / 31;
 
-/** Fenêtre flottante en verre : réponse en Markdown ou image, déplaçable, zoomable, repliable. */
+/** Fenêtre en verre : Markdown ou image, déplaçable, zoomable, repliable */
 function Window({ fenetre }: { fenetre: Fenetre }) {
   const { closeWindow, moveWindow, focusWindow } = useUIStore.getState();
   const titleId = useId();
@@ -23,7 +23,7 @@ function Window({ fenetre }: { fenetre: Fenetre }) {
   // Assez large pour le titre et les quatre boutons
   const minWidth = Math.max(300, Math.max(150, title.length * 8) + 200);
 
-  // Pointer Events : souris, tactile et stylet ; la capture garde le glissé sur la barre de titre
+  // Pointer Events : souris, tactile, stylet ; la capture garde le glissé
   const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
     const rect = windowRef.current?.getBoundingClientRect();

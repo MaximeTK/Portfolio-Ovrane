@@ -27,7 +27,7 @@ const SANITIZE_SCHEMA: SanitizeSchema = {
 
 const MAX_IMAGES = 9;
 
-// Images du message, Markdown, HTML ou commandes ShowPicture : seulement celles de /assets/
+// Images du message : seulement celles de /assets/
 function messageImages(content: string, commands: Command[] = []): string[] {
   const sources = [
     ...Array.from(content.matchAll(/!\[[^\]]*\]\(([^)]+)\)|<img\s[^>]*src=["']([^"']+)["']/g), (m) => m[1] ?? m[2]),
@@ -70,7 +70,7 @@ export function MessageBubble({ message, time, dateDivider, onImageClick, onImag
 
           <Bulle
             className={`markdown px-4 py-3 text-sm md:text-base text-white break-words whitespace-pre-wrap ${
-              // Le visiteur flotte sur la teinte réglable ; l'IA prend le verre du Figma, coin d'attache gardé
+              // Visiteur sur la teinte réglable ; l'IA prend le verre du Figma
               isUser
                 ? 'bg-(--verre) shadow-[0_2px_8px_0_rgba(0,0,0,0.15)] rounded-2xl rounded-tr-sm'
                 : '[--verre-rayon:4px_25px_25px_25px]'

@@ -5,7 +5,7 @@ import { useUIStore, VERRE_DEFAUT } from '@/lib/uiStore';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { COLOR_PALETTES } from '@/features/fond/colorPalettes';
 
-// Réglages d'affichage provisoires : fond enregistré dans le profil, teinte des boîtes dans ce navigateur
+// Réglages provisoires : fond au profil, teinte des boîtes au navigateur
 export function ReglagesPage() {
   const opacite = useUIStore((s) => s.verreOpacite);
   const reglerVerre = useUIStore((s) => s.reglerVerre);

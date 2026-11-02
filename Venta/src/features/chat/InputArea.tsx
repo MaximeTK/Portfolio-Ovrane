@@ -35,7 +35,7 @@ export function InputArea({ onSubmit, triggerWave, isLoading = false, tipsEnable
   const sonCoupe = useUIStore((s) => s.sonCoupe);
   const basculerSon = useUIStore((s) => s.basculerSon);
 
-  // Hauteur suivant le texte jusqu'à 200 px ; au-delà de ~60 px, il y a plus d'une ligne
+  // Hauteur suivant le texte jusqu'à 200 px ; plus d'une ligne au-delà de ~60 px
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;

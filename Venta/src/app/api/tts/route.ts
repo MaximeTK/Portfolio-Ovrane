@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { forward } from '@/lib/proxy';
 import { corpsJson } from '@/lib/origine';
 
-/** Seule route à relayer de l'audio. Tout échec bascule sur la voix du navigateur. */
+/** Seule route d'audio ; tout échec bascule sur la voix du navigateur */
 export async function POST(request: NextRequest) {
   if (!corpsJson(request.headers)) return NextResponse.json({ error: 'Requête invalide' }, { status: 415 });
   try {

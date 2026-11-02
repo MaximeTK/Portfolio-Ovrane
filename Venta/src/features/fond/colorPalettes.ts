@@ -1,6 +1,4 @@
-/**
- * Palettes de couleurs disponibles pour le fond du site
- */
+/** Palettes de couleurs du fond du site */
 
 export interface ColorPalette {
   id: string;

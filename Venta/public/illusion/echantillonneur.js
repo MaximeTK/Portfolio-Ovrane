@@ -1,4 +1,4 @@
-// Processeur audio de RUBY, servi tel quel : il ramène le son à 16 kHz en moyennant et rend des paquets de 100 ms en entiers 16 bits
+// Audio de RUBY : son ramené à 16 kHz, paquets de 100 ms en entiers 16 bits
 const FREQUENCE_FLUX = 16000;
 
 class Echantillonneur extends AudioWorkletProcessor {

@@ -6,13 +6,13 @@ import { useUIStore } from '@/lib/uiStore';
 // Canaux d'Illusion, chargés pour un compte qui y a accès
 const EnteteIllusion = dynamic(() => import('@/features/illusion/ossature/Entete').then((m) => m.Entete));
 
-// Hauteur et marge haute du header : l'œil d'Ovrane vise son centre quand il monte (HexagonalAnimation)
+// Hauteur et marge haute du header : l'œil vise son centre en montant
 export const CENTRE_HEADER_PX = 16 + 44 / 2;
 
 function Onglet({ page, label, icone }: { page: string; label: string; icone?: React.ReactNode }) {
   const actif = useUIStore((s) => s.page === page);
   const setPage = useUIStore((s) => s.setPage);
-  // Onglet actif : même lueur que l'œil, une copie blanche floutée sous le texte ; une icône garde son libellé pour les lecteurs d'écran
+  // Onglet actif : lueur de l'œil, copie blanche floutée sous le texte
   return (
     <button
       type="button"
@@ -47,7 +47,7 @@ const ICONE_COMPTE = (
 
 export function SiteHeader() {
   const awake = useUIStore((s) => s.appState === 'awake');
-  // L'emplacement central s'ouvre dès que l'œil quitte le centre de l'écran : page ou messagerie
+  // L'emplacement central s'ouvre dès que l'œil quitte le centre de l'écran
   const ouvert = useUIStore((s) => s.page !== null || s.viewMode === 'messaging');
   const compteIllusion = useUIStore((s) => s.compteIllusion);
   const illusion = useUIStore((s) => s.cote === 'illusion');
@@ -59,9 +59,9 @@ export function SiteHeader() {
         awake ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'
       }`}
     >
-      {/* Canaux d'Ovrane et d'Illusion à la même place : l'un s'efface pour l'autre, l'œil ou le logo d'Illusion au centre exact */}
+      {/* Canaux d'Ovrane et d'Illusion à la même place, l'un effaçant l'autre */}
       <div className="grid">
-        {/* Colonnes latérales de même largeur : l'emplacement de l'œil reste au centre exact de l'écran */}
+        {/* Colonnes latérales égales : l'œil reste au centre exact de l'écran */}
         <nav
           aria-label="Navigation principale"
           inert={illusion}
@@ -69,7 +69,7 @@ export function SiteHeader() {
             illusion ? 'opacity-0' : awake ? 'pointer-events-auto' : ''
           }`}
         >
-          {/* Une icône à chaque bout : les deux colonnes gardent la même largeur sur mobile */}
+          {/* Une icône à chaque bout : colonnes de même largeur sur mobile */}
           <div className="flex items-center justify-end gap-4 sm:gap-7">
             <Onglet page="reglages" label="Réglages" icone={ICONE_REGLAGES} />
             <Onglet page="pico" label="Pico" />

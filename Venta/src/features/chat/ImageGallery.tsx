@@ -25,7 +25,7 @@ export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProp
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
 
-  // Fenêtre modale native : le fond devient inerte et Échap la ferme ; le focus va sur « Fermer », puis revient à la vignette
+  // Modale native : fond inerte, Échap ferme, le focus revient à la vignette
   useEffect(() => {
     const dialog = dialogRef.current;
     const opener = document.activeElement as HTMLElement | null;
@@ -45,7 +45,7 @@ export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProp
     setTouchStart(null);
   };
 
-  // Image courante au centre, voisines de part et d'autre, espacées de 40 px pour ne pas déborder
+  // Image courante au centre, voisines espacées de 40 px pour ne pas déborder
   const renderSlide = (offset: -1 | 0 | 1) => {
     const index = (currentIndex + offset + images.length) % images.length;
     const src = images[index];

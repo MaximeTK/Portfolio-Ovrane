@@ -10,7 +10,7 @@ import { resoudreDefi } from '@/lib/defi';
 const HISTORY_LIMIT = 20;
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
-/** Réponse du chat ou de l'arrivée ; activeUserId ne sert qu'à l'affichage, la session est un cookie. */
+/** Réponse du chat ou de l'arrivée ; activeUserId ne sert qu'à l'affichage */
 interface Reponse {
   reply?: string;
   // Signature de la réponse par le serveur, sans laquelle sa voix ne la lit pas
@@ -33,7 +33,7 @@ function createMessage(role: MessageRole, content: string, timestamp = Date.now(
 
 const normalize = (text: string) => text.replace(/\s+/g, ' ').trim();
 
-/** Écoute d'une réponse en flux : texte reçu jusqu'ici, audio PCM en base64, voix de secours annoncée par le serveur. */
+/** Écoute d'une réponse en flux : texte, audio PCM base64, voix de secours */
 export interface EcouteReponse {
   texte: (complet: string) => void;
   audio: (pcm: string) => void;
@@ -43,7 +43,7 @@ export interface EcouteReponse {
 // Événements SSE d'un corps de réponse, au fil de leur arrivée
 async function* lireEvenements(corps: ReadableStream<Uint8Array>) {
   const lecteur = corps.getReader();
-  // Un caractère accentué coupé entre deux morceaux est recollé par le décodage en flux
+  // Un caractère accentué coupé entre deux morceaux est recollé par le décodage
   const decodeur = new TextDecoder();
   let reste = '';
   for (let morceau = await lecteur.read(); !morceau.done; morceau = await lecteur.read()) {
@@ -80,7 +80,7 @@ export function useChatController() {
   const [historySkip, setHistorySkip] = useState(0);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
 
-  // Réponse du chat comme de l'arrivée : changement de profil, commandes, puis le texte à dire
+  // Réponse du chat ou de l'arrivée : profil, commandes, puis texte à dire
   const applyResponse = useCallback((data: Reponse, text: string) => {
     const ui = useUIStore.getState();
     const fond = useBackgroundStore.getState();
@@ -130,7 +130,7 @@ export function useChatController() {
     }
 
     setCurrentTTS(data.tts ?? null);
-    // Un texte écrit ici (indisponibilité, repli) n'a pas de signature : le navigateur le dit lui-même
+    // Un texte écrit ici n'a pas de signature : le navigateur le dit lui-même
     setCurrentVoix(data.voix && text === data.reply?.trim() ? data.voix : null);
     setCurrentTranscript(text);
     setStatus('idle');
@@ -145,7 +145,7 @@ export function useChatController() {
     setCurrentTTS(null);
     setCurrentVoix(null);
 
-    // Texte et voix arrivent pendant que le modèle écrit ; la réponse complète clôt le flux
+    // Texte et voix arrivent en cours d'écriture ; la réponse complète clôt le flux
     let data: Reponse = {};
     try {
       const res = await fetch('/api/chat/flux', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ prompt }) });
@@ -168,7 +168,7 @@ export function useChatController() {
     }
     const text = data.reply?.trim() || (data.commands?.length ? CHAT_UI.applyRequestFallback : '');
     if (text) setHistorySkip((n) => n + 1);
-    // Réponse vide ou en erreur : un message lisible, dit puis suivi du retour au repos
+    // Réponse vide ou en erreur : message lisible, dit, puis retour au repos
     applyResponse(data, text || INDISPONIBLE);
   }, [status, applyResponse]);
 
@@ -184,7 +184,7 @@ export function useChatController() {
       });
     let res = await envoyer(body);
     let data: Reponse | null = await res?.json().catch(() => null);
-    // Nouveau visiteur : le serveur demande d'abord une courte preuve de travail, jointe à son refus
+    // Nouveau visiteur : le serveur exige d'abord une courte preuve de travail
     if (mode === 'visitor' && res?.status === 403 && data?.defi) {
       const { defi, difficulte = 0 } = data;
       const solution = await resoudreDefi(defi, difficulte).catch(() => '');
@@ -195,7 +195,7 @@ export function useChatController() {
       setStatus('idle');
       throw new Error(data?.error || INDISPONIBLE);
     }
-    // L'accueil du recruteur, s'il est fourni, remplace celui du backend, avec sa signature
+    // L'accueil du recruteur, s'il est fourni, remplace celui du backend
     const recruteur = await welcome;
     applyResponse(recruteur ? { ...data, reply: recruteur.texte, voix: recruteur.voix } : data, recruteur?.texte || data.reply || '');
   }, [applyResponse]);

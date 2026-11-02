@@ -1,6 +1,4 @@
-/**
- * Fond de l'application : palette demandée à l'IA, ou reprise des préférences du profil
- */
+/** Fond de l'application : palette demandée à l'IA ou reprise du profil */
 import { create } from 'zustand';
 import { COLOR_PALETTES, getDefaultPalette, type ColorPalette } from './colorPalettes';
 
@@ -12,7 +10,7 @@ interface BackgroundState {
   loadPreference: () => Promise<void>;
 }
 
-// Clé tolérante : minuscules, sans accents ni ponctuation, mots reliés par « _ »
+// Clé tolérante : minuscules, sans accents ni ponctuation, mots reliés par _
 function normalizeKey(value: string) {
   return value
     .toLowerCase()
@@ -31,7 +29,7 @@ const PALETTES = new Map(
 function resolvePalette(paletteId: string): ColorPalette | undefined {
   const key = normalizeKey(paletteId);
   if (PALETTES.has(key)) return PALETTES.get(key);
-  // Texte en trop après l'identifiant (« spectre. Voilà ») : préfixes d'un à trois mots
+  // Texte en trop après l'identifiant : préfixes d'un à trois mots
   const mots = key.split('_');
   return [1, 2, 3].map((n) => PALETTES.get(mots.slice(0, n).join('_'))).find(Boolean);
 }
@@ -45,7 +43,7 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
     if (palette) set({ currentPalette: palette });
   },
 
-  // Choix du visiteur dans les réglages : appliqué tout de suite, enregistré dans son profil
+  // Choix du visiteur : appliqué tout de suite, enregistré dans son profil
   choisirFond: (paletteId) => {
     const palette = resolvePalette(paletteId);
     if (!palette) return;

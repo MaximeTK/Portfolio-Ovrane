@@ -6,7 +6,7 @@ import { useBackgroundStore } from './backgroundStore';
 export function Background({ children }: { children: React.ReactNode }) {
   const currentPalette = useBackgroundStore((state) => state.currentPalette);
 
-  // Fondu croisé : la nouvelle palette apparaît par-dessus l'active, puis la remplace
+  // Fondu croisé : la nouvelle palette recouvre l'active puis la remplace
   const [activePalette, setActivePalette] = useState(currentPalette);
   const [nextPalette, setNextPalette] = useState<typeof currentPalette | null>(null);
 
@@ -38,7 +38,7 @@ export function Background({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      {/* Les couleurs du fond pour le verre qui le recopie, menées au rythme du fondu croisé */}
+      {/* Couleurs du fond pour le verre qui le recopie, au rythme du fondu */}
       <div
         className="relative z-10"
         style={{

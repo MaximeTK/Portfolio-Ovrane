@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { relayerJson, sessionJeton } from '@/lib/proxy';
 
-// Accueil public de la candidature liée au jeton de session : entreprise, poste, langue.
+// Accueil public de la candidature liée au jeton : entreprise, poste, langue
 export async function GET(request: NextRequest) {
   const jeton = sessionJeton(request);
   if (!jeton) {

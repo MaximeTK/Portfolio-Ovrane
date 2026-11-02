@@ -7,7 +7,7 @@ import { useUIStore } from '@/lib/uiStore';
 
 export const ETIQUETTE = 'text-[10px] font-bold uppercase tracking-[0.25em] text-white/60';
 
-// Bloc en verre (Figma 333-2359) : la classe .verre et le calque de ses halos, toujours premier enfant
+// Bloc en verre : classe .verre et calque de halos, toujours premier enfant
 export function Verre<T extends ElementType = 'div'>({
   as,
   className = '',
@@ -137,7 +137,7 @@ function RenduBloc({ bloc }: { bloc: Bloc }) {
   }
 }
 
-// Premier écran : les mots touchés deviennent une phrase, et les touches économisées se comptent en points
+// Premier écran : mots touchés en phrase, touches économisées en points
 function ScenePremierEcran({ scene, nom }: { scene: Scene; nom: string }) {
   const points = (n: number, vif: boolean) => (
     <span aria-hidden="true" className="mt-3 flex gap-1.5">
@@ -249,9 +249,7 @@ export function ProjectPage({ projet, rang, total, suivant }: { projet: Projet; 
   );
 }
 
-/**
- * Sommaire fixé à gauche, hors du conteneur qui défile ; la section qui traverse le milieu de l'écran s'allume
- */
+/** Sommaire fixé à gauche ; la section au milieu de l'écran s'allume */
 export function Sommaire({ projet, visible }: { projet: Projet; visible: boolean }) {
   const [actif, setActif] = useState<string | null>(null);
 

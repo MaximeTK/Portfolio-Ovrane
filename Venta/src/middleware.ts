@@ -15,11 +15,11 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
       : NextResponse.json({ error: 'Requête refusée' }, { status: 403 });
   }
 
-  // Mots-clés redirectcvdesign, redirectcv, redirectlinkedin, redirectgithub, redirectportfolio, avec jeton éventuel
+  // Mots-clés redirect (cv, cvdesign, linkedin, github, portfolio) avec jeton
   const link = parseRedirectPath(path);
   if (!link) return NextResponse.next();
 
-  // PDF de public/assets/, profils externes ou accueil du portfolio ; avec un jeton, le CV envoyé avec la candidature
+  // PDF, profil externe ou accueil ; avec jeton, le CV de la candidature
   const cvEnvoye = (link.cible === 'cv' || link.cible === 'cvdesign') && link.jeton;
   const target = cvEnvoye ? `/api/illusion/cv/${link.jeton}` : REDIRECT_TARGETS[link.cible];
 
@@ -31,7 +31,7 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   event.waitUntil(suivi);
 
   const response = NextResponse.redirect(new URL(target, request.url));
-  // Le jeton suit la session : la route de chat et l'accueil le relisent côté serveur
+  // Le jeton suit la session : le chat et l'accueil le relisent côté serveur
   if (link.cible === 'portfolio' && link.jeton) {
     response.cookies.set(JETON_COOKIE, link.jeton, {
       path: '/',
@@ -43,7 +43,7 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   return response;
 }
 
-// Les routes d'API pour leur garde, et les pages, où vivent les liens suivis ; ni les fichiers statiques, ni les images
+// Routes d'API (garde) et pages (liens suivis), ni statiques ni images
 export const config = {
   matcher: ['/api/:path*', '/((?!api|_next/static|_next/image|favicon.ico|assets).*)'],
 };

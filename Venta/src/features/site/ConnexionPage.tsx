@@ -42,14 +42,14 @@ function Champ({ label, aide, ...input }: { label: string; aide?: string } & Rea
 
 interface ConnexionPageProps {
   sendAuth: ReturnType<typeof useChatController>['sendAuth'];
-  // Change à chaque connexion, inscription ou déconnexion : le compte affiché est alors relu
+  // Change à chaque connexion, inscription ou déconnexion : le compte est relu
   utilisateur: string | null;
   // Jeton du lien « mot de passe oublié », oublié une fois utilisé ou abandonné
   reinit: string | null;
   finirReinit: () => void;
 }
 
-// Le compte Ovrane, porte d'entrée d'Illusion : connexion, inscription sur invitation, mot de passe oublié, puis le compte connecté
+// Compte Ovrane, porte d'entrée d'Illusion : connexion, inscription, compte
 export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: ConnexionPageProps) {
   // undefined tant que le compte de la session n'est pas connu
   const [compte, setCompte] = useState<Compte | null>();
@@ -100,7 +100,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
     }
   };
 
-  // Le lien reçu par e-mail : le fragment quitte l'URL (et l'historique) dès l'arrivée ; une confirmation d'adresse se consomme aussitôt
+  // Lien reçu par e-mail : le fragment quitte l'URL dès l'arrivée
   useEffect(() => {
     const fragment = new URLSearchParams(window.location.hash.slice(1));
     if (fragment.has('verif') || fragment.has('reinit')) window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -147,7 +147,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
   const deconnecter = () =>
     agir(async () => {
       await poster('/api/auth/logout');
-      // Rien de ce compte ne reste dans le navigateur : les brouillons d'Illusion partent avec la session
+      // Rien du compte ne reste dans le navigateur, brouillons d'Illusion compris
       effacerBrouillons();
       await sendAuth('visitor', {});
     });

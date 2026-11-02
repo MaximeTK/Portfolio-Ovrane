@@ -71,7 +71,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     if (stickRafRef.current !== null) cancelAnimationFrame(stickRafRef.current);
   }, []);
 
-  // À l'ouverture, directement en bas sans défilement visible ; ensuite, en douceur
+  // À l'ouverture, en bas sans défilement visible ; ensuite en douceur
   useEffect(() => {
     if (!visible) {
       isFirstLoadRef.current = true;
@@ -86,7 +86,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     }
   }, [messages, visible, shouldScrollToBottom]);
 
-  // La molette hors de la liste, sur les côtés vides, fait quand même défiler la conversation
+  // La molette sur les côtés vides fait aussi défiler la conversation
   useEffect(() => {
     if (!visible) return;
     const handleGlobalWheel = (e: WheelEvent) => {
@@ -101,7 +101,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     setShouldScrollToBottom(scrollHeight - scrollTop - clientHeight < 200);
 
-    // Près du haut : on charge les messages précédents et on garde la position de lecture
+    // Près du haut : messages précédents chargés, position de lecture gardée
     if (scrollTop < 50 && !isLoadingHistory && hasMoreMessages) {
       setIsLoadingHistory(true);
       await onLoadHistory();
@@ -118,7 +118,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
     <div
       inert={!visible}
       className={`fixed bottom-0 left-0 right-0 z-10 h-[85vh] flex flex-col pb-32 px-4 max-w-5xl mx-auto transition-all duration-500 ease-in-out ${
-        // Ouverte, sans translation : le fond que le verre des bulles recopie reste fixe à l'écran
+        // Sans translation : le fond que recopie le verre des bulles reste fixe
         visible ? 'opacity-100 pointer-events-auto translate-none starting:opacity-0 starting:translate-y-8' : 'opacity-0 pointer-events-none translate-y-8'
       }`}
     >

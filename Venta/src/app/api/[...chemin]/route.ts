@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { relayerJson, sessionJeton } from '@/lib/proxy';
 import { corpsJson } from '@/lib/origine';
 
-// Liste blanche « méthode chemin » des routes relayées telles quelles au backend
+// Liste blanche (méthode, chemin) des routes relayées telles quelles
 const ROUTES = new Set([
   'POST auth/visitor',
   'POST auth/login',

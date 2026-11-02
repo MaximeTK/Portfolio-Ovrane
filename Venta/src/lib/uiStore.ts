@@ -11,7 +11,7 @@ export const CLE_VERRE = 'ovrane:verre';
 export const VERRE_DEFAUT = 0.55;
 const MAX_FENETRES = 10;
 
-/** Fenêtre flottante du tableau de bord : texte Markdown d'une réponse, ou nom d'une image de public/assets. */
+/** Fenêtre flottante : Markdown d'une réponse, ou image de public/assets */
 export interface Fenetre {
   id: string;
   kind: 'text' | 'image';
@@ -24,11 +24,11 @@ export interface Fenetre {
 interface UIState {
   viewMode: ViewMode;
   appState: AppState;
-  // Vue ouverte ; une page d'Illusion s'écrit « illusion/<page>?<recherche> », comme son adresse
+  // Vue ouverte ; une page d'Illusion s'écrit « illusion/<page>?<recherche> »
   page: string | null;
-  // Canaux montrés par l'en-tête : ceux d'Ovrane, ou ceux d'Illusion pour un compte qui y a accès
+  // Canaux de l'en-tête : ceux d'Ovrane, ou d'Illusion si le compte y a accès
   cote: Cote;
-  // Compte d'Illusion de la session : undefined tant qu'il n'est pas lu, null sans accès ; le message quand Illusion ne répond pas
+  // Compte d'Illusion : undefined avant lecture, null sans accès, plus l'erreur
   compteIllusion: Compte | null | undefined;
   erreurIllusion: string | null;
   isAppLocked: boolean;
@@ -70,7 +70,7 @@ export const useUIStore = create<UIState>((set) => ({
 
   // Le chat est d'Ovrane : l'ouvrir ou le fermer remet ses canaux
   setViewMode: (mode) => set({ viewMode: mode, cote: 'ovrane' }),
-  // La variable CSS --verre-opacite teinte toutes les boîtes en verre (globals.css)
+  // --verre-opacite teinte toutes les boîtes en verre (globals.css)
   reglerVerre: (opacite) => {
     document.documentElement.style.setProperty('--verre-opacite', String(opacite));
     try {
@@ -90,12 +90,12 @@ export const useUIStore = create<UIState>((set) => ({
       return { sonCoupe: !s.sonCoupe };
     }),
   setAppState: (state) => set({ appState: state }),
-  // Ouvrir ou fermer une page ramène au tableau de bord : on revient toujours à l'écran de l'œil ; l'en-tête montre les canaux du côté de la page
+  // Ouvrir ou fermer une page ramène au tableau de bord ; l'en-tête suit la page
   setPage: (page) => set({ page, viewMode: 'dashboard', cote: page?.startsWith('illusion/') ? 'illusion' : 'ovrane' }),
   setCote: (cote) => set({ cote }),
   setAppLocked: (locked, message) => set({ isAppLocked: locked, lockedMessage: message }),
 
-  // Sans position, près du centre avec un léger décalage pour ne pas couvrir exactement la précédente
+  // Sans position : près du centre, décalé pour ne pas couvrir la précédente
   addWindow: (kind, content, position) => {
     const id = `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     set((s) => {

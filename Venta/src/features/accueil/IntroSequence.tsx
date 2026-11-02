@@ -25,11 +25,11 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
   const [visitError, setVisitError] = useState(false);
   const visitStartedRef = useRef(false);
 
-  // Arrivée sans saisie : profil visiteur créé ou repris, accueil du recruteur si la session porte un jeton
+  // Arrivée sans saisie : profil visiteur créé ou repris, accueil si jeton
   const startVisit = useCallback(async () => {
     setAppState('processing');
     setVisitError(false);
-    // En parallèle de l'arrivée : l'accueil du recruteur ne dépend pas de la session ; le serveur l'écrit et le signe
+    // En parallèle : l'accueil du recruteur ne dépend pas de la session
     const welcome = fetch('/api/illusion/accueil')
       .then((res) => (res.ok ? res.json() : null))
       .then((accueil: IllusionAccueil | null): TexteSigne | null => (accueil?.texte ? { texte: accueil.texte, voix: accueil.voix ?? '' } : null))
@@ -74,7 +74,7 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
     return () => clearTimeout(timer);
   }, [appState, isAppLocked, viewMode, page]);
 
-  // Sous l'œil : le message de verrouillage, sinon la dernière réponse de l'IA, dont l'accueil du backend
+  // Sous l'œil : message de verrouillage, sinon dernière réponse de l'IA
   const welcomeMessage =
     isAppLocked && lockedMessage
       ? lockedMessage

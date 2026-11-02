@@ -14,20 +14,20 @@ type PreparedChunk =
 // Au-delà, le bloc est dit par la voix du navigateur
 const TTS_TIMEOUT_MS = 8000;
 
-// Lecture pendant la réception : le MP3 est versé dans une MediaSource, si le navigateur sait la lire ainsi
+// Lecture pendant la réception : MP3 versé dans une MediaSource si possible
 const fluxLisible = () => typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg');
 
-// Voix d'une réponse en flux : PCM 16 bits à 24 kHz, avance prise au premier son contre l'irrégularité des morceaux
+// Voix en flux : PCM 16 bits à 24 kHz, avance prise au premier son
 const TAUX_PCM = 24000;
 const AVANCE_S = 0.25;
 
 /** Voix reçue morceau par morceau pendant que la réponse s'écrit. */
 export type FluxVoix = { pousser: (pcm: string) => void; terminer: () => void };
 
-// Le backend refuse un bloc de plus de 1 000 caractères : la coupe se fait avant, entre deux phrases
+// Le backend refuse plus de 1 000 caractères : coupe avant, entre deux phrases
 const MAX_BLOC = 900;
 
-/** Découpe un texte en blocs de 4 phrases et de MAX_BLOC caractères au plus, une phrase finissant par un point. */
+/** Découpe en blocs de 4 phrases et MAX_BLOC caractères au plus */
 export function splitTextIntoTTSBlocks(text: string, sentencesPerBlock = 4): string[] {
   const sentences = (text.replace(/\s+/g, ' ').trim().match(/[^.]+(?:\.)|[^.]+$/g) ?? [])
     .map((s) => s.trim())
@@ -45,7 +45,7 @@ export function splitTextIntoTTSBlocks(text: string, sentencesPerBlock = 4): str
   return blocks;
 }
 
-// Le passage part avec le texte entier et sa signature : le serveur ne lit que ce qu'il a lui-même écrit
+// Le passage part avec le texte entier et sa signature
 async function fetchChunk(text: string, source: string, voix: string, signal: AbortSignal, enFlux: boolean): Promise<PreparedChunk> {
   const response = await fetch('/api/tts', {
     method: 'POST',
@@ -146,7 +146,7 @@ export function useTTS() {
       audio.play().catch(fin);
     }), []);
 
-  // Le flux se lit pendant qu'il arrive : la lecture attend les morceaux en retard et ne finit qu'après le dernier reçu
+  // Le flux se lit à l'arrivée : la lecture attend les morceaux en retard
   const playStreamQueued = useCallback((body: ReadableStream<Uint8Array>, setupVisualization: SetupVisualizationFn, runId: number) =>
     new Promise<void>((resolve) => {
       if (activeRunIdRef.current !== runId) return resolve();
@@ -187,13 +187,13 @@ export function useTTS() {
         } catch {
           // Arrêt demandé ou réseau coupé : la suite n'arrivera pas
         }
-        // Fin du flux annoncée : la lecture va au bout de ce qui est reçu, puis « ended »
+        // Fin du flux annoncée : lecture jusqu'au dernier reçu, puis « ended »
         if (source.readyState === 'open' && !tampon.updating) source.endOfStream();
         if (!lance) fin();
       }, { once: true });
     }), []);
 
-  // Chaque morceau de PCM est programmé juste après le précédent : la voix ne s'interrompt pas tant qu'ils arrivent à temps
+  // Chaque morceau PCM suit le précédent : la voix ne s'interrompt pas
   const ouvrirFlux = useCallback((onEnd: () => void, onStart?: () => void): FluxVoix => {
     stop();
     const runId = activeRunIdRef.current;
@@ -282,10 +282,7 @@ export function useTTS() {
       window.speechSynthesis.speak(utterance);
     }), []);
 
-  /**
-   * Lecture en file : blocs de 4 phrases, au plus 2 générés en même temps,
-   * lus dans l'ordre dès que le premier est prêt.
-   */
+  /** Lecture en file : blocs de 4 phrases, 2 générés à la fois, dans l'ordre */
   const speakWithQueue = useCallback(async (
     fullText: string,
     setupVisualization: SetupVisualizationFn,
@@ -304,14 +301,14 @@ export function useTTS() {
     const limit = pLimit(2);
     const pending = blocks.map((block, index) =>
       limit(async (): Promise<PreparedChunk> => {
-        // Sans signature, le serveur refuserait : la voix du navigateur le dit tout de suite
+        // Sans signature le serveur refuserait : la voix du navigateur le dit aussitôt
         if (isStale() || !voix) return { type: 'client', text: block };
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), TTS_TIMEOUT_MS);
         abortControllersRef.current.add(ctrl);
         let chunk: PreparedChunk = { type: 'client', text: block };
         try {
-          // Le premier bloc se lit pendant qu'il arrive ; les suivants arrivent entiers pendant sa lecture
+          // Premier bloc lu à mesure ; les suivants arrivent entiers pendant sa lecture
           chunk = await fetchChunk(block, fullText, voix, ctrl.signal, enFlux && index === 0);
         } catch {
           // Serveur injoignable ou trop lent : voix du navigateur
@@ -324,7 +321,7 @@ export function useTTS() {
       }),
     );
 
-    // En flux, la voix part dès les premiers octets du premier bloc ; sinon, deux blocs prêts avant de parler
+    // En flux la voix part aux premiers octets ; sinon, deux blocs prêts avant
     await Promise.all(pending.slice(0, enFlux ? 1 : 2));
     if (isStale()) return;
     onStart?.();
