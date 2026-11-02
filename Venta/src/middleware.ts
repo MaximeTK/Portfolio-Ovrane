@@ -42,7 +42,7 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   return response;
 }
 
-// Routes d'API (garde) et pages (liens suivis), ni statiques ni images
+// API sauf relais d'Illusion, qui garde seul son corps, et pages hors statiques
 export const config = {
-  matcher: ['/api/:path*', '/((?!api|_next/static|_next/image|favicon.ico|assets).*)'],
+  matcher: ['/api/:path((?!illusion/app/).*)', '/((?!api|_next/static|_next/image|favicon.ico|assets).*)'],
 };
