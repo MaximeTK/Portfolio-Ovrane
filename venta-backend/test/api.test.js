@@ -1,11 +1,12 @@
 /** Tests hors ligne de l'API : secret, sessions, limites, erreurs */
-import { base, appeler, creerVisiteur, resoudre, visiteur, fermer, modele, appelsOpenAI, REPONSE, SECRET } from './simulation.js';
+import { base, appeler, creerVisiteur, evenements, resoudre, visiteur, fermer, modele, appelsOpenAI, REPONSE, SECRET } from './simulation.js';
 import { test, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'crypto';
 import { spawnSync } from 'child_process';
 import bcrypt from 'bcryptjs';
 import { Session } from '../src/models/Session.js';
+import { User } from '../src/models/User.js';
 import { MAX_MESSAGES } from '../src/services/utilisateurs.js';
 import { purger } from '../src/services/conservation.js';
 import { ipClient } from '../src/http.js';
@@ -23,7 +24,7 @@ afterEach(() => {
 const UN_JOUR = 24 * 3600 * 1000;
 const sha256 = (valeur) => crypto.createHash('sha256').update(valeur).digest('hex');
 const profil = (id) => base.users.find((user) => user.id === id);
-const chat = (session, prompt, extra = {}) => appeler('/api/chat', { method: 'POST', session, body: { prompt, ...extra } });
+const chat = (session, prompt, extra = {}) => appeler('/api/chat/flux', { method: 'POST', session, body: { prompt, ...extra } });
 const attendre = () => new Promise((resolve) => setImmediate(resolve));
 // Passage d'un texte signé par le serveur, comme le front l'envoie à la voix
 const signe = (text, source = text) => ({ text, source, voix: signerVoix(source) });
@@ -39,7 +40,7 @@ function compte(nom, motDePasse) {
 test('secret de service : 401 partout sans lui ou avec un faux, sonde publique', async () => {
   const routes = [['POST', '/api/auth/visitor'], ['POST', '/api/auth/login'], ['POST', '/api/auth/register'], ['POST', '/api/auth/logout'], ['GET', '/api/auth/compte'],
     ['POST', '/api/auth/oubli'], ['POST', '/api/auth/reinitialiser'],
-    ['POST', '/api/chat'], ['GET', '/api/chat/history'], ['GET', '/api/preferences'], ['POST', '/api/preferences'], ['POST', '/api/tracking/visit'],
+    ['POST', '/api/chat/flux'], ['GET', '/api/chat/history'], ['GET', '/api/preferences'], ['POST', '/api/preferences'], ['POST', '/api/tracking/visit'],
     ['POST', '/api/tracking/redirect'], ['POST', '/api/tts'], ['GET', '/api/illusion/accueil?jeton=k3f9a0x2m1'], ['GET', '/api/illusion/cv/k3f9a0x2m1'],
     ['GET', '/api/admin/users'], ['GET', '/api/assets'], ['GET', '/api/tracking/pixel?id=campagne'], ['GET', '/api/inconnue']];
   for (const [method, chemin] of routes) {
@@ -118,7 +119,7 @@ test('session requise : 401 sans session, ou avec un jeton inconnu, expiré ou m
   const expire = crypto.randomBytes(32).toString('base64url');
   base.sessions.push({ _id: sha256(expire), utilisateur: 'vexpire0001', creeLe: new Date(0), vuLe: new Date(0), expireLe: new Date(Date.now() - 1000) });
   const appels = appelsOpenAI.length;
-  const routes = [['POST', '/api/chat', { prompt: 'Bonjour' }], ['GET', '/api/chat/history'], ['GET', '/api/preferences'],
+  const routes = [['POST', '/api/chat/flux', { prompt: 'Bonjour' }], ['GET', '/api/chat/history'], ['GET', '/api/preferences'],
     ['POST', '/api/preferences', { preference: 'backgroundColor', value: 'ocean' }], ['POST', '/api/tts', { text: 'Bonjour' }],
     ['POST', '/api/tracking/visit', { link: 'https://exemple.fr' }]];
   for (const session of [undefined, 'nimporte', crypto.randomBytes(32).toString('base64url'), expire]) {
@@ -479,10 +480,10 @@ test('chat : message compté avant le modèle, éphémère compris ; au-delà de
 test('chat : visite comptée une fois par heure, IP jamais gardée, même en empreinte', async () => {
   const { id, session } = await visiteur();
   const user = profil(id);
-  await appeler('/api/chat', { method: 'POST', session, ip: '203.0.113.50', body: { prompt: 'Bonjour' } });
+  await appeler('/api/chat/flux', { method: 'POST', session, ip: '203.0.113.50', body: { prompt: 'Bonjour' } });
   assert.equal(user.visitCount, 1, 'moins d\'une heure après l\'arrivée');
   user.lastVisit = new Date(Date.now() - 2 * 3600 * 1000);
-  const res = await appeler('/api/chat', { method: 'POST', session, ip: '203.0.113.50', body: { prompt: 'Rebonjour' } });
+  const res = await appeler('/api/chat/flux', { method: 'POST', session, ip: '203.0.113.50', body: { prompt: 'Rebonjour' } });
   assert.equal(user.visitCount, 2);
   assert.equal(res.json.userProfile.visitCount, 2);
   assert.deepEqual(user.ipHashes ?? [], [], 'plus aucune empreinte d\'IP');
@@ -543,7 +544,14 @@ test('erreurs : JSON invalide en 400, erreur interne en 500, sans détail ni pil
     throw new Error('panne détaillée du modèle');
   };
   const res = await chat(session, 'Bonjour');
-  assert.deepEqual([res.status, res.json], [500, { error: ERROR_MESSAGES.internalServerError }]);
+  assert.deepEqual([res.status, res.json], [200, { error: ERROR_MESSAGES.internalServerError }]);
+  const lire = User.findOne;
+  User.findOne = () => {
+    throw new Error('panne détaillée de la base');
+  };
+  const panne = await appeler('/api/chat/history', { session });
+  User.findOne = lire;
+  assert.deepEqual([panne.status, panne.json], [500, { error: ERROR_MESSAGES.internalServerError }]);
 });
 
 test('TTS : texte de 1 000 caractères au plus, audio du fournisseur sans Markdown ni lien', async () => {
@@ -680,11 +688,6 @@ test('configuration : le serveur refuse de démarrer sans NODE_ENV connu ni secr
   }
 });
 
-// Événements d'une réponse SSE, dans l'ordre
-const evenements = (texte) => texte.split('\n\n').filter(Boolean).map((bloc) => ({
-  type: bloc.match(/^event: (.+)$/m)?.[1],
-  donnees: JSON.parse(bloc.match(/^data: (.+)$/m)?.[1] ?? 'null'),
-}));
 
 // Cartesia simulé : audio puis « done » en fin de contexte ; messages gardés
 class FauxWebSocket {
@@ -715,9 +718,9 @@ class FauxWebSocket {
 
 test('chat : luna, effort bas sans outils, moyen quand l\'interface est en jeu, toujours en flux et sur le même cache', async () => {
   const { session } = await visiteur();
-  await appeler('/api/chat', { method: 'POST', session, body: { prompt: 'Qui est Maxime ?' } });
+  await appeler('/api/chat/flux', { method: 'POST', session, body: { prompt: 'Qui est Maxime ?' } });
   const simple = appelsOpenAI.at(-1);
-  await appeler('/api/chat', { method: 'POST', session, body: { prompt: 'Affiche le logo de Pico' } });
+  await appeler('/api/chat/flux', { method: 'POST', session, body: { prompt: 'Affiche le logo de Pico' } });
   const interface_ = appelsOpenAI.at(-1);
   assert.deepEqual([simple.model, simple.reasoning.effort, simple.stream, 'tools' in simple], ['gpt-5.6-luna', 'low', true, false]);
   assert.deepEqual([interface_.reasoning.effort, interface_.tools?.length > 0], ['medium', true]);

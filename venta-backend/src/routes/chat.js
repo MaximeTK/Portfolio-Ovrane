@@ -53,24 +53,7 @@ export function setupChatRoutes(app, openai) {
   const parSession = limite(60 * 1000, 10, (req) => req.user.id);
   const parIp = limite(60 * 60 * 1000, 120);
 
-  app.post('/api/chat', requireSession, parIp, parSession, async (req, res, next) => {
-    try {
-      const user = await preparer(req, res);
-      if (!user) return;
-      if (user.messageCount > MAX_MESSAGES) return res.json(limiteAtteinte(user));
-      // Avant tout appel payant : le plafond du jour, tous visiteurs confondus
-      if (!(await consommer('chat'))) return res.json(budgetDepasse(user));
-
-      const { prompt, isEphemeral, jeton } = req.body;
-      const ctx = { uiCommands: [] };
-      const texte = await generateResponse(openai, prompt, user, await loadCandidature(jeton), ctx);
-      res.json(await processResponse(texte, prompt, user, ctx, isEphemeral === true));
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Même réponse en flux SSE : texte, audio PCM dès les premiers mots, réponse
+  // Réponse en flux SSE : texte, audio PCM dès les premiers mots, réponse
   app.post('/api/chat/flux', requireSession, parIp, parSession, async (req, res, next) => {
     let user;
     try {
@@ -82,12 +65,10 @@ export function setupChatRoutes(app, openai) {
     res.set({ 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' });
     res.flushHeaders();
     const envoyer = (type, donnees) => res.write(`event: ${type}\ndata: ${JSON.stringify(donnees)}\n\n`);
-    if (user.messageCount > MAX_MESSAGES) {
-      envoyer('fin', limiteAtteinte(user));
-      return res.end();
-    }
-    if (!(await consommer('chat'))) {
-      envoyer('fin', budgetDepasse(user));
+    // Avant tout appel payant : le plafond du jour, tous visiteurs confondus
+    const refus = user.messageCount > MAX_MESSAGES ? limiteAtteinte(user) : !(await consommer('chat')) && budgetDepasse(user);
+    if (refus) {
+      envoyer('fin', refus);
       return res.end();
     }
 

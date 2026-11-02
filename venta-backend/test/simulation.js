@@ -188,6 +188,11 @@ await once(serveur, 'listening');
 const url = `http://127.0.0.1:${serveur.address().port}`;
 
 export const fermer = () => serveur.close();
+// Événements d'une réponse SSE, dans l'ordre
+export const evenements = (texte) => texte.split('\n\n').filter(Boolean).map((bloc) => ({
+  type: bloc.match(/^event: (.+)$/m)?.[1],
+  donnees: JSON.parse(bloc.match(/^data: (.+)$/m)?.[1] ?? 'null'),
+}));
 export const SECRET = process.env.SERVICE_SECRET;
 
 let adresses = 0;
@@ -208,7 +213,9 @@ export async function appeler(chemin, { method = 'GET', body, session, secret = 
   const bytes = Buffer.from(await res.arrayBuffer());
   let json = null;
   try {
-    json = JSON.parse(bytes.toString('utf8'));
+    // Une réponse en flux vaut son dernier événement
+    const flux = res.headers.get('content-type')?.startsWith('text/event-stream');
+    json = flux ? evenements(bytes.toString()).at(-1).donnees : JSON.parse(bytes.toString('utf8'));
   } catch {
     json = null;
   }

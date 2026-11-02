@@ -322,7 +322,7 @@ test('suivi de redirection : cible, jeton et robot calculés par le serveur, ni 
 test('chat : le jeton ajoute le bloc du recruteur en tête du contexte visiteur, après les consignes fixes', async () => {
   const { session } = await visiteur();
   const avant = appelsOpenAI.length;
-  const envoyer = (extra) => appeler('/api/chat', { method: 'POST', session, body: { prompt: 'Quels projets pour ce poste ?', ...extra } });
+  const envoyer = (extra) => appeler('/api/chat/flux', { method: 'POST', session, body: { prompt: 'Quels projets pour ce poste ?', ...extra } });
 
   const avecJeton = await envoyer({ jeton: JETON });
   assert.equal(avecJeton.status, 200, JSON.stringify(avecJeton.json));
