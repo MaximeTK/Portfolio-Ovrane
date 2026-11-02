@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useUIStore } from '@/lib/uiStore';
 import { INDISPONIBLE } from '@/lib/messages';
 import { ErreurIllusion, lireCompte } from '@/features/illusion/api';
-import { ADMINISTRATION, MON_ESPACE, PAGE_DEPART, estAdmin, titreDe } from '@/features/illusion/pages/liste';
+import { ADMINISTRATION, MON_ESPACE, PAGE_DEPART, chargerAdministration, estAdmin, titreDe } from '@/features/illusion/pages/liste';
 import { PROJETS, trouverProjet } from './projets';
 import { ProjectPage, Sommaire } from './ProjectPage';
 import { LegalPage } from './LegalPage';
@@ -101,6 +101,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
         if (!actif) return;
         useUIStore.setState({ compteIllusion: compte, erreurIllusion: null });
         if (compte) void chargerIllusion();
+        if (compte?.admin) void chargerAdministration();
       })
       .catch((e) => actif && useUIStore.setState({ compteIllusion: null, erreurIllusion: e instanceof ErreurIllusion && e.message ? e.message : INDISPONIBLE }));
     return () => {

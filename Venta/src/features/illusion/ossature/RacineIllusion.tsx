@@ -1,11 +1,12 @@
 'use client';
 
 import '../styles/illusion.css';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { use, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { useApparence } from '../apparence';
 import type { Compte } from '../api';
 import { DUREES, ecrire, mouvementReduit } from '../partage/glyphes';
+import { PAGE_DEPART, chargerAdministration } from '../pages/liste';
 import { REGISTRE } from '../pages/registre';
 import { poserCompte } from '../stockage';
 
@@ -62,7 +63,9 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
 
 // Une page d'Illusion ouverte dans le site, chargée à la première ouverture
 export default function VueIllusion({ compte, page, recherche }: { compte: Compte; page: string; recherche: string }) {
-  const Composant = REGISTRE[page];
+  // Attendu avant de monter : l'ouverture trouve les fenêtres de la page
+  const admin = compte.admin ? use(chargerAdministration()).REGISTRE_ADMIN : null;
+  const Composant = REGISTRE[page] ?? admin?.[page] ?? REGISTRE[PAGE_DEPART];
   return (
     <RacineIllusion compte={compte} page={page}>
       <Composant compte={compte} recherche={recherche} />

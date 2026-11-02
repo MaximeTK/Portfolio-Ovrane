@@ -33,3 +33,7 @@ export const PAGE_DEPART = 'candidatures';
 
 export const titreDe = (slug: string) => [...MON_ESPACE, ...ADMINISTRATION].find((p) => p.slug === slug)?.titre ?? 'Accueil';
 export const estAdmin = (slug: string) => ADMINISTRATION.some((p) => p.slug === slug);
+
+// Une seule promesse : le rendu y attend le code des pages d'administration
+let administration: Promise<typeof import('./registre-admin')> | undefined;
+export const chargerAdministration = () => (administration ??= import('./registre-admin'));
