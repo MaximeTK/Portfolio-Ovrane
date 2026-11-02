@@ -2,23 +2,16 @@
 import mongoose from 'mongoose';
 
 const CommandSchema = new mongoose.Schema({
-  // Format actuel (frontend) : { command, parameter }
-  command: { type: String },
-  parameter: { type: String },
-  // Compat legacy / outils (si jamais utilisé)
-  args: mongoose.Schema.Types.Mixed,
+  command: String,
+  parameter: String,
 }, { _id: false, strict: false });
 
 const ConversationSchema = new mongoose.Schema({
-  // Champs standards
   role: { type: String, enum: ['user', 'assistant', 'system'] },
-  content: { type: String },
+  content: String,
   timestamp: { type: Date, default: Date.now },
-  
-  // Champs legacy / spécifiques à Venta (prompt/response pair)
   prompt: String,
   response: String,
-  
   // Commandes de l'IA : garder toutes celles d'un message
   commands: { type: [CommandSchema], default: [] },
 }, { _id: false, strict: false });
@@ -27,45 +20,19 @@ const UserSchema = new mongoose.Schema({
   // Ordre volontaire des champs (lisibilité dans MongoDB)
   name: { type: String, default: null },
   nameNormalized: { type: String, default: null },
-  id: { 
-    type: String, 
-    required: true, 
-    unique: true,
-    index: true 
-  },
+  id: { type: String, required: true, unique: true },
   // Absent plutôt que null : l'index sparse unique n'admet qu'un seul null
-  email: { type: String },
+  email: String,
   passwordHash: { type: String, default: null },
-
-  // Gestion des IPs (Hashées)
   ipHashes: { type: [String], default: [] },
-  // Métadonnées de visite
   lastVisit: { type: Date, default: Date.now },
   // Doit valoir 0 par défaut pour que le 1er login donne visitCount=1
   visitCount: { type: Number, default: 0 },
-  
-  // Historique des liens visités
   visitedLinks: { type: [String], default: [] },
-
-  // Préférences utilisateur
-  preferences: {
-    theme: String,
-    language: String,
-    voice: String,
-    // Autoriser d'autres préférences dynamiques
-    type: Map,
-    of: String
-  },
-  
-  // Statistiques
+  preferences: { type: Map, of: String },
   messageCount: { type: Number, default: 0 },
-
-  // Historique des conversations (dernier champ)
   conversations: [ConversationSchema],
-}, {
-  timestamps: true, // Ajoute createdAt et updatedAt automatiquement
-  strict: false // Permet d'ajouter des champs non prévus si nécessaire (flexibilité)
-});
+}, { timestamps: true, strict: false });
 
 // Index sparse pour email (null autorisé, unicité sur les valeurs non-null)
 UserSchema.index({ email: 1 }, { sparse: true, unique: true });
@@ -73,5 +40,4 @@ UserSchema.index({ email: 1 }, { sparse: true, unique: true });
 // Connexion et inscription cherchent aussi par pseudo : pas de parcours complet
 UserSchema.index({ nameNormalized: 1 });
 
-// Empêcher la recompilation du modèle si le fichier est réimporté (Hot Reload)
-export const User = mongoose.models.User || mongoose.model('User', UserSchema);
+export const User = mongoose.model('User', UserSchema);

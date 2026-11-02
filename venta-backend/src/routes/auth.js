@@ -31,7 +31,7 @@ const bienvenue = (user) => ({ ...dit(MISC_MESSAGES.welcomeNew(user.name)), user
 // Compteurs et listes d'un profil neuf, visite d'arrivée comptée
 const neuf = () => ({ visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] });
 
-// Nouvelle session et marque d'appareil ; celle reçue est révoquée (rotation)
+// Nouvelle session, marque d'appareil ; celle reçue est révoquée (rotation)
 async function ouvrirSession(req, utilisateur) {
   await revoquerSession(sessionRecue(req));
   return { session: await creerSession(utilisateur), appareil: marquerAppareil(utilisateur) };
