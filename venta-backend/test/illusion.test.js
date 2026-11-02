@@ -67,7 +67,7 @@ test('front : destinations, anciennes inchangées, GitHub et accueil ajoutés', 
 });
 
 test('front : seules les mutations venues du site passent, et les relais JSON n\'acceptent que du JSON', async () => {
-  const { requeteDuSite, corpsJson } = await front('origine.ts');
+  const { requeteDuSite, corpsJson, origineDuSite } = await front('origine.ts');
   const site = 'https://www.ovrane.net';
   const h = (entetes) => new Headers(entetes);
   assert.equal(requeteDuSite('POST', h({ 'sec-fetch-site': 'same-origin', origin: site }), site), true);
@@ -77,6 +77,10 @@ test('front : seules les mutations venues du site passent, et les relais JSON n\
     { 'sec-fetch-site': 'same-origin', origin: 'https://www.ovrane.net.autre.example' }]) {
     for (const methode of ['POST', 'put', 'PATCH', 'DELETE']) assert.equal(requeteDuSite(methode, h(entetes), site), false, `${methode} ${JSON.stringify(entetes)}`);
   }
+  // Derrière un proxy, Next se croit sur localhost : seul Host dit le vrai site
+  const nextUrl = { protocol: 'https:', host: 'localhost:3000' };
+  assert.equal(origineDuSite({ nextUrl, headers: h({ host: 'www.ovrane.net' }) }), site);
+  assert.equal(origineDuSite({ nextUrl, headers: h({}) }), 'https://localhost:3000');
   assert.equal(corpsJson(h({ 'content-type': 'application/json' })), true);
   assert.equal(corpsJson(h({ 'content-type': 'application/json; charset=utf-8' })), true);
   for (const type of ['text/plain', 'application/x-www-form-urlencoded', 'multipart/form-data; boundary=x', 'application/jsonp', '']) {

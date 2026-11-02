@@ -2,18 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest, NextFetchEvent } from 'next/server';
 import { forward } from '@/lib/proxy';
 import { JETON_COOKIE, REDIRECT_TARGETS, parseRedirectPath } from '@/lib/redirections';
-import { requeteDuSite } from '@/lib/origine';
+import { origineDuSite, requeteDuSite } from '@/lib/origine';
 
 export function middleware(request: NextRequest, event: NextFetchEvent) {
   const url = request.nextUrl;
   const path = url.pathname.toLowerCase();
 
-  // L'API n'accepte de mutation que du site lui-même
-  if (path.startsWith('/api/')) {
-    return requeteDuSite(request.method, request.headers, url.origin)
-      ? NextResponse.next()
-      : NextResponse.json({ error: 'Requête refusée' }, { status: 403 });
+  // Aucune mutation que du site lui-même, même par un chemin d'API encodé
+  if (!requeteDuSite(request.method, request.headers, origineDuSite(request))) {
+    return NextResponse.json({ error: 'Requête refusée' }, { status: 403 });
   }
+  if (path.startsWith('/api/')) return NextResponse.next();
 
   // Mots-clés redirect (cv, cvdesign, linkedin, github, portfolio) avec jeton
   const link = parseRedirectPath(path);

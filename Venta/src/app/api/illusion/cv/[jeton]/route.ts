@@ -21,5 +21,5 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       console.error('[cv] backend injoignable:', error);
     }
   }
-  return NextResponse.redirect(new URL(REDIRECT_TARGETS.cv, request.url));
+  return new NextResponse(null, { status: 307, headers: { Location: REDIRECT_TARGETS.cv } });
 }
