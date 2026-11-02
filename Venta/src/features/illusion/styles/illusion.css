@@ -1,6 +1,6 @@
-/* Styles communs d'Illusion, repris des planches : tout vit sous .ov, rien ne touche au portfolio. */
+/* Styles communs d'Illusion, tout sous .ov, sans toucher au portfolio. */
 
-/* Bases sous .ov, en couche base comme le préflight de Tailwind : les utilitaires restent au-dessus. */
+/* Bases en couche base, comme le préflight : les utilitaires au-dessus. */
 @layer base {
   .ov :where(h1, h2, h3, p, ul, ol) { margin: 0 }
   .ov :where(ul, ol) { list-style: none; padding: 0 }
@@ -11,7 +11,7 @@
   .ov svg { display: inline; vertical-align: baseline }
 }
 
-/* --fond-haut et --fond-bas ne sont pas posés ici : ils viennent de la palette d'Ovrane, par Background au-dessus de .ov. */
+/* Les fonds viennent de la palette d'Ovrane, posés au-dessus de .ov. */
 .ov{--accent:#93F4FF;--boite:rgb(10 10 14 / .55);--ligne:36px;--panneau:440px;position:relative;height:100vh;min-height:620px;display:flex;flex-direction:column;overflow:hidden;color:#fff;color-scheme:dark;font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
 .ov *{box-sizing:border-box}
 .ov a{color:#fff}
@@ -26,17 +26,17 @@
 .ov .icone{flex:none;width:18px;height:18px}
 .ov .mono{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11.5px}
 
-/* Verre des pages d'Ovrane (Figma 333-2359) : fond recopié sous un voile, halos ronds de deux coins, liseré blanc en incrustation. */
+/* Verre d'Ovrane : fond recopié sous un voile, halos de deux coins, liseré. */
 .ov .verre{position:relative;isolation:isolate;border-radius:var(--verre-rayon,25px);clip-path:inset(0 round var(--verre-rayon,25px));--halo:rgb(217 217 217 / .5),rgb(204 204 204 / .4375) 5.73%,rgb(192 192 192 / .375) 11.45%,rgb(179 179 179 / .3125) 17.18%,rgb(166 166 166 / .25) 22.9%,rgb(153 153 153 / .1875) 28.63%,rgb(140 140 140 / .125) 34.35%,rgb(128 128 128 / .0625) 40.08%,rgb(115 115 115 / 0) 45.8%}
 .ov .verre::before,.ov .verre::after{content:"";position:absolute;inset:0;pointer-events:none}
-/* Verre assombri deux fois de 25 % : un voile noir à 43,75 % sous les halos et le liseré. */
+/* Verre assombri deux fois de 25 % par un voile noir sous halos et liseré. */
 .ov .verre::before{position:fixed;min-height:100vh;z-index:-3;background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0),linear-gradient(180deg,var(--fond-haut),var(--fond-bas))}
 .ov .verre-halos{position:absolute;inset:0;z-index:-2;margin:0;border:0;pointer-events:none;mix-blend-mode:color-dodge;opacity:.75;transition:opacity .3s;background:radial-gradient(circle farthest-side at -1px 0,var(--halo)),radial-gradient(circle farthest-side at calc(100% - 1px) 100%,var(--halo))}
 .ov :is(a,button).verre:is(:hover,:focus-visible)>.verre-halos{opacity:1}
 .ov .verre:focus-visible{outline-offset:-4px}
-/* Le liseré déborde d'un pixel sous la découpe : aucun fil sombre ne reste au bord. */
+/* Le liseré déborde d'un pixel sous la découpe : aucun fil sombre au bord. */
 .ov .verre::after{z-index:-1;inset:-1px;border-radius:inherit;border:3px solid #fff;mix-blend-mode:overlay}
-/* Matière « teinte » : le même verre, fond et liseré compris, sans les halos des coins. */
+/* Matière « teinte » : le même verre, sans les halos des coins. */
 .ov.mat-teinte .verre>.verre-halos{display:none}
 
 .ov .compteur{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.65)}
@@ -44,11 +44,11 @@
 .ov:not(.admin) .admin-seul{display:none}
 .ov .marque-admin{margin-left:8px;padding:1px 5px;border:1px solid rgb(255 255 255 / .3);font-size:8.5px;font-weight:700;letter-spacing:.16em;color:rgb(255 255 255 / .75)}
 
-/* Sous l'en-tête du site, la place qu'il occupe, puis la scène de la page, qui entre comme une vue d'Ovrane. */
+/* Place de l'en-tête du site, puis scène de la page qui entre comme une vue. */
 .ov .place-entete{flex:none;height:60px}
 .ov .scene{flex:1;min-height:0;display:flex;flex-direction:column}
 
-/* En-tête du site, côté Illusion : ses canaux par-dessus ceux d'Ovrane, sans la mise en page de la racine ; l'un s'efface pour l'autre en 0,2 s. */
+/* En-tête côté Illusion : ses canaux sur ceux d'Ovrane, fondu en 0,2 s. */
 .ov.ov-barre{grid-area:1/1;justify-self:center;height:auto;min-height:0;display:block;overflow:visible;opacity:0;pointer-events:none;transition:opacity .2s}
 .ov.ov-barre.visible{opacity:1;pointer-events:auto}
 /* Canaux d'Illusion de part et d'autre du logo, qui garde le centre exact. */
@@ -61,7 +61,7 @@
 .ov .onglet .icone{width:16px;height:16px}
 .ov .onglet .chevron{width:11px;height:11px;transition:transform .2s}
 .ov .onglet[aria-expanded=true] .chevron{transform:rotate(180deg)}
-/* Logo au centre, à la place de l'œil d'Ovrane ; plus lumineux sur l'accueil. */
+/* Logo au centre à la place de l'œil d'Ovrane, plus lumineux sur l'accueil. */
 .ov .centre{display:grid;width:64px;height:44px}
 .ov .logo{grid-area:1/1;display:grid;place-items:center;width:64px;height:44px}
 .ov .logo svg{overflow:visible;filter:drop-shadow(0 0 4px rgb(255 255 255 / .75));transition:filter .2s}
@@ -69,7 +69,7 @@
 /* Accueil : la place du contenu reste vide, l'Activité seule à gauche. */
 .ov.vue-accueil .dock [data-fen]:not([data-fen=activite]){visibility:hidden}
 
-/* Menus (Administration, filtres) : une colonne de choix dans la matière des fenêtres, le choix courant allumé. */
+/* Menus : colonne de choix dans la matière des fenêtres, courant allumé. */
 .ov .menu-hote{position:relative;display:inline-flex}
 .ov .menu{position:absolute;top:calc(100% + 6px);right:0;z-index:40;display:flex;flex-direction:column;min-width:210px;padding:6px 0}
 .ov .menu-option{display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:12.5px;white-space:nowrap;color:rgb(255 255 255 / .75);transition:color .2s,background .2s}
@@ -77,7 +77,7 @@
 .ov .menu-option.actif{color:#fff;text-shadow:0 0 8px rgb(255 255 255 / .35)}
 .ov .menu-option .icone{width:16px;height:16px}
 
-/* Actions d'une fenêtre : texte et icône ; l'action pleine garde son carré blanc après le texte. */
+/* Actions d'une fenêtre : l'action pleine garde son carré blanc après. */
 .ov .actions{display:flex;align-items:center;gap:22px}
 .ov .action{display:inline-flex;align-items:center;gap:8px;height:28px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.88);white-space:nowrap;transition:color .2s}
 .ov .action:hover{color:#fff}
@@ -91,7 +91,7 @@
 .ov .action.rouge-plein{color:#ffb0b0;font-weight:700}
 .ov .action .marque-admin{margin-left:0}
 .ov .action:disabled{opacity:.45;cursor:default}
-/* Bouton qui a ouvert le panneau : allumé en blanc tant que son onglet est ouvert. */
+/* Le bouton qui a ouvert le panneau reste allumé tant que son onglet l'est. */
 .ov .action.allume{color:#fff;text-shadow:0 0 6px rgb(255 255 255 / .5)}
 .ov label.action{cursor:pointer}
 /* Supprimer n'apparaît qu'avec des lignes cochées. */
@@ -106,12 +106,12 @@
 .ov .filtre .lib{margin-right:8px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.7)}
 .ov .filtre.actif .lib{color:#fff}
 @media (max-width:1366px){.ov .outils{gap:6px}.ov .filtre{font-size:12px}}
-/* Fenêtre resserrée : les actions secondaires se replient sur leur icône, puis les libellés des filtres partent. */
+/* Fenêtre resserrée : actions réduites à l'icône, filtres sans libellé. */
 .ov [data-fen]:is([data-l=m],[data-l=s],[data-l=xs]) .outils .action:not(.plein) .txt,.ov [data-fen][data-l=xs] .outils .action.plein .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ov [data-fen]:is([data-l=m],[data-l=s],[data-l=xs]) .outils .actions{gap:16px}
 .ov [data-fen]:is([data-l=s],[data-l=xs]) .outils .filtre .lib{display:none}
 
-/* Confirmation intégrée : elle prend la place de la rangée d'outils, à la même hauteur. */
+/* La confirmation prend la place de la rangée d'outils, à la même hauteur. */
 .ov .confirmer{display:flex;flex:none;align-items:center;gap:20px;height:36px;margin:8px 14px 4px;padding:0 12px;white-space:nowrap;border-left:2px solid #ff8a8a;background:rgb(255 138 138 / .08);font-size:12.5px;color:rgba(255,255,255,.88)}
 .ov .confirmer p{flex:1;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis}
 .ov .confirmer b{color:#fff}
@@ -133,7 +133,7 @@
 .ov td.chrono{margin-left:0;color:rgba(255,255,255,.62)}
 .ov td.chrono.vide{color:rgba(255,255,255,.28)}
 .ov .auto{margin-left:5px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5)}
-/* Ligne cochée : un voile clair à plat ; ligne ouverte dans le panneau : voile plus clair et trait blanc. */
+/* Ligne cochée : voile clair à plat ; ligne ouverte : voile et trait blancs. */
 .ov tr.coche td{background:rgb(255 255 255 / .07);color:#fff}
 .ov tr.coche .d{color:rgba(255,255,255,.92)}
 .ov tr.ouverte td{background:rgb(255 255 255 / .1);color:#fff}
@@ -142,7 +142,7 @@
 .ov .dock .defile::-webkit-scrollbar{display:none}
 @media (max-height:780px){.ov th{height:30px}.ov{--ligne:30px}}
 
-/* Pagination sans cadres : la page courante allumée, un « … » où taper la page voulue. */
+/* Pagination sans cadres : page courante allumée, « … » pour saisir la page. */
 .ov .pagination{flex:none;height:44px;display:flex;align-items:center;gap:14px;border-top:1px solid rgba(255,255,255,.08);padding:0 14px;font-size:12.5px;color:rgba(255,255,255,.75)}
 .ov .pagination select{height:28px;border:0;background:none;padding:0 2px;font-size:12.5px;color:rgba(255,255,255,.6);cursor:pointer}
 .ov .pages{display:flex;align-items:center;gap:4px}
@@ -182,7 +182,7 @@
 .ov .barres.vivant i:nth-child(2){animation-delay:.15s}.ov .barres.vivant i:nth-child(3){animation-delay:.3s}.ov .barres.vivant i:nth-child(4){animation-delay:.45s}
 @keyframes ov-pouls{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* Zones de sélection : des boutons pleins, sans verre ; ce qui est choisi s'allume en blanc. */
+/* Zones de sélection : boutons pleins sans verre, le choisi en blanc. */
 .ov .choix{background:var(--boite);border:1px solid rgba(255,255,255,.12);transition:border-color .2s,background .2s}
 .ov .choix:hover{border-color:rgba(255,255,255,.32)}
 .ov .choix:is(.actif,:has(:checked)){background:rgb(255 255 255 / .1);border-color:rgba(255,255,255,.85);color:#fff;text-shadow:0 0 8px rgb(255 255 255 / .5);box-shadow:inset 0 0 14px rgb(255 255 255 / .16)}
@@ -210,7 +210,7 @@
 .ov .fil-actions .encours .etiquette{color:var(--accent)}
 .ov .fil-actions .encours .phrase::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);vertical-align:2px;animation:ov-pouls 1.4s infinite}
 .ov .fil-actions .jour{padding:0;border:0;text-align:center;color:rgba(255,255,255,.4)}
-/* La ligne « Maintenant » peut ouvrir un onglet du panneau : toute la ligne est le bouton. */
+/* La ligne « Maintenant » peut ouvrir un onglet : toute la ligne est bouton. */
 .ov .ouvre-li{position:absolute;inset:0;cursor:pointer}
 .ov .tuile-sorte.s-envoi svg,.ov .fil-actions .envoi .etiquette{color:var(--c-envoi)}
 .ov .tuile-sorte.s-reponse svg,.ov .fil-actions .reponse .etiquette{color:var(--c-reponse)}
@@ -220,13 +220,13 @@
 .ov .tuile-sorte.s-afaire svg,.ov .fil-actions .afaire .etiquette{color:var(--c-afaire)}
 .ov .fil-actions .envoi{border-left-color:var(--c-envoi)}.ov .fil-actions .reponse{border-left-color:var(--c-reponse)}.ov .fil-actions .entretien{border-left-color:var(--c-entretien)}
 .ov .fil-actions .relance{border-left-color:var(--c-relance)}.ov .fil-actions .offres{border-left-color:var(--c-offres)}.ov .fil-actions .afaire{border-left-color:var(--c-afaire)}
-/* Tuile allumée : teintée et bordée de sa couleur ; éteinte : simple contour, texte lisible. */
+/* Tuile allumée : teintée et bordée de sa couleur ; éteinte : contour seul. */
 .ov .tuile-sorte.s-envoi{--c:var(--c-envoi)}.ov .tuile-sorte.s-reponse{--c:var(--c-reponse)}.ov .tuile-sorte.s-entretien{--c:var(--c-entretien)}.ov .tuile-sorte.s-relance{--c:var(--c-relance)}.ov .tuile-sorte.s-offres{--c:var(--c-offres)}.ov .tuile-sorte.s-afaire{--c:var(--c-afaire)}
 .ov .tuile-sorte.choix:has(:checked){background:color-mix(in srgb,var(--c) 16%,transparent);border-color:color-mix(in srgb,var(--c) 65%,transparent);box-shadow:none;text-shadow:none}
 .ov .tuile-sorte.choix:not(:has(:checked)){background:none;border-color:rgba(255,255,255,.2)}
 .ov .tuile-sorte:not(:has(:checked)) :is(b,small){color:rgba(255,255,255,.72)}
 .ov .tuile-sorte:not(:has(:checked)) svg{opacity:.6}
-/* Activité large (rangée en bas ou élargie) : le bilan à gauche, le fil en grille, le plus récent en bas à droite. */
+/* Activité large : bilan à gauche, fil en grille, le plus récent en bas. */
 .ov .echos[data-forme=large]{display:grid;grid-template-columns:228px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:16px}
 .ov .echos[data-forme=large]>.echos-tete{grid-area:1/1}
 .ov .echos[data-forme=large]>.tuiles-sortes{grid-area:2/1;align-self:start}
@@ -234,7 +234,7 @@
 .ov .echos[data-forme=large] .fil-actions>li{flex:0 0 190px}
 .ov .echos[data-forme=large] .fil-actions>li.jour{flex:0 0 100%}
 
-/* Fenêtres flottantes classiques : au-dessus de la page, déplacées par leur barre, fermées par leur croix. */
+/* Fenêtres flottantes : au-dessus de la page, déplacées par leur barre. */
 .ov .f-hote{display:contents}
 .ov .flottante{position:absolute;z-index:8;display:flex;flex-direction:column;max-height:calc(100% - 96px);background:rgb(14 14 18 / .62);-webkit-backdrop-filter:blur(26px) saturate(150%);backdrop-filter:blur(26px) saturate(150%);border:1px solid rgb(255 255 255 / .18);box-shadow:0 24px 64px rgb(0 0 0 / .4)}
 .ov .f-barre{flex:none;display:flex;align-items:center;gap:10px;height:38px;padding:0 4px 0 12px;border-bottom:1px solid rgb(255 255 255 / .1);cursor:move;user-select:none}
@@ -251,7 +251,7 @@
 .ov .f-pied[data-porte]:empty{display:none}
 .ov .f-coin{position:absolute;right:3px;bottom:3px;width:9px;height:9px;border-right:1px solid rgb(255 255 255 / .45);border-bottom:1px solid rgb(255 255 255 / .45);cursor:nwse-resize}
 
-/* Contenu des fenêtres : sections, champs au libellé en capitales, interrupteurs carrés. */
+/* Contenu des fenêtres : sections, libellés en capitales, interrupteurs. */
 .ov .section-f+.section-f{margin-top:14px;padding-top:14px;border-top:1px solid rgb(255 255 255 / .08)}
 .ov .section-f h3{margin:0 0 12px;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff}
 .ov .champ{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
@@ -277,11 +277,11 @@
 .ov .lien{color:#fff;text-decoration:underline;text-decoration-color:rgb(255 255 255 / .3);text-underline-offset:3px}
 .ov .lien-d{font-size:11.5px;font-weight:600;color:rgb(255 255 255 / .68);text-decoration:underline;text-decoration-color:rgb(255 255 255 / .25);text-underline-offset:3px;transition:color .2s}
 .ov .lien-d:hover{color:#fff}
-/* Petit carré d'état : bleu « en process », cyan « en cours », vert « finie ». */
+/* Carré d'état : bleu « en process », cyan « en cours », vert « finie ». */
 .ov .carre{display:inline-block;flex:none;width:8px;height:8px;margin-right:7px;background:currentColor;vertical-align:1px}
 .ov .carre.bleu{color:#8FB4FF}.ov .carre.finie{color:#93FFB3}
 .ov .carre.cours{color:var(--accent);box-shadow:0 0 6px var(--accent);animation:ov-pouls 1.4s infinite}
-/* Puces : un trait fin à plat ; « + » range une compétence manquante, pointillé pour une exigence sous-entendue. */
+/* Puces à trait fin ; pointillé pour une exigence sous-entendue. */
 .ov .puces{display:flex;flex-wrap:wrap;gap:4px}
 .ov .puce{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border:1px solid rgb(255 255 255 / .22);font-size:11.5px;color:rgb(255 255 255 / .88);white-space:nowrap}
 .ov .puce button{font-size:13px;font-weight:700;line-height:1;color:inherit;opacity:.75}
@@ -290,7 +290,7 @@
 .ov .puce.implicite{border-style:dashed;color:rgb(255 255 255 / .7)}
 .ov .puce.incomplet{border-color:rgb(255 176 176 / .55);color:#ffb0b0}
 .ov .puce.ajout{border-style:dashed;color:rgb(255 255 255 / .7);cursor:pointer}
-/* Tête d'une fiche, champs clés en trois colonnes, lignes libellé-valeur, blocs repliés. */
+/* Fiche : tête, champs clés en trois colonnes, lignes libellé-valeur. */
 .ov .f-tete{margin-bottom:14px}
 .ov .f-tete h3{font-size:15px;font-weight:600;line-height:1.3}
 .ov .f-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:6px !important;font-size:12px;color:rgb(255 255 255 / .72)}
@@ -310,11 +310,11 @@
 .ov .bloc-f[open]>summary svg{transform:rotate(180deg)}
 .ov .bloc-f>div{padding:0 0 12px;font-size:12.5px;color:rgb(255 255 255 / .82)}
 
-/* Panneau intégré : un onglet par sous-fenêtre de la page, l'ouvert en blanc lumineux ; la croix le referme. */
+/* Panneau intégré : un onglet par sous-fenêtre, l'ouvert en blanc. */
 .ov .panneau{min-width:0;display:flex;flex-direction:column}
 .ov .p-tete{flex:none;display:flex;align-items:center;gap:6px;height:44px;padding:0 4px 0 16px;border-bottom:1px solid rgb(255 255 255 / .1)}
 .ov .p-onglets{flex:1;min-width:0;display:flex;gap:16px;overflow:hidden}
-/* Hexagone de focus en tête de chaque fenêtre d'éléments ; le titre seul d'une fenêtre en plus ne se clique pas. */
+/* Hexagone de focus en tête de chaque fenêtre d'éléments. */
 .ov .p-tete>.case{flex:none;margin-right:8px}
 .ov span.p-onglet{cursor:default}
 .ov .p-onglet{position:relative;display:flex;align-items:center;height:44px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;color:rgb(255 255 255 / .5);cursor:pointer;transition:color .2s}
@@ -325,16 +325,15 @@
 .ov .p-vue.ouverte{display:flex}
 .ov .p-vue>.f-corps{padding:16px}
 
-/* Mécanique des fenêtres : chaque fenêtre est une case d'un partage en lignes et colonnes, posée par le moteur, qui glisse vers sa place en 0,3 s. */
+/* Chaque fenêtre est une case de la grille, qui glisse en 0,3 s. */
 .ov .coquille.dock{display:block}
 .ov .dock [data-fen]{position:absolute;box-sizing:border-box;margin:0;transition:left .3s cubic-bezier(.2,.8,.2,1),top .3s cubic-bezier(.2,.8,.2,1),width .3s cubic-bezier(.2,.8,.2,1),height .3s cubic-bezier(.2,.8,.2,1)}
 .ov.sans-anim .dock [data-fen]{transition:none}
-/* Avant la première pose (rendu serveur, hydratation), les fenêtres restent invisibles. */
+/* Avant la première pose (rendu serveur), les fenêtres sont invisibles. */
 .ov .dock:not([data-pret]) [data-fen]{visibility:hidden}
-/* Fenêtre flottante : au-dessus des autres, un liseré clair à l'intérieur ; elle suit la main sans délai. */
+/* Fenêtre flottante : au-dessus des autres, liseré clair, suit la main. */
 .ov .dock [data-flot]{transition:none;box-shadow:inset 0 0 0 1px rgb(255 255 255 / .38)}
-/* Arrivée dans Illusion : chaque fenêtre naît d'une ligne au milieu qui s'étire à gauche et à droite, puis s'ouvre entre ses deux lignes,
-   qui montent et descendent, en 0,56 s ; son contenu attend d'être écrit. Lignes en blanc néon, à un quart de leur éclat. */
+/* Arrivée : chaque fenêtre naît d'une ligne centrale qui s'ouvre en 0,56 s. */
 .ov .ouv-ligne{display:none;position:absolute;left:0;right:0;top:calc(50% - 1px);z-index:4;height:1px;pointer-events:none;background:rgb(255 255 255 / .225);box-shadow:0 0 6px rgb(255 255 255 / .125),0 0 14px rgb(255 255 255 / .06);transform:scaleX(0)}
 .ov.ouverture .dock[data-pret] .ouv-ligne{display:block;animation:ov-ligne-haut .56s cubic-bezier(.6,0,.2,1) both,ov-eteint .42s ease-out .56s both}
 .ov.ouverture .dock[data-pret] .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-eteint}
@@ -345,13 +344,12 @@
 @keyframes ov-ligne-bas{0%{top:50%;transform:scaleX(0)}40%{top:50%;transform:scaleX(1)}100%{top:calc(100% - 1px);transform:scaleX(1)}}
 @keyframes ov-eteint{to{opacity:0}}
 @keyframes ov-voile{from,to{visibility:hidden}}
-/* D'une page à l'autre, une fenêtre propre à la page s'ouvre de même, après la fermeture de celles de la page quittée (--holo-delai). */
+/* Au changement de page, la fenêtre propre s'ouvre après la fermeture. */
 .ov .dock[data-pret] .holo-ouvre .ouv-ligne{display:block;animation:ov-ligne-haut .56s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) both,ov-eteint .42s ease-out calc(var(--holo-delai,0ms) + .56s) both}
 .ov .dock[data-pret] .holo-ouvre .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-eteint}
 .ov .dock[data-pret] [data-fen].holo-ouvre{animation:ov-ouverture .56s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) both}
 .ov .dock[data-pret] [data-fen].holo-ouvre>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation:ov-voile calc(var(--holo-delai,0ms) + .56s) backwards}
-/* Fenêtres de la page quittée, copiées au premier plan, par-dessus celles de la page qui arrive. Fermeture holographique : leurs éléments
-   effacés, elles se referment entre leurs deux lignes jusqu'au trait du milieu, qui se résorbe, en 0,44 s. Repli organique : vidées, elles se replient. */
+/* Fenêtres de la page quittée, copiées au premier plan, refermées en 0,44 s. */
 .ov .fantomes{position:absolute;inset:0;z-index:2;pointer-events:none}
 .ov .fantomes>.holo-ferme{animation:ov-ouverture .44s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) reverse both}
 .ov .fantomes .holo-ferme .ouv-ligne{display:block;animation:ov-ligne-haut .44s cubic-bezier(.6,0,.2,1) var(--holo-delai,0ms) reverse both,ov-allume 1ms var(--holo-delai,0ms) both}
@@ -360,21 +358,21 @@
 @keyframes ov-allume{from{opacity:0}to{opacity:1}}
 .ov.glisse-en-cours,.ov.glisse-en-cours *{user-select:none;cursor:grabbing !important}
 .ov.tire-en-cours,.ov.tire-en-cours *{user-select:none}
-/* Place visée : après la pause, un cadre clair et lumineux borde la case que la fenêtre prendra. */
+/* Place visée : un cadre clair et lumineux borde la case à prendre. */
 .ov .place-entiere{position:absolute;z-index:2;pointer-events:none;box-sizing:border-box;border:1px solid rgb(255 255 255 / .55);background:rgb(255 255 255 / .05);box-shadow:inset 0 0 36px rgb(255 255 255 / .08),0 0 12px rgb(255 255 255 / .18);opacity:0;transition:opacity .2s}
 .ov .place-entiere.vu{opacity:1}
 .ov .fentes{display:contents}
-/* Remise en place : une icône discrète en haut à droite, visible quand la disposition a changé. */
+/* Remise en place : icône discrète en haut à droite si la grille change. */
 .ov .remise{position:absolute;top:22px;right:24px;z-index:30;display:grid;place-items:center;width:32px;height:32px;color:rgb(255 255 255 / .6);opacity:0;pointer-events:none;transition:opacity .25s,color .2s,filter .2s}
 .ov .remise.vu{opacity:1;pointer-events:auto}
 .ov .remise:hover{color:#fff;filter:drop-shadow(0 0 4px rgb(255 255 255 / .6))}
 .ov .remise svg{width:18px;height:18px}
-/* Prise : une rangée de points en haut de chaque fenêtre ; une place vide de sa tête l'attrape aussi. */
+/* Prise : une rangée de points en haut de chaque fenêtre. */
 .ov .prise{position:absolute;top:3px;left:50%;z-index:3;width:30px;height:7px;margin-left:-15px;cursor:grab;touch-action:none;background:radial-gradient(circle,rgb(255 255 255 / .6) 1px,transparent 1.5px) 0 0/6px 3.5px;opacity:.35;transition:opacity .2s}
 .ov [data-fen]:hover>.prise{opacity:1}
 .ov .dock :is(.tete,.echos-tete,.p-tete,.outils){cursor:grab;touch-action:none}
 .ov .dock :is(.tete,.echos-tete,.p-tete,.outils) :is(a,button,label,input,select){cursor:pointer}
-/* Fentes : la place entre deux fenêtres rangées se tire ; un trait blanc s'allume au survol. */
+/* Fentes : la place entre deux fenêtres se tire, trait blanc au survol. */
 .ov .separateur{position:absolute;z-index:5;touch-action:none}
 .ov .separateur.ligne{cursor:col-resize}
 .ov .separateur.colonne{cursor:row-resize}
