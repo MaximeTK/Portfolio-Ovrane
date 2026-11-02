@@ -13,7 +13,7 @@ import { adresseActivite, heure, nomDuJour, phrase, useActivite, type DonneesAct
 
 const TRAIT = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', viewBox: '0 0 24 24', 'aria-hidden': true } as const;
 
-// Chaque sorte : sa tuile (classes, icône, libellé du bilan) et son nom dans le fil
+// Chaque sorte : sa tuile et son nom dans le fil
 const SORTES: { sorte: Sorte; classes: string; tuile: string; nom: string; icone: React.ReactNode }[] = [
   { sorte: 'envoi', classes: 's-envoi t-envoi', tuile: 'envois', nom: 'Envoi', icone: <svg {...TRAIT}><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4z" /></svg> },
   { sorte: 'reponse', classes: 's-reponse t-rep', tuile: 'réponses', nom: 'Réponse', icone: <svg {...TRAIT}><rect x="3" y="5" width="18" height="14" /><path d="m3 7 9 6 9-6" /></svg> },
@@ -29,7 +29,7 @@ const PERIODES = [{ jours: 0, nom: "Aujourd'hui" }, { jours: 6, nom: '7 jours' }
 type ProprietesActivite = {
   // Données fixes à la place du hook (banc d'essai)
   donnees?: DonneesActivite;
-  // La ligne « Maintenant » ouvre une vue de la page, par exemple l'onglet En direct ; sans elle, l'admin va à En direct sur la page Candidatures
+  // « Maintenant » ouvre une vue de la page, sinon l'admin va à En direct
   surMaintenant?: () => void;
   // Liens en plus de « Tout voir » et « Journal » dans la tête
   liens?: React.ReactNode;
@@ -52,10 +52,10 @@ function Tuiles({ bilan, masquees, basculer, label }: { bilan: Record<Sorte, num
   );
 }
 
-// Sortes cachées d'un clic sur leur tuile, gardées d'une page à l'autre comme le reste de l'Activité
+// Sortes cachées d'un clic sur leur tuile, gardées d'une page à l'autre
 let masqueesGardees: Sorte[] | null = null;
 
-// L'Activité : les grosses actions, filtrées par les tuiles du bilan du jour, la plus récente en bas
+// Les grosses actions, filtrées par les tuiles du bilan, la plus récente en bas
 export function Activite({ donnees, surMaintenant, liens, cachees = [] }: ProprietesActivite) {
   const branchees = useActivite(!donnees);
   const [vue, setVue] = useState<'historique' | 'journal' | null>(null);
@@ -69,7 +69,7 @@ export function Activite({ donnees, surMaintenant, liens, cachees = [] }: Propri
     return n;
   });
 
-  // Seul ce qui change s'écrit en glyphes : le compteur d'une sorte, une action arrivée, la ligne « Maintenant » ; la première lecture se pose telle quelle
+  // Rangée de départ : Activité | fenêtre principale | panneau (--panneau)
   const filRef = useRef<HTMLOListElement>(null);
   const vu = useRef<{ bilan: Record<Sorte, number>; ids: Set<string>; enCours: string | null } | null>(null);
   const signaux = useRef<Controle[]>([]);
@@ -140,7 +140,7 @@ export function Activite({ donnees, surMaintenant, liens, cachees = [] }: Propri
   );
 }
 
-// Fenêtre flottante au-dessus de la page, posée dans .ov pour échapper à la découpe du verre ; sa barre la déplace, sa croix et Échap la ferment
+// Fenêtre flottante dans .ov pour échapper à la découpe du verre
 function Flottante({ titre, admin, fermer, children }: { titre: string; admin?: boolean; fermer: () => void; children: React.ReactNode }) {
   const [hote, setHote] = useState<HTMLElement | null>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
@@ -148,7 +148,7 @@ function Flottante({ titre, admin, fermer, children }: { titre: string; admin?: 
   // La racine de la page, pas les canaux d'Illusion de l'en-tête du site
   useEffect(() => setHote(document.querySelector<HTMLElement>('.ov:not(.ov-barre)')), []);
   useEffect(() => {
-    // En capture sur la fenêtre du navigateur : Échap ferme cette fenêtre avant le panneau de la page
+    // Capturé sur la fenêtre : Échap ferme cette fenêtre avant le panneau
     const echap = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
@@ -184,7 +184,7 @@ function Flottante({ titre, admin, fermer, children }: { titre: string; admin?: 
   );
 }
 
-// « Tout voir » : l'historique par jour sur la période choisie, filtré par sorte
+// « Tout voir » : l'historique par jour sur la période, filtré par sorte
 function Historique({ fermer }: { fermer: () => void }) {
   const [jours, setJours] = useState(6);
   const [lu, setLu] = useState<Evenement[] | null>(null);
@@ -237,7 +237,7 @@ function Historique({ fermer }: { fermer: () => void }) {
   );
 }
 
-// Le journal technique de tout le pipeline, relu toutes les 5 s comme dans l'ancien dashboard ; le plus récent en haut
+// Journal technique du pipeline, relu toutes les 5 s, le plus récent en haut
 function Journal({ fermer }: { fermer: () => void }) {
   const [lignes, setLignes] = useState<string[] | null>(null);
   const [erreur, setErreur] = useState('');

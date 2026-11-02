@@ -13,15 +13,15 @@ type ProprietesRacine = {
   compte: Compte;
   // Page affichée : l'accueil a son allure
   page: string;
-  // Palette imposée (banc d'essai), sinon celle choisie par l'utilisateur dans Ovrane
+  // Palette imposée (banc d'essai), sinon celle choisie dans Ovrane
   palette?: string;
   children: React.ReactNode;
 };
 
-// Racine des écrans d'Illusion, sous l'en-tête du site : fond, matière, puis le dock de la page
+// Racine des écrans d'Illusion sous l'en-tête du site : fond, matière, dock
 export function RacineIllusion({ compte, page, palette, children }: ProprietesRacine) {
   const matiere = useApparence((s) => s.matiere);
-  // Au rendu, avant les pages : leurs brouillons se lisent sous ce compte dès leur premier effet
+  // Au rendu, avant les pages : leurs brouillons se lisent sous ce compte
   poserCompte(compte.email);
 
   useEffect(() => {
@@ -29,8 +29,7 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
     else useBackgroundStore.getState().loadPreference();
   }, [palette]);
 
-  // Arrivée dans Illusion, une seule fois et sur la page d'arrivée : chaque fenêtre naît d'une ligne au milieu, puis son texte s'écrit.
-  // D'une page à l'autre ensuite, les fenêtres gardées ne bougent pas (le dock s'en charge)
+  // Arrivée dans Illusion, une seule fois : chaque fenêtre naît d'une ligne
   const racine = useRef<HTMLDivElement>(null);
   const [ouverture, setOuverture] = useState<string | null>(page);
   if (ouverture !== null && ouverture !== page) setOuverture(null);
@@ -61,7 +60,7 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
   );
 }
 
-// Une page d'Illusion ouverte dans le site ; ce module ne se charge qu'à la première ouverture
+// Une page d'Illusion ouverte dans le site, chargée à la première ouverture
 export default function VueIllusion({ compte, page, recherche }: { compte: Compte; page: string; recherche: string }) {
   const Composant = REGISTRE[page];
   return (

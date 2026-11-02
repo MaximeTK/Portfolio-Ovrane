@@ -27,17 +27,17 @@ const ICONES_ADMIN: Record<string, React.ReactNode> = {
 
 type ProprietesEntete = { compte: Compte; visible: boolean };
 
-// Canaux d'Illusion dans l'en-tête du site, autour de son logo, à la place exacte de ceux d'Ovrane et de l'œil
+// Canaux d'Illusion dans l'en-tête du site, à la place de ceux d'Ovrane
 export function Entete({ compte, visible }: ProprietesEntete) {
   const page = useUIStore((s) => (s.page?.startsWith('illusion/') ? s.page.slice(9).split('?')[0] : null));
   const matiere = useApparence((s) => s.matiere);
-  // Passage d'un côté à l'autre : les fenêtres ne changent pas, aucune ne bouge ; seuls les noms des canaux qui apparaissent s'écrivent en glyphes
+  // Les fenêtres ne bougent pas au passage ; seuls les noms des canaux s'écrivent
   const barre = useRef<HTMLDivElement>(null);
   const vuAvant = useRef(visible);
   useEffect(() => {
     if (vuAvant.current === visible) return;
     vuAvant.current = visible;
-    // Ceux d'Ovrane sont la navigation voisine, dans la même case de l'en-tête du site
+    // Ceux d'Ovrane sont la navigation voisine, dans la même case de l'en-tête
     const canaux = visible ? barre.current?.querySelectorAll('.onglet') : barre.current?.parentElement?.querySelectorAll(':scope > nav button');
     const ecrits = Array.from(canaux ?? []).map((c) => ecrire(c, { duree: DUREES.canaux, texte: true }));
     return () => ecrits.forEach((c) => c.annuler());

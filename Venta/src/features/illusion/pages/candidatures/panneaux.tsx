@@ -8,14 +8,14 @@ import { MarqueAdmin, type Onglet } from '../../dock/Panneau';
 import { nomProfil } from '../../partage/FicheOffre';
 
 export type Avis = { texte: string; erreur?: boolean } | null;
-// Le refus d'un lancement faute de profil complet : chaque profil et ce qui lui manque
+// Refus d'un lancement faute de profil complet : chaque profil et ce qui manque
 export type Incomplet = { message: string; profils: { nom: string; manquants: { cle: string; libelle: string }[] }[] };
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 const FLECHE = <span className="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>;
 
-// Réglages · Candidatures : ceux du compte, puis ceux du serveur pour l'admin ; seuls les champs changés partent
+// Réglages : compte, puis serveur pour l'admin ; seuls les changés partent
 type Parametres = Record<string, unknown> & { modeles: { nom: string; modele?: string }[] };
 type Champ = { cle: string; libelle: string; sorte: 'nombre' | 'inter' | 'modele'; min?: number; max?: number; vide?: string };
 const DU_COMPTE: Champ[] = [
@@ -119,7 +119,7 @@ export function useOngletReglages({ admin, actif, fermer, setAvis }: { admin: bo
   };
 }
 
-// Ajouter une offre : à la file pour plus tard, ou une candidature menée tout de suite par l'atelier, comme l'« Exécuter » de l'ancien dashboard
+// Ajouter une offre : à la file, ou menée tout de suite par l'atelier
 type EtatAtelier = { en_cours: boolean; ok: boolean | null; erreur: string; depuis_s: number; duree_s: number };
 const OPTIONS: { cle: string; libelle: string; admin?: boolean }[] = [
   { cle: 'spontanee', libelle: 'Candidature spontanée' },
@@ -145,7 +145,7 @@ export function useOngletAjout({ admin, actif, setAvis, relire, montrerIncomplet
     if (!actif || profils) return;
     appeler<{ nom: string }[]>('/profils-candidature').then(setProfils).catch((e) => setErreur(message(e)));
   }, [actif, profils]);
-  // Le lancement d'ici se suit toutes les 1,5 s, comme l'atelier de l'ancien dashboard
+  // Le lancement d'ici se suit toutes les 1,5 s
   useSondage(async () => {
     try {
       const etat = await appeler<EtatAtelier>('/atelier/candidature');
@@ -173,7 +173,7 @@ export function useOngletAjout({ admin, actif, setAvis, relire, montrerIncomplet
       });
       setAvis(r.neuve ? { texte: `Offre ajoutée à la file${r.entreprise_siren ? ' et rattachée à sa fiche' : ''}.` }
         : { texte: 'Cette offre était déjà en base : elle est rendue à la file.', erreur: true });
-      // Le CV imposé ne valait que pour cette offre : il ne repart pas avec la suivante
+      // Le CV imposé ne vaut que pour cette offre, pas la suivante
       setSaisie((s) => ({ ...VIERGE, profil: s.profil }));
       setCv(null);
       setErreur('');
@@ -194,7 +194,7 @@ export function useOngletAjout({ admin, actif, setAvis, relire, montrerIncomplet
       }
       if (!urlValide()) return;
       if (!saisie.profil) return setErreur('Choisissez le profil du candidat : la candidature part avec lui.');
-      // Un profil à compléter se dit avant tout lancement : rien ne partirait avec lui
+      // Un profil à compléter se dit avant tout lancement : rien ne partirait
       const { profils: incomplets } = await appeler<{ profils: Record<string, { cle: string; libelle: string }[]> }>('/profils-incomplets');
       if (incomplets[saisie.profil]?.length) {
         montrerIncomplet({ message: `Aucune candidature ne peut partir : le profil « ${nomProfil(saisie.profil)} » a des champs obligatoires vides.`,
@@ -263,7 +263,7 @@ export function useOngletAjout({ admin, actif, setAvis, relire, montrerIncomplet
   };
 }
 
-// Profil incomplet : aucune candidature ne part ; de quoi aller compléter chaque profil
+// Profil incomplet : aucune candidature ne part ; de quoi le compléter
 export function ongletProfilIncomplet(incomplet: Incomplet | null, fermer: () => void): Onglet {
   return {
     cle: 'profil-incomplet', titre: 'Profil incomplet', label: 'Profil incomplet : aucune candidature ne part',
@@ -288,7 +288,7 @@ export function ongletProfilIncomplet(incomplet: Incomplet | null, fermer: () =>
   };
 }
 
-// En direct : un onglet par candidature menée ou finie depuis peu, l'écran de celle choisie ; relu toutes les 1,5 s comme la page Workflows
+// En direct : un onglet par candidature menée ou récente, relu toutes les 1,5 s
 type EnDirect = {
   id: string; debut?: string; site?: string; page?: string; titre?: string; phase?: string; tours?: number; rejeu?: { gestes?: number };
   offre?: { intitule?: string; entreprise?: string; lieu?: string }; fini?: boolean; abouti?: boolean; fin?: string; offre_cle: string;

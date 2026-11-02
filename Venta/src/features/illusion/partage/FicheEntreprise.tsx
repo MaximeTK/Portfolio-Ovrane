@@ -10,7 +10,7 @@ import { Confirmer, MarqueAdmin, type Onglet } from '../dock/Panneau';
 import { estAdmin } from '../pages/liste';
 import { aOublier } from '../stockage';
 
-// L'étape d'une fiche, telle qu'elle se lit : son nom et la couleur de son trait
+// L'étape d'une fiche : son nom et la couleur de son trait
 export const ETATS: { code: string; libelle: string; classe: string }[] = [
   { code: 'COLLECTEE', libelle: 'Collecter', classe: '' },
   { code: 'TRAITEE', libelle: 'Parser', classe: 'f-par' },
@@ -44,7 +44,7 @@ export function Etape({ etat }: { etat: string }) {
   return <span className={`eo${e?.classe ? ' ' + e.classe : ''}`}>{e?.libelle ?? etat}</span>;
 }
 
-// Une date du serveur sans fuseau est en UTC, comme l'ancien dashboard la lisait
+// Une date du serveur sans fuseau est en UTC
 const enDate = (iso: string) => new Date(/Z|[+-]\d\d:\d\d$/.test(iso) || iso.length <= 10 ? iso : iso + 'Z');
 export const dateCourte = (iso?: string | null) => (iso ? enDate(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '—');
 export const dateHeure = (iso?: string | null) =>
@@ -77,9 +77,9 @@ type Offre = { cle: string; titre: string; lieu: string; contrat: string; publie
 type Donnees = { e: Detail; historique: Historique; blocs: Bloc[]; offres: Offre[]; jobboard: boolean };
 type AuditEnBase = { quand: string; prealable: boolean; resume: string };
 
-// Une question qui attend son accord, posée dans la rangée d'outils de la page si elle en a une, sinon en tête de la fiche qui la pose (`siren`)
+// Question en attente d'accord : outils de la page, sinon tête de la fiche
 export type Question = { question: string; detail?: React.ReactNode; action: string; faire: (fermer: () => void) => Promise<void>; siren?: string };
-// Un audit existe déjà : « Déjà audité » le dit et propose de relancer quand même ; `retour` est l'onglet d'où la question vient
+// Audit existant : « Déjà audité » propose de relancer ; `retour` : origine
 export type Deja = AuditEnBase & { siren: string; nom: string; retour: string; lancer: () => Promise<void> };
 
 // Une fiche lue : plusieurs fenêtres en montrent côte à côte, chacune la sienne
@@ -91,7 +91,7 @@ type EtatFiche = {
   deja: Deja | null;
   // Pages qui posent les questions de la fiche dans leur rangée d'outils
   hotes: number;
-  // Change à chaque geste qui modifie une fiche : les tableaux qui en montrent se relisent
+  // Change à chaque geste qui modifie une fiche : les tableaux se relisent
   version: number;
 };
 
@@ -147,7 +147,7 @@ async function lancerPhase(siren: string, brique: string) {
   }
 }
 
-// Un audit coûte : s'il en existe déjà un, la question passe par « Déjà audité » avant de relancer
+// Un audit coûte : s'il en existe un, la question passe par « Déjà audité »
 async function nouvelAudit(e: Detail, ouvrir: (cle: string) => void, dejaEnOnglet: boolean) {
   try {
     const vu = await appeler<{ base: AuditEnBase | null }>('/atelier/audit/fiche', { methode: 'POST', corps: { siren: e.siren, nom: e.nom, url: e.site ?? '' } });
@@ -189,7 +189,7 @@ async function demanderSuppression(e: Detail) {
   }
 }
 
-// Le compte connecté, lu une fois : la fiche ne montre ses gestes d'administration qu'au compte du serveur
+// Compte connecté, lu une fois : gestes d'administration au compte du serveur
 let compteLu: Promise<boolean> | null = null;
 function useAdmin() {
   const [admin, setAdmin] = useState(false);
@@ -204,7 +204,7 @@ function useAdmin() {
   return admin;
 }
 
-// Sur une page d'administration, les gestes d'administration vont au pied comme sur la planche Audit ; ailleurs, dans une section marquée ADMIN
+// Page d'administration : gestes au pied comme sur Audit ; sinon section ADMIN
 function usePageAdmin() {
   return useUIStore((s) => estAdmin(s.page?.startsWith('illusion/') ? s.page.slice(9).split('?')[0] : ''));
 }
@@ -214,7 +214,7 @@ function TitreFiche({ siren }: { siren: string | null }) {
   return <>{nom ? `Entreprise · ${nom}` : 'Entreprise'}</>;
 }
 
-// Les questions de la fiche, posées en tête de celle qui les pose quand aucune page ne les prend dans sa rangée d'outils
+// Questions de la fiche en tête de celle qui les pose, sans page qui les prenne
 function QuestionEnTete({ siren }: { siren: string }) {
   const question = useFicheEntreprise((s) => s.question);
   const hotes = useFicheEntreprise((s) => s.hotes);
@@ -276,7 +276,7 @@ function Corriger({ e }: { e: Detail }) {
   useEffect(() => setSaisis(saisiesDe(e)), [e]);
   const id = useId();
   const enregistrer = () => {
-    // Seul ce qui a changé part : le serveur laisse intact ce qu'il ne reçoit pas, et un champ vidé efface la valeur
+    // Seul ce qui a changé part ; un champ vidé efface la valeur
     const change = Object.fromEntries(CHAMPS_CORRIGES.filter((c) => saisis[c.cle].trim() !== String(e[c.cle] ?? '')).map((c) => [c.cle, saisis[c.cle].trim()]));
     if (!Object.keys(change).length) return dire(e.siren, "Rien n'a changé.");
     geste(e.siren, async () => {
@@ -302,7 +302,7 @@ function Corriger({ e }: { e: Detail }) {
   );
 }
 
-// Les gestes que la fiche réserve au compte du serveur, « Nouvel audit » en dernier, plein
+// Gestes réservés au compte du serveur, « Nouvel audit » en dernier, plein
 function GestesAdmin({ e, dejaEnOnglet }: { e: Detail; dejaEnOnglet: boolean }) {
   const { ouvrir } = usePanneau();
   return (
@@ -319,7 +319,7 @@ function GestesAdmin({ e, dejaEnOnglet }: { e: Detail; dejaEnOnglet: boolean }) 
           }),
         } })}>Reset</button>
       <button type="button" className="action" onClick={() => lancerPhase(e.siren, 'parser')}>Lancer le parser</button>
-      {/* L'audit a deux temps : une fiche entre les deux complète le brut au lieu de tout refaire */}
+      {/* L'audit a deux temps : une fiche entre les deux complète le brut */}
       {e.audit_brut_le && !e.audit_net_le && (
         <button type="button" className="action" title="Analyse le brut DÉJÀ collecté, sans le recollecter." onClick={() => lancerPhase(e.siren, 'audit')}>Compléter l&apos;audit</button>
       )}
@@ -346,7 +346,7 @@ function CorpsFiche({ siren, ouvrirOffre, dejaEnOnglet }: { siren: string | null
   const activite = section(audit, 'En une phrase')?.valeur as string | null | undefined;
   const autres = ((section(parser, 'Emails')?.valeur as string[] | undefined) ?? []).filter((m) => m !== e.email);
   const couleurs = ((section(parser, 'Couleurs')?.valeur as string[] | undefined) ?? []).filter((c) => /^#[0-9a-f]{6}$/i.test(c));
-  // Un bureau, c'est un numéro, une ville et une adresse ; le siège Sirene n'est qu'un repli
+  // Un bureau : numéro, ville et adresse ; le siège Sirene n'est qu'un repli
   const lignes = (section(parser, 'Implantations')?.valeur as string[] | undefined) ?? [];
   const lieux = lignes.some((l) => l.startsWith('Siège')) || !e.localisation ? lignes : [`Siège : ${e.localisation}`, ...lignes];
   // « En une phrase » est déjà l'Activité : il ne se répète pas
@@ -464,7 +464,7 @@ function PiedFiche({ siren, dejaEnOnglet }: { siren: string | null; dejaEnOnglet
   if (!siren || !donnees) return null;
   const { e } = donnees;
   const auPied = pageAdmin && admin;
-  // Écarter ne regarde que ce compte ; le même bouton le défait, la fiche retrouvant l'état d'avant
+  // Écarter ne regarde que ce compte ; le même bouton le défait
   const ecarter = e.etat === 'ECARTEE'
     ? <button type="button" className={`action${auPied ? '' : ' gauche'}`} onClick={() => geste(siren, async () => {
         const r = await appeler<{ etat: string }>(`/entreprises/${siren}/integrer`, { methode: 'POST' });
@@ -516,7 +516,7 @@ function PiedDeja() {
   );
 }
 
-// La fiche d'une entreprise, onglet du panneau de la page ; `dejaEnOnglet` : la page porte aussi l'onglet « Déjà audité »
+// Fiche d'entreprise en onglet ; `dejaEnOnglet` : « Déjà audité » présent
 export function ongletFicheEntreprise(siren: string | null, options: { ouvrirOffre?: (cle: string) => void; dejaEnOnglet?: boolean } = {}): Onglet {
   const dejaEnOnglet = !!options.dejaEnOnglet;
   return {
@@ -528,12 +528,12 @@ export function ongletFicheEntreprise(siren: string | null, options: { ouvrirOff
   };
 }
 
-// « Cette entreprise a déjà un audit » ; « Voir l'audit » ouvre la fiche de cette entreprise
+// « Cette entreprise a déjà un audit » ; « Voir l'audit » ouvre sa fiche
 export function ongletDejaAudite(): Onglet {
   return { cle: 'deja-audit', titre: 'Déjà audité', label: 'Cette entreprise a déjà un audit', corps: <CorpsDeja />, pied: <PiedDeja /> };
 }
 
-// La page qui pose les questions de la fiche dans sa rangée d'outils s'annonce par ce crochet, et rend ce qu'il renvoie
+// La page qui pose les questions dans ses outils s'annonce par ce crochet
 export function useQuestionsFiche() {
   const question = useFicheEntreprise((s) => s.question);
   useEffect(() => {

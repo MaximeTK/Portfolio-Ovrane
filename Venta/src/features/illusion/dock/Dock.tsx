@@ -7,13 +7,13 @@ import { aOublier } from '../stockage';
 import { DUREE_RANGEMENT, ECART, PRISES, TRANSITION_DE, delaiDepli, dureeRepli, installerDock, type ArbreDepart, type DefFenetre, type Moteur, type OptionsRangement, type Zone } from './moteur';
 export type { Arbre, ArbreDepart, DefFenetre, Taille, Zone } from './moteur';
 
-// Tailles des fenêtres partagées et de la fenêtre principale d'une page : minimum, bande d'un bord de l'écran, premier détachement
+// Tailles minimales, bande de bord d'écran et premier détachement des fenêtres
 export const TAILLES_ACTIVITE: DefFenetre = { mini: [200, 170], pref: [228, 240], flot: [300, 520] };
 export const TAILLES_PANNEAU: DefFenetre = { mini: [360, 220], pref: [440, 320], flot: [460, 560] };
 export const TAILLES_PRINCIPALE: DefFenetre = { mini: [470, 220], pref: [620, 360], flot: [760, 480] };
 const LARGEUR_ACTIVITE = 228;
 
-// Rangée de départ des pages : Activité | fenêtre principale | panneau, ce dernier à la largeur --panneau de la page
+// Rangée de départ : Activité | fenêtre principale | panneau (--panneau)
 export const arbreDePage = (principal: string, miniPrincipal = TAILLES_PRINCIPALE.mini![0]): ArbreDepart => (zone, style) => {
   const lp = parseFloat(style.getPropertyValue('--panneau')) || 440;
   return {
@@ -23,12 +23,12 @@ export const arbreDePage = (principal: string, miniPrincipal = TAILLES_PRINCIPAL
   };
 };
 
-// Passage d'une fenêtre d'une page à l'autre : elle se ferme ou s'ouvre en holographique, se replie ou se déplie (organique), ou garde son verre et seul son contenu change
+// Passage de page : la fenêtre se ferme, s'ouvre ou garde son verre
 type Mode = 'holo' | 'organique' | 'ecrit';
 
-// Fenêtre d'éléments (le panneau, puis celles du clic droit) : `objets` garde le dernier objet montré de chaque sorte (« fiche-offre » → clé de l'offre)
+// Fenêtre d'éléments : `objets` garde le dernier objet montré de chaque sorte
 export type Vue = { id: string; cle: string | null; objets: Record<string, string>; serie: number; ferme?: boolean };
-// Fenêtres en plus ; avec l'Activité, la grande fenêtre et le panneau, 8 fenêtres au plus, chacune à la place logique (moteur)
+// Fenêtres en plus : huit au plus avec l'Activité, la grande et le panneau
 const EN_PLUS = ['panneau-2', 'panneau-3', 'panneau-4', 'panneau-5', 'panneau-6'];
 // Fenêtres d'éléments de chaque page, retrouvées en y revenant
 const GARDEES = new Map<string, { vues: Vue[]; focus: string }>();
@@ -36,40 +36,39 @@ aOublier(() => GARDEES.clear());
 
 type ContexteDock = {
   ranger: (anime?: boolean, options?: OptionsRangement) => void;
-  // Lancé une fois les fenêtres posées : tout de suite, ou juste après la première pose du dock qui arrive
+  // Lancé une fois les fenêtres posées, ou juste après la première pose
   quandPose: (f: () => void) => void;
   // Fenêtres visibles sur la page quittée ; null à l'arrivée dans Illusion
   avant: Record<string, boolean> | null;
-  // Ce que le changement de page prévoit pour une fenêtre (et d'où elle se déplie), et l'attente des ouvertures holographiques ; rien hors d'un changement de page
+  // Ce que le changement de page prévoit pour une fenêtre ; rien sinon
   prevue: (id: string) => { mode?: Mode; delai: number; depart?: Depart };
   onglet: string | null;
   // L'objet de l'élément montré par le panneau
   objet: string | null;
-  // Un élément (sorte et objet) va dans la fenêtre en plus qui a le focus, sinon dans le panneau ; sans objet (réglages, ajout…), dans le panneau
+  // Un élément va dans la fenêtre en plus qui a le focus, sinon dans le panneau
   ouvrir: (cle: string, objet?: string) => void;
   fermer: () => void;
-  // Fenêtres d'éléments et celle qui a le focus : elle reçoit le clic gauche ; un clic sur une fenêtre lui donne le focus
+  // La fenêtre qui a le focus reçoit le clic gauche ; un clic lui donne le focus
   vues: Vue[];
   focus: string;
   focaliser: (id: string) => void;
   fermerVue: (id: string) => void;
-  // Clic droit : l'élément dans une nouvelle fenêtre (le panneau s'il est fermé) ; huit fenêtres ouvertes, dans celle qui a le focus
+  // Clic droit : l'élément dans une nouvelle fenêtre, à huit dans celle en focus
   ailleurs: (cle: string, objet: string) => void;
   // Le dock posé : une fenêtre qui apparaît ensuite se déplie
   posee: () => boolean;
 };
 const Contexte = createContext<ContexteDock | null>(null);
 
-// Fenêtre de la page quittée : son passage, vue ou non, détachée ou non, sa place à l'écran
+// Fenêtre de la page quittée : son passage, son état et sa place à l'écran
 type Sortant = { id: string; passage: string; vue: boolean; flot: boolean; rect: DOMRect; el: HTMLElement };
 type Sortants = { page: string; principal: string; fenetres: Sortant[] };
-// Ce que prévoit le changement de page : l'attente des ouvertures holographiques, le mode de chaque fenêtre, d'où se déplient celles qui manquaient
+// Ce que prévoit le changement de page : attente, mode et origine des fenêtres
 type Passage = { delai: number; modes: Map<string, Mode>; departs: Map<string, Depart> };
-// D'où se déplie une fenêtre qui manquait (son centre) et après combien de temps (ms)
+// Centre d'origine d'une fenêtre qui manquait et délai avant son dépli (ms)
 type Depart = { zone: Zone; retard: number };
 
-// Fenêtres visibles du dock monté : celui de la page suivante les lit au premier rendu, quand l'ancien est encore là ;
-// `sortants` : les fenêtres du dock démonté et sa page, lues par le suivant dans le même rendu
+// Fenêtres visibles du dock monté, lues par le suivant (`sortants` : démonté)
 const DOCK = { visibles: {} as Record<string, boolean>, sortants: null as Sortants | null };
 
 // Copie d'une fenêtre de la page quittée, au premier plan, à sa place d'avant
@@ -83,7 +82,7 @@ function copier(s: Sortant, calque: HTMLElement, o: DOMRect, classe: string) {
   return copie;
 }
 
-// Fenêtres de la page quittée sans place ici, copiées par-dessus la page : les détachées se referment en holographique, les rangées se replient vers leur centre en leur temps
+// Fenêtres de la page quittée sans place ici, copiées pour se refermer
 function sortir(holo: Sortant[], organiques: [Sortant, number][], ov: HTMLElement) {
   const calque = document.createElement('div');
   calque.className = 'dock fantomes';
@@ -105,17 +104,17 @@ function sortir(holo: Sortant[], organiques: [Sortant, number][], ov: HTMLElemen
   window.setTimeout(() => calque.remove(), Math.max(holo.length ? DUREES.effacer + DUREES.fermer : 0, DUREE_RANGEMENT) + 60);
 }
 
-// D'une page à l'autre : l'Activité glisse à sa place ; les détachées se ferment puis s'ouvrent en holographique ; les rangées se relaient (voir `relais`)
+// D'une page à l'autre : l'Activité glisse, les détachées se relaient
 function passer({ fenetres, principal: ancien }: Sortants, coq: HTMLElement, m: Moteur, principal: string): Passage {
   const passage: Passage = { delai: 0, modes: new Map(), departs: new Map() };
   if (mouvementReduit()) return passage;
-  // Fenêtre fermée ici (data-fermee), même si elle s'affiche encore le temps de se replier : elle n'est pas de la page
+  // Fenêtre fermée ici, même affichée le temps de se replier : pas de la page
   const vue = (el: HTMLElement) => !el.hidden && el.dataset.fermee === undefined && getComputedStyle(el).visibility !== 'hidden';
   const recouvre = (a: DOMRect, b: DOMRect) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
   const aire = (r: DOMRect) => r.width * r.height;
   // Deux places voisines au plus : elles se touchent, à l'écart près
   const proches = (a: DOMRect, b: DOMRect) => a.left <= b.right + ECART + 2 && b.left <= a.right + ECART + 2 && a.top <= b.bottom + ECART + 2 && b.top <= a.bottom + ECART + 2;
-  // Le rôle d'une fenêtre d'une page à l'autre : la grande fenêtre, sinon son nom (le panneau, celle posée sous lui…)
+  // Le rôle d'une fenêtre d'une page à l'autre : la grande, sinon son nom
   const role = (id: string, p: string) => (id === p ? '@principal' : id);
   const c = coq.getBoundingClientRect();
   const zone = (r: DOMRect): Zone => ({ x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height });
@@ -129,7 +128,7 @@ function passer({ fenetres, principal: ancien }: Sortants, coq: HTMLElement, m: 
   const rangeesAvant = avant.filter((s) => s.passage !== 'fixe' && !s.flot);
   const posees = ici.filter((el) => !el.dataset.flot).map((el) => ({ el, r: el.getBoundingClientRect() }));
   const rangeesIci = posees.filter(({ el }) => el.dataset.passage !== 'fixe');
-  // Une rangée d'ici relaie, dans l'ordre : celle déjà à sa place, celle du même rôle à une place voisine, celle qui couvrait le plus sa place ; jamais à travers l'écran
+  // Une rangée relaie la même place, puis le même rôle voisin
   const relais = new Map<HTMLElement, Sortant>();
   const lier = (el: HTMLElement, s: Sortant) => { if (!relais.has(el) && ![...relais.values()].includes(s)) relais.set(el, s); };
   const paires = rangeesIci.flatMap(({ el, r }) => rangeesAvant.map((s) => ({ el, r, s, a: recouvre(r, s.rect) })));
@@ -144,14 +143,14 @@ function passer({ fenetres, principal: ancien }: Sortants, coq: HTMLElement, m: 
     passage.modes.set(el.dataset.fen!, s ? 'ecrit' : 'organique');
   }
   const relayees = [...relais.values()];
-  // D'où vient chaque fenêtre d'ici : sa place sur la page quittée, sinon la sienne (elle s'y déplie)
+  // D'où vient chaque fenêtre : sa place sur la page quittée, sinon la sienne
   const origine = (el: HTMLElement, r: DOMRect) => relais.get(el)?.rect ?? avant.find((x) => x.passage === 'fixe' && x.id === el.dataset.fen)?.rect ?? r;
   const vers = (r: DOMRect): Zone => ({ x: r.left, y: r.top, w: r.width, h: r.height });
-  // Le glissement des fenêtres d'ici venues d'ailleurs, de leur place sur la page quittée à la leur
+  // Glissement des fenêtres venues d'ailleurs, de leur place d'avant à la leur
   const mouvements = posees.flatMap(({ el, r }) => (origine(el, r) === r ? [] : [{ el, de: vers(origine(el, r)), a: vers(r) }]));
-  // Une rangée sans relais se replie vers son centre, le plus lentement possible sans toucher celles qui prennent sa place
+  // Une rangée sans relais se replie le plus lentement possible sans en toucher
   for (const s of rangeesAvant) if (!relayees.includes(s)) organiques.push([s, dureeRepli(vers(s.rect), mouvements)]);
-  // Une rangée qui manquait se déplie depuis son centre dès que celles qui occupaient sa place ne peuvent plus la toucher
+  // Une rangée absente se déplie dès que les autres ne peuvent plus la toucher
   for (const { el, r } of rangeesIci) {
     if (relais.has(el)) continue;
     const z = zone(r);
@@ -170,10 +169,10 @@ function useContexte() {
   return c;
 }
 
-// Nouveau rangement quand une fenêtre apparaît ou disparaît autrement que par <Fenetre hidden>
+// Nouveau rangement quand une fenêtre apparaît ou disparaît hors <Fenetre>
 export const useDock = () => ({ ranger: useContexte().ranger });
 
-// Onglet ouvert du panneau de la page et l'objet qu'il montre ; ouvrir depuis n'importe où choisit l'élément et montre sa fenêtre
+// Onglet ouvert du panneau et son objet ; ouvrir choisit l'élément et le montre
 export function usePanneau() {
   const { onglet, objet, ouvrir, fermer } = useContexte();
   return { onglet, objet, ouvrir, fermer };
@@ -207,7 +206,7 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
   const prevu = useRef<Passage>({ delai: 0, modes: new Map(), departs: new Map() });
   const [avant] = useState(() => (Object.keys(DOCK.visibles).length ? { ...DOCK.visibles } : null));
   const pose = useRef(false);
-  // Le panneau, première fenêtre d'éléments, puis celles ouvertes au clic droit ; celle qui a le focus reçoit le clic gauche
+  // Panneau puis fenêtres du clic droit ; celle en focus prend le clic gauche
   const [gardees] = useState(() => GARDEES.get(id));
   const [vues, setVues] = useState<Vue[]>(() => gardees?.vues.filter((v) => !v.ferme) ?? [{ id: 'panneau', cle: panneau, objets: {}, serie: 0 }]);
   const [focus, setFocus] = useState(() => (gardees && vues.some((v) => v.id === gardees.focus) ? gardees.focus : 'panneau'));
@@ -218,11 +217,11 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
     etat.current = { vues, focus };
     GARDEES.set(id, { vues, focus });
   });
-  // Le panneau change d'élément ; sans objet, il reprend le dernier de cette sorte
+  // Le panneau change d'élément ; sans objet, il reprend le dernier de la sorte
   const setOnglet = useCallback((cle: string | null, objet?: string) => setVues((v) => [
     { ...v[0], cle, objets: cle && objet !== undefined ? { ...v[0].objets, [cle]: objet } : v[0].objets, serie: v[0].serie + 1 }, ...v.slice(1),
   ]), []);
-  // Le moteur relit toujours les dernières propriétés sans se réinstaller ; les tailles données complètent celles par défaut
+  // Le moteur relit les dernières propriétés sans se réinstaller
   const proprietes = useRef({ principal, arbre, prises, tailles: {} as Record<string, DefFenetre> });
   useLayoutEffect(() => {
     const tailles: Record<string, DefFenetre> = { activite: TAILLES_ACTIVITE, panneau: TAILLES_PANNEAU, [principal]: TAILLES_PRINCIPALE };
@@ -248,14 +247,14 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
     moteur.current = m;
     const sortants = DOCK.sortants;
     DOCK.sortants = null;
-    // Le même dock remonté (mode strict, rechargement à chaud) n'est pas un changement de page : ce qu'il a prévu reste
+    // Un dock remonté (mode strict, rechargement à chaud) garde son prévu
     if (sortants && sortants.page !== id) prevu.current = passer(sortants, coq, m, p().principal);
     const enAttente = attente.current;
     attente.current = [];
     enAttente.forEach((f) => f());
     pose.current = true;
     return () => {
-      // Avant que la page parte : ses fenêtres et leur place, pour la page qui arrive dans le même rendu ; oubliées ensuite
+      // Avant le départ de la page : ses fenêtres et leur place, pour la suivante
       const fenetres = Array.from(coq.querySelectorAll<HTMLElement>('[data-fen]')).map((el) => {
         const s = getComputedStyle(el);
         return { id: el.dataset.fen!, passage: el.dataset.passage ?? 'fondu', vue: !el.hidden && s.display !== 'none' && s.visibility !== 'hidden', flot: el.dataset.flot === '1', rect: el.getBoundingClientRect(), el };
@@ -275,7 +274,7 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
     else attente.current.push(f);
   }, []);
 
-  // Autre élément du panneau ouvert : la fenêtre reste, sa vue s'efface puis la nouvelle s'écrit ; rien ne change de taille
+  // Autre élément du panneau : la fenêtre reste, sa vue s'efface puis se réécrit
   const montre = onglet === null ? null : `${onglet} ${objet ?? ''}`;
   const montrePose = useRef(montre);
   const echange = useRef<{ efface: Controle | null; ecrit: Controle | null; minuteur: number; aEcrire: boolean }>({ efface: null, ecrit: null, minuteur: 0, aEcrire: false });
@@ -304,7 +303,7 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
     }, DUREES.effacer);
   }, [arreterEchange, setOnglet]);
 
-  // Un élément dans une fenêtre en plus, nouvelle ou déjà là : elle prend le focus
+  // Un élément dans une fenêtre en plus, nouvelle ou existante : elle a le focus
   const poserVue = useCallback((cible: string, cle: string, objet: string) => {
     setFocus(cible);
     setVues((v) => {
@@ -313,7 +312,7 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
       return avantCible ? v.map((x) => (x.id === cible ? nouvelle : x)) : [...v, nouvelle];
     });
   }, []);
-  // Fenêtre en plus pour un clic droit : une place libre, sinon (8 fenêtres) celle en focus
+  // Fenêtre en plus pour un clic droit : une place libre, sinon celle en focus
   const placeLibre = useCallback(() => {
     const { vues: v, focus: f } = etat.current;
     return EN_PLUS.find((x) => !v.some((y) => y.id === x)) ?? v.find((x) => x.id === f && x.id !== 'panneau' && !x.ferme)?.id ?? null;
@@ -339,15 +338,15 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
       return;
     }
     setVues((v) => v.map((x) => (x.id === cible ? { ...x, ferme: true } : x)));
-    // Le focus revient à la dernière fenêtre en plus encore ouverte, sinon au panneau ; repliée, la fenêtre quitte la page
+    // Le focus revient à la dernière fenêtre en plus ouverte, sinon au panneau
     const reste = [...etat.current.vues].reverse().find((x) => x.id !== cible && x.id !== 'panneau' && !x.ferme);
     setFocus((f) => (f === cible ? reste?.id ?? 'panneau' : f));
     window.setTimeout(() => setVues((v) => v.filter((x) => x.id !== cible)), DUREES.effacer + DUREE_RANGEMENT + 80);
   }, [arreterEchange, setOnglet]);
-  // Fermer depuis un élément : la fenêtre en focus, celle où l'on vient de cliquer
+  // Fermer depuis un élément : la fenêtre en focus, celle du clic
   const fermer = useCallback(() => fermerVue(etat.current.vues.some((x) => x.id === etat.current.focus && !x.ferme) ? etat.current.focus : 'panneau'), [fermerVue]);
 
-  // Clic droit sur un ouvreur (`data-ouvre` : la sorte, `data-objet` : l'objet) : l'élément dans une nouvelle fenêtre ; ailleurs, le menu du navigateur
+  // Clic droit sur un ouvreur : élément en nouvelle fenêtre, sinon menu normal
   const surMenu = useCallback((e: React.MouseEvent) => {
     const t = e.target as HTMLElement;
     const cible = t.closest<HTMLElement>('[data-ouvre][data-objet]:not([data-objet=""])');
@@ -396,24 +395,22 @@ type ProprietesFenetre = Omit<React.HTMLAttributes<HTMLElement>, 'id'> & {
   // Infobulle de la prise, « Glisser pour détacher … »
   titrePrise?: string;
   hidden?: boolean;
-  // D'une page à l'autre (le dock choisit, voir `passer`) : 'fixe', commune à toutes les pages (Activité), elle glisse toujours à sa place ;
-  // 'ecrit', gardée (panneau) ; 'fondu', propre à sa page (par défaut)
+  // Page à page : 'fixe' glisse, 'ecrit' est gardée, 'fondu' est propre à sa page
   passage?: 'fixe' | 'fondu' | 'ecrit';
 };
 
 type EnCours = { tour: number; anims: Controle[]; minuteurs: number[]; sortie: 'non' | 'efface' | 'replie' };
 
-// Une fenêtre du dock : verre, prise, poignées de taille ; cachée, elle garde sa place dans l'arbre pour la retrouver.
-// Fermée, ses éléments s'effacent puis elle se replie vers son bord pendant que sa voisine la suit ; ouverte, l'inverse, puis son texte s'écrit.
+// Fenêtre du dock : verre, prise, poignées ; cachée, elle garde sa place
 export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'Glisser pour détacher la fenêtre', hidden = false, passage = 'fondu', children, ...reste }: ProprietesFenetre) {
   const { ranger, quandPose, avant: avantDock, prevue, posee } = useContexte();
-  // Apparue une fois le dock posé (une fenêtre en plus), elle n'arrive pas d'une autre page
+  // Apparue une fois le dock posé, elle n'arrive pas d'une autre page
   const [avant] = useState(() => (posee() ? null : avantDock));
   const el = useRef<HTMLElement | null>(null);
   const poserEl = useCallback((n: HTMLElement | null) => {
     el.current = n;
   }, []);
-  // Apparue une fois le dock posé, elle part cachée pour se déplier ; fermée ici, cachée aussi (celle de la page quittée sort par sa copie)
+  // Apparue après la pose, elle part cachée pour se déplier ; fermée ici, cachée
   const [cachee, setCachee] = useState(() => posee() || hidden);
   // État au montage
   const depart = useRef({ avant, cachee, hidden });
@@ -421,7 +418,7 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
   const entrante = useRef(false);
   const enCours = useRef<EnCours>({ tour: 0, anims: [], minuteurs: [], sortie: 'non' });
 
-  // Arrête le passage en cours : textes rendus, minuteurs oubliés ; le tour suivant ne laisse finir que les siens
+  // Arrête le passage en cours : textes rendus, minuteurs oubliés
   const arreter = useCallback(() => {
     const e = enCours.current;
     e.anims.forEach((c) => c.annuler());
@@ -438,9 +435,7 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
     e.minuteurs.push(window.setTimeout(() => { if (e.tour === tour) f(); }, apres));
   }, []);
 
-  // Arrivée d'une autre page, la fenêtre ouverte ici (l'Activité, le dock la fait glisser) : ce que le dock a prévu selon les deux pages.
-  // Son verre gardé, seul son contenu s'écrit ; organique, elle se déplie pendant que la grande rend la place, puis son texte s'écrit ;
-  // holographique, elle s'ouvre comme à l'arrivée dans Illusion une fois refermées celles de la page quittée, puis son texte s'écrit
+  // Fenêtre ouverte ici venue d'une autre page : verre gardé, ou dépli
   useLayoutEffect(() => {
     const d = depart.current;
     if (!d.avant || d.cachee || d.hidden || passage === 'fixe' || mouvementReduit()) return;
@@ -500,14 +495,14 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
       return;
     }
     if (e.sortie === 'non') return;
-    // Rouverte pendant qu'elle se fermait : elle revient de là où elle en est, son contenu se réécrit
+    // Rouverte pendant qu'elle se fermait, elle repart de là où elle en est
     const replie = e.sortie === 'replie';
     arreter();
     if (replie) ranger(true, { entrees: [id] });
     if (el.current) e.anims.push(ecrire(el.current, { duree: DUREES.contenu, delai: replie ? DUREE_RANGEMENT : 0 }));
   }, [hidden, id, ranger, quandPose, prevue, arreter, plus]);
 
-  // Montrée : rangée avant d'être peinte, en se dépliant si elle vient de s'ouvrir ; retirée : rangée une fois sortie de la page
+  // Montrée : rangée avant d'être peinte ; retirée : rangée une fois sortie
   useLayoutEffect(() => {
     cacheeVue.current = cachee;
     DOCK.visibles[id] = !cachee;
@@ -544,7 +539,7 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
       <span className="taille d" data-taille="d" aria-hidden="true" />
       <span className="taille b" data-taille="b" aria-hidden="true" />
       <span className="taille c" data-taille="c" aria-hidden="true" />
-      {/* Ouverture : deux lignes nées au milieu, qui s'étirent puis s'écartent vers le haut et le bas */}
+      {/* Ouverture : deux lignes nées au milieu, qui s'écartent en haut et en bas */}
       <span className="ouv-ligne" aria-hidden="true" />
       <span className="ouv-ligne" aria-hidden="true" />
     </Balise>

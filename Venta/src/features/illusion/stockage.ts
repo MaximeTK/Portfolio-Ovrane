@@ -1,4 +1,4 @@
-// Les brouillons d'Illusion gardés dans ce navigateur : rangés sous le compte qui les a tapés, effacés à la déconnexion
+// Brouillons d'Illusion de ce navigateur, par compte, effacés à la déconnexion
 import { useLayoutEffect } from 'react';
 
 const PREFIXE = 'illusion:';
@@ -6,16 +6,16 @@ const PREFIXE = 'illusion:';
 const ANCIENNES = ['illusion:atelier:', 'illusion:documents:'];
 
 let compte = '';
-// Ce que les pages gardent en mémoire pour la session (fenêtres, pièces, fils lus…) : oublié quand le compte change ou se déconnecte
+// Mémoire de session des pages : oubliée au changement de compte
 const oublis = new Set<() => void>();
 export const aOublier = (f: () => void) => {
   oublis.add(f);
 };
 
-// Ce qu'une section a lu ou choisi (données, filtres, page), gardé pour la session : en y revenant, elle le montre aussitôt et se relit derrière
+// Ce qu'une section a lu ou choisi, gardé pour la session
 const gardes = new Map<string, unknown>();
 aOublier(() => gardes.clear());
-// La valeur gardée sous « section:nom », sinon celle de départ : le départ d'un useState
+// La valeur gardée sous « section:nom », sinon celle de départ d'un useState
 export const repris = <T,>(cle: string, depart: T): T => (gardes.has(cle) ? (gardes.get(cle) as T) : depart);
 // Garde à chaque rendu les valeurs de la section, chacune sous « section:nom »
 export function useGarder(section: string, valeurs: Record<string, unknown>) {
@@ -24,7 +24,7 @@ export function useGarder(section: string, valeurs: Record<string, unknown>) {
   });
 }
 
-// Une empreinte courte de l'adresse : sépare les comptes sans écrire l'e-mail en clair dans le navigateur
+// Empreinte courte de l'adresse : sépare les comptes sans e-mail en clair
 function empreinte(texte: string) {
   let h = 0x811c9dc5;
   for (let i = 0; i < texte.length; i += 1) {
@@ -43,7 +43,7 @@ function cles() {
   }
 }
 
-/** Le compte dont les brouillons se lisent et s'écrivent ; posé par la racine d'Illusion avant ses pages. */
+/** Le compte dont les brouillons se lisent et s'écrivent, posé par la racine */
 export function poserCompte(email: string) {
   const neuf = empreinte(email.trim().toLowerCase());
   if (neuf === compte) return;
@@ -52,10 +52,10 @@ export function poserCompte(email: string) {
   for (const cle of cles()) if (ANCIENNES.some((a) => cle.startsWith(a))) localStorage.removeItem(cle);
 }
 
-/** La clé d'un brouillon (« atelier:parser », « documents:lettre ») pour le compte en cours. */
+/** La clé d'un brouillon pour le compte en cours. */
 export const cleBrouillon = (nom: string) => `${PREFIXE}${compte}:${nom}`;
 
-/** Efface tous les brouillons d'Illusion de ce navigateur, quel que soit leur compte : la déconnexion n'en laisse aucun. */
+/** Efface tous les brouillons d'Illusion de ce navigateur. */
 export function effacerBrouillons() {
   compte = '';
   oublis.forEach((f) => f());

@@ -38,7 +38,7 @@ const ICONES = {
   plus: <svg {...TRAIT} strokeWidth={2.6}><path d="M12 5v14M5 12h14" /></svg>,
 };
 
-// « 6:04:47:12 » : jours, heures, minutes, secondes depuis l'envoi, le compteur qui dit quand relancer
+// « 6:04:47:12 » : jours, heures, minutes, secondes depuis l'envoi
 function chrono(iso: string, maintenant: number) {
   const s = Math.max(0, Math.floor((maintenant - dateUtc(iso).getTime()) / 1000));
   const deux = (n: number) => String(n).padStart(2, '0');
@@ -46,7 +46,7 @@ function chrono(iso: string, maintenant: number) {
 }
 
 export default function PageCandidatures({ compte, recherche }: ProprietesPage) {
-  // La file lue et ce qui l'a choisie restent d'une visite à l'autre : en revenant, la file s'affiche aussitôt et se relit derrière
+  // File lue et choix gardés d'une visite à l'autre, relus en arrière-plan
   const [file, setFile] = useState(() => repris<EtatFile | null>('candidatures:file', null));
   const [erreurFile, setErreurFile] = useState('');
   const [filtres, setFiltres] = useState(() => repris<Filtres>('candidatures:filtres', { etape: '', metier: '', langue: '' }));
@@ -58,7 +58,7 @@ export default function PageCandidatures({ compte, recherche }: ProprietesPage) 
   const [incomplet, setIncomplet] = useState<Incomplet | null>(null);
   const [competence, setCompetence] = useState<DemandeAjout | null>(null);
   const [avis, setAvis] = useState<Avis>(null);
-  // L'API lit au moins 10 lignes ; en « auto », le défileur garde les lignes qui ne tiennent pas
+  // L'API lit au moins 10 lignes ; en « auto », le défileur garde le surplus
   const adresse = `/candidatures?${new URLSearchParams({ ...filtres, page: String(page), taille: String(taille === 'auto' ? Math.max(10, auto) : taille) })}`;
   const relire = useCallback(async () => {
     try {
@@ -70,7 +70,7 @@ export default function PageCandidatures({ compte, recherche }: ProprietesPage) 
       setErreurFile(message(e));
     }
   }, [adresse]);
-  // La file relue toutes les 5 s, comme le bandeau de l'ancien dashboard, et aussitôt qu'une fiche change une offre
+  // File relue toutes les 5 s, et aussitôt qu'une fiche change une offre
   useSondage(relire, 5000, true, adresse);
   useEffect(() => {
     const changee = () => void relire();
@@ -111,7 +111,7 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
   const [aller, setAller] = useState('');
   const defile = useRef<HTMLDivElement>(null);
 
-  // Les compteurs des offres envoyées tournent à la seconde, sans rien redemander au serveur
+  // Les compteurs des offres envoyées tournent à la seconde, sans le serveur
   useEffect(() => {
     const t = setInterval(() => document.visibilityState === 'visible' && setMaintenant(Date.now()), 1000);
     return () => clearInterval(t);
@@ -120,7 +120,7 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
   useEffect(() => {
     if (!direct) return;
     if (admin) ouvrir('direct');
-    // Une fois l'entrée d'historique de la vue posée, la vue et son adresse oublient la demande
+    // Une fois l'entrée d'historique posée, la vue oublie la demande
     const minuteur = setTimeout(() => {
       const vue = 'illusion/candidatures';
       window.history.replaceState({ page: vue }, '', `/${vue}`);
@@ -145,7 +145,7 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
     const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
     return () => clearTimeout(t);
   }, [avis, setAvis]);
-  // « auto » : autant de lignes que la hauteur du défileur en montre sans en couper une ; remesuré quand les lignes arrivent
+  // « auto » : autant de lignes que le défileur en montre entières
   const nbLignes = file?.offres?.length ?? 0;
   useLayoutEffect(() => {
     const zone = defile.current;
@@ -207,7 +207,7 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
     if (Number.isInteger(n) && n >= 1 && n <= pages) setPage(n);
     setAller('');
   };
-  // Les numéros proches du début, de la page et de la fin ; le premier trou devient le « … » où taper la page voulue
+  // Numéros proches du début, de la page et de la fin ; le trou devient « … »
   const boutons: React.ReactNode[] = [];
   numeros.forEach((n, i) => {
     if (i > 0 && n - numeros[i - 1] > 1) {
@@ -363,7 +363,7 @@ type ProprietesPanneau = {
   setAvis: (a: Avis) => void; relire: () => Promise<void>;
 };
 
-// Le panneau : les fiches (éléments, une par fenêtre) puis chaque sous-fenêtre de la page en onglet ; les fenêtres d'un geste n'y sont qu'avec leur objet
+// Panneau : les fiches (une par fenêtre), puis chaque sous-fenêtre en onglet
 function PanneauDePage({ admin, incomplet, setIncomplet, competence, setCompetence, setAvis, relire }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
   // Refermé, le panneau oublie les fenêtres d'un geste

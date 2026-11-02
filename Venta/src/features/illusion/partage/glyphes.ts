@@ -1,11 +1,10 @@
 'use client';
 
-// Ce qui apparaît ou disparaît dans une fenêtre : chaque morceau se déplie ou se replie depuis son milieu, son texte s'écrit ou s'efface
-// lettre par lettre derrière une tête de quelques glyphes ; le texte d'origine est toujours rendu, sauf si React l'a changé entre-temps
+// Un morceau se déplie ou se replie depuis son milieu, son texte s'écrit
 const GLYPHES = '#$%&*+<=>?@/|^~0123456789ABCDEFX';
 const LETTRE = /[\p{L}\p{N}]/u;
 const TETE = 4;
-// Morceaux animés un à un, du milieu de la fenêtre vers ses bords : cellules, têtes, blocs de fiche, vignettes, lignes du fil
+// Morceaux animés un à un, du milieu de la fenêtre vers ses bords
 const MORCEAUX =
   'td,th,.outils>*,.confirmer,.etat-boite,.pagination,.vignette,.p-tete,.f-pied,.f-tete,.section-f>*,.bloc-f,' +
   '.f-corps>:not(.section-f):not(.f-tete):not(.bloc-f),.detail-appel>*,.echos-tete>*,.tuiles-sortes>*,.fil-actions>li,.tete>*';
@@ -14,11 +13,11 @@ const HORS = 'textarea,select,option,svg,script,style';
 // Décor d'une fenêtre, laissé en place pendant qu'elle se déplie
 const DECOR = ':scope>:not(.verre-halos):not(.prise):not(.taille):not(.ouv-ligne)';
 
-// Durées des passages, en ms : effacement avant repli, ouverture et fermeture holographiques, écriture à l'ouverture, contenu réécrit, ce qui change
+// Durées en ms : effacement, ouvertures, écriture, réécriture, changement
 export const DUREES = { effacer: 130, ouvrir: 560, fermer: 440, ouverture: 700, contenu: 520, signal: 380, canaux: 300 };
 
 export type Controle = { fini: Promise<void>; annuler: () => void };
-// `texte` : seul le texte s'écrit, avec un bref éclat blanc, sans que l'élément se déplie (un compteur, un nom de canal)
+// `texte` : seul le texte s'écrit, avec un bref éclat blanc, sans dépli
 type Options = { duree: number; delai?: number; texte?: boolean };
 type Texte = { n: Text; v0: string; dernier: string; debut: number; fin: number; fait: boolean };
 
@@ -33,7 +32,7 @@ function brouiller(s: string) {
   return sortie;
 }
 
-// À l'avancement p (0 à 1) : les lettres posées, puis la tête en glyphes ; la suite n'est pas encore écrite
+// À l'avancement p (0 à 1) : lettres posées, puis tête en glyphes
 function aLAvancement(v0: string, p: number) {
   const q = Math.floor(p * (v0.length + TETE));
   const ecrit = Math.min(v0.length, q);
@@ -41,7 +40,7 @@ function aLAvancement(v0: string, p: number) {
   return v0.slice(0, pose) + brouiller(v0.slice(pose, ecrit));
 }
 
-// Les morceaux visibles de la cible, sans ceux déjà portés par un autre ; à défaut, la cible entière
+// Morceaux visibles de la cible hors ceux d'un autre ; sinon la cible entière
 function morceauxDe(cible: Element): HTMLElement[] {
   const r = cible.getBoundingClientRect();
   const morceaux = Array.from(cible.querySelectorAll<HTMLElement>(MORCEAUX)).filter((el) => {
@@ -74,7 +73,7 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
   }
   for (const el of texte ? [] : morceauxDe(cible)) {
     const b = el.getBoundingClientRect();
-    // 0 au milieu de la cible, 1 à ses bords : l'écriture part du milieu, l'effacement des bords
+    // 0 au milieu de la cible, 1 à ses bords : l'écriture part du milieu
     const ecart = r.height ? Math.min(1, Math.abs((b.top + b.height / 2 - r.top) / r.height - 0.5) * 2) : 0;
     const depart = delai + (ecrit ? ecart * 0.4 : (1 - ecart) * 0.35) * duree;
     const longueur = (ecrit ? 0.45 : 0.6) * duree;
@@ -94,7 +93,7 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
   }
 
   const poser = (t: Texte, valeur: string) => {
-    // React a réécrit ce texte entre-temps : sa valeur est la bonne, on n'y touche plus
+    // React a réécrit ce texte : sa valeur est la bonne, on n'y touche plus
     if (t.n.nodeValue !== t.dernier) { t.fait = true; return; }
     t.n.nodeValue = valeur;
     t.dernier = valeur;
@@ -123,7 +122,7 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
     image = requestAnimationFrame(pas);
   });
   const fini = Promise.all([textesFinis, ...anims.map((a) => a.finished.catch(() => {}))]).then(() => {
-    // Écrit : les morceaux reprennent leur style ; effacé : ils restent repliés jusqu'à l'annulation, une fois la fenêtre cachée
+    // Écrit : style repris ; effacé : repliés jusqu'à l'annulation, fenêtre cachée
     if (ecrit || texte) anims.forEach((a) => a.cancel());
   });
   return {

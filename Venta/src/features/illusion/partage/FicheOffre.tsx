@@ -6,7 +6,7 @@ import { appeler, telecharger, televerser } from '../api';
 import type { Onglet } from '../dock/Panneau';
 import { aOublier } from '../stockage';
 
-// Ce que /offres/{cle}/dossier rend : l'offre, sa candidature, son courrier et ce qui pend à elle
+// Ce que rend /offres/{cle}/dossier : offre, candidature, courrier et suites
 type Offre = {
   cle: string; titre: string; entreprise_brute: string; entreprise_siren: string | null; site_entreprise: string | null;
   lieu: string; dept: string; contrat: string; source: string; url: string; apply_url: string; publiee_le: string;
@@ -128,7 +128,7 @@ function TitreFiche({ cle }: { cle: string | null }) {
   return <>{nom ? `Fiche · ${nom}` : 'Fiche'}</>;
 }
 
-// Contrat de la fiche d'une offre, partagée par les pages qui en montrent : l'onglet `fiche-offre` à mettre dans leur Panneau ; sans `ajouterAuProfil`, le « + » d'une compétence ouvre son ajout dans la fiche
+// Contrat de la fiche d'offre : onglet `fiche-offre` à mettre au Panneau
 export function ongletFicheOffre(
   cle: string | null,
   options: { ouvrirEntreprise?: (siren: string) => void; ajouterAuProfil?: (demande: DemandeAjout) => void } = {},
@@ -146,7 +146,7 @@ function PiedFiche({ cle, ouvrirEntreprise }: { cle: string; ouvrirEntreprise?: 
   const d = useDossier(cle)?.dossier;
   if (!d) return null;
   const o = d.offre, lien = sur(o.apply_url || o.url);
-  // « Postuler » n'a plus de sens sur une offre déjà déposée : ne reste qu'à revoir l'annonce
+  // « Postuler » n'a plus de sens sur une offre déposée : l'annonce se revoit
   const deposee = d.candidature && d.candidature.statut !== 'PRETE';
   return (
     <>
@@ -368,7 +368,7 @@ function CorpsFiche({ cle, ajouterAuProfil }: { cle: string; ajouterAuProfil?: (
   );
 }
 
-// Le profil de recherche et le profil de CV : deux listes tant que rien n'est envoyé ; un choix part dès qu'il est fait
+// Profil de recherche et de CV : deux listes tant que rien n'est envoyé
 function Profils({ cle, attribution, agir }: { cle: string; attribution: Attribution; agir: Agir }) {
   const cvs = attribution.choix.find((c) => c.recherche === attribution.profil_recherche)?.cvs ?? [];
   const choisi = attribution.cv_auto ? '' : attribution.profil_cv;
@@ -400,7 +400,7 @@ function Profils({ cle, attribution, agir }: { cle: string; attribution: Attribu
   );
 }
 
-// Une pièce du dossier : elle se télécharge, et se remplace par un fichier du poste, téléversé
+// Une pièce du dossier : téléchargeable, remplaçable par un fichier du poste
 function Piece({ envoi, nature, nom, occupe, agir }: { envoi: Envoi; nature: 'cv' | 'lettre'; nom: string; occupe: boolean; agir: Agir }) {
   const choix = useRef<HTMLInputElement>(null);
   const remplacer = (fichier: File) => agir(nature, async () => {
@@ -453,7 +453,7 @@ function BlocMesures({ m }: { m: Mesures }) {
   );
 }
 
-// Le diagramme d'une préparation en arbre : un onglet par interlocuteur, chaque question se coche d'un clic et s'enregistre aussitôt
+// Diagramme d'une préparation : onglet par interlocuteur, questions cochées
 type Noeud = { id: string; question: string; theme?: string; probabilite?: string; reponse?: string; detail?: string; etat?: string; relances?: Noeud[] };
 type Arbre = { entretiens: { type: string; questions: Noeud[] }[]; imprevues?: Noeud[]; a_tenir?: string[]; a_poser?: string[] };
 const ETAT_SUIVANT: Record<string, string> = { '': 'parcouru', parcouru: 'non', non: '' };
@@ -516,7 +516,7 @@ function Preparation({ texte, candidature, setAvis }: { texte: string; candidatu
   );
 }
 
-// « Ajouter « X » au profil » : la rubrique du profil où la ranger, ou une rubrique neuve ; Entrée l'ajoute, `fini` reçoit le message de réussite
+// « Ajouter « X » au profil » : rubrique existante ou neuve ; Entrée l'ajoute
 function AjoutCompetence({ demande, fini }: { demande: DemandeAjout; fini: (texte?: string) => void }) {
   const [rubriques, setRubriques] = useState<string[] | null>(null);
   const [rubrique, setRubrique] = useState('');
@@ -581,7 +581,7 @@ function AjoutCompetence({ demande, fini }: { demande: DemandeAjout; fini: (text
   );
 }
 
-// L'onglet « Ajouter « X » au profil », pour une page qui l'ouvre à côté de la fiche plutôt que dedans
+// Onglet « Ajouter « X » au profil », ouvert à côté de la fiche
 export function ongletAjoutCompetence(demande: DemandeAjout | null, fini: (texte?: string) => void): Onglet {
   return {
     cle: 'ajout-competence',

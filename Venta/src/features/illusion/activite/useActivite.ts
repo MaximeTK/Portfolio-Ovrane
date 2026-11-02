@@ -8,7 +8,7 @@ import { useSondage } from './sondage';
 // Données de l'Activité, lues sur /vues/activite d'Illusion
 export type Sorte = 'envoi' | 'reponse' | 'entretien' | 'relance' | 'offres' | 'afaire';
 
-// Le fil va du plus récent au plus ancien ; un séparateur de jour suit le dernier élément de son jour
+// Du plus récent au plus ancien, un séparateur après le dernier de chaque jour
 export type ElementFil = { id: string; sorte: Sorte; heure: string; phrase: string } | { id: string; jour: string };
 
 export type DonneesActivite = {
@@ -72,7 +72,7 @@ export function nomDuJour(d: Date) {
   return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: '2-digit' });
 }
 
-// Le fil de la fenêtre : chaque action à son heure locale, un séparateur après le dernier élément de chaque jour
+// Le fil de la fenêtre, un séparateur après le dernier élément de chaque jour
 export function avecJours(evenements: Evenement[]): ElementFil[] {
   const fil: ElementFil[] = [];
   evenements.forEach((e, i) => {
@@ -88,10 +88,10 @@ export function avecJours(evenements: Evenement[]): ElementFil[] {
 export const adresseActivite = (jours: number, limite: number) =>
   `/vues/activite?depuis=${encodeURIComponent(debutDuJour(jours).toISOString())}&jour=${encodeURIComponent(debutDuJour().toISOString())}&limite=${limite}`;
 
-// Dernière lecture, gardée d'une page à l'autre pour le même compte : l'Activité de la page suivante ne repart pas de rien
+// Dernière lecture gardée d'une page à l'autre : l'Activité repart pleine
 let gardee: { cle: string; donnees: DonneesActivite } | null = null;
 
-// Hier et aujourd'hui, relus toutes les 5 s comme le bandeau de l'ancien dashboard
+// Hier et aujourd'hui, relus toutes les 5 s
 export function useActivite(actif = true): DonneesActivite {
   const [donnees, setDonnees] = useState(() => (gardee?.cle === cleBrouillon('activite') ? gardee.donnees : VIDE));
   const garder = (d: DonneesActivite) => {

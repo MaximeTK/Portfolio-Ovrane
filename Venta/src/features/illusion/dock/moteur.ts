@@ -1,4 +1,4 @@
-// Mécanique organique : fenêtres en arbre de partages, détachées, aimantées à la pause, rangées ou flottantes
+// Mécanique organique : arbre de partages, fenêtres détachées ou rangées
 import { aOublier } from '../stockage';
 
 export type Taille = [number, number];
@@ -10,12 +10,12 @@ export type Zone = { x: number; y: number; w: number; h: number };
 export type ArbreDepart = Arbre | ((zone: Zone, style: CSSStyleDeclaration) => Arbre);
 
 export const ECART = 16, SEUIL = 6, BORD = 26, MARGE = 0.3, ARMEMENT = 450, IMMOBILE = 10;
-// Glissement des fenêtres vers leur place, le même que celui de la feuille de style (0,3 s)
+// Glissement des fenêtres vers leur place, comme la feuille de style (0,3 s)
 export const DUREE_RANGEMENT = 300;
 export const TRANSITION_DE = (duree: number, delai = 0) => ['left', 'top', 'width', 'height'].map((p) => `${p} ${Math.round(duree)}ms cubic-bezier(.2,.8,.2,1) ${Math.round(delai)}ms`).join(',');
 export const TRANSITION = TRANSITION_DE(DUREE_RANGEMENT);
 
-// Avancée du glissement (0 à 1) à la fraction u de sa durée, sur la courbe cubic-bezier(.2,.8,.2,1)
+// Avancée du glissement (0 à 1) à la fraction u, en cubic-bezier(.2,.8,.2,1)
 function courbe(u: number) {
   const b = (t: number, p1: number, p2: number) => 3 * (1 - t) * (1 - t) * t * p1 + 3 * (1 - t) * t * t * p2 + t * t * t;
   let bas = 0, haut = 1;
@@ -31,7 +31,7 @@ export type Mouvement = { de: Zone; a: Zone };
 const entre = (de: Zone, a: Zone, p: number): Zone => ({ x: de.x + (a.x - de.x) * p, y: de.y + (a.y - de.y) * p, w: de.w + (a.w - de.w) * p, h: de.h + (a.h - de.h) * p });
 const touche = (a: Zone, b: Zone) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.5 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.5;
 export const centre = (r: Zone): Zone => ({ x: r.x + r.w / 2, y: r.y + r.h / 2, w: 0, h: 0 });
-// Vrai si `r`, repliée vers son centre ou dépliée depuis lui pendant `duree` après `delai`, ne touche à aucun instant celles qui glissent
+// Vrai si `r`, repliée ou dépliée, ne touche aucune fenêtre qui glisse
 function libre(r: Zone, repli: boolean, delai: number, duree: number, autres: Mouvement[]) {
   for (let k = 1; k < 40; k++) {
     const t = (DUREE_RANGEMENT * k) / 40;
@@ -41,7 +41,7 @@ function libre(r: Zone, repli: boolean, delai: number, duree: number, autres: Mo
   }
   return true;
 }
-// Repli vers son centre le plus lent qui ne touche jamais celles qui prennent sa place : ni trop tôt, ni trop tard
+// Repli le plus lent qui ne touche jamais celles qui prennent sa place
 export function dureeRepli(r: Zone, autres: Mouvement[]) {
   if (libre(r, true, 0, DUREE_RANGEMENT, autres)) return DUREE_RANGEMENT;
   let bas = 40, haut = DUREE_RANGEMENT;
@@ -52,7 +52,7 @@ export function dureeRepli(r: Zone, autres: Mouvement[]) {
   }
   return bas;
 }
-// Dépli depuis son centre le plus tôt possible sans jamais toucher celles qui lui laissent la place : il finit avec elles
+// Dépli le plus tôt possible sans toucher celles qui lui laissent la place
 export function delaiDepli(r: Zone, autres: Mouvement[]) {
   if (libre(r, false, 0, DUREE_RANGEMENT, autres)) return 0;
   let bas = 0, haut = DUREE_RANGEMENT - 40;
@@ -74,7 +74,7 @@ type Cible = { remplir?: boolean; bord?: boolean; id?: string; cote?: Cote };
 type Fente = { n: Partage; a: number; b: number; ta: number; tb: number; ma: number; mb: number; somme: number; total: number; ligne: boolean; ajoutA: number; ajoutB: number; libreA: number; libreB: number } & Zone;
 type Calcul = { res: Record<string, Zone>; fentes: Fente[] };
 type EtatFenetre = { flot: Zone | null; tailleFlot: Taille | null; z: string };
-// Disposition d'une page, gardée pendant la session : revenir sur la page la retrouve jusqu'à la remise
+// Disposition d'une page gardée pendant la session, jusqu'à la remise
 type Memoire = { racine: Arbre | null; fen: Record<string, EtatFenetre>; zMax: number; change: boolean };
 type Action =
   | { type: 'fente'; f: Fente; x0: number; y0: number; el: HTMLElement }
@@ -97,11 +97,10 @@ export type OptionsDock = {
   entiere: HTMLElement;
   fentes: HTMLElement;
   remise: HTMLElement;
-  // Fenêtres d'éléments : hors de l'arbre, elles prennent la place logique (voir `placerElement`) ; retirées de la page, elles le quittent
+  // Fenêtres d'éléments : hors de l'arbre, à la place logique (`placerElement`)
   elements?: (id: string) => boolean;
 };
-// Fenêtres qui se déplient depuis leur centre, ou celle qui se replie vers le sien, pendant que les autres prennent ou rendent la place ;
-// `depuis` : fenêtres gardées d'une page à l'autre, qui glissent de leur place sur la page quittée jusqu'à la leur, après leur `retard` (ms)
+// Fenêtres qui se déplient ou se replient depuis leur centre (`depuis`)
 export type OptionsRangement = { entrees?: string[]; sortie?: string; depuis?: Record<string, Zone>; retards?: Record<string, number> };
 export type Moteur = { ranger: (anime: boolean, options?: OptionsRangement) => void; detruire: () => void };
 
@@ -137,7 +136,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   const etat = (id: string) => (fen[id] ??= { flot: null, tailleFlot: null, z: '' });
 
   let inclus: string | null = null;
-  // Fenêtres en train de se replier : encore peintes, déjà hors du partage ; oubliées une fois cachées
+  // Fenêtres en train de se replier : encore peintes, hors du partage
   const sorties = new Set<string>();
   const affichee = (id: string) => {
     const el = els[id];
@@ -152,7 +151,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     return Math.max(0, ...vis.map((c) => miniArbre(c, axe, vu)));
   };
 
-  // Partage simplifié : plus de case vide, plus de partage à un seul enfant, deux partages de même sens fondus en un
+  // Partage simplifié : sans case vide ni enfant unique, mêmes sens fondus
   function normaliser(n: Arbre | null): Arbre | null {
     if (!n || feuille(n)) return n;
     const paires: [Arbre, number][] = [];
@@ -178,7 +177,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     n.parts = paires.map((q) => q[1]);
     return n;
   }
-  // Pose la fenêtre sur un côté d'une autre : elle prend la moitié de sa case ; sur un bord de l'écran, une bande de sa taille préférée
+  // Pose sur un côté d'une autre fenêtre (moitié) ou sur un bord d'écran (bande)
   function inserer(arbre: Arbre | null, cible: Cible, id: string): Arbre | null {
     if (cible.remplir) return arbre || { id };
     const dir = cible.cote === 'gauche' || cible.cote === 'droite' ? 'row' : 'col';
@@ -218,9 +217,9 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     return arbre;
   }
 
-  // Taille de chaque case : chacun sa part, jamais sous son minimum ; les fentes entre cases sont notées pour être tirées
+  // Taille de chaque case, jamais sous son minimum ; fentes notées pour le tirage
   function calculer(arbre: Arbre | null, avec?: string): Calcul {
-    // `avec` : la fenêtre en main, comptée dans le calcul d'essai bien qu'elle flotte
+    // `avec` : la fenêtre en main, comptée dans l'essai bien qu'elle flotte
     inclus = avec || null;
     const res: Record<string, Zone> = {}, fentes: Fente[] = [];
     const rec = (n: Arbre, r: Zone) => {
@@ -228,8 +227,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       const idx = n.enfants.map((_, i) => i).filter((i) => visible(n.enfants[i]));
       if (!idx.length) return;
       const ligne = n.dir === 'row';
-      // La part d'une fenêtre cachée (panneau fermé) revient à la fenêtre principale du partage, avec l'écart qui la séparait :
-      // les autres (l'Activité) gardent leur largeur au pixel près
+      // La part d'une fenêtre cachée revient à la principale, sans toucher les autres
       const jp = idx.findIndex((i) => ids(n.enfants[i]).includes(o.principal()));
       const cachee = jp < 0 ? 0 : n.parts.reduce((s, p, i) => (idx.includes(i) ? s : s + p), 0);
       const libres = jp < 0 ? 0 : ECART * (n.enfants.length - idx.length);
@@ -270,10 +268,10 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   function poser(el: HTMLElement, r: Zone) {
     placer(el, r);
     el.dataset.forme = r.w > 520 && r.h < r.w * 0.6 ? 'large' : 'haute';
-    // Paliers de largeur : chacun laisse au moins 8 px entre les colonnes qu'il garde
+    // Paliers de largeur : chacun laisse au moins 8 px entre les colonnes gardées
     el.dataset.l = r.w < 600 ? 'xs' : r.w < 720 ? 's' : r.w < 1000 ? 'm' : 'l';
   }
-  // Applique un calcul aux fenêtres rangées (sauf celle en main) et place les fentes tirables
+  // Applique un calcul aux fenêtres rangées (sauf en main) et place les fentes
   function appliquer(calc: Calcul, sauf: string | null, avecFentes: boolean) {
     for (const id in calc.res) { const el = els[id]; if (el && id !== sauf && !sorties.has(id) && etat(id).flot === null) poser(el, calc.res[id]); }
     seps = avecFentes ? calc.fentes : [];
@@ -293,7 +291,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     });
   }
 
-  // Place logique d'une fenêtre d'élément : elle réduit une fenêtre qui couvre plusieurs des 8 zones de l'écran (4 colonnes sur 2 rangées), jamais sous les minimums
+  // Place logique d'un élément : réduit la fenêtre couvrant plusieurs des 8 zones
   function placerElement(id: string): Arbre | null {
     const racine = memoire.racine;
     if (!racine || !visible(racine)) return null;
@@ -313,7 +311,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       }
       return p;
     };
-    // Zones de chaque fenêtre : chaque enfant d'un partage en couvre au moins une quand il y en a assez, le reste selon sa taille
+    // Zones de chaque fenêtre : chaque enfant en couvre une au moins
     const couvre: Record<string, { c: number; r: number }> = {};
     const zones =(n: Arbre, c: number, r: number) => {
       if (feuille(n)) { if (res[n.id]) couvre[n.id] = { c, r }; return; }
@@ -332,7 +330,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       const c = n.enfants.filter(vu).map(colonnes);
       return n.dir === 'row' ? c.reduce((a, b) => a + b, 0) : Math.max(1, ...c);
     };
-    // Après une colonne de plus ou l'Activité partagée, chaque enfant d'une rangée a sa part selon ses colonnes, une fenêtre étroite garde la sienne
+    // Après une colonne de plus, chaque enfant a sa part selon ses colonnes
     const egaliser = (n: Arbre) => {
       if (feuille(n)) return;
       n.enfants.forEach(egaliser);
@@ -341,7 +339,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       const reste = larges.reduce((s, i) => s + n.parts[i], 0), total = larges.reduce((s, i) => s + colonnes(n.enfants[i]), 0);
       larges.forEach((i) => { n.parts[i] = (reste * colonnes(n.enfants[i])) / total; });
     };
-    // Une colonne de plus au bout de la rangée qui porte la fenêtre, à côté d'elle si aucune ne la porte ; sans fenêtre, au bord droit
+    // Colonne de plus au bout de la rangée de la fenêtre, sinon au bord droit
     const colonne = (arbre: Arbre, cible: string | null): Arbre | null => {
       if (!cible) return inserer(arbre, { bord: true, cote: 'droite' }, id);
       const trouve: { rangee: Partage | null } = { rangee: null };
@@ -359,7 +357,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       return arbre;
     };
     const feuilles = Object.keys(couvre), larg = (i: string) => couvre[i].c, haut = (i: string) => couvre[i].r;
-    // Dans l'ordre : plus large que la moitié de l'écran, une colonne à droite ; pleine hauteur, dessous, la plus à droite d'abord ; plusieurs colonnes, une colonne à droite ; une colonne au bord droit ; puis n'importe quel côté
+    // Ordre : colonne à droite si large, dessous si pleine hauteur, puis tout côté
     const essais: [string | null, boolean][] = [
       ...feuilles.filter((i) => larg(i) > 2).sort((a, b) => nombre(b) - nombre(a)).map((i): [string, boolean] => [i, false]),
       ...feuilles.filter((i) => haut(i) >= 2 && larg(i) <= 2).sort((a, b) => res[b].x - res[a].x).map((i): [string, boolean] => [i, true]),
@@ -376,7 +374,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     return null;
   }
 
-  // Les fenêtres présentes dans la page ; une fenêtre absente de l'arbre et rangée se pose sur le bord droit
+  // Fenêtres présentes dans la page ; une absente de l'arbre va au bord droit
   function scanner() {
     const vus = new Set<string>();
     coq.querySelectorAll<HTMLElement>('[data-fen]').forEach((el) => {
@@ -384,7 +382,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       vus.add(id);
       if (els[id] === el) return;
       els[id] = el;
-      // Une fenêtre reprise (retour sur la page, autre disposition) prend l'état gardé, flottante ou rangée
+      // Une fenêtre reprise prend l'état gardé, flottante ou rangée
       const f = etat(id);
       el.style.zIndex = f.z;
       if (!f.flot) {
@@ -397,7 +395,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     for (const id in els) if (!vus.has(id)) {
       els[id] = null;
       sorties.delete(id);
-      // Fenêtre d'élément fermée : sa place revient aux autres, son état est oublié ; rouverte, elle reprend la place logique du moment
+      // Fenêtre d'élément fermée : sa place revient aux autres et son état est oublié
       if (!o.elements?.(id)) continue;
       memoire.racine = normaliser(retirer(memoire.racine, id));
       delete fen[id];
@@ -409,10 +407,10 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   }
 
   let base: Calcul = { res: {}, fentes: [] };
-  // Fin du dernier glissement lancé : un rangement sans animation demandé d'ici là (taille de la page relue) ne le coupe pas
+  // Fin du dernier glissement : un rangement sans animation ne le coupe pas
   let finGlisse = 0;
   const glisses = new Map<HTMLElement, number>();
-  // Le glissement porté par la fenêtre elle-même : il vaut aussi pour une flottante, qui n'en a pas d'ordinaire
+  // Le glissement porté par la fenêtre elle-même vaut aussi pour une flottante
   const glisser = (el: HTMLElement, duree = DUREE_RANGEMENT, delai = 0) => {
     el.style.transition = TRANSITION_DE(duree, delai);
     clearTimeout(glisses.get(el));
@@ -423,23 +421,23 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     const sans = !anime && performance.now() > finGlisse;
     if (sans) ov.classList.add('sans-anim');
     else if (!action && ov.classList.contains('sans-anim')) {
-      // Juste après une pose sans animation (arrivée sur la page) : la place posée est prise pour départ, puis tout glisse
+      // Après une pose sans animation, la place posée sert de départ puis tout glisse
       void coq.offsetWidth;
       ov.classList.remove('sans-anim');
     }
     if (anime && (entrees.length || sortie || Object.keys(depuis).length)) finGlisse = performance.now() + DUREE_RANGEMENT + 60;
-    // Celle qui sort se replie vers son centre pendant que les autres prennent sa place
+    // Celle qui sort se replie vers son centre pendant que les autres la remplacent
     const elSortie = sortie ? els[sortie] : null;
     let repli: Zone | null = null;
     if (sortie && elSortie && !sorties.has(sortie) && getComputedStyle(elSortie).display !== 'none') {
       repli = etat(sortie).flot ?? base.res[sortie] ?? null;
       sorties.add(sortie);
     }
-    // Celle qui revient pendant qu'elle se repliait repart de là où elle en est ; une nouvelle part de son centre
+    // Celle qui revient en se repliant repart de là où elle en est
     const revenues = entrees.filter((id) => sorties.delete(id));
     const avant = base;
     base = calculer(memoire.racine);
-    // Le glissement des autres fenêtres rangées, de leur place d'avant à la nouvelle
+    // Glissement des autres fenêtres rangées, de leur place d'avant à la nouvelle
     const mouvements = (sauf: string): Mouvement[] => Object.keys(base.res)
       .flatMap((id) => (id !== sauf && avant.res[id] && etat(id).flot === null ? [{ de: avant.res[id], a: base.res[id] }] : []));
     if (sortie && elSortie && repli) {
@@ -459,7 +457,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       glisser(el, DUREE_RANGEMENT - delai, delai);
       if (etat(id).flot) poser(el, r);
     }
-    // Gardée d'une page à l'autre : elle repart de sa place d'avant, rangée ou détachée comme on l'a laissée ici
+    // Gardée d'une page à l'autre : elle repart de sa place d'avant, comme laissée
     for (const id in depuis) {
       const el = els[id], r = el && (etat(id).flot ?? base.res[id]);
       if (!el || !r || !anime) continue;
@@ -474,16 +472,16 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     coq.dataset.pret = '1';
     if (sans) requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.remove('sans-anim')));
   };
-  // Icône de remise : visible et atteignable au clavier seulement quand la disposition a changé
+  // Icône de remise : visible et au clavier si la disposition a changé
   const montrerRemise = (vu: boolean) => {
     remise.classList.toggle('vu', vu);
     remise.tabIndex = vu ? 0 : -1;
   };
   const changer = () => { memoire.change = true; montrerRemise(true); };
 
-  // Zone sous la main : un bord de l'écran, sinon le tiers d'un côté de la fenêtre survolée ; page vide : toute la place
+  // Zone sous la main : bord d'écran, sinon tiers du côté de la fenêtre survolée
   function cibleSous(px: number, py: number, c: Cadre, enMain: string, depuis: { x: number; y: number }): Cible | null {
-    // Aucune zone tant que la fenêtre n'a pas été emportée : la saisir puis hésiter ne la range pas
+    // Aucune zone avant que la fenêtre soit emportée : la saisir ne range pas
     if (Math.hypot(px - depuis.x, py - depuis.y) < 60) return null;
     const dedans = px >= c.L && px <= c.R && py >= c.T && py <= c.B;
     if (!Object.keys(base.res).length) return dedans ? { remplir: true } : null;
@@ -504,7 +502,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
 
   const presser = (e: PointerEvent) => {
     const cible = e.target as HTMLElement;
-    // N'importe quel clic sur une fenêtre flottante, bords et commandes compris, la passe au premier plan
+    // Tout clic sur une fenêtre flottante la passe au premier plan
     const dessus = cible.closest<HTMLElement>('[data-fen]');
     if (dessus && etat(dessus.dataset.fen!).flot) dessus.style.zIndex = etat(dessus.dataset.fen!).z = String(++memoire.zMax);
     if (e.button !== 0) return;
@@ -539,7 +537,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     if (!action) return;
     const a = action, c = cadre();
     if (a.type === 'fente') {
-      // Fente tirée : les deux cases voisines se partagent la place, chacune garde son minimum
+      // Fente tirée : les deux cases voisines se partagent la place, minimum gardé
       const f = a.f, d = f.ligne ? e.clientX - a.x0 : e.clientY - a.y0;
       const ta = Math.min(Math.max(f.ta + d, f.ma), f.ta + f.tb - f.mb);
       f.n.parts[f.a] = ((ta - f.libreA) * f.somme) / f.total - f.ajoutA;
@@ -551,7 +549,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       return;
     }
     if (a.type === 'taille') {
-      // Fenêtre flottante tirée par son bord ou son coin ; elle peut dépasser de la page
+      // Fenêtre flottante tirée par son bord ou son coin ; elle peut dépasser la page
       const fl = etat(a.id).flot!, m = mini(a.id);
       if (a.sens !== 'b') fl.w = Math.max(a.w0 + e.clientX - a.x0, m[0]);
       if (a.sens !== 'd') fl.h = Math.max(a.h0 + e.clientY - a.y0, m[1]);
@@ -567,7 +565,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       a.el.style.zIndex = f.z = String(++memoire.zMax);
       ov.classList.add('glisse-en-cours');
       if (!f.flot) {
-        // Détachée : elle reprend sa dernière taille flottante (ou celle d'un premier détachement), jamais celle de sa case ; les autres se rangent une fois sans elle
+        // Détachée : elle reprend sa dernière taille flottante, jamais celle de sa case
         const r = a.el.getBoundingClientRect(), m = mini(a.id), t = f.tailleFlot || o.tailles()[a.id]?.flot || [r.width, r.height];
         const w = Math.max(Math.min(t[0], c.r.width - 40), m[0]), h = Math.max(Math.min(t[1], c.r.height - 40), m[1]);
         a.dx = Math.min((a.dx / r.width) * w, w - 24);
@@ -579,13 +577,13 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
         appliquer(base, a.id, false);
       }
     }
-    // Flottante, elle peut sortir à gauche, à droite et en bas ; sa tête reste toujours attrapable (80 px de large, 40 px de haut)
+    // Flottante, elle sort par les côtés et le bas, sa tête restant attrapable
     const fl = f.flot!;
     fl.x = Math.min(Math.max(e.clientX - c.r.left - a.dx, 80 - fl.w), c.r.width - 80);
     fl.y = Math.min(Math.max(e.clientY - c.r.top - a.dy, 0), c.r.height - 40);
     poser(a.el, fl);
     const cible = cibleSous(e.clientX - c.r.left, e.clientY - c.r.top, c, a.id, a.depuis), k = cle(cible);
-    // Aimant à la pause : main immobile sur une zone, les autres s'écartent et ce vide est la place ; bouger relance, changer de zone annule
+    // Aimant à la pause : main immobile sur une zone, les autres s'écartent
     const armer = () => {
       a.ax = e.clientX;
       a.ay = e.clientY;
@@ -627,7 +625,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     if (!a.actif) return;
     changer();
     if (a.cible && a.arme) {
-      // Posée sur une cible : elle rejoint sa case en glissant, l'arbre garde le nouveau partage
+      // Posée sur une cible : elle glisse vers sa case, l'arbre garde le partage
       memoire.racine = normaliser(inserer(memoire.racine, a.cible, a.id));
       const f = etat(a.id);
       f.flot = null;
@@ -638,7 +636,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     ranger(true);
   };
 
-  // Remise en place : l'arbre de départ, toutes les fenêtres rangées, leurs tailles flottantes oubliées
+  // Remise en place : arbre de départ, fenêtres rangées, tailles oubliées
   const remettre = () => {
     memoire.racine = copie(racineDepart);
     memoire.change = false;
@@ -658,7 +656,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   window.addEventListener('pointerup', lacher);
   window.addEventListener('pointercancel', lacher);
   remise.addEventListener('click', remettre);
-  // La page qui change de taille : tout se range de nouveau ; la première mesure, celle de la pose, ne change rien
+  // Page redimensionnée : tout se range de nouveau, sauf à la première mesure
   let mesure = `${coq.clientWidth}x${coq.clientHeight}`;
   const observateur = new ResizeObserver(() => {
     const m = `${coq.clientWidth}x${coq.clientHeight}`;
@@ -686,7 +684,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       window.removeEventListener('pointercancel', lacher);
       remise.removeEventListener('click', remettre);
       observateur.disconnect();
-      // Les glissements en cours finissent : le même dock remonté (mode strict) les laisse arriver, leur minuteur rend la transition
+      // Glissements en cours finis : leur minuteur rend la transition au dock remonté
       sepEls.forEach((s) => s.remove());
       ov.classList.remove('glisse-en-cours', 'tire-en-cours', 'sans-anim');
     },

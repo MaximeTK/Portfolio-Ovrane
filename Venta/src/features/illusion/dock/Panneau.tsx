@@ -17,13 +17,13 @@ export type Onglet = {
   // Étiquette ADMIN, et onglet caché si le compte n'est pas admin
   admin?: boolean;
   corps: React.ReactNode;
-  // `true` : un pied vide que le corps remplit par <AuPied>, avec l'état de sa fenêtre
+  // `true` : un pied vide que le corps remplit par <AuPied>
   pied?: React.ReactNode;
 };
 
 const CROIX = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>;
 
-// Hexagone de focus, celui de la sélection : allumé sur la fenêtre qui reçoit le clic gauche
+// Hexagone de focus : allumé sur la fenêtre qui reçoit le clic gauche
 function Focus({ id }: { id: string }) {
   const { focus, focaliser } = useVues();
   return (
@@ -32,7 +32,7 @@ function Focus({ id }: { id: string }) {
   );
 }
 
-// Le pied de la vue où l'on est : un corps y pose ses commandes, qui partagent ainsi son état (confirmation, occupé, formulaire)
+// Le pied de la vue : un corps y pose ses commandes, qui partagent son état
 const Pied = createContext<HTMLElement | null>(null);
 export function AuPied({ children }: { children: React.ReactNode }) {
   const pied = useContext(Pied);
@@ -50,13 +50,13 @@ function CorpsEtPied({ o, serie }: { o: Onglet; serie?: number }) {
   );
 }
 
-// Ce que la page sait montrer d'un élément, par sorte : l'onglet d'un objet (« fiche-offre » → la fiche de cette offre)
+// Ce que la page sait montrer d'un élément, par sorte
 export type Elements = Record<string, (objet: string) => Onglet | null>;
 // L'onglet d'un élément d'une fenêtre, construit par la page vivante
 const element = (elements: Elements | undefined, cle: string | null, objets: Record<string, string>) =>
   (cle && elements?.[cle] && objets[cle] !== undefined ? elements[cle](objets[cle]) : null);
 
-// Panneau de la page et fenêtres du clic droit ; ses onglets : les éléments montrés (le dernier objet de chaque sorte), puis les outils de la page
+// Panneau et fenêtres du clic droit ; onglets : éléments montrés, puis outils
 export function Panneau({ onglets, elements, label = 'Panneau de la page' }: { onglets: Onglet[]; elements?: Elements; label?: string }) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const { vues, focaliser, ailleurs } = useVues();
@@ -66,7 +66,7 @@ export function Panneau({ onglets, elements, label = 'Panneau de la page' }: { o
     ...onglets.filter((o) => !elements?.[o.cle]),
   ];
   const ouvert = liste.some((o) => o.cle === onglet);
-  // Fermé, il garde sa dernière vue le temps qu'elle s'efface et que la fenêtre se replie
+  // Fermé, il garde sa dernière vue le temps que la fenêtre se replie
   const [derniere, setDerniere] = useState(onglet);
   if (ouvert && derniere !== onglet) setDerniere(onglet);
   const montree = ouvert ? onglet : derniere;
@@ -103,7 +103,7 @@ export function Panneau({ onglets, elements, label = 'Panneau de la page' }: { o
         </header>
         {liste.map((o) => (
           <section
-            // Un autre objet de la même sorte repart de zéro : rien de l'ancien (saisie, confirmation) ne reste
+            // Un autre objet de la même sorte repart de zéro, sans rien de l'ancien
             key={`${o.cle} ${elements?.[o.cle] ? objets[o.cle] : ''}`}
             role="tabpanel"
             className={`p-vue${o.cle === montree ? ' ouverte' : ''}`}
@@ -161,7 +161,7 @@ type ProprietesConfirmer = {
   onAnnuler: () => void;
 };
 
-// Barre de confirmation : posée juste après la rangée .outils d'une fenêtre, elle en prend la place tant qu'elle est rendue
+// Confirmation : prend la place de la rangée .outils tant qu'elle est rendue
 export function Confirmer({ question, detail, action, admin, occupe, onConfirmer, onAnnuler }: ProprietesConfirmer) {
   return (
     <div className="confirmer" role="alertdialog" aria-label={question} onKeyDown={(e) => {

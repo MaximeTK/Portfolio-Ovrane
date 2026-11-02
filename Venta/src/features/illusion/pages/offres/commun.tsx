@@ -32,7 +32,7 @@ export const SOURCES: Record<string, string> = {
 };
 export const libelleSource = (s: string) => SOURCES[s] ?? s;
 
-// Les langues proposées ; un code déjà posé hors de cette liste reste proposé tel quel
+// Langues proposées ; un code posé hors liste reste proposé tel quel
 export const LANGUES: Record<string, string> = { fr: 'Français', en: 'Anglais', de: 'Allemand', es: 'Espagnol', it: 'Italien', pt: 'Portugais', nl: 'Néerlandais' };
 
 export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -68,7 +68,7 @@ export const ICONES = {
   chevron: <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>,
 };
 
-// Relit `lire` toutes les `ms` tant que l'onglet du navigateur est visible, et aussitôt qu'il le redevient
+// Relit `lire` toutes les `ms` onglet visible, et dès qu'il le redevient
 export function useSondage(lire: () => void, ms: number) {
   const fn = useRef(lire);
   useEffect(() => {
@@ -106,9 +106,9 @@ export function useAvis() {
   return { dire, vue };
 }
 
-// L'état de la veille du compte, relu toutes les 5 s comme le bandeau de l'ancien dashboard ; une panne se dit une fois
+// État de la veille du compte relu toutes les 5 s ; une panne se dit une fois
 export function useEtatVeille(dire: (t: string, e?: boolean) => void) {
-  // Gardé d'une visite à l'autre, pour Offres comme pour Veille : il s'affiche aussitôt et se relit derrière
+  // Gardé d'une visite à l'autre (Offres et Veille), relu en arrière-plan
   const [etat, setEtat] = useState(() => repris<EtatVeille | null>('veille:etat', null));
   useGarder('veille', { etat });
   const enPanne = useRef(false);
@@ -128,7 +128,7 @@ export function useEtatVeille(dire: (t: string, e?: boolean) => void) {
   return [etat, lire] as const;
 }
 
-// Les gestes ADMIN sur tout le stock : rejouer les étiquettes et vider les offres
+// Gestes ADMIN sur tout le stock : rejouer les étiquettes et vider les offres
 export function useGestesStock(etat: EtatVeille | null, relire: () => void, dire: (t: string, e?: boolean) => void, apresVider: () => void) {
   const [confirmer, setConfirmer] = useState(false);
   const [occupe, setOccupe] = useState(false);
@@ -182,7 +182,7 @@ export function useGestesStock(etat: EtatVeille | null, relire: () => void, dire
   return { etiquettes, libelleTri: etat?.tri_en_cours ? 'Arrêter les étiquettes' : 'Rejouer les étiquettes', titreTri, ouvrirVider: () => setConfirmer(true), confirmer, fermerVider: () => setConfirmer(false), barre };
 }
 
-// Pagination sans cadres : « auto » tient la hauteur de la fenêtre, puis 25 ou 50 ; les trois premières et dernières pages, un « … » où taper la page voulue
+// Pagination : « auto » tient la hauteur, puis 25 ou 50 ; « … » pour taper
 export type Taille = 'auto' | 25 | 50;
 export function Pagination({ page, pages, taille, auto, surPage, surTaille }: {
   page: number; pages: number; taille: Taille; auto: number; surPage: (n: number) => void; surTaille: (t: Taille) => void;
@@ -220,7 +220,7 @@ export function Pagination({ page, pages, taille, auto, surPage, surTaille }: {
   );
 }
 
-// Menu d'un filtre en texte : une colonne de choix, le choix courant allumé ; un clic ailleurs ou Échap le referme
+// Menu d'un filtre : choix courant allumé ; clic ailleurs ou Échap le ferme
 export type Choix = { cle: string; libelle: string; n?: number };
 export function MenuFiltre({ lib, valeur, actif, choix, courant, choisir }: {
   lib: string; valeur: string; actif: boolean; choix: Choix[]; courant: string; choisir: (cle: string) => void;
@@ -272,7 +272,7 @@ export function MenuFiltre({ lib, valeur, actif, choix, courant, choisir }: {
   );
 }
 
-// Profils de veille : une carte par langue, dans l'ordre où le cycle les mène ; elles se déplacent par leur poignée ⠿
+// Profils de veille : une carte par langue, dans l'ordre du cycle, déplaçable
 const NOMBRES_VEILLE = [
   { cle: 'depuis_jours', libelle: 'Fenêtre (jours)', defaut: 1, aide: 'Ne retenir que les offres publiées depuis N jours. 0 : sans limite.' },
   { cle: 'par_source', libelle: 'Résultats par intitulé', defaut: 300, aide: 'Offres demandées à chaque plateforme, par intitulé cherché ; chacune a son propre plafond.' },
@@ -330,7 +330,7 @@ export function useProfilsVeille(parametres: Parametres | null, enregistrer: (m:
     if (await enregistrer({ profils_veille: cartes.map(lireVeille) })) setRetrait(null);
   };
 
-  // La carte suit la main : survolée à mi-hauteur d'une autre, elle prend sa place
+  // La carte suit la main : survolée à mi-hauteur d'une autre, elle la remplace
   useEffect(() => {
     if (glisse === null) return;
     const bouger = (e: PointerEvent) => {
@@ -421,7 +421,7 @@ export function useProfilsVeille(parametres: Parametres | null, enregistrer: (m:
   return { corps, pied };
 }
 
-// Enregistre des réglages et dit ce que les termes bannis rejoués ont sorti de la file, comme l'ancien dashboard
+// Enregistre les réglages et dit ce que les termes bannis rejoués ont sorti
 export async function enregistrerReglages(modifs: Partial<Parametres>, dire: (t: string, e?: boolean) => void): Promise<ReponseParametres | null> {
   try {
     const r = await appeler<ReponseParametres>('/parametres', { methode: 'PUT', corps: modifs });

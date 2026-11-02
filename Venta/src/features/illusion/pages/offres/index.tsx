@@ -27,7 +27,7 @@ type ReponseEcartees = { resume: { par_motif: Record<string, number> }; offres: 
 type ProfilDispo = { nom: string; chemin: string };
 type Incomplets = Record<string, { cle: string; libelle: string }[]>;
 
-// Les passes, dans l'ordre où une offre les traverse ; une passe à motif filtre les écartées, une autre la file
+// Passes dans l'ordre où une offre les traverse ; un motif filtre les écartées
 type Passe = { cle: string; libelle: string; motif?: string };
 const PASSES: Passe[] = [
   { cle: '', libelle: 'Total' },
@@ -43,10 +43,10 @@ const PASSES: Passe[] = [
   { cle: 'ECHEC', libelle: 'Échec' },
   { cle: 'ECARTEE', libelle: 'Écartée' },
 ];
-// Motif en double de l'étape « Inadaptée » : l'offre reste en base, la compter deux fois gonflait le total
+// Motif en double de « Inadaptée » : le compter deux fois gonflait le total
 const MOTIF_FICHE = 'Hors-Profil';
 const CLASSE_ETAPE: Record<string, string> = { ENVOYEE: 'env', A_LA_MAIN: 'main', ECHEC: 'ech', ECARTEE: 'eca' };
-// Pourquoi une offre n'a pas de fiche : le mot sous l'entreprise, la phrase en infobulle
+// Pourquoi une offre n'a pas de fiche : mot sous l'entreprise, infobulle
 const RAISONS: Record<string, [string, string]> = {
   rattachee: ['rattachée', 'rattachée à une fiche'], creee: ['fiche créée', "fiche créée depuis l'offre"],
   inconnue: ['introuvable', 'employeur introuvable dans Sirene'],
@@ -70,10 +70,10 @@ export default function PageOffres({ compte }: ProprietesPage) {
 function Offres({ admin }: { admin: boolean }) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const { dire, vue: avis } = useAvis();
-  // Ce qui a été lu et choisi reste d'une visite à l'autre : en revenant, tout s'affiche aussitôt et se relit derrière
+  // Ce qui a été lu et choisi reste d'une visite à l'autre, relu en arrière-plan
   const [passe, setPasse] = useState(() => repris('offres:passe', ''));
   const [groupe, setGroupe] = useState(() => repris('offres:groupe', { langue: '', metier: '' }));
-  // La page se tient par sa première ligne : une autre taille de page la garde affichée, d'une seule lecture
+  // La page se tient par sa première ligne : changer de taille la garde
   const [debut, setDebut] = useState(() => repris('offres:debut', 0));
   const [taille, setTaille] = useState(() => repris<Taille>('offres:taille', 'auto'));
   const [auto, setAuto] = useState(() => repris('offres:auto', 13));
@@ -91,7 +91,7 @@ function Offres({ admin }: { admin: boolean }) {
   const [etat, relireEtat] = useEtatVeille(dire);
   const gestes = useGestesStock(etat, relireEtat, dire, recharger);
 
-  // Sous un groupe, les étapes seules : une écartée n'a ni langue ni métier ; une étape ou un motif imprévus ont leur passe
+  // Sous un groupe, les étapes seules ; un motif imprévu a sa passe
   const groupeActif = !!(groupe.langue || groupe.metier);
   const parMotif = ecartees?.resume.par_motif ?? {};
   const passes: Passe[] = [
@@ -109,7 +109,7 @@ function Offres({ admin }: { admin: boolean }) {
   const page = Math.floor(debut / lignes) + 1;
   const setPage = (n: number) => setDebut((n - 1) * lignes);
 
-  // La file et les écartées d'un coup : l'une se montre, l'autre donne ses comptes à la barre des passes
+  // File et écartées d'un coup : l'une se montre, l'autre donne ses comptes
   useEffect(() => {
     const arret = new AbortController();
     const filtre = new URLSearchParams({ etape: motif ? '' : choisie.cle, page: String(motif ? 1 : page), taille: String(lignes), ...groupe });
@@ -140,7 +140,7 @@ function Offres({ admin }: { admin: boolean }) {
     lireProfils();
   }, [dire, lireProfils]);
 
-  // Une passe qui finit, un stock qui change ou une offre changée dans sa fiche : la file se relit
+  // Une passe qui finit, un stock ou une fiche qui change : la file se relit
   const signature = etat ? `${etat.en_cours}|${etat.stock.offres}` : '';
   const vue = useRef(signature);
   useEffect(() => {
@@ -152,7 +152,7 @@ function Offres({ admin }: { admin: boolean }) {
     return () => window.removeEventListener(OFFRE_CHANGEE, recharger);
   }, [recharger]);
 
-  // « auto » : autant de lignes que la hauteur du tableau en tient ; une ligne d'offre a deux étages
+  // « auto » : autant de lignes que la hauteur en tient ; une offre a deux étages
   useLayoutEffect(() => {
     const el = defile.current;
     if (!el) return;
@@ -195,12 +195,12 @@ function Offres({ admin }: { admin: boolean }) {
     ouvrir('fiche-entreprise', s);
   }, [ouvrir]);
 
-  // Les questions de la fiche entreprise (supprimer, remettre à zéro…) se posent en barre à la place des outils
+  // Les questions de la fiche entreprise se posent en barre à la place des outils
   const question = useQuestionsFiche();
   const [occupe, setOccupe] = useState(false);
   const sansQuestion = () => useFicheEntreprise.setState({ question: null });
 
-  // Échap ferme la confirmation, sinon le panneau ; celle d'une carte se ferme seule
+  // Échap ferme la confirmation, sinon le panneau ; celle d'une carte, seule
   const { confirmer, fermerVider } = gestes;
   useEffect(() => {
     const echap = (e: KeyboardEvent) => {
@@ -224,7 +224,7 @@ function Offres({ admin }: { admin: boolean }) {
   const nomMetier = (v: string) => (v === '-' ? 'sans métier' : v);
   const changerGroupe = (cle: 'langue' | 'metier', v: string) => {
     setGroupe((g) => ({ ...g, [cle]: v }));
-    // Un groupe choisi sur une passe d'écartées ramène à la file : elle seule se range par langue et par métier
+    // Un groupe choisi sur une passe d'écartées ramène à la file, seule rangée
     if (v && motif) setPasse('');
     setPage(1);
   };
@@ -362,7 +362,7 @@ function Offres({ admin }: { admin: boolean }) {
   );
 }
 
-// Profils de recherche : une carte par profil ; la fiche d'un profil de candidature se complète sur la page Profil
+// Profils de recherche : une carte par profil de recherche.
 type CarteRecherche = { id: number; enregistre: boolean; nom: string; actif: boolean; langue: string; mots_cles: string; mots_bannis: string; departements: string; profils_candidature: string[] };
 let numero = 0;
 const carteRecherche = (p: Partial<ProfilRecherche>, enregistre: boolean): CarteRecherche => ({
@@ -472,7 +472,7 @@ function useProfilsRecherche(parametres: Parametres | null, profils: ProfilDispo
   return { corps, pied };
 }
 
-// Ajouter une offre à la file : le lien suffit ; l'employeur, l'intitulé, le profil et un CV imposé sont facultatifs
+// Ajouter une offre à la file : le lien suffit, le reste est facultatif
 function useAjout(profils: ProfilDispo[], dire: (t: string, e?: boolean) => void, recharger: () => void) {
   const vide = { url: '', entreprise: '', titre: '', profil: '' };
   const [saisie, setSaisie] = useState(vide);

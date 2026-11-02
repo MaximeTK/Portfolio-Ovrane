@@ -1,11 +1,11 @@
-// Client des pages d'Illusion : tout passe par le site (/api/illusion/app), qui vérifie la session et relaie à Illusion
+// Client des pages d'Illusion : tout passe par le site, qui vérifie la session
 import { INDISPONIBLE } from '@/lib/messages';
 
 export type Compte = { email: string; admin: boolean; pseudo?: string };
 
 export class ErreurIllusion extends Error {
   statut: number;
-  // Le détail d'un refus qui en dit plus que son message (les champs d'un profil incomplet)
+  // Le détail d'un refus qui en dit plus que son message
   donnees?: unknown;
   constructor(message: string, statut: number, donnees?: unknown) {
     super(message);
@@ -19,7 +19,7 @@ export type Methode = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 const RACINE = '/api/illusion/app';
 
-// Les lectures d'une section partent avec elle : celle qui arrive n'attend pas derrière (le navigateur n'en mène que quelques-unes à la fois)
+// Les lectures d'une section partent avec elle, sans attendre derrière
 let lectures = new AbortController();
 const sections = new WeakSet<AbortSignal>([lectures.signal]);
 export function quitterSection() {
@@ -27,10 +27,10 @@ export function quitterSection() {
   lectures = new AbortController();
   sections.add(lectures.signal);
 }
-// Une lecture annulée avec sa section ne se termine jamais : aucune erreur ni aucun cache n'en garde trace
+// Une lecture annulée ne se termine jamais : ni erreur ni cache
 const abandonnee = (signal: AbortSignal | null | undefined, error: unknown) => (error as Error)?.name === 'AbortError' && !!signal && sections.has(signal);
 
-/** L'erreur lisible d'une réponse refusée : `detail` d'Illusion (texte, liste de Pydantic ou objet), sinon `error` du site. */
+/** L'erreur d'une réponse refusée : `detail` d'Illusion, sinon `error` */
 export async function lireErreur(reponse: Response): Promise<ErreurIllusion> {
   const corps = await reponse.json().catch(() => null);
   const detail = corps?.detail ?? corps?.error;
@@ -53,7 +53,7 @@ async function demander(chemin: string, init: RequestInit): Promise<Response> {
   return reponse;
 }
 
-// Sans `signal`, une lecture (GET) part avec sa section ; `null` : une lecture de tout Illusion, jamais annulée ; une écriture ne l'est jamais
+// Sans `signal`, une lecture part avec sa section ; `null` : jamais annulée
 export async function appeler<T = unknown>(chemin: string, init: { methode?: Methode; corps?: unknown; signal?: AbortSignal | null } = {}): Promise<T> {
   const methode = init.methode ?? 'GET';
   const signal = init.signal === undefined ? (methode === 'GET' ? lectures.signal : undefined) : init.signal ?? undefined;
@@ -70,7 +70,7 @@ export async function appeler<T = unknown>(chemin: string, init: { methode?: Met
   }
 }
 
-/** Le fichier lu en base64, comme l'ancien dashboard : Illusion en vérifie le nom, l'encodage et le poids. */
+/** Fichier lu en base64 ; Illusion en vérifie le nom, l'encodage, le poids */
 export function televerser(fichier: File): Promise<{ nom: string; contenu: string }> {
   return new Promise((resoudre, rejeter) => {
     const lecteur = new FileReader();
@@ -80,7 +80,7 @@ export function televerser(fichier: File): Promise<{ nom: string; contenu: strin
   });
 }
 
-/** Télécharge ce que sert le chemin, sous le nom que donne Illusion ; un refus devient une ErreurIllusion, jamais un fichier. */
+/** Télécharge le chemin sous le nom d'Illusion ; un refus devient une erreur */
 export async function telecharger(chemin: string): Promise<void> {
   const reponse = await demander(chemin, { method: 'GET' });
   const disposition = reponse.headers.get('content-disposition') ?? '';
@@ -94,7 +94,7 @@ export async function telecharger(chemin: string): Promise<void> {
   document.body.append(lien);
   lien.click();
   lien.remove();
-  // Le navigateur a pris le fichier au clic : l'adresse provisoire se libère ensuite
+  // Le navigateur a pris le fichier au clic : l'adresse provisoire se libère
   setTimeout(() => URL.revokeObjectURL(adresse), 10_000);
 }
 

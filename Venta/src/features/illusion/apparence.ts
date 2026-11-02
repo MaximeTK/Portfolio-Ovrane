@@ -47,7 +47,7 @@ const magasin = create<EtatApparence>((set) => ({
   },
 }));
 
-// Matière d'Illusion, gardée avec le compte : relue des réglages d'Illusion à chaque montage de l'ossature
+// Matière gardée avec le compte, relue à chaque montage de l'ossature
 function useApparenceDuCompte<T>(lire: (s: EtatApparence) => T): T {
   useEffect(() => {
     void magasin.getState().charger();
