@@ -1,7 +1,7 @@
 'use client';
 
 import './appels.css';
-import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
@@ -11,7 +11,7 @@ import { Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../
 import { dateUtc, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { demarrer, nomEnDirect, oublierAvis, terminer, useDirect, type Mode, type Tour } from './direct';
-import { ICONES_COMMUNES, TRAIT, message, duree, useAvisBref, useEchap, type Avis } from '../commun';
+import { useLignesAuto, ICONES_COMMUNES, TRAIT, message, duree, useAvisBref, useEchap, type Avis } from '../commun';
 
 // Ce que /vues/appels rend : appels, offres et jour de candidature.
 type LigneAppel = {
@@ -128,20 +128,7 @@ function Liste({ vue, erreurVue, choisi, setChoisi, avis, setAvis }: ProprietesL
   // Échap ferme le panneau, sauf celui qu'une confirmation a gardé pour elle
   useEchap(fermer);
   useAvisBref(avis, setAvis);
-  // « auto » : autant de lignes que le défileur en montre sans en couper une
-  useLayoutEffect(() => {
-    const zone = defile.current;
-    if (!zone) return;
-    const mesurer = () => {
-      const tete = zone.querySelector('thead')?.getBoundingClientRect().height ?? 34;
-      const ligne = zone.querySelector('tbody tr')?.getBoundingClientRect().height || 46;
-      setAuto(Math.max(1, Math.floor((zone.clientHeight - tete) / ligne)));
-    };
-    mesurer();
-    const observateur = new ResizeObserver(mesurer);
-    observateur.observe(zone);
-    return () => observateur.disconnect();
-  }, []);
+  useLignesAuto(defile, setAuto, 46);
 
   const appels = vue?.appels ?? [];
   const parPage = taille === 'auto' ? auto : taille;

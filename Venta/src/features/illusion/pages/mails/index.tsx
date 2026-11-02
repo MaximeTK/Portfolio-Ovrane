@@ -1,7 +1,7 @@
 'use client';
 
 import './mails.css';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
@@ -15,7 +15,7 @@ import {
   ICONES, NATURES, Nature, RATTACHEMENTS, adresseSeule, formaterDate, nomAffiche,
   ongletFil, useOngletEcrire, useOngletEtiqueter, useOngletExecuter, useOngletReglages, type MailLu,
 } from './panneaux';
-import { message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
+import { MenuChoix, PaginationAller, useLignesAuto, message, useAvisBref, useEchap, type Avis } from '../commun';
 
 // Ce que /mails rend : la page de la boîte, son résumé et l'état de l'écoute
 type EtatBoite = {
@@ -77,7 +77,6 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
   const [occupe, setOccupe] = useState(false);
   const [menu, setMenu] = useState<'etiquette' | 'sens' | null>(null);
   const [saisie, setSaisie] = useState(filtres.recherche);
-  const [aller, setAller] = useState('');
   const defile = useRef<HTMLDivElement>(null);
 
   // La recherche part quand la frappe se pose, pas à chaque lettre.
@@ -93,21 +92,7 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
     else fermer();
   }, true);
   useAvisBref(avis, setAvis);
-  // « auto » : autant de lignes que le défileur en montre, remesuré au rendu.
-  const garnie = !!etat?.mails.length;
-  useLayoutEffect(() => {
-    const zone = defile.current;
-    if (!zone) return;
-    const mesurer = () => {
-      const tete = zone.querySelector('thead')?.getBoundingClientRect().height ?? 34;
-      const ligne = zone.querySelector('tbody tr')?.getBoundingClientRect().height || 36;
-      setAuto(Math.max(1, Math.floor((zone.clientHeight - tete) / ligne)));
-    };
-    mesurer();
-    const observateur = new ResizeObserver(mesurer);
-    observateur.observe(zone);
-    return () => observateur.disconnect();
-  }, [setAuto, garnie]);
+  useLignesAuto(defile, setAuto, 36, !!etat?.mails.length);
 
   const mails = etat?.mails ?? [];
   const resume = etat?.resume;
@@ -161,25 +146,6 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
   const natures = Object.entries(resume?.par_etiquette ?? {});
   if (filtres.etiquette && !natures.some(([t]) => t === filtres.etiquette)) natures.push([filtres.etiquette, 0]);
   const pages = etat?.pages ?? 1;
-  const numeros = [...new Set([1, 2, 3, page - 1, page, page + 1, pages - 2, pages - 1, pages])].filter((x) => x >= 1 && x <= pages).sort((a, b) => a - b);
-  const allerA = () => {
-    const x = Number(aller);
-    if (Number.isInteger(x) && x >= 1 && x <= pages) setPage(x);
-    setAller('');
-  };
-  // Numéros proches du début, de la page et de la fin ; le trou devient « … ».
-  const boutons: React.ReactNode[] = [];
-  let trou = false;
-  numeros.forEach((x, i) => {
-    if (i > 0 && x - numeros[i - 1] > 1) {
-      boutons.push(trou
-        ? <span key={`trou-${x}`} className="pl trou" aria-hidden="true">…</span>
-        : <input key="aller" type="text" className="aller" inputMode="numeric" placeholder="…" size={3} aria-label="Aller à la page" value={aller}
-            onChange={(e) => setAller(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && allerA()} onBlur={() => aller && allerA()} />);
-      trou = true;
-    }
-    boutons.push(<button key={x} type="button" className={`pl${x === page ? ' actif' : ''}`} aria-current={x === page ? 'page' : undefined} onClick={() => setPage(x)}>{x}</button>);
-  });
 
   return (
     <Fenetre id="boite" as="main" className="tableau boite" aria-label="Mails" titrePrise="Glisser pour détacher la boîte">
@@ -299,44 +265,14 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
           {avis?.texte ?? erreurBoite}
         </p>
       )}
-      <div className="pagination">
-        <select aria-label="Lignes par page" value={String(taille)} onChange={(e) => setTaille(e.target.value === 'auto' ? 'auto' : Number(e.target.value))}>
-          <option value="auto">auto ({auto})</option>
-          {TAILLES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <nav className="pages" aria-label="Pages">
-          <button type="button" className="pl" disabled={page <= 1} aria-label="Page précédente" onClick={() => setPage(page - 1)}>‹</button>
-          {boutons}
-          <button type="button" className="pl" disabled={page >= pages} aria-label="Page suivante" onClick={() => setPage(page + 1)}>›</button>
-        </nav>
-      </div>
+      <PaginationAller page={page} pages={pages} setPage={setPage} taille={taille} tailles={TAILLES} setTaille={setTaille} auto={auto} />
     </Fenetre>
   );
 }
 
 // Un filtre en texte seul et son menu : un clic ailleurs ou Échap le referme
-function MenuFiltre({ ouvert, basculer, fermer, lib, actif, valeur, options, courant, choisir }: {
-  ouvert: boolean; basculer: () => void; fermer: () => void; lib: string; actif: boolean; valeur: string;
-  options: { valeur: string; nom: string; compte: number }[]; courant: string; choisir: (v: string) => void;
-}) {
-  const hote = useClicDehors(ouvert, fermer);
-  return (
-    <div ref={hote} className="menu-hote filtre-hote">
-      <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} aria-label={`${lib} : ${valeur}`} onClick={basculer}>
-        <span><span className="lib">{lib}</span>{valeur}</span>{ICONES.chevron}
-      </button>
-      {ouvert && (
-        <div className="menu verre" role="listbox" aria-label={lib}>
-          <span className="verre-halos" aria-hidden="true" />
-          {options.map((o) => (
-            <button key={o.valeur || 'tous'} type="button" role="option" aria-selected={o.valeur === courant} className={`menu-option${o.valeur === courant ? ' actif' : ''}`} onClick={() => choisir(o.valeur)}>
-              {o.nom}{o.compte >= 0 && <span className="compteur">{o.compte}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+function MenuFiltre({ lib, valeur, ...menu }: Omit<React.ComponentProps<typeof MenuChoix>, 'label' | 'titre' | 'valeur'> & { lib: string; valeur: string }) {
+  return <MenuChoix {...menu} label={`${lib} : ${valeur}`} titre={lib} valeur={<span><span className="lib">{lib}</span>{valeur}</span>} />;
 }
 
 type ProprietesPanneau = { admin: boolean; adresseBoite: string; selection: Set<string>; setAvis: (a: Avis) => void; relire: () => void; setPage: (p: number) => void };

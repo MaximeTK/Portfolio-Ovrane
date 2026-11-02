@@ -1,7 +1,7 @@
 'use client';
 
 import './candidatures.css';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useUIStore } from '@/lib/uiStore';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
@@ -13,7 +13,7 @@ import { ongletFicheEntreprise } from '../../partage/FicheEntreprise';
 import { ETAPES, OFFRE_CHANGEE, dateUtc, jourMois, libelleSource, nomProfil, ongletAjoutCompetence, ongletFicheOffre, type DemandeAjout } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { ongletProfilIncomplet, useOngletAjout, useOngletDirect, useOngletReglages, type Incomplet } from './panneaux';
-import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
+import { MenuChoix, PaginationAller, useLignesAuto, ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
 
 // Une ligne de la file telle que /candidatures la rend
 type OffreFile = {
@@ -116,7 +116,6 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
   const [confirmation, setConfirmation] = useState<'supprimer' | 'vider' | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [menu, setMenu] = useState<keyof Filtres | null>(null);
-  const [aller, setAller] = useState('');
   const defile = useRef<HTMLDivElement>(null);
 
   // « Maintenant » d'une autre page mène ici avec ?panneau=direct
@@ -138,21 +137,7 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
     else fermer();
   }, true);
   useAvisBref(avis, setAvis);
-  // « auto » : autant de lignes que le défileur en montre entières
-  const nbLignes = file?.offres?.length ?? 0;
-  useLayoutEffect(() => {
-    const zone = defile.current;
-    if (!zone) return;
-    const mesurer = () => {
-      const tete = zone.querySelector('thead')?.getBoundingClientRect().height ?? 34;
-      const ligne = zone.querySelector('tbody tr')?.getBoundingClientRect().height || 36;
-      setAuto(Math.max(1, Math.floor((zone.clientHeight - tete) / ligne)));
-    };
-    mesurer();
-    const observateur = new ResizeObserver(mesurer);
-    observateur.observe(zone);
-    return () => observateur.disconnect();
-  }, [setAuto, nbLignes]);
+  useLignesAuto(defile, setAuto, 36, file?.offres?.length ?? 0);
 
   const offres = file?.offres ?? [];
   const toutes = offres.length > 0 && offres.every((o) => selection.has(o.cle));
@@ -194,23 +179,6 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
     { cle: 'langue', lib: 'Langue', tous: 'toutes', precis: 'les langues', options: groupe(file?.groupes.langues, filtres.langue, (v) => (v === '-' ? 'sans langue' : LANGUES[v] ?? v)) },
   ];
   const pages = file?.pages ?? 1;
-  const numeros = [...new Set([1, 2, 3, page - 1, page, page + 1, pages - 2, pages - 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
-  const allerA = () => {
-    const n = Number(aller);
-    if (Number.isInteger(n) && n >= 1 && n <= pages) setPage(n);
-    setAller('');
-  };
-  // Numéros proches du début, de la page et de la fin ; le trou devient « … »
-  const boutons: React.ReactNode[] = [];
-  numeros.forEach((n, i) => {
-    if (i > 0 && n - numeros[i - 1] > 1) {
-      boutons.push(boutons.some((b) => (b as React.ReactElement).key === 'aller')
-        ? <span key={`trou-${n}`} className="pl trou" aria-hidden="true">…</span>
-        : <input key="aller" type="text" className="aller" inputMode="numeric" placeholder="…" size={3} aria-label="Aller à la page" value={aller}
-            onChange={(e) => setAller(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && allerA()} onBlur={() => aller && allerA()} />);
-    }
-    boutons.push(<button key={n} type="button" className={`pl${n === page ? ' actif' : ''}`} aria-current={n === page ? 'page' : undefined} onClick={() => setPage(n)}>{n}</button>);
-  });
 
   return (
     <Fenetre id="tableau" as="main" className="tableau candidatures" aria-label="Candidatures" titrePrise="Glisser pour détacher les candidatures">
@@ -219,7 +187,7 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
           const actif = filtres[m.cle];
           const choisi = m.options.find((o) => o.valeur === actif);
           return (
-            <MenuFiltre key={m.cle} ouvert={menu === m.cle} basculer={() => setMenu(menu === m.cle ? null : m.cle)} fermer={() => setMenu(null)}
+            <MenuChoix key={m.cle} ouvert={menu === m.cle} basculer={() => setMenu(menu === m.cle ? null : m.cle)} fermer={() => setMenu(null)}
               actif={!!actif} label={`${m.lib} : ${choisi ? choisi.nom : m.tous}`}
               valeur={m.cle === 'etape' && !actif ? <span>Total</span> : <span><span className="lib">{m.lib}</span>{choisi ? `${choisi.nom} · ${choisi.compte}` : m.tous}{!choisi && <span className="precis"> {m.precis}</span>}</span>}
               options={[{ valeur: '', nom: m.cle === 'etape' ? `Total · ${file?.total ?? 0}` : m.tous[0].toUpperCase() + m.tous.slice(1), compte: -1 }, ...m.options]}
@@ -301,45 +269,11 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
           {avis?.texte ?? erreurFile}
         </p>
       )}
-      <div className="pagination">
-        <select aria-label="Lignes par page" value={String(taille)} onChange={(e) => setTaille(e.target.value === 'auto' ? 'auto' : Number(e.target.value))}>
-          <option value="auto">auto ({auto})</option>
-          {TAILLES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <nav className="pages" aria-label="Pages">
-          <button type="button" className="pl" disabled={page <= 1} aria-label="Page précédente" onClick={() => setPage(page - 1)}>‹</button>
-          {boutons}
-          <button type="button" className="pl" disabled={page >= pages} aria-label="Page suivante" onClick={() => setPage(page + 1)}>›</button>
-        </nav>
+      <PaginationAller page={page} pages={pages} setPage={setPage} taille={taille} tailles={TAILLES} setTaille={setTaille} auto={auto}>
         <span className="espace" />
         <span className="compteur">{file ? `${file.total_filtre} offre${file.total_filtre > 1 ? 's' : ''}` : ''}</span>
-      </div>
+      </PaginationAller>
     </Fenetre>
-  );
-}
-
-// Un filtre en texte seul et son menu : un clic ailleurs ou Échap le referme
-function MenuFiltre({ ouvert, basculer, fermer, actif, label, valeur, options, courant, choisir }: {
-  ouvert: boolean; basculer: () => void; fermer: () => void; actif: boolean; label: string; valeur: React.ReactNode;
-  options: { valeur: string; nom: string; compte: number }[]; courant: string; choisir: (v: string) => void;
-}) {
-  const hote = useClicDehors(ouvert, fermer);
-  return (
-    <div ref={hote} className="menu-hote filtre-hote">
-      <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} aria-label={label} onClick={basculer}>
-        {valeur}{ICONES.chevron}
-      </button>
-      {ouvert && (
-        <div className="menu verre" role="listbox" aria-label={label}>
-          <span className="verre-halos" aria-hidden="true" />
-          {options.map((o) => (
-            <button key={o.valeur || 'tous'} type="button" role="option" aria-selected={o.valeur === courant} className={`menu-option${o.valeur === courant ? ' actif' : ''}`} onClick={() => choisir(o.valeur)}>
-              {o.nom}{o.compte >= 0 && <span className="compteur">{o.compte}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 
