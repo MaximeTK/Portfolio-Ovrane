@@ -13,8 +13,8 @@ const HORS = 'textarea,select,option,svg,script,style';
 // Décor d'une fenêtre, laissé en place pendant qu'elle se déplie
 const DECOR = ':scope>:not(.verre-halos):not(.prise):not(.taille):not(.ouv-ligne)';
 
-// Durées en ms : effacement, ouvertures, écriture, réécriture, changement
-export const DUREES = { effacer: 130, ouvrir: 560, fermer: 440, ouverture: 700, contenu: 520, signal: 380, canaux: 300 };
+// Durées en ms : toute transition dure 300, effacement et voile compris dedans
+export const DUREES = { effacer: 130, ouvrir: 300, fermer: 300, voile: 120, contenu: 300, signal: 300, canaux: 300 };
 
 export type Controle = { fini: Promise<void>; annuler: () => void };
 // `texte` : seul le texte s'écrit, avec un bref éclat blanc, sans dépli

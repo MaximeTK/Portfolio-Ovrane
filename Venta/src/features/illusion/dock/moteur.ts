@@ -12,55 +12,62 @@ export type ArbreDepart = Arbre | ((zone: Zone, style: CSSStyleDeclaration) => A
 export const ECART = 16, DECROCHE = 16, SEUIL = 6, BORD = 26, MARGE = 0.3, ARMEMENT = 450, IMMOBILE = 10;
 // Glissement des fenêtres vers leur place, comme la feuille de style (0,3 s)
 export const DUREE_RANGEMENT = 300;
-export const TRANSITION_DE = (duree: number, delai = 0) => ['left', 'top', 'width', 'height'].map((p) => `${p} ${Math.round(duree)}ms cubic-bezier(.2,.8,.2,1) ${Math.round(delai)}ms`).join(',');
+type Courbe = [number, number, number, number];
+const VIVE: Courbe = [0.2, 0.8, 0.2, 1];
+// Fermeture : départ souple et fin qui ralentit, sans accélérer à l'arrivée
+export const DOUCE: Courbe = [0.7, 0, 0.25, 1];
+export const TRANSITION_DE = (duree: number, delai = 0, c = VIVE) => ['left', 'top', 'width', 'height'].map((p) => `${p} ${Math.round(duree)}ms cubic-bezier(${c.join(',')}) ${Math.round(delai)}ms`).join(',');
 
-// Avancée du glissement (0 à 1) à la fraction u, en cubic-bezier(.2,.8,.2,1)
-function courbe(u: number) {
+// Avancée du glissement (0 à 1) à la fraction u, sur la courbe donnée
+function courbe(u: number, [x1, y1, x2, y2]: Courbe) {
   const b = (t: number, p1: number, p2: number) => 3 * (1 - t) * (1 - t) * t * p1 + 3 * (1 - t) * t * t * p2 + t * t * t;
   let bas = 0, haut = 1;
   for (let k = 0; k < 20; k++) {
     const m = (bas + haut) / 2;
-    if (b(m, 0.2, 0.2) < u) bas = m;
+    if (b(m, x1, x2) < u) bas = m;
     else haut = m;
   }
-  return b((bas + haut) / 2, 0.8, 1);
+  return b((bas + haut) / 2, y1, y2);
 }
-// Une fenêtre qui glisse de `de` à `a` pendant DUREE_RANGEMENT
-type Mouvement = { de: Zone; a: Zone };
+// Glissement de `de` à `a`, en DUREE_RANGEMENT et en courbe vive par défaut
+export type Mouvement = { de: Zone; a: Zone; retard?: number; duree?: number; courbe?: Courbe };
 const entre = (de: Zone, a: Zone, p: number): Zone => ({ x: de.x + (a.x - de.x) * p, y: de.y + (a.y - de.y) * p, w: de.w + (a.w - de.w) * p, h: de.h + (a.h - de.h) * p });
 const touche = (a: Zone, b: Zone) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.5 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.5;
 export const centre = (r: Zone): Zone => ({ x: r.x + r.w / 2, y: r.y + r.h / 2, w: 0, h: 0 });
-// Vrai si `r`, repliée ou dépliée, ne touche aucune fenêtre qui glisse
-function libre(r: Zone, repli: boolean, delai: number, duree: number, autres: Mouvement[]) {
-  for (let k = 1; k < 40; k++) {
-    const t = (DUREE_RANGEMENT * k) / 40;
-    if (t <= delai) continue;
-    const p = courbe(Math.min(1, (t - delai) / duree)), moi = repli ? entre(r, centre(r), p) : entre(centre(r), r, p);
-    if (autres.some((m) => touche(moi, entre(m.de, m.a, courbe(t / DUREE_RANGEMENT))))) return false;
+const auTemps = (m: Mouvement, t: number) => entre(m.de, m.a, courbe(Math.min(1, Math.max(0, t - (m.retard ?? 0)) / (m.duree ?? DUREE_RANGEMENT)), m.courbe ?? VIVE));
+// Vrai si ce mouvement ne touche aucun des autres, à aucun moment
+export function libre(moi: Mouvement, autres: Mouvement[]) {
+  for (let k = 1; k <= 80; k++) {
+    const t = (DUREE_RANGEMENT * k) / 80;
+    if (t <= (moi.retard ?? 0)) continue;
+    const r = auTemps(moi, t);
+    if (autres.some((m) => touche(r, auTemps(m, t)))) return false;
   }
   return true;
 }
-// Repli le plus lent qui ne touche jamais celles qui prennent sa place
-export function dureeRepli(r: Zone, autres: Mouvement[]) {
-  if (libre(r, true, 0, DUREE_RANGEMENT, autres)) return DUREE_RANGEMENT;
-  let bas = 40, haut = DUREE_RANGEMENT;
+// Départ le plus tôt pour finir à l'heure sans toucher les autres
+export function retardLibre(de: Zone, a: Zone, autres: Mouvement[]) {
+  if (libre({ de, a }, autres)) return 0;
+  let bas = 0, haut = DUREE_RANGEMENT - 60;
   for (let k = 0; k < 10; k++) {
     const m = (bas + haut) / 2;
-    if (libre(r, true, 0, m, autres)) bas = m;
+    if (libre({ de, a, retard: m, duree: DUREE_RANGEMENT - m }, autres)) haut = m;
+    else bas = m;
+  }
+  // Une image de marge : les glissements partent à la peinture suivante
+  return haut + 16;
+}
+// Repli le plus lent qui reste devant celles qui prennent sa place
+export function dureeRepli(r: Zone, venues: Mouvement[]) {
+  const passe = (duree: number) => libre({ de: r, a: centre(r), duree, courbe: DOUCE }, venues);
+  if (passe(DUREE_RANGEMENT)) return DUREE_RANGEMENT;
+  let bas = 80, haut = DUREE_RANGEMENT;
+  for (let k = 0; k < 8; k++) {
+    const m = (bas + haut) / 2;
+    if (passe(m)) bas = m;
     else haut = m;
   }
   return bas;
-}
-// Dépli le plus tôt possible sans toucher celles qui lui laissent la place
-export function delaiDepli(r: Zone, autres: Mouvement[]) {
-  if (libre(r, false, 0, DUREE_RANGEMENT, autres)) return 0;
-  let bas = 0, haut = DUREE_RANGEMENT - 40;
-  for (let k = 0; k < 10; k++) {
-    const m = (bas + haut) / 2;
-    if (libre(r, false, m, DUREE_RANGEMENT - m, autres)) haut = m;
-    else bas = m;
-  }
-  return haut;
 }
 const MINI_DEFAUT: Taille = [200, 160];
 const PREF_DEFAUT: Taille = [400, 300];
@@ -74,8 +81,7 @@ type Fente = { n: Partage; a: number; b: number; ta: number; tb: number; ma: num
 type Calcul = { res: Record<string, Zone>; fentes: Fente[] };
 type EtatFenetre = { flot: Zone | null; tailleFlot: Taille | null; z: string };
 // Disposition d'une page gardée pendant la session, jusqu'à la remise
-// `reference` : l'arbre d'avant le premier décrochage, pour les remises
-type Memoire = { racine: Arbre | null; reference?: Arbre | null; fen: Record<string, EtatFenetre>; zMax: number; change: boolean };
+type Memoire = { racine: Arbre | null; fen: Record<string, EtatFenetre>; zMax: number; change: boolean };
 type Action =
   | { type: 'fente'; f: Fente; x0: number; y0: number; el: HTMLElement }
   | { type: 'taille'; id: string; sens: string; x0: number; y0: number; w0: number; h0: number }
@@ -101,7 +107,7 @@ type OptionsDock = {
   elements?: (id: string) => boolean;
 };
 // Fenêtres qui se déplient ou se replient depuis leur centre (`depuis`)
-export type OptionsRangement = { entrees?: string[]; sortie?: string; depuis?: Record<string, Zone>; retards?: Record<string, number> };
+export type OptionsRangement = { entrees?: string[]; sortie?: string; depuis?: Record<string, Zone>; retards?: Record<string, number>; douce?: boolean };
 export type Moteur = { ranger: (anime: boolean, options?: OptionsRangement) => void; detruire: () => void };
 
 const feuille = (n: Arbre): n is Feuille => (n as Feuille).id !== undefined;
@@ -169,12 +175,23 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     n.parts = paires.map((q) => q[1]);
     return n;
   }
+  // La part d'une fenêtre retirée va à sa voisine, les autres ne bougent pas
   function retirer(n: Arbre | null, id: string): Arbre | null {
     if (!n) return null;
     if (feuille(n)) return n.id === id ? null : n;
-    const paires = n.enfants.map((c, i): [Arbre | null, number] => [retirer(c, id), n.parts[i]]).filter((q): q is [Arbre, number] => !!q[0]);
-    n.enfants = paires.map((q) => q[0]);
-    n.parts = paires.map((q) => q[1]);
+    const restes = n.enfants.map((c) => retirer(c, id));
+    restes.forEach((c, i) => {
+      if (c) return;
+      const v = restes.findIndex((x, j) => x && j > i), j = v >= 0 ? v : restes.findLastIndex((x) => x);
+      if (j < 0) return;
+      // L'écart rendu compte aussi, à l'échelle des parts de ce partage
+      const rs = ids(n).map((x) => base.res[x]).filter(Boolean), ligne = n.dir === 'row', s = n.parts.reduce((a, b) => a + b, 0);
+      const long = rs.length ? (ligne ? Math.max(...rs.map((r) => r.x + r.w)) - Math.min(...rs.map((r) => r.x)) : Math.max(...rs.map((r) => r.y + r.h)) - Math.min(...rs.map((r) => r.y))) : 0;
+      const total = long - ECART * (n.enfants.length - 1);
+      n.parts[j] += n.parts[i] + (total > 0 ? (s * ECART) / total : 0);
+    });
+    n.parts = n.parts.filter((_, i) => restes[i]);
+    n.enfants = restes.filter((c): c is Arbre => !!c);
     return n;
   }
   // Pose sur un côté d'une autre fenêtre (moitié) ou sur un bord d'écran (bande)
@@ -217,7 +234,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     return arbre;
   }
 
-  // Taille de chaque case, jamais sous son minimum ; fentes notées pour le tirage
+  // Taille de chaque case, au minimum si la place le permet ; fentes notées
   function calculer(arbre: Arbre | null, avec?: string): Calcul {
     // `avec` : la fenêtre en main, comptée dans l'essai bien qu'elle flotte
     inclus = avec || null;
@@ -227,15 +244,19 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       const idx = n.enfants.map((_, i) => i).filter((i) => visible(n.enfants[i]));
       if (!idx.length) return;
       const ligne = n.dir === 'row';
-      // La part d'une fenêtre cachée revient à la principale, sans toucher les autres
-      const jp = idx.findIndex((i) => ids(n.enfants[i]).includes(o.principal()));
-      const cachee = jp < 0 ? 0 : n.parts.reduce((s, p, i) => (idx.includes(i) ? s : s + p), 0);
-      const libres = jp < 0 ? 0 : ECART * (n.enfants.length - idx.length);
-      const total = (ligne ? r.w : r.h) - ECART * (idx.length - 1) - libres;
-      const parts = idx.map((i, j) => n.parts[i] + (j === jp ? cachee : 0));
+      // Une fenêtre absente laisse sa place à sa voisine de droite, sinon de gauche
+      const ajouts = idx.map(() => 0), libres = idx.map(() => 0);
+      n.enfants.forEach((_, i) => {
+        if (idx.includes(i)) return;
+        const v = idx.findIndex((x) => x > i), j = v < 0 ? idx.length - 1 : v;
+        ajouts[j] += n.parts[i];
+        libres[j] += ECART;
+      });
+      const total = (ligne ? r.w : r.h) - ECART * (n.enfants.length - 1);
+      const parts = idx.map((i, j) => n.parts[i] + ajouts[j]);
       const somme = parts.reduce((s, p) => s + p, 0);
       const mins = idx.map((i) => miniArbre(n.enfants[i], ligne ? 'w' : 'h'));
-      const minsPart = mins.map((m, j) => (j === jp ? Math.max(0, m - libres) : m));
+      const minsPart = mins.map((m, j) => Math.max(0, m - libres[j]));
       let t = parts.map((p) => (total * p) / somme);
       for (let k = 0; k < 4; k++) {
         let manque = 0;
@@ -245,14 +266,17 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
         if (!sl) break;
         t = t.map((v, j) => v - (manque * libre[j]) / sl);
       }
-      if (jp >= 0) t[jp] += libres;
+      // Jamais hors de l'écran : trop à l'étroit, chacune cède sous son minimum
+      const tout = t.reduce((a, b) => a + b, 0);
+      if (tout > total) t = t.map((v) => (v * total) / tout);
+      t = t.map((v, j) => v + libres[j]);
       let pos = ligne ? r.x : r.y;
       idx.forEach((i, j) => {
         rec(n.enfants[i], ligne ? { x: pos, y: r.y, w: t[j], h: r.h } : { x: r.x, y: pos, w: r.w, h: t[j] });
         pos += t[j];
         if (j < idx.length - 1) {
           fentes.push({ n, a: i, b: idx[j + 1], ta: t[j], tb: t[j + 1], ma: mins[j], mb: mins[j + 1], somme, total, ligne,
-            ajoutA: j === jp ? cachee : 0, ajoutB: j + 1 === jp ? cachee : 0, libreA: j === jp ? libres : 0, libreB: j + 1 === jp ? libres : 0,
+            ajoutA: ajouts[j], ajoutB: ajouts[j + 1], libreA: libres[j], libreB: libres[j + 1],
             x: ligne ? pos : r.x, y: ligne ? r.y : pos, w: ligne ? ECART : r.w, h: ligne ? r.h : ECART });
           pos += ECART;
         }
@@ -401,7 +425,14 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       delete fen[id];
     }
     vus.forEach((id) => {
-      if (etat(id).flot || ids(memoire.racine).includes(id)) return;
+      const el = els[id], f = etat(id);
+      if (f.flot && el?.hidden && !sorties.has(id)) {
+        f.flot = null;
+        f.z = '';
+        delete el.dataset.flot;
+        el.style.zIndex = '';
+      }
+      if (f.flot || ids(memoire.racine).includes(id)) return;
       memoire.racine = normaliser((o.elements?.(id) && placerElement(id)) || inserer(memoire.racine, { bord: true, cote: 'droite' }, id));
     });
   }
@@ -410,14 +441,23 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   // Fin du dernier glissement : un rangement sans animation ne le coupe pas
   let finGlisse = 0;
   const glisses = new Map<HTMLElement, number>();
+  const dansLEcran = (fl: Zone, c: Cadre) => {
+    fl.w = Math.min(fl.w, c.r.width);
+    fl.h = Math.min(fl.h, c.r.height);
+    fl.x = Math.min(Math.max(fl.x, 0), c.r.width - fl.w);
+    fl.y = Math.min(Math.max(fl.y, 0), c.r.height - fl.h);
+  };
   // Le glissement porté par la fenêtre elle-même vaut aussi pour une flottante
-  const glisser = (el: HTMLElement, duree = DUREE_RANGEMENT, delai = 0) => {
-    el.style.transition = TRANSITION_DE(duree, delai);
+  const glisser = (el: HTMLElement, duree = DUREE_RANGEMENT, delai = 0, c = VIVE) => {
+    el.style.transition = TRANSITION_DE(duree, delai, c);
     clearTimeout(glisses.get(el));
     glisses.set(el, window.setTimeout(() => { el.style.transition = ''; glisses.delete(el); }, delai + duree + 60));
   };
-  const ranger = (anime: boolean, { entrees = [], sortie, depuis = {}, retards = {} }: OptionsRangement = {}) => {
+  const ranger = (anime: boolean, { entrees = [], sortie, depuis = {}, retards = {}, douce = false }: OptionsRangement = {}) => {
     scanner();
+    // Une flottante reste entière à l'écran, même après un changement de taille
+    const c0 = cadre();
+    for (const id in fen) if (fen[id].flot && els[id]) { dansLEcran(fen[id].flot, c0); poser(els[id], fen[id].flot); }
     const sans = !anime && performance.now() > finGlisse;
     if (sans) ov.classList.add('sans-anim');
     else if (!action && ov.classList.contains('sans-anim')) {
@@ -441,7 +481,11 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     const mouvements = (sauf: string): Mouvement[] => Object.keys(base.res)
       .flatMap((id) => (id !== sauf && avant.res[id] && etat(id).flot === null ? [{ de: avant.res[id], a: base.res[id] }] : []));
     if (sortie && elSortie && repli) {
-      glisser(elSortie, dureeRepli(repli, mouvements(sortie)));
+      // Elle rétrécit pendant que les autres prennent sa place : tout part ensemble
+      const venues = Object.keys(base.res).filter((id) => els[id] && avant.res[id] && id !== sortie && etat(id).flot === null);
+      const trajets = venues.map((id) => ({ de: avant.res[id], a: base.res[id], courbe: DOUCE }));
+      venues.forEach((id) => glisser(els[id]!, DUREE_RANGEMENT, 0, DOUCE));
+      glisser(elSortie, dureeRepli(repli, trajets), 0, DOUCE);
       placer(elSortie, centre(repli));
     }
     for (const id of entrees) {
@@ -453,7 +497,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
         placer(el, centre(r));
         void el.offsetWidth;
       }
-      const delai = revient || etat(id).flot ? 0 : delaiDepli(r, mouvements(id));
+      const delai = revient || etat(id).flot ? 0 : retardLibre(centre(r), r, mouvements(id));
       glisser(el, DUREE_RANGEMENT - delai, delai);
       if (etat(id).flot) poser(el, r);
     }
@@ -465,7 +509,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       placer(el, depuis[id]);
       void el.offsetWidth;
       const retard = retards[id] ?? 0;
-      glisser(el, DUREE_RANGEMENT - retard, retard);
+      glisser(el, DUREE_RANGEMENT - retard, retard, douce ? DOUCE : VIVE);
       if (etat(id).flot) poser(el, r);
     }
     appliquer(base, null, !action);
@@ -500,22 +544,6 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   }
   const cle = (c: Cible | null) => (!c ? '' : c.remplir ? 'remplir' : (c.bord ? 'bord-' : c.id + '-') + c.cote);
 
-  // Sortie de l'arbre : la disposition d'avant reste connue pour la remise
-  const sortirDeLArbre = (id: string) => {
-    memoire.reference ??= copie(memoire.racine);
-    memoire.racine = normaliser(retirer(memoire.racine, id));
-  };
-  // Remise en place : la référence, sans les fenêtres encore dehors ni fermées
-  const rentrerDansLArbre = (id: string) => {
-    const presentes = new Set([...ids(memoire.racine), id]);
-    let arbre = copie(memoire.reference ?? memoire.racine);
-    for (const x of ids(arbre)) if (!presentes.has(x)) arbre = retirer(arbre, x);
-    memoire.racine = normaliser(arbre);
-    // Celles ouvertes depuis gardent la place qu'elles auraient prise
-    for (const x of presentes) {
-      if (!ids(memoire.racine).includes(x)) memoire.racine = normaliser((o.elements?.(x) && placerElement(x)) || inserer(memoire.racine, { bord: true, cote: 'droite' }, x));
-    }
-  };
   // Clic sur la prise : détachée tout de suite, ou remise en place
   const basculer = (id: string) => {
     const f = etat(id), el = els[id];
@@ -524,18 +552,16 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       const c = cadre(), r = el.getBoundingClientRect(), m = mini(id), t = f.tailleFlot || o.tailles()[id]?.flot || [r.width, r.height];
       const w = Math.max(Math.min(t[0], c.r.width - 40), m[0]), h = Math.max(Math.min(t[1], c.r.height - 40), m[1]);
       f.flot = { x: r.left - c.r.left + DECROCHE, y: r.top - c.r.top + DECROCHE, w, h };
-      f.tailleFlot = [w, h];
+      dansLEcran(f.flot, c);
+      f.tailleFlot = [f.flot.w, f.flot.h];
       el.dataset.flot = '1';
       el.style.zIndex = f.z = String(++memoire.zMax);
-      sortirDeLArbre(id);
       poser(el, f.flot);
     } else {
-      rentrerDansLArbre(id);
       f.flot = null;
       f.z = '';
       delete el.dataset.flot;
       el.style.zIndex = '';
-      if (!Object.values(fen).some((x) => x.flot)) memoire.reference = null;
     }
     changer();
     ranger(true);
@@ -598,10 +624,10 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       return;
     }
     if (a.type === 'taille') {
-      // Fenêtre flottante tirée par son bord ou son coin ; elle peut dépasser la page
+      // Fenêtre flottante tirée par son bord ou son coin, sans sortir de l'écran
       const fl = etat(a.id).flot!, m = mini(a.id);
-      if (a.sens !== 'b') fl.w = Math.max(a.w0 + e.clientX - a.x0, m[0]);
-      if (a.sens !== 'd') fl.h = Math.max(a.h0 + e.clientY - a.y0, m[1]);
+      if (a.sens !== 'b') fl.w = Math.min(Math.max(a.w0 + e.clientX - a.x0, m[0]), c.r.width - fl.x);
+      if (a.sens !== 'd') fl.h = Math.min(Math.max(a.h0 + e.clientY - a.y0, m[1]), c.r.height - fl.y);
       etat(a.id).tailleFlot = [fl.w, fl.h];
       poser(els[a.id]!, fl);
       return;
@@ -621,15 +647,15 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
         a.dy = Math.min(a.dy, 30);
         f.flot = { x: e.clientX - c.r.left - a.dx, y: r.top - c.r.top, w, h };
         f.tailleFlot = [w, h];
-        sortirDeLArbre(a.id);
         base = calculer(memoire.racine);
         appliquer(base, a.id, false);
       }
     }
-    // Flottante, elle sort par les côtés et le bas, sa tête restant attrapable
+    // Flottante, elle suit la main sans jamais sortir de l'écran
     const fl = f.flot!;
-    fl.x = Math.min(Math.max(e.clientX - c.r.left - a.dx, 80 - fl.w), c.r.width - 80);
-    fl.y = Math.min(Math.max(e.clientY - c.r.top - a.dy, 0), c.r.height - 40);
+    fl.x = e.clientX - c.r.left - a.dx;
+    fl.y = e.clientY - c.r.top - a.dy;
+    dansLEcran(fl, c);
     poser(a.el, fl);
     const cible = cibleSous(e.clientX - c.r.left, e.clientY - c.r.top, c, a.id, a.depuis), k = cle(cible);
     // Aimant à la pause : main immobile sur une zone, les autres s'écartent
@@ -658,7 +684,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     clearTimeout(a.minuteur);
     if (a.bouges) { appliquer(base, a.id, false); a.bouges = false; }
     if (!cible) return;
-    a.essai = calculer(normaliser(inserer(copie(memoire.racine), cible, a.id)), a.id);
+    a.essai = calculer(normaliser(inserer(normaliser(retirer(copie(memoire.racine), a.id)), cible, a.id)), a.id);
     armer();
   };
 
@@ -676,12 +702,10 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     changer();
     if (a.cible && a.arme) {
       // Posée sur une cible : elle glisse vers sa case, l'arbre garde le partage
-      memoire.racine = normaliser(inserer(memoire.racine, a.cible, a.id));
+      memoire.racine = normaliser(inserer(normaliser(retirer(memoire.racine, a.id)), a.cible, a.id));
       const f = etat(a.id);
       f.flot = null;
       f.z = '';
-      // Posée à la main : cette disposition devient celle à laquelle revenir
-      memoire.reference = null;
       delete a.el.dataset.flot;
       a.el.style.zIndex = '';
     }
@@ -691,7 +715,6 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   // Remise en place : arbre de départ, fenêtres rangées, tailles oubliées
   const remettre = () => {
     memoire.racine = copie(racineDepart);
-    memoire.reference = null;
     memoire.change = false;
     for (const id in fen) {
       fen[id] = { flot: null, tailleFlot: null, z: '' };

@@ -154,7 +154,7 @@
 .ov.trame .workflows .menu-option .adr{font-size:.75rem;line-height:1rem}
 /* Arbre : lignes de 44 px, cible et source en second plan, fils discrets. */
 .ov.trame .workflows .arbre{padding:0 12px;--h-l:44px}
-.ov.trame .workflows .arbre-defile{scrollbar-width:thin}
+.ov.trame .workflows .arbre-defile{scrollbar-width:auto}
 .ov.trame .workflows .arbre-tete{height:44px;border-bottom:1px solid var(--filet);font-size:.875rem;font-weight:500;color:var(--texte-2)}
 .ov.trame .workflows .l{border-top:0;border-bottom:1px solid var(--surface-moyenne);font-size:.875rem;line-height:1.25rem}
 .ov.trame .workflows .l:hover{background:var(--surface-basse)}
@@ -197,7 +197,7 @@
 .ov.trame .wf-rejeu .journal{font-size:.875rem;color:var(--texte-2)}
 .ov.trame .wf-rejeu .journal .pl{min-width:44px;height:44px}
 .ov.trame .wf-rejeu .journal .pl:disabled{opacity:1;color:rgb(var(--encre) / .62)}
-.ov.trame .wf-rejeu .lignes-journal pre{padding:8px 12px;border-radius:8px;background:var(--surface-basse);font-size:.75rem;line-height:1.125rem;color:var(--texte);scrollbar-width:thin}
+.ov.trame .wf-rejeu .lignes-journal pre{padding:8px 12px;border-radius:8px;background:var(--surface-basse);font-size:.75rem;line-height:1.125rem;color:var(--texte);scrollbar-width:auto}
 .ov.trame .wf-rejeu .lot-page{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
 .ov.trame .wf-rejeu .gestes{font-size:.875rem;line-height:1.25rem}
 .ov.trame .wf-rejeu .gestes li>span:first-child{font-size:.75rem;color:var(--texte-2)}

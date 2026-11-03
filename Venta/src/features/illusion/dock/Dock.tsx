@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRe
 import { DUREES, ecrire, effacer, mouvementReduit, voiler, type Controle } from '../partage/glyphes';
 import { quitterSection } from '../api';
 import { aOublier } from '../stockage';
-import { DUREE_RANGEMENT, ECART, PRISES, TRANSITION_DE, delaiDepli, dureeRepli, installerDock, type ArbreDepart, type DefFenetre, type Moteur, type OptionsRangement, type Zone } from './moteur';
+import { DUREE_RANGEMENT, DOUCE, ECART, PRISES, TRANSITION_DE, centre, dureeRepli, installerDock, libre, retardLibre, type ArbreDepart, type DefFenetre, type Moteur, type Mouvement, type OptionsRangement, type Zone } from './moteur';
 export type { ArbreDepart } from './moteur';
 
 // Tailles minimales, bande de bord d'écran et premier détachement des fenêtres
@@ -41,7 +41,7 @@ type ContexteDock = {
   // Fenêtres visibles sur la page quittée ; null à l'arrivée dans Illusion
   avant: Record<string, boolean> | null;
   // Ce que le changement de page prévoit pour une fenêtre ; rien sinon
-  prevue: (id: string) => { mode?: Mode; delai: number; depart?: Depart };
+  prevue: (id: string) => { mode?: Mode; depart?: Depart };
   onglet: string | null;
   // L'objet de l'élément montré par le panneau
   objet: string | null;
@@ -63,8 +63,8 @@ const Contexte = createContext<ContexteDock | null>(null);
 // Fenêtre de la page quittée : son passage, son état et sa place à l'écran
 type Sortant = { id: string; passage: string; vue: boolean; flot: boolean; rect: DOMRect; el: HTMLElement };
 type Sortants = { page: string; principal: string; fenetres: Sortant[] };
-// Ce que prévoit le changement de page : attente, mode et origine des fenêtres
-type Passage = { delai: number; modes: Map<string, Mode>; departs: Map<string, Depart> };
+// Ce que prévoit le changement de page : mode et origine des fenêtres
+type Passage = { modes: Map<string, Mode>; departs: Map<string, Depart> };
 // Centre d'origine d'une fenêtre qui manquait et délai avant son dépli (ms)
 type Depart = { zone: Zone; retard: number };
 
@@ -91,22 +91,32 @@ function sortir(holo: Sortant[], organiques: [Sortant, number][], ov: HTMLElemen
   ov.append(calque);
   const o = ov.getBoundingClientRect();
   for (const s of holo) {
-    const copie = copier(s, calque, o, 'holo-ferme');
-    copie.style.setProperty('--holo-delai', `${DUREES.effacer}ms`);
-    effacer(copie, { duree: DUREES.effacer });
+    effacer(copier(s, calque, o, 'holo-ferme'), { duree: DUREES.effacer });
   }
   for (const [s, duree] of organiques) {
     const copie = copier(s, calque, o, 'replie'), r = s.rect;
     void copie.offsetWidth;
-    copie.style.transition = TRANSITION_DE(duree);
+    copie.style.transition = TRANSITION_DE(duree, 0, DOUCE);
     Object.assign(copie.style, { left: `${r.left + r.width / 2 - o.left}px`, top: `${r.top + r.height / 2 - o.top}px`, width: '0px', height: '0px' });
   }
-  window.setTimeout(() => calque.remove(), Math.max(holo.length ? DUREES.effacer + DUREES.fermer : 0, DUREE_RANGEMENT) + 60);
+  calque.dataset.duree = String(Math.max(DUREES.fermer, DUREE_RANGEMENT) + 120);
+}
+
+// Montage d'une page lourde : le passage reste figé jusqu'à la peinture
+function lancerApresPeinture(ov: HTMLElement, fin: () => void) {
+  void ov.offsetWidth;
+  const anims = ov.getAnimations({ subtree: true }).filter((a) => a.playState === 'running');
+  anims.forEach((a) => a.pause());
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    anims.forEach((a) => { if (a.playState === 'paused') a.play(); });
+    ov.querySelectorAll<HTMLElement>(':scope > .fantomes').forEach((c) => window.setTimeout(() => c.remove(), Number(c.dataset.duree)));
+    fin();
+  }));
 }
 
 // D'une page à l'autre : l'Activité glisse, les détachées se relaient
 function passer({ fenetres, principal: ancien }: Sortants, coq: HTMLElement, m: Moteur, principal: string): Passage {
-  const passage: Passage = { delai: 0, modes: new Map(), departs: new Map() };
+  const passage: Passage = { modes: new Map(), departs: new Map() };
   if (mouvementReduit()) return passage;
   // Fenêtre fermée ici, même affichée le temps de se replier : pas de la page
   const vue = (el: HTMLElement) => !el.hidden && el.dataset.fermee === undefined && getComputedStyle(el).visibility !== 'hidden';
@@ -121,7 +131,7 @@ function passer({ fenetres, principal: ancien }: Sortants, coq: HTMLElement, m: 
   const ici = Array.from(coq.querySelectorAll<HTMLElement>('[data-fen]')).filter(vue);
   const avant = fenetres.filter((s) => s.vue);
   const depuis: Record<string, Zone> = {};
-  const holo: Sortant[] = [], organiques: [Sortant, number][] = [];
+  const holo: Sortant[] = [];
   for (const s of avant.filter((x) => x.passage === 'fixe')) if (ici.some((el) => el.dataset.fen === s.id)) depuis[s.id] = zone(s.rect);
   for (const s of avant) if (s.passage !== 'fixe' && s.flot) holo.push(s);
   for (const el of ici) if (el.dataset.passage !== 'fixe' && el.dataset.flot) passage.modes.set(el.dataset.fen!, 'holo');
@@ -146,20 +156,23 @@ function passer({ fenetres, principal: ancien }: Sortants, coq: HTMLElement, m: 
   // D'où vient chaque fenêtre : sa place sur la page quittée, sinon la sienne
   const origine = (el: HTMLElement, r: DOMRect) => relais.get(el)?.rect ?? avant.find((x) => x.passage === 'fixe' && x.id === el.dataset.fen)?.rect ?? r;
   const vers = (r: DOMRect): Zone => ({ x: r.left, y: r.top, w: r.width, h: r.height });
-  // Glissement des fenêtres venues d'ailleurs, de leur place d'avant à la leur
-  const mouvements = posees.flatMap(({ el, r }) => (origine(el, r) === r ? [] : [{ el, de: vers(origine(el, r)), a: vers(r) }]));
-  // Une rangée sans relais se replie le plus lentement possible sans en toucher
-  for (const s of rangeesAvant) if (!relayees.includes(s)) organiques.push([s, dureeRepli(vers(s.rect), mouvements)]);
-  // Une rangée absente se déplie dès que les autres ne peuvent plus la toucher
+  const sansRelais = rangeesAvant.filter((x) => !relayees.includes(x));
+  const replis0: Mouvement[] = sansRelais.map((x) => ({ de: vers(x.rect), a: centre(vers(x.rect)), courbe: DOUCE }));
+  const venues = posees.flatMap(({ el, r }) => (origine(el, r) === r ? [] : [{ el, de: vers(origine(el, r)), a: vers(r) }]));
+  // Une fenêtre qui prend la place d'une autre : tout part ensemble, fin douce
+  const douce = venues.some((v) => !libre(v, replis0));
+  const mouvements = venues.map((v) => (douce ? { ...v, courbe: DOUCE } : v));
+  const organiques = sansRelais.map((x): [Sortant, number] => [x, dureeRepli(vers(x.rect), mouvements)]);
+  const replis: Mouvement[] = organiques.map(([x, duree]) => ({ de: vers(x.rect), a: centre(vers(x.rect)), duree, courbe: DOUCE }));
+  // Une rangée absente se déplie dès qu'elle ne peut plus toucher personne
   for (const { el, r } of rangeesIci) {
     if (relais.has(el)) continue;
-    const z = zone(r);
-    passage.departs.set(el.dataset.fen!, { zone: { x: z.x + z.w / 2, y: z.y + z.h / 2, w: 0, h: 0 }, retard: delaiDepli(vers(r), mouvements.filter((x) => x.el !== el)) });
+    const z = zone(r), a = vers(r);
+    passage.departs.set(el.dataset.fen!, { zone: { x: z.x + z.w / 2, y: z.y + z.h / 2, w: 0, h: 0 }, retard: retardLibre(centre(a), a, [...replis, ...mouvements.filter((x) => x.el !== el)]) });
   }
-  if (Object.keys(depuis).length) m.ranger(true, { depuis });
+  if (Object.keys(depuis).length) m.ranger(true, { depuis, douce });
   const ov = coq.closest<HTMLElement>('.ov');
   if (ov && (holo.length || organiques.length)) sortir(holo, organiques, ov);
-  if (holo.length) passage.delai = DUREES.effacer + DUREES.fermer;
   return passage;
 }
 
@@ -200,7 +213,9 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
   const remise = useRef<HTMLButtonElement>(null);
   const moteur = useRef<Moteur | null>(null);
   const attente = useRef<(() => void)[]>([]);
-  const prevu = useRef<Passage>({ delai: 0, modes: new Map(), departs: new Map() });
+  const prevu = useRef<Passage>({ modes: new Map(), departs: new Map() });
+  // Vrai du changement de page au lancement, remontage du mode strict compris
+  const enPassage = useRef(false);
   const [avant] = useState(() => (Object.keys(DOCK.visibles).length ? { ...DOCK.visibles } : null));
   const pose = useRef(false);
   // Panneau puis fenêtres du clic droit ; celle en focus prend le clic gauche
@@ -245,11 +260,16 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
     const sortants = DOCK.sortants;
     DOCK.sortants = null;
     // Un dock remonté (mode strict, rechargement à chaud) garde son prévu
-    if (sortants && sortants.page !== id) prevu.current = passer(sortants, coq, m, p().principal);
+    if (sortants && sortants.page !== id) {
+      prevu.current = passer(sortants, coq, m, p().principal);
+      enPassage.current = true;
+    }
     const enAttente = attente.current;
     attente.current = [];
     enAttente.forEach((f) => f());
     pose.current = true;
+    const ov = coq.closest<HTMLElement>('.ov');
+    if (ov && enPassage.current && !mouvementReduit()) lancerApresPeinture(ov, () => { enPassage.current = false; });
     return () => {
       // Avant le départ de la page : ses fenêtres et leur place, pour la suivante
       const fenetres = Array.from(coq.querySelectorAll<HTMLElement>('[data-fen]')).map((el) => {
@@ -338,7 +358,7 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
     // Le focus revient à la dernière fenêtre en plus ouverte, sinon au panneau
     const reste = [...etat.current.vues].reverse().find((x) => x.id !== cible && x.id !== 'panneau' && !x.ferme);
     setFocus((f) => (f === cible ? reste?.id ?? 'panneau' : f));
-    window.setTimeout(() => setVues((v) => v.filter((x) => x.id !== cible)), DUREES.effacer + DUREE_RANGEMENT + 80);
+    window.setTimeout(() => setVues((v) => v.filter((x) => x.id !== cible)), DUREE_RANGEMENT + 80);
   }, [arreterEchange, setOnglet]);
   // Fermer depuis un élément : la fenêtre en focus, celle du clic
   const fermer = useCallback(() => fermerVue(etat.current.vues.some((x) => x.id === etat.current.focus && !x.ferme) ? etat.current.focus : 'panneau'), [fermerVue]);
@@ -361,11 +381,11 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
     e.efface?.annuler();
     e.efface = null;
     const vue = coquille.current?.querySelector('[data-fen="panneau"] .p-vue.ouverte');
-    if (vue) e.ecrit = ecrire(vue, { duree: DUREES.contenu });
+    if (vue) e.ecrit = ecrire(vue, { duree: DUREES.contenu - DUREES.effacer });
   }, [montre]);
   useLayoutEffect(() => arreterEchange, [arreterEchange]);
 
-  const prevue = useCallback((cle: string) => ({ mode: prevu.current.modes.get(cle), delai: prevu.current.delai, depart: prevu.current.departs.get(cle) }), []);
+  const prevue = useCallback((cle: string) => ({ mode: prevu.current.modes.get(cle), depart: prevu.current.departs.get(cle) }), []);
   const posee = useCallback(() => pose.current, []);
   const valeur = useMemo(
     () => ({ ranger, quandPose, avant, prevue, onglet, objet, ouvrir, fermer, vues, focus, focaliser: setFocus, fermerVue, ailleurs, posee }),
@@ -395,6 +415,9 @@ type ProprietesFenetre = Omit<React.HTMLAttributes<HTMLElement>, 'id'> & {
   // Page à page : 'fixe' glisse, 'ecrit' est gardée, 'fondu' est propre à sa page
   passage?: 'fixe' | 'fondu' | 'ecrit';
 };
+
+// Le contenu d'une fenêtre qui se déplie arrive en route et finit avec elle
+const CONTENU_APRES = 60;
 
 type EnCours = { tour: number; anims: Controle[]; minuteurs: number[]; sortie: 'non' | 'efface' | 'replie' };
 
@@ -439,23 +462,23 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
     const e = enCours.current, tour = e.tour;
     quandPose(() => {
       if (e.tour !== tour || !el.current) return;
-      const { mode = 'holo', delai, depart } = prevue(id);
+      const { mode = 'holo', depart } = prevue(id);
       if (mode === 'ecrit') {
         e.anims.push(ecrire(el.current, { duree: DUREES.contenu }));
       } else if (mode === 'organique') {
         ranger(true, depart ? { depuis: { [id]: depart.zone }, retards: { [id]: depart.retard } } : { entrees: [id] });
-        e.anims.push(voiler(el.current, DUREE_RANGEMENT + 60));
+        const debut = (depart?.retard ?? 0) + CONTENU_APRES;
+        e.anims.push(voiler(el.current, debut + 60));
         plus(tour, () => {
           if (!el.current) return;
           e.anims.forEach((c) => c.annuler());
-          // Dépliée après la grande : son contenu finit en même temps que le sien
-          e.anims = [ecrire(el.current, { duree: DUREES.contenu - DUREE_RANGEMENT })];
-        }, DUREE_RANGEMENT);
+          e.anims = [ecrire(el.current, { duree: Math.max(80, DUREES.contenu - debut) })];
+        }, debut);
       } else {
-        el.current.style.setProperty('--holo-delai', `${delai}ms`);
+        // Flottante : elle s'ouvre dès le départ, pendant que l'ancienne se ferme
         el.current.classList.add('holo-ouvre');
-        e.anims.push(ecrire(el.current, { duree: DUREES.ouverture, delai: delai + DUREES.ouvrir }));
-        plus(tour, () => el.current?.classList.remove('holo-ouvre'), delai + DUREES.ouvrir + 50);
+        e.anims.push(ecrire(el.current, { duree: DUREES.ouvrir - DUREES.voile, delai: DUREES.voile }));
+        plus(tour, () => el.current?.classList.remove('holo-ouvre'), DUREES.ouvrir + 50);
       }
     });
   }, [id, passage, quandPose, prevue, ranger, plus]);
@@ -482,7 +505,7 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
           }, DUREE_RANGEMENT + 20);
         };
         e.anims.push(effacer(el.current, { duree: DUREES.effacer }));
-        plus(tour, replier, DUREES.effacer);
+        replier();
       });
       return;
     }
@@ -497,7 +520,7 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
     const replie = e.sortie === 'replie';
     arreter();
     if (replie) ranger(true, { entrees: [id] });
-    if (el.current) e.anims.push(ecrire(el.current, { duree: DUREES.contenu, delai: replie ? DUREE_RANGEMENT : 0 }));
+    if (el.current) e.anims.push(ecrire(el.current, { duree: DUREES.contenu }));
   }, [hidden, id, ranger, quandPose, prevue, arreter, plus]);
 
   // Montrée : rangée avant d'être peinte ; retirée : rangée une fois sortie
@@ -511,12 +534,12 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
       quandPose(() => {
         if (e.tour !== tour || !el.current) return;
         ranger(true, { entrees: [id] });
-        e.anims.push(voiler(el.current, DUREE_RANGEMENT + 60));
+        e.anims.push(voiler(el.current, CONTENU_APRES + 60));
         plus(tour, () => {
           if (!el.current) return;
           e.anims.forEach((c) => c.annuler());
-          e.anims = [ecrire(el.current, { duree: DUREES.contenu })];
-        }, DUREE_RANGEMENT);
+          e.anims = [ecrire(el.current, { duree: DUREES.contenu - CONTENU_APRES })];
+        }, CONTENU_APRES);
       });
     }
     return () => {

@@ -165,7 +165,7 @@
 .ov.trame .pf .catalogue .puce button{width:24px;height:24px;border-radius:50%;color:var(--texte-2)}
 .ov.trame .pf .catalogue .puce button:hover{background:var(--surface-moyenne);color:var(--texte)}
 .ov.trame .pf .catalogue .puce svg{width:12px;height:12px}
-.ov.trame .pf .propositions{top:calc(100% + 4px);padding:8px 0;border:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);scrollbar-width:thin}
+.ov.trame .pf .propositions{top:calc(100% + 4px);padding:8px 0;border:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);scrollbar-width:auto}
 .ov.trame .pf .propositions button{gap:8px;min-height:44px;padding:0 12px;font-size:.875rem;color:var(--texte)}
 .ov.trame .pf .propositions button:is(:hover,:focus-visible){background:var(--surface-moyenne);color:var(--texte)}
 .ov.trame .pf .propositions b{font-size:.75rem;color:var(--texte-2)}
@@ -175,7 +175,7 @@
 .ov.trame .pf .badge.fini{background:var(--ok-doux);color:var(--ok)}
 .ov.trame .pf .badge.echec{background:var(--erreur-douce);color:var(--erreur)}
 .ov.trame .pf .note-f{padding-left:12px;border-left-color:var(--filet);font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.trame .pf .journal-f{font-size:.75rem;line-height:1.125rem;color:var(--texte-2);scrollbar-width:thin}
+.ov.trame .pf .journal-f{font-size:.75rem;line-height:1.125rem;color:var(--texte-2);scrollbar-width:auto}
 .ov.trame .pf .cmd>summary::after{color:var(--texte-2)}
 .ov.trame .pf .soc-d{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
 .ov.trame .pf .soc .siren{white-space:nowrap}

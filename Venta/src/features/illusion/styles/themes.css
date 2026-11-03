@@ -28,8 +28,6 @@
 .ov.trame .barre-canaux .cote{gap:4px}
 .ov.trame .onglet{position:relative;justify-content:center;min-width:44px;padding:0 14px;font-size:.875rem;font-weight:500;transition:background-color .15s var(--courbe)}
 .ov.th-plein .onglet{border-radius:24px;color:#fff}
-.ov.trame .onglet:has(.icone){padding:0 10px}
-.ov.trame .onglet .icone{width:20px;height:20px;overflow:visible}
 .ov.th-plein .onglet:hover,.ov.th-plein .logo:hover{background:rgb(255 255 255 / .16);color:#fff}
 .ov.th-plein .onglet.actif{color:#fff}
 .ov.th-plein .onglet::after{content:"";position:absolute;left:14px;right:14px;bottom:2px;height:3px;border-radius:3px 3px 0 0;background:#fff;transform:scaleX(0);transition:transform .25s cubic-bezier(.65,0,.25,1)}
@@ -133,7 +131,7 @@
 .ov.trame .tuile-sorte.choix:has(:checked){background:color-mix(in srgb,var(--c) 11%,var(--surface));border-color:color-mix(in srgb,var(--c) 40%,var(--surface));color:var(--c)}
 .ov.trame .tuile-sorte:has(:checked) :is(b,small){color:var(--c)}
 .ov.trame .tuile-sorte:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
-.ov.trame .fil-actions{gap:0;padding:0;border-top:1px solid var(--filet);scrollbar-width:thin;-webkit-mask-image:linear-gradient(transparent,#000 28px);mask-image:linear-gradient(transparent,#000 28px)}
+.ov.trame .fil-actions{gap:0;padding:0;border-top:1px solid var(--filet);scrollbar-width:auto;-webkit-mask-image:linear-gradient(transparent,#000 28px);mask-image:linear-gradient(transparent,#000 28px)}
 .ov.trame .fil-actions li{padding:8px 16px;border-top:1px solid var(--surface-moyenne);border-left:3px solid transparent}
 .ov.trame .fil-actions .etiquette{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
 .ov.trame .fil-actions .phrase{font-size:.8125rem;line-height:1.125rem;color:var(--texte)}
@@ -166,7 +164,7 @@
 .ov.trame .f-btn svg{width:18px;height:18px}
 .ov.trame .f-barre{height:auto;min-height:48px;border-bottom:1px solid var(--filet)}
 .ov.trame .f-titre{font-size:.875rem;font-weight:500;color:var(--texte)}
-.ov.trame .f-corps{scrollbar-width:thin}
+.ov.trame .f-corps{scrollbar-width:auto}
 .ov.trame .f-pied{flex-wrap:wrap;gap:6px;padding:8px;border-top:1px solid var(--filet)}
 .ov.trame .f-pied .action{padding:0 12px}
 
@@ -259,7 +257,11 @@
 .ov.trame.vue-accueil .separateur{display:none}
 
 /* Canaux d'Ovrane posés sur la photo : blancs comme ceux d'Illusion. */
-body:has(.ov.th-plein:not(.ov-barre)) header nav[aria-label="Navigation principale"] button{color:#fff}
+body:has(.ov.th-plein:not(.ov-barre)) header :is(nav[aria-label="Navigation principale"],.coin-site) button{color:#fff}
+/* Coin du site sur la photo : même allure que les canaux d'Illusion. */
+body:has(.ov.th-plein:not(.ov-barre)) header .coin-site button{position:relative;border-radius:24px;filter:none;transition:background-color .15s cubic-bezier(.2,0,0,1)}
+body:has(.ov.th-plein:not(.ov-barre)) header .coin-site button:hover{background:rgb(255 255 255 / .16)}
+body:has(.ov.th-plein:not(.ov-barre)) header .coin-site button[aria-current=page]::after{content:"";position:absolute;left:10px;right:10px;bottom:2px;height:3px;border-radius:3px 3px 0 0;background:#fff}
 
 /* États désactivés : lisibles, sans voile de transparence. */
 .ov.trame .action:disabled{opacity:1;color:var(--contour)}
@@ -276,3 +278,16 @@ body:has(.ov.th-plein:not(.ov-barre)) header nav[aria-label="Navigation principa
 .ov.th-verre .eo::before{position:absolute;top:calc(50% - 6.5px);left:0}
 .ov.trame .place-entiere{border-width:2px}
 .ov.trame [data-fen]:is([data-l=m],[data-l=s],[data-l=xs]) .outils .actions{gap:4px}
+
+/* Barre de défilement : fine, sans flèches ni fond, couleur de l'encre. */
+.ov.trame *::-webkit-scrollbar{width:6px;height:6px}
+.ov.trame *::-webkit-scrollbar-track,.ov.trame *::-webkit-scrollbar-corner{background:transparent}
+.ov.trame *::-webkit-scrollbar-button{display:none}
+.ov.trame *::-webkit-scrollbar-thumb{background:rgb(var(--encre) / .28)}
+.ov.trame *::-webkit-scrollbar-thumb:hover{background:rgb(var(--encre) / .5)}
+.ov.th-plein *::-webkit-scrollbar-thumb{border-radius:3px}
+.ov.trame [data-fen] :is(.f-corps,.fil-actions,.defile-appel,.veille-corps,.arbre-defile,.groupes,.journal-f)::-webkit-scrollbar{display:block}
+@supports not selector(::-webkit-scrollbar){.ov.trame [data-fen] :is(.f-corps,.fil-actions,.defile-appel,.veille-corps,.arbre-defile,.groupes,.journal-f){scrollbar-width:thin;scrollbar-color:rgb(var(--encre) / .28) transparent}}
+/* Le corps d'une fenêtre étroite ne défile qu'en hauteur. */
+.ov.trame .f-corps{overflow-x:hidden;overflow-y:auto}
+.ov.trame .f-corps>*{min-width:0;max-width:100%}

@@ -131,7 +131,7 @@
 .ov.trame .appel-d .meta-appel{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
 .ov.trame .appel-d .saisie{min-height:44px}
 .ov.trame .appel-d .voix-appel .action{height:auto}
-.ov.trame .appel-d .defile-appel{scrollbar-width:thin}
+.ov.trame .appel-d .defile-appel{scrollbar-width:auto}
 .ov.trame .appel-d .defile-appel .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
 .ov.trame .appel-d .transcription{gap:4px}
 .ov.trame .appel-d .transcription li{font-size:.875rem;line-height:1.25rem;color:var(--texte)}

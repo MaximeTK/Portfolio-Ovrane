@@ -110,7 +110,7 @@
 /* Thèmes plats : groupes en cibles de 44 px, le choisi en teinte douce. */
 .ov.trame [data-fen=serveur] .titre-groupe:hover{background:none}
 .ov.trame [data-fen=serveur] .corps-groupes{border-top-color:var(--filet)}
-.ov.trame [data-fen=serveur] .groupes{gap:2px;width:176px;padding:8px;border-right-color:var(--filet);scrollbar-width:thin}
+.ov.trame [data-fen=serveur] .groupes{gap:2px;width:176px;padding:8px;border-right-color:var(--filet);scrollbar-width:auto}
 .ov.trame [data-fen=serveur] .rubrique{height:auto;min-height:44px;padding:4px 12px;border-radius:8px;font-size:.875rem;line-height:1.25rem;color:var(--texte-2);white-space:normal;transition:background-color .15s var(--courbe)}
 .ov.trame [data-fen=serveur] .rubrique:hover{background:var(--surface-moyenne);color:var(--texte)}
 .ov.trame [data-fen=serveur] .rubrique.actif{background:var(--primaire-doux);font-weight:500;color:var(--sur-primaire-doux)}

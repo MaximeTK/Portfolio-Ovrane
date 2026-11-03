@@ -9,26 +9,20 @@ const EnteteIllusion = dynamic(() => import('@/features/illusion/ossature/Entete
 // Hauteur et marge haute du header : l'œil vise son centre en montant
 export const CENTRE_HEADER_PX = 16 + 44 / 2;
 
-function Onglet({ page, label, icone }: { page: string; label: string; icone?: React.ReactNode }) {
+function Onglet({ page, label }: { page: string; label: string }) {
   const actif = useUIStore((s) => s.page === page);
   const setPage = useUIStore((s) => s.setPage);
   // Onglet actif : lueur de l'œil, copie blanche floutée sous le texte
   return (
     <button
       type="button"
-      // Avec un compte : les fenêtres d'Illusion, en gardant les canaux d'Ovrane
-      onClick={() => {
-        setPage(page);
-        useUIStore.setState({ cote: 'ovrane' });
-      }}
+      onClick={() => setPage(page)}
       aria-current={actif ? 'page' : undefined}
-      aria-label={icone ? label : undefined}
-      title={icone ? label : undefined}
-      className={`pointer-events-auto inline-flex min-h-11 min-w-11 items-center justify-center ${icone ? '' : 'px-1 sm:px-3.5'} font-[family-name:var(--font-roboto)] text-xs font-medium transition-[color,filter] duration-500 sm:text-sm ${
+      className={`pointer-events-auto inline-flex min-h-11 min-w-11 items-center justify-center px-1 font-[family-name:var(--font-roboto)] text-xs font-medium transition-[color,filter] duration-500 sm:px-3.5 sm:text-sm ${
         actif ? 'text-white drop-shadow-[0_0_3px_#fff]' : 'text-white/60 hover:text-white'
       }`}
     >
-      {icone ?? label}
+      {label}
     </button>
   );
 }
@@ -48,6 +42,29 @@ const ICONE_COMPTE = (
     <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
   </svg>
 );
+
+// Une icône du coin : la page change, les canaux affichés ne bougent pas
+function IconeCoin({ page, label, icone }: { page: string; label: string; icone: React.ReactNode }) {
+  const actif = useUIStore((s) => s.page?.split('?')[0] === page);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const { cote, setPage } = useUIStore.getState();
+        setPage(page);
+        useUIStore.setState({ cote });
+      }}
+      aria-current={actif ? 'page' : undefined}
+      aria-label={label}
+      title={label}
+      className={`pointer-events-auto inline-flex min-h-11 min-w-11 items-center justify-center transition-[color,filter] duration-500 ${
+        actif ? 'text-white drop-shadow-[0_0_3px_#fff]' : 'text-white/60 hover:text-white'
+      }`}
+    >
+      {icone}
+    </button>
+  );
+}
 
 export function SiteHeader() {
   const awake = useUIStore((s) => s.appState === 'awake');
@@ -82,13 +99,13 @@ export function SiteHeader() {
             <Onglet page="illusion" label="Illusion" />
             <Onglet page="hikup" label="Hikup" />
           </div>
-          {/* Au coin droit comme dans Illusion ; sur mobile, une icône à chaque bout */}
-          <div className="pointer-events-none absolute inset-x-2 top-4 flex justify-between gap-1 sm:left-auto sm:right-[9.4px] sm:justify-end">
-            <Onglet page={compteIllusion ? 'illusion/reglages' : 'reglages'} label="Réglages" icone={ICONE_REGLAGES} />
-            <Onglet page={compteIllusion ? 'illusion/profil' : 'connexion'} label="Compte" icone={ICONE_COMPTE} />
-          </div>
         </nav>
         {compteIllusion && <EnteteIllusion compte={compteIllusion} visible={illusion} />}
+      </div>
+      {/* Hors de la bascule des canaux ; sur mobile, une icône à chaque bout */}
+      <div className="coin-site pointer-events-none absolute inset-x-2 top-4 flex justify-between gap-1 sm:left-auto sm:right-[9.4px] sm:justify-end">
+        <IconeCoin page={compteIllusion ? 'illusion/reglages' : 'reglages'} label="Réglages" icone={ICONE_REGLAGES} />
+        <IconeCoin page={compteIllusion ? 'illusion/profil' : 'connexion'} label={compteIllusion ? 'Profil' : 'Compte'} icone={ICONE_COMPTE} />
       </div>
     </header>
   );

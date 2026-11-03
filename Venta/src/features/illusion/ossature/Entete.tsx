@@ -11,8 +11,6 @@ import { LienIllusion } from '../partage/LienIllusion';
 import { ADMINISTRATION } from '../pages/liste';
 
 const TRAIT = { className: 'icone', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const;
-const REGLAGES = <svg {...TRAIT}><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg>;
-const PERSONNE = <svg {...TRAIT}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>;
 // Icônes des pages d'administration, reprises des canaux des planches
 const ICONES_ADMIN: Record<string, React.ReactNode> = {
   collecte: <svg {...TRAIT}><path d="M4 5h16l-6 7v6l-4 2v-8z" /></svg>,
@@ -49,15 +47,13 @@ export function Entete({ compte, visible }: ProprietesEntete) {
     e.preventDefault();
     useUIStore.getState().setCote('ovrane');
   };
-  const onglet = (slug: string, titre: string, icone?: React.ReactNode) => (
+  const onglet = (slug: string, titre: string) => (
     <LienIllusion
       vers={slug}
       className={`onglet${page === slug ? ' actif' : ''}`}
       aria-current={page === slug ? 'page' : undefined}
-      aria-label={icone ? titre : undefined}
-      title={icone ? titre : undefined}
     >
-      {icone ?? titre}
+      {titre}
     </LienIllusion>
   );
 
@@ -83,10 +79,6 @@ export function Entete({ compte, visible }: ProprietesEntete) {
           {onglet('appels', 'Appels')}
           {onglet('relations', 'Relations')}
           {compte.admin && <MenuAdministration page={page} />}
-        </div>
-        <div className="coin">
-          {onglet('reglages', 'Réglages', REGLAGES)}
-          {onglet('profil', 'Profil', PERSONNE)}
         </div>
       </nav>
     </div>

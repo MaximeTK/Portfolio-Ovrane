@@ -43,8 +43,8 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
       return;
     }
     const fenetres = Array.from(racine.current?.querySelectorAll('.dock [data-fen]:not([hidden])') ?? []);
-    const ecrits = fenetres.map((f) => ecrire(f, { duree: DUREES.ouverture, delai: DUREES.ouvrir }));
-    const fin = window.setTimeout(() => setOuverture(null), DUREES.ouvrir + DUREES.ouverture + 100);
+    const ecrits = fenetres.map((f) => ecrire(f, { duree: DUREES.ouvrir - DUREES.voile, delai: DUREES.voile }));
+    const fin = window.setTimeout(() => setOuverture(null), DUREES.ouvrir + 100);
     return () => {
       clearTimeout(fin);
       ecrits.forEach((c) => c.annuler());

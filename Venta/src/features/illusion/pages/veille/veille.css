@@ -93,14 +93,14 @@
 .ov.trame [data-fen=veille] .etat-v .onde.on{color:var(--primaire)}
 .ov.trame [data-fen=veille] .etat-v>.d{font-size:.875rem}
 .ov.trame [data-fen=veille] .action.alerte,.ov.trame [data-fen=veille] .action.alerte:hover{color:var(--erreur)}
-.ov.trame [data-fen=veille] .veille-corps{gap:16px;padding:12px;scrollbar-width:thin}
+.ov.trame [data-fen=veille] .veille-corps{gap:16px;padding:12px;scrollbar-width:auto}
 .ov.trame [data-fen=veille] .bandeau-echec{min-height:44px;padding:0 4px 0 16px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;color:var(--sur-erreur-douce)}
 .ov.trame [data-fen=veille] .bandeau-echec p{line-height:1.25rem;color:inherit}
 .ov.trame [data-fen=veille] .bandeau-echec b{font-weight:500;color:inherit}
 .ov.trame [data-fen=veille] .bandeau-echec .d{color:inherit}
 .ov.trame [data-fen=veille] .sortie>summary{min-height:44px;padding:0 8px 0 12px;border-radius:8px;font-size:.875rem;font-weight:500;color:inherit}
 .ov.trame [data-fen=veille] .sortie>summary:hover{background:color-mix(in srgb,currentColor 8%,transparent);color:inherit}
-.ov.trame [data-fen=veille] .sortie pre{padding:12px 16px;border:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.75rem;line-height:1.125rem;color:var(--texte);scrollbar-width:thin}
+.ov.trame [data-fen=veille] .sortie pre{padding:12px 16px;border:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.75rem;line-height:1.125rem;color:var(--texte);scrollbar-width:auto}
 /* Plateformes : cartes de 12 px, le choisi garde la teinte douce des choix. */
 .ov.trame [data-fen=veille] .bloc-tete{height:auto;min-height:44px;margin-bottom:4px}
 .ov.trame [data-fen=veille] .bloc-tete .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
