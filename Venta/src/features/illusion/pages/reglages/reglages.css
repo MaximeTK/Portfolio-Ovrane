@@ -1,21 +1,21 @@
 /* Page Réglages : colonne des groupes à gauche, contenu du groupe à droite. */
 .ov [data-fen=reglages]{display:flex;flex-direction:column}
-.ov [data-fen=reglages] .titre-groupe{cursor:default;color:#fff}
+.ov [data-fen=reglages] .titre-groupe{cursor:default;color:rgb(var(--encre))}
 .ov [data-fen=reglages] .filtre .chevron{width:12px;height:12px}
 .ov [data-fen=reglages] .menu-etat{left:0;right:auto}
 .ov [data-fen=reglages] .menu-etat .compteur{margin-left:auto;padding-left:16px}
-.ov [data-fen=reglages] .corps-groupes{flex:1;min-height:0;display:flex;border-top:1px solid rgb(255 255 255 / .08)}
+.ov [data-fen=reglages] .corps-groupes{flex:1;min-height:0;display:flex;border-top:1px solid rgb(var(--encre) / .08)}
 /* Colonne des groupes : du texte seul, le groupe choisi allumé en blanc. */
-.ov [data-fen=reglages] .groupes{flex:none;display:flex;flex-direction:column;padding:10px 28px 10px 20px;border-right:1px solid rgb(255 255 255 / .08);overflow-y:auto;scrollbar-width:none}
-.ov [data-fen=reglages] .rubrique{display:flex;align-items:center;height:32px;font-size:13px;color:rgb(255 255 255 / .62);white-space:nowrap;text-align:left;transition:color .2s}
-.ov [data-fen=reglages] .rubrique:hover{color:#fff}
-.ov [data-fen=reglages] .rubrique.actif{color:#fff;font-weight:600;text-shadow:0 0 8px rgb(255 255 255 / .5)}
-.ov [data-fen=reglages] .rubrique.allume{color:#fff;text-shadow:0 0 6px rgb(255 255 255 / .5)}
+.ov [data-fen=reglages] .groupes{flex:none;display:flex;flex-direction:column;padding:10px 28px 10px 20px;border-right:1px solid rgb(var(--encre) / .08);overflow-y:auto;scrollbar-width:none}
+.ov [data-fen=reglages] .rubrique{display:flex;align-items:center;height:32px;font-size:var(--t-corps,13px);color:rgb(var(--encre) / .62);white-space:nowrap;text-align:left;transition:color .2s}
+.ov [data-fen=reglages] .rubrique:hover{color:rgb(var(--encre))}
+.ov [data-fen=reglages] .rubrique.actif{color:rgb(var(--encre));font-weight:600;text-shadow:0 0 8px rgb(var(--encre) / .5)}
+.ov [data-fen=reglages] .rubrique.allume{color:rgb(var(--encre));text-shadow:0 0 6px rgb(var(--encre) / .5)}
 .ov [data-fen=reglages] .groupe-contenu{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
 .ov [data-fen=reglages] .groupe-contenu>.defile{flex:1;min-height:0;overflow:auto}
-.ov [data-fen=reglages] .aide-groupe{padding:12px 20px 0 24px;font-size:11.5px;line-height:1.45;color:rgb(255 255 255 / .55)}
+.ov [data-fen=reglages] .aide-groupe{padding:12px 20px 0 24px;font-size:var(--t-petit,11.5px);line-height:1.45;color:rgb(var(--encre) / .55)}
 /* Pied du groupe : l'état des changements à gauche, Enregistrer à droite. */
-.ov [data-fen=reglages] .pied-groupe{flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;height:48px;padding:0 14px 0 20px;border-top:1px solid rgb(255 255 255 / .08);font-size:12px;color:rgb(255 255 255 / .6)}
+.ov [data-fen=reglages] .pied-groupe{flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;height:48px;padding:0 14px 0 20px;border-top:1px solid rgb(var(--encre) / .08);font-size:var(--t-corps,12px);color:rgb(var(--encre) / .6)}
 .ov [data-fen=reglages] .etat-changes{min-width:0;line-height:1.3;overflow-wrap:anywhere}
 @media (max-height:780px){.ov [data-fen=reglages] .rubrique{height:29px}.ov [data-fen=reglages] .pied-groupe{height:44px}}
 /* Fenêtre resserrée : la colonne des groupes se serre. */
@@ -26,23 +26,23 @@
 .ov [data-fen=reglages] .colonne-f{min-width:0}
 .ov [data-fen=reglages] .section-f h3 .marque-admin{vertical-align:1px}
 .ov [data-fen=reglages] .champ>label .marque-admin,.ov [data-fen=reglages] :is(.inter,.reglage-n)>span .marque-admin{margin-left:8px}
-.ov [data-fen=reglages] .reglage-n{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:34px;font-size:12.5px;color:rgb(255 255 255 / .88)}
+.ov [data-fen=reglages] .reglage-n{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:34px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .88)}
 .ov [data-fen=reglages] .reglage-n .saisie{flex:none;width:64px;height:28px;padding:0 8px;text-align:right}
 .ov [data-fen=reglages] .secret{display:flex;align-items:center;gap:8px}
 .ov [data-fen=reglages] .secret .saisie{flex:1;min-width:0}
-.ov [data-fen=reglages] .effacer{flex:none;font-size:11.5px;font-weight:600;color:rgb(255 255 255 / .68);text-decoration:underline;text-decoration-color:rgb(255 255 255 / .25);text-underline-offset:3px;transition:color .2s}
-.ov [data-fen=reglages] .effacer:hover{color:#fff}
+.ov [data-fen=reglages] .effacer{flex:none;font-size:var(--t-petit,11.5px);font-weight:600;color:rgb(var(--encre) / .68);text-decoration:underline;text-decoration-color:rgb(var(--encre) / .25);text-underline-offset:3px;transition:color .2s}
+.ov [data-fen=reglages] .effacer:hover{color:rgb(var(--encre))}
 .ov [data-fen=reglages] .couleurs{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .ov [data-fen=reglages] .couleur{display:inline-flex;align-items:center;gap:2px}
-.ov [data-fen=reglages] .couleur input{width:30px;height:22px;padding:0;border:1px solid rgb(255 255 255 / .3);background:none;cursor:pointer}
-.ov [data-fen=reglages] .couleur button{width:18px;font-size:13px;font-weight:700;color:rgb(255 255 255 / .7)}
-.ov [data-fen=reglages] .couleur button:hover{color:#fff}
+.ov [data-fen=reglages] .couleur input{width:30px;height:22px;padding:0;border:1px solid rgb(var(--encre) / .3);background:none;cursor:pointer}
+.ov [data-fen=reglages] .couleur button{width:18px;font-size:var(--t-corps,13px);font-weight:700;color:rgb(var(--encre) / .7)}
+.ov [data-fen=reglages] .couleur button:hover{color:rgb(var(--encre))}
 .ov [data-fen=reglages] .fichiers{margin-bottom:4px}
 .ov [data-fen=reglages] .fichiers>li{gap:10px}
 .ov [data-fen=reglages] .fichiers .mono{min-width:0;overflow-wrap:anywhere}
 .ov [data-fen=reglages] .fichiers .saisie{flex:1;min-width:0;height:26px}
-.ov [data-fen=reglages] .fichiers .mini{flex:none;width:20px;height:22px;font-size:13px;color:rgb(255 255 255 / .7)}
-.ov [data-fen=reglages] .fichiers .mini:hover{color:#fff}
+.ov [data-fen=reglages] .fichiers .mini{flex:none;width:20px;height:22px;font-size:var(--t-corps,13px);color:rgb(var(--encre) / .7)}
+.ov [data-fen=reglages] .fichiers .mini:hover{color:rgb(var(--encre))}
 @media (max-height:780px){.ov [data-fen=reglages] .form-colonnes .champ{gap:4px;margin-bottom:8px}.ov [data-fen=reglages] .form-colonnes .saisie{height:28px}.ov [data-fen=reglages] .form-colonnes .inter,.ov [data-fen=reglages] .reglage-n{min-height:30px}.ov [data-fen=reglages] .form-colonnes textarea.saisie{min-height:58px}}
 
 /* Comptes des plateformes : le défileur sert de repère de largeur. */
@@ -56,16 +56,16 @@
 .ov [data-fen=reglages] .tab-comptes thead th:nth-child(7){width:calc(150px + (100cqw - 726px) / 3)}
 .ov [data-fen=reglages] .tab-comptes thead th:nth-child(8){width:60px}
 .ov [data-fen=reglages] .tab-comptes tbody tr{cursor:default}
-.ov [data-fen=reglages] .tab-comptes td .action{height:26px;font-size:12px}
-.ov [data-fen=reglages] .saisie.cel{width:calc(100% - 16px);max-width:360px;height:26px;padding:0 8px;background:rgb(0 0 0 / .18);border-color:rgb(255 255 255 / .1)}
-.ov [data-fen=reglages] .saisie.cel:hover{border-color:rgb(255 255 255 / .28)}
-.ov [data-fen=reglages] .saisie.cel:focus{border-color:#fff}
+.ov [data-fen=reglages] .tab-comptes td .action{height:26px;font-size:var(--t-corps,12px)}
+.ov [data-fen=reglages] .saisie.cel{width:calc(100% - 16px);max-width:360px;height:26px;padding:0 8px;background:rgb(var(--noir) / .18);border-color:rgb(var(--encre) / .1)}
+.ov [data-fen=reglages] .saisie.cel:hover{border-color:rgb(var(--encre) / .28)}
+.ov [data-fen=reglages] .saisie.cel:focus{border-color:rgb(var(--encre))}
 .ov [data-fen=reglages] .saisie.cel[readonly]{background:none;border-color:transparent;font-weight:600}
 .ov [data-fen=reglages] .tab-comptes .secret{width:calc(100% - 16px);max-width:360px;gap:6px}
 .ov [data-fen=reglages] .tab-comptes .secret .saisie.cel{width:auto}
-.ov [data-fen=reglages] .poignee{color:rgb(255 255 255 / .45);cursor:grab;user-select:none}
-.ov [data-fen=reglages] .poignee:hover{color:#fff}
-.ov [data-fen=reglages] .epingle{font-size:13px;color:#fff;text-shadow:0 0 8px rgb(255 255 255 / .5)}
+.ov [data-fen=reglages] .poignee{color:rgb(var(--encre) / .45);cursor:grab;user-select:none}
+.ov [data-fen=reglages] .poignee:hover{color:rgb(var(--encre))}
+.ov [data-fen=reglages] .epingle{font-size:var(--t-corps,13px);color:rgb(var(--encre));text-shadow:0 0 8px rgb(var(--encre) / .5)}
 .ov [data-fen=reglages] .inter.seul{display:inline-flex;min-height:0}
 .ov [data-fen=reglages] .sous-tab{max-width:460px;padding:12px 20px 14px}
 /* Onglet ouvert : Ordre, Actif, Identifiant et Mot de passe se retirent. */
@@ -73,38 +73,107 @@
 .ov [data-fen=reglages].resserre:not([data-l=l]) .tab-comptes thead th:nth-child(5),.ov [data-fen=reglages]:is([data-l=s],[data-l=xs]) .tab-comptes thead th:nth-child(5){width:auto}
 
 /* Voyant d'un compte : cyan ouverte, rouge refusée, gris jamais testé. */
-.ov :is([data-fen=reglages],.tester) .voyant{display:inline-block;flex:none;width:8px;height:8px;background:rgb(255 255 255 / .28);vertical-align:middle}
+.ov :is([data-fen=reglages],.tester) .voyant{display:inline-block;flex:none;width:8px;height:8px;background:rgb(var(--encre) / .28);vertical-align:middle}
 .ov :is([data-fen=reglages],.tester) .voyant.ok{background:var(--accent);box-shadow:0 0 6px var(--accent)}
 .ov :is([data-fen=reglages],.tester) .voyant.encours{background:var(--accent);animation:ov-pouls 1.2s infinite}
-.ov :is([data-fen=reglages],.tester) .voyant.ko{background:#ffb0b0;box-shadow:0 0 6px rgb(255 176 176 / .6)}
+.ov :is([data-fen=reglages],.tester) .voyant.ko{background:rgb(var(--rouge));box-shadow:0 0 6px rgb(var(--rouge) / .6)}
 
 /* Tester un site : verdict, faits du test, message de la brique. */
-.ov .tester .etat-test{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:14px;font-weight:600;color:rgb(255 255 255 / .75)}
-.ov .tester .etat-test:is(.ok,.encours){color:var(--accent);text-shadow:0 0 8px rgb(147 244 255 / .35)}
-.ov .tester .etat-test.ko{color:#ffb0b0}
+.ov .tester .etat-test{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:14px;font-weight:600;color:rgb(var(--encre) / .75)}
+.ov .tester .etat-test:is(.ok,.encours){color:var(--accent);text-shadow:0 0 8px rgb(var(--cyan) / .35)}
+.ov .tester .etat-test.ko{color:rgb(var(--rouge))}
 .ov .tester .etat-test .voyant{width:10px;height:10px}
 .ov .tester .liste-f .d{text-align:right;overflow-wrap:anywhere}
-.ov .tester .message-test{margin-top:12px !important;padding:10px 12px;border-left:2px solid var(--accent);background:rgb(147 244 255 / .06);font-size:12.5px;line-height:1.5;color:rgb(255 255 255 / .9);overflow-wrap:anywhere}
+.ov .tester .message-test{margin-top:12px !important;padding:10px 12px;border-left:2px solid var(--accent);background:rgb(var(--cyan) / .06);font-size:var(--t-corps,12.5px);line-height:1.5;color:rgb(var(--encre) / .9);overflow-wrap:anywhere}
 .ov .tester .aide-test{margin-top:10px !important}
 
 /* Apparence : les palettes d'Ovrane et la matière des fenêtres. */
 .ov .apparence .h3-val{display:flex;justify-content:space-between;align-items:baseline}
-.ov .apparence .h3-val .val{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:rgb(255 255 255 / .8)}
+.ov .apparence .h3-val .val{font-size:var(--t-corps,12px);font-weight:600;letter-spacing:0;text-transform:none;color:rgb(var(--encre) / .8)}
 .ov .apparence .palettes{display:grid;grid-template-columns:repeat(auto-fill,minmax(24px,1fr));gap:4px}
 .ov .apparence .palette{height:22px;cursor:pointer}
-.ov .apparence .palette:has(:focus-visible),.ov .apparence .matiere:has(:focus-visible){outline:1px solid #fff;outline-offset:2px}
+.ov .apparence .palette:has(:focus-visible),.ov .apparence .matiere:has(:focus-visible){outline:1px solid rgb(var(--encre));outline-offset:2px}
 .ov .apparence .matieres{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .ov .apparence .matiere{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer}
-.ov .apparence .matiere b{display:block;font-size:12.5px;font-weight:600}
-.ov .apparence .matiere small{display:block;font-size:11px;line-height:1.3;color:rgb(255 255 255 / .6)}
+.ov .apparence .matiere b{display:block;font-size:var(--t-corps,12.5px);font-weight:600}
+.ov .apparence .matiere small{display:block;font-size:var(--t-petit,11px);line-height:1.3;color:rgb(var(--encre) / .6)}
 .ov .apparence .apercu-mat{flex:none;width:30px;height:22px}
-.ov .apparence .apercu-mat.m-verre{background:linear-gradient(135deg,rgb(255 255 255 / .35),transparent 55%),linear-gradient(180deg,var(--haut),var(--bas));border:1px solid rgb(255 255 255 / .7)}
-.ov .apparence .apercu-mat.m-teinte{background:rgb(12 12 13 / .85);border:1px solid rgb(255 255 255 / .16)}
+.ov .apparence .apercu-mat.m-verre{background:linear-gradient(135deg,rgb(var(--encre) / .35),transparent 55%),linear-gradient(180deg,var(--haut),var(--bas));border:1px solid rgb(var(--encre) / .7)}
+.ov .apparence .apercu-mat.m-teinte{background:rgb(var(--sombre-12) / .85);border:1px solid rgb(var(--encre) / .16)}
 
 /* Fenêtre étroite : la confirmation passe sur deux lignes. */
 .ov [data-fen=reglages]:not([data-l=l]) .confirmer{flex-wrap:wrap;height:auto;min-height:36px;row-gap:4px;padding:6px 12px}
 .ov [data-fen=reglages]:not([data-l=l]) .confirmer p{flex:1 1 100%;white-space:normal}
 
 /* L'avis du dernier geste, posé au bas de la fenêtre ; un clic le ferme. */
-.ov [data-fen=reglages] .avis{position:absolute;left:14px;right:14px;bottom:56px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid #fff;background:rgb(14 14 18 / .92);font-size:12.5px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
-.ov [data-fen=reglages] .avis.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+.ov [data-fen=reglages] .avis{position:absolute;left:14px;right:14px;bottom:56px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-14) / .92);font-size:var(--t-corps,12.5px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
+.ov [data-fen=reglages] .avis.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
+
+/* Thèmes plats : colonne de groupes en choix pleins, verre intact. */
+.ov.th-plat [data-fen=reglages] .titre-groupe,.ov.th-plat [data-fen=reglages] .titre-groupe:hover{background:none;color:var(--texte)}
+.ov.th-plat [data-fen=reglages] .filtre .chevron{width:18px;height:18px}
+.ov.th-plat [data-fen=reglages] .menu-etat .menu-option{gap:16px}
+.ov.th-plat [data-fen=reglages] .menu-etat .compteur{padding:0 6px}
+.ov.th-plat [data-fen=reglages] .corps-groupes{border-top:1px solid var(--filet)}
+.ov.th-plat [data-fen=reglages] .groupes{gap:2px;padding:8px;border-right:1px solid var(--filet);scrollbar-width:thin}
+.ov.th-plat [data-fen=reglages]:is([data-l=s],[data-l=xs]) .groupes{padding:8px}
+.ov.th-plat [data-fen=reglages] .rubrique{flex:none;height:auto;min-height:44px;padding:0 12px;border-radius:8px;font-size:.875rem;color:var(--texte-2);transition:background-color .15s var(--courbe)}
+.ov.th-plat [data-fen=reglages] .rubrique:hover{background:var(--surface-moyenne);color:var(--texte)}
+.ov.th-plat [data-fen=reglages] .rubrique.actif{background:var(--selection);font-weight:500;color:var(--primaire)}
+.ov.th-plat [data-fen=reglages] .rubrique.allume{background:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.th-plat [data-fen=reglages] .aide-groupe{padding:12px 16px 0;font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.th-plat [data-fen=reglages] .pied-groupe{height:auto;min-height:60px;margin-top:auto;padding:8px 12px 8px 16px;border-top:1px solid var(--filet);font-size:.875rem;color:var(--texte-2)}
+/* Formulaires : champs de la charte, 44 px de cible même en 768 de haut. */
+.ov.th-plat [data-fen=reglages] .form-colonnes{gap:20px 28px;padding:16px}
+.ov.th-plat [data-fen=reglages] .form-colonnes .inter{min-height:48px}
+.ov.th-plat [data-fen=reglages] .form-colonnes textarea.saisie{min-height:96px}
+.ov.th-plat [data-fen=reglages] .reglage-n{min-height:52px;font-size:.875rem;color:var(--texte)}
+.ov.th-plat [data-fen=reglages] .reglage-n .saisie{width:88px;height:auto}
+.ov.th-plat [data-fen=reglages] .effacer{display:inline-flex;align-items:center;min-height:44px;font-size:.875rem;font-weight:500;color:var(--primaire);text-decoration-color:currentColor;text-underline-offset:2px}
+.ov.th-plat [data-fen=reglages] .effacer:hover{color:var(--primaire)}
+.ov.th-plat [data-fen=reglages] .couleur input{width:44px;height:32px;border:1px solid var(--contour);border-radius:8px}
+.ov.th-plat [data-fen=reglages] .couleur button{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;font-size:1rem;color:var(--texte-2)}
+.ov.th-plat [data-fen=reglages] .couleur button:hover{background:var(--surface-moyenne);color:var(--texte)}
+.ov.th-plat [data-fen=reglages] .fichiers .mono{font-family:inherit;font-size:.875rem}
+.ov.th-plat [data-fen=reglages] .fichiers .saisie{height:auto}
+.ov.th-plat [data-fen=reglages] .fichiers .mini{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;font-size:1rem;color:var(--texte-2)}
+.ov.th-plat [data-fen=reglages] .fichiers .mini:hover{background:var(--surface-moyenne);color:var(--texte)}
+.ov.th-plat [data-fen=reglages]>.prise+.outils~.confirmer{padding-left:52px}
+/* Comptes : colonnes reprises pour 14 px, saisies de 40 px sans coupure. */
+.ov.th-plat [data-fen=reglages] .tab-comptes thead th:nth-child(1){width:48px}
+.ov.th-plat [data-fen=reglages] .tab-comptes thead th:nth-child(2){width:36px}
+.ov.th-plat [data-fen=reglages] .tab-comptes thead th:nth-child(3){width:72px}
+.ov.th-plat [data-fen=reglages] .tab-comptes thead th:nth-child(4){width:28px}
+.ov.th-plat [data-fen=reglages] .tab-comptes thead th:nth-child(5){width:calc((100cqw - 268px) * .32)}
+.ov.th-plat [data-fen=reglages] .tab-comptes thead th:nth-child(6){width:calc((100cqw - 268px) * .34)}
+.ov.th-plat [data-fen=reglages] .tab-comptes thead th:nth-child(7){width:calc((100cqw - 268px) * .34)}
+.ov.th-plat [data-fen=reglages] .tab-comptes thead th:nth-child(8){width:84px}
+.ov.th-plat [data-fen=reglages] .tab-comptes :is(th,td):is(:nth-child(2),:nth-child(4)){padding:0 4px;text-overflow:clip}
+.ov.th-plat [data-fen=reglages] .tab-comptes td .action{height:auto;font-size:.875rem}
+.ov.th-plat [data-fen=reglages] .saisie.cel{width:100%;max-width:none;height:auto;min-height:40px;padding:0 8px;background:var(--surface);border-color:var(--filet)}
+.ov.th-plat [data-fen=reglages] .saisie.cel:hover{border-color:var(--contour)}
+.ov.th-plat [data-fen=reglages] .saisie.cel:focus{border-color:var(--primaire)}
+.ov.th-plat [data-fen=reglages] .saisie.cel[readonly]{background:none;border-color:transparent;font-weight:500}
+.ov.th-plat [data-fen=reglages] .tab-comptes .secret{width:100%;max-width:none}
+.ov.th-plat [data-fen=reglages] .tab-comptes .secret .saisie.cel{flex:1;width:auto;min-width:0}
+.ov.th-plat [data-fen=reglages] .poignee{color:var(--texte-2)}
+.ov.th-plat [data-fen=reglages] .poignee:hover{color:var(--texte)}
+.ov.th-plat [data-fen=reglages] .epingle{font-size:.875rem;color:var(--texte)}
+.ov.th-plat [data-fen=reglages] .sous-tab{padding:12px 16px 16px}
+/* Voyants ronds et sans lueur : vert ouvert, rouge refusé, gris sinon. */
+.ov.th-plat :is([data-fen=reglages],.tester) .voyant{width:10px;height:10px;border-radius:50%;background:var(--contour)}
+.ov.th-plat :is([data-fen=reglages],.tester) .voyant.ok{background:var(--ok);box-shadow:none}
+.ov.th-plat :is([data-fen=reglages],.tester) .voyant.encours{background:var(--primaire)}
+.ov.th-plat :is([data-fen=reglages],.tester) .voyant.ko{background:var(--erreur);box-shadow:none}
+.ov.th-plat .tester .etat-test{font-size:.875rem;font-weight:500;color:var(--texte-2)}
+.ov.th-plat .tester .etat-test.ok{color:var(--ok)}
+.ov.th-plat .tester .etat-test.encours{color:var(--primaire)}
+.ov.th-plat .tester .etat-test.ko{color:var(--erreur)}
+.ov.th-plat .tester .message-test{border-left:0;border-radius:8px;background:var(--surface-basse);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+/* Apparence : un thème par ligne, aperçus nets. */
+.ov.th-plat .apparence .themes{grid-template-columns:minmax(0,1fr)}
+.ov.th-plat .apparence .matiere{min-height:60px;padding:10px 12px}
+.ov.th-plat .apparence .matiere:has(:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.ov.th-plat .apparence .apercu-mat{width:44px;height:32px;border-radius:6px}
+.ov.th-plat [data-fen=reglages] .avis{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat [data-fen=reglages] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}

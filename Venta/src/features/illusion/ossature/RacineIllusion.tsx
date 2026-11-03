@@ -3,7 +3,7 @@
 import '../styles/illusion.css';
 import { use, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
-import { useApparence } from '../apparence';
+import { classesTheme, useApparence } from '../apparence';
 import type { Compte } from '../api';
 import { DUREES, ecrire, mouvementReduit } from '../partage/glyphes';
 import { PAGE_DEPART, chargerAdministration } from '../pages/liste';
@@ -22,6 +22,7 @@ type ProprietesRacine = {
 // Racine des écrans d'Illusion sous l'en-tête du site : fond, matière, dock
 export function RacineIllusion({ compte, page, palette, children }: ProprietesRacine) {
   const matiere = useApparence((s) => s.matiere);
+  const theme = useApparence((s) => s.theme);
   // Au rendu, avant les pages : leurs brouillons se lisent sous ce compte
   poserCompte(compte.email);
 
@@ -51,7 +52,7 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
   }, [ouvre]);
 
   return (
-    <div ref={racine} className={`ov mat-${matiere}${compte.admin ? ' admin' : ''}${page === 'accueil' ? ' vue-accueil' : ''}${ouvre ? ' ouverture' : ''}`}>
+    <div ref={racine} className={`ov mat-${matiere} ${classesTheme(theme)}${compte.admin ? ' admin' : ''}${page === 'accueil' ? ' vue-accueil' : ''}${ouvre ? ' ouverture' : ''}`}>
       <div className="fond" />
       <div className="place-entete" aria-hidden="true" />
       <div key={page} className="scene">

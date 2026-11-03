@@ -64,10 +64,13 @@ function textesDe(el: Element): Text[] {
 function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, texte = false }: Options): Controle {
   if (mouvementReduit() || typeof (cible as HTMLElement).animate !== 'function') return RIEN;
   const ecrit = sens === 'ecrire';
+  // Thèmes pleins : mêmes morceaux, moments et durées, sans glyphes
+  const plat = !!document.querySelector('.ov.th-plat');
   const r = cible.getBoundingClientRect();
   const anims: Animation[] = [];
   const textes: Texte[] = [];
-  if (texte) {
+  if (texte && plat) anims.push(cible.animate([{ opacity: ecrit ? 0 : 1 }, { opacity: ecrit ? 1 : 0 }], { duration: duree, delay: delai, easing: 'ease-out', fill: 'backwards' }));
+  else if (texte) {
     anims.push(cible.animate([{ filter: 'drop-shadow(0 0 3px rgb(255 255 255 / .125))' }, { filter: 'none' }], { duration: duree * 2, delay: delai, easing: 'ease-out' }));
     for (const n of textesDe(cible)) textes.push({ n, v0: n.nodeValue ?? '', dernier: n.nodeValue ?? '', debut: delai, fin: delai + duree, fait: false });
   }
@@ -80,13 +83,15 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
     anims.push(
       el.animate(
         ecrit
-          ? [{ opacity: 0, clipPath: 'inset(0 50% 0 50%)' }, { opacity: 1, offset: 0.02 }, { clipPath: 'inset(0 0% 0 0%)' }]
+          ? plat
+            ? [{ opacity: 0, clipPath: 'inset(0 50% 0 50%)' }, { clipPath: 'inset(0 0% 0 0%)', offset: 0.4 }, { opacity: 1, clipPath: 'inset(0 0% 0 0%)' }]
+            : [{ opacity: 0, clipPath: 'inset(0 50% 0 50%)' }, { opacity: 1, offset: 0.02 }, { clipPath: 'inset(0 0% 0 0%)' }]
           : [{ opacity: 1, clipPath: 'inset(0 0% 0 0%)' }, { opacity: 0, clipPath: 'inset(0 50% 0 50%)' }],
         { duration: longueur, delay: depart, easing: ecrit ? 'cubic-bezier(.2,.7,.3,1)' : 'cubic-bezier(.5,0,.75,0)', fill: ecrit ? 'both' : 'forwards' },
       ),
     );
     const debut = depart + (ecrit ? 0.05 * duree : 0);
-    for (const n of textesDe(el)) {
+    for (const n of plat ? [] : textesDe(el)) {
       const v0 = n.nodeValue ?? '';
       textes.push({ n, v0, dernier: v0, debut, fin: debut + longueur, fait: false });
     }

@@ -11,20 +11,22 @@
   .ov svg { display: inline; vertical-align: baseline }
 }
 
+/* Couleurs du verre, en canaux : les thèmes pleins les redéfinissent. */
+.ov{--encre:255 255 255;--noir:0 0 0;--lueur:1;--rouge:255 176 176;--rouge-2:255 208 208;--rouge-3:255 138 138;--vert:147 255 179;--jaune:255 245 141;--orange:255 192 138;--violet:185 168 255;--cyan:147 244 255;--bleu:143 180 255;--rose:255 158 219;--sombre-10:10 10 14;--sombre-14:14 14 18;--sombre-8:8 8 12;--sombre-12:12 12 13}
 /* Les fonds viennent de la palette d'Ovrane, posés au-dessus de .ov. */
-.ov{--accent:#93F4FF;--boite:rgb(10 10 14 / .55);--ligne:36px;--panneau:440px;position:relative;height:100vh;min-height:620px;display:flex;flex-direction:column;overflow:hidden;color:#fff;color-scheme:dark;font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.ov{--accent:rgb(var(--cyan));--boite:rgb(var(--sombre-10) / .55);--ligne:36px;--panneau:440px;position:relative;height:100vh;min-height:620px;display:flex;flex-direction:column;overflow:hidden;color:rgb(var(--encre));color-scheme:dark;font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:var(--t-corps,13px);line-height:1.45;-webkit-font-smoothing:antialiased}
 .ov *{box-sizing:border-box}
-.ov a{color:#fff}
-.ov a:hover{color:#fff}
+.ov a{color:rgb(var(--encre))}
+.ov a:hover{color:rgb(var(--encre))}
 @media (max-width:1366px){.ov{--panneau:400px}}
 @media (min-width:1700px){.ov{--panneau:500px}}
 .ov .fond{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--fond-haut),var(--fond-bas))}
 .ov .cache{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.ov .etiquette{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:rgba(255,255,255,.72)}
+.ov .etiquette{font-size:var(--t-petit,10px);font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:rgb(var(--encre) / .72)}
 .ov .coquille{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:row;gap:16px;padding:18px 24px 20px}
 .ov .espace{flex:1}
 .ov .icone{flex:none;width:18px;height:18px}
-.ov .mono{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11.5px}
+.ov .mono{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11.5px)}
 
 /* Verre d'Ovrane : fond recopié sous un voile, halos de deux coins, liseré. */
 .ov .verre{position:relative;isolation:isolate;border-radius:var(--verre-rayon,25px);clip-path:inset(0 round var(--verre-rayon,25px));--halo:rgb(217 217 217 / .5),rgb(204 204 204 / .4375) 5.73%,rgb(192 192 192 / .375) 11.45%,rgb(179 179 179 / .3125) 17.18%,rgb(166 166 166 / .25) 22.9%,rgb(153 153 153 / .1875) 28.63%,rgb(140 140 140 / .125) 34.35%,rgb(128 128 128 / .0625) 40.08%,rgb(115 115 115 / 0) 45.8%}
@@ -39,25 +41,27 @@
 /* Matière « teinte » : le même verre, sans les halos des coins. */
 .ov.mat-teinte .verre>.verre-halos{display:none}
 
-.ov .compteur{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.65)}
-.ov .badge{border-radius:999px;background:rgba(147,244,255,.16);color:var(--accent);padding:0 7px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;font-weight:500;line-height:18px}
+.ov .compteur{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,10.5px);color:rgb(var(--encre) / .65)}
+.ov .badge{border-radius:999px;background:rgb(var(--cyan) / .16);color:var(--accent);padding:0 7px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11px);font-weight:500;line-height:18px}
 .ov:not(.admin) .admin-seul{display:none}
-.ov .marque-admin{margin-left:8px;padding:1px 5px;border:1px solid rgb(255 255 255 / .3);font-size:8.5px;font-weight:700;letter-spacing:.16em;color:rgb(255 255 255 / .75)}
+.ov .marque-admin{margin-left:8px;padding:1px 5px;border:1px solid rgb(var(--encre) / .3);font-size:var(--t-petit,8.5px);font-weight:700;letter-spacing:.16em;color:rgb(var(--encre) / .75)}
 
 /* Place de l'en-tête du site, puis scène de la page qui entre comme une vue. */
 .ov .place-entete{flex:none;height:60px}
 .ov .scene{flex:1;min-height:0;display:flex;flex-direction:column}
 
 /* En-tête côté Illusion : ses canaux sur ceux d'Ovrane, fondu en 0,2 s. */
-.ov.ov-barre{grid-area:1/1;justify-self:center;height:auto;min-height:0;display:block;overflow:visible;opacity:0;pointer-events:none;transition:opacity .2s}
+.ov.ov-barre{position:static;grid-area:1/1;justify-self:center;height:auto;min-height:0;display:block;overflow:visible;opacity:0;pointer-events:none;transition:opacity .2s}
 .ov.ov-barre.visible{opacity:1;pointer-events:auto}
 /* Canaux d'Illusion de part et d'autre du logo, qui garde le centre exact. */
 .ov .barre-canaux{display:inline-grid;grid-template-columns:1fr 64px 1fr;align-items:center;height:44px}
 .ov .barre-canaux .cote{display:flex;align-items:center;gap:28px}
 .ov .barre-canaux .gauche{justify-content:flex-end}
-.ov .onglet{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;white-space:nowrap;color:rgb(255 255 255 / .6);transition:color .5s,filter .5s}
-.ov .onglet:hover{color:#fff}
-.ov .onglet.actif{color:#fff;filter:drop-shadow(0 0 3px rgb(255 255 255 / .5))}
+/* Réglages et Profil au coin droit de la barre, hors des canaux. */
+.ov .coin{position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:16px;height:44px}
+.ov .onglet{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:var(--t-petit,10px);font-weight:700;letter-spacing:.25em;text-transform:uppercase;white-space:nowrap;color:rgb(var(--encre) / .6);transition:color .5s,filter .5s}
+.ov .onglet:hover{color:rgb(var(--encre))}
+.ov .onglet.actif{color:rgb(var(--encre));filter:drop-shadow(0 0 3px rgb(var(--encre) / .5))}
 .ov .onglet .icone{width:16px;height:16px}
 .ov .onglet .chevron{width:11px;height:11px;transition:transform .2s}
 .ov .onglet[aria-expanded=true] .chevron{transform:rotate(180deg)}
@@ -72,107 +76,107 @@
 /* Menus : colonne de choix dans la matière des fenêtres, courant allumé. */
 .ov .menu-hote{position:relative;display:inline-flex}
 .ov .menu{position:absolute;top:calc(100% + 6px);right:0;z-index:40;display:flex;flex-direction:column;min-width:210px;padding:6px 0}
-.ov .menu-option{display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:12.5px;white-space:nowrap;color:rgb(255 255 255 / .75);transition:color .2s,background .2s}
-.ov .menu-option:hover,.ov .menu-option:focus-visible{background:rgb(255 255 255 / .05);color:#fff}
-.ov .menu-option.actif{color:#fff;text-shadow:0 0 8px rgb(255 255 255 / .35)}
+.ov .menu-option{display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:var(--t-corps,12.5px);white-space:nowrap;color:rgb(var(--encre) / .75);transition:color .2s,background .2s}
+.ov .menu-option:hover,.ov .menu-option:focus-visible{background:rgb(var(--encre) / .05);color:rgb(var(--encre))}
+.ov .menu-option.actif{color:rgb(var(--encre));text-shadow:0 0 8px rgb(var(--encre) / .35)}
 .ov .menu-option .icone{width:16px;height:16px}
 
 /* Actions d'une fenêtre : l'action pleine garde son carré blanc après. */
 .ov .actions{display:flex;align-items:center;gap:22px}
-.ov .action{display:inline-flex;align-items:center;gap:8px;height:28px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.88);white-space:nowrap;transition:color .2s}
-.ov .action:hover{color:#fff}
+.ov .action{display:inline-flex;align-items:center;gap:8px;height:28px;font-size:var(--t-corps,12.5px);font-weight:600;color:rgb(var(--encre) / .88);white-space:nowrap;transition:color .2s}
+.ov .action:hover{color:rgb(var(--encre))}
 .ov .action .ico{display:grid;place-items:center;width:20px;height:20px}
 .ov .action .ico svg{width:13px;height:13px}
-.ov .action.plein .ico{background:#fff;color:#0a0a0e;transition:box-shadow .2s}
+.ov .action.plein .ico{background:rgb(var(--encre));color:rgb(var(--sombre-10));transition:box-shadow .2s}
 .ov .action.plein .ico svg{width:11px;height:11px}
-.ov .action.plein:hover .ico{box-shadow:0 0 10px rgb(255 255 255 / .45)}
-.ov .action.rouge{color:#ffb0b0}
-.ov .action.rouge:hover{color:#ffd0d0}
-.ov .action.rouge-plein{color:#ffb0b0;font-weight:700}
+.ov .action.plein:hover .ico{box-shadow:0 0 10px rgb(var(--encre) / calc(.45 * var(--lueur)))}
+.ov .action.rouge{color:rgb(var(--rouge))}
+.ov .action.rouge:hover{color:rgb(var(--rouge-2))}
+.ov .action.rouge-plein{color:rgb(var(--rouge));font-weight:700}
 .ov .action .marque-admin{margin-left:0}
 .ov .action:disabled{opacity:.45;cursor:default}
 /* Le bouton qui a ouvert le panneau reste allumé tant que son onglet l'est. */
-.ov .action.allume{color:#fff;text-shadow:0 0 6px rgb(255 255 255 / .5)}
+.ov .action.allume{color:rgb(var(--encre));text-shadow:0 0 6px rgb(var(--encre) / .5)}
 .ov label.action{cursor:pointer}
 /* Supprimer n'apparaît qu'avec des lignes cochées. */
 .ov .tableau:not(:has(tbody .case:checked)) .action.rouge{display:none}
 
 /* Rangée d'outils d'une fenêtre : filtres à gauche, actions à droite. */
 .ov .outils{flex:none;display:flex;align-items:center;gap:8px;height:36px;margin:8px 0 4px;padding:0 14px}
-.ov .filtre{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0;font-size:12.5px;color:rgba(255,255,255,.85);white-space:nowrap;transition:color .2s}
+.ov .filtre{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .85);white-space:nowrap;transition:color .2s}
 .ov .filtre+.filtre{margin-left:20px}
-.ov .filtre:hover,.ov .filtre.actif{color:#fff}
-.ov .filtre.actif{text-shadow:0 0 8px rgb(255 255 255 / .5)}
-.ov .filtre .lib{margin-right:8px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.7)}
-.ov .filtre.actif .lib{color:#fff}
-@media (max-width:1366px){.ov .outils{gap:6px}.ov .filtre{font-size:12px}}
+.ov .filtre:hover,.ov .filtre.actif{color:rgb(var(--encre))}
+.ov .filtre.actif{text-shadow:0 0 8px rgb(var(--encre) / .5)}
+.ov .filtre .lib{margin-right:8px;font-size:var(--t-petit,9.5px);font-weight:700;text-transform:uppercase;letter-spacing:.2em;color:rgb(var(--encre) / .7)}
+.ov .filtre.actif .lib{color:rgb(var(--encre))}
+@media (max-width:1366px){.ov .outils{gap:6px}.ov .filtre{font-size:var(--t-corps,12px)}}
 /* Fenêtre resserrée : actions réduites à l'icône, filtres sans libellé. */
 .ov [data-fen]:is([data-l=m],[data-l=s],[data-l=xs]) .outils .action:not(.plein) .txt,.ov [data-fen][data-l=xs] .outils .action.plein .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ov [data-fen]:is([data-l=m],[data-l=s],[data-l=xs]) .outils .actions{gap:16px}
 .ov [data-fen]:is([data-l=s],[data-l=xs]) .outils .filtre .lib{display:none}
 
 /* La confirmation prend la place de la rangée d'outils, à la même hauteur. */
-.ov .confirmer{display:flex;flex:none;align-items:center;gap:20px;height:36px;margin:8px 14px 4px;padding:0 12px;white-space:nowrap;border-left:2px solid #ff8a8a;background:rgb(255 138 138 / .08);font-size:12.5px;color:rgba(255,255,255,.88)}
+.ov .confirmer{display:flex;flex:none;align-items:center;gap:20px;height:36px;margin:8px 14px 4px;padding:0 12px;white-space:nowrap;border-left:2px solid rgb(var(--rouge-3));background:rgb(var(--rouge-3) / .08);font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .88)}
 .ov .confirmer p{flex:1;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis}
-.ov .confirmer b{color:#fff}
+.ov .confirmer b{color:rgb(var(--encre))}
 .ov .outils:has(~ .confirmer){display:none}
 
 /* Tableau : le défileur sert de repère de largeur aux colonnes (cqw). */
 .ov .tableau{flex:1;min-height:0;display:flex;flex-direction:column;padding:2px 0 0}
 .ov .defile{flex:1;min-height:0;overflow:auto;container-type:inline-size}
-.ov table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px}
-.ov th{height:34px;padding:0;text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:rgba(255,255,255,.72);white-space:nowrap}
-.ov td{height:var(--ligne);padding:0;border-top:1px solid rgba(255,255,255,.08);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:var(--t-corps,12.5px)}
+.ov th{height:34px;padding:0;text-align:left;font-size:var(--t-petit,9.5px);font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:rgb(var(--encre) / .72);white-space:nowrap}
+.ov td{height:var(--ligne);padding:0;border-top:1px solid rgb(var(--encre) / .08);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ov th:first-child,.ov td:first-child{padding-left:20px;padding-right:0}
 .ov th:last-child,.ov td:last-child{padding-right:12px}
 .ov td a.ent{font-weight:600}
 .ov tbody tr{cursor:pointer}
-.ov tbody tr:hover td{background:rgba(255,255,255,.04)}
-.ov .d{color:rgba(255,255,255,.75)}
-.ov .chrono{margin-left:6px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.6)}
-.ov td.chrono{margin-left:0;color:rgba(255,255,255,.62)}
-.ov td.chrono.vide{color:rgba(255,255,255,.28)}
-.ov .auto{margin-left:5px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.ov tbody tr:hover td{background:rgb(var(--encre) / .04)}
+.ov .d{color:rgb(var(--encre) / .75)}
+.ov .chrono{margin-left:6px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11px);color:rgb(var(--encre) / .6)}
+.ov td.chrono{margin-left:0;color:rgb(var(--encre) / .62)}
+.ov td.chrono.vide{color:rgb(var(--encre) / .28)}
+.ov .auto{margin-left:5px;font-size:var(--t-petit,9px);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgb(var(--encre) / .5)}
 /* Ligne cochée : voile clair à plat ; ligne ouverte : voile et trait blancs. */
-.ov tr.coche td{background:rgb(255 255 255 / .07);color:#fff}
-.ov tr.coche .d{color:rgba(255,255,255,.92)}
-.ov tr.ouverte td{background:rgb(255 255 255 / .1);color:#fff}
-.ov tr.ouverte td:first-child{box-shadow:inset 2px 0 0 #fff}
+.ov tr.coche td{background:rgb(var(--encre) / .07);color:rgb(var(--encre))}
+.ov tr.coche .d{color:rgb(var(--encre) / .92)}
+.ov tr.ouverte td{background:rgb(var(--encre) / .1);color:rgb(var(--encre))}
+.ov tr.ouverte td:first-child{box-shadow:inset 2px 0 0 rgb(var(--encre))}
 .ov .dock .defile{scrollbar-width:none}
 .ov .dock .defile::-webkit-scrollbar{display:none}
 @media (max-height:780px){.ov th{height:30px}.ov{--ligne:30px}}
 
 /* Pagination sans cadres : page courante allumée, « … » pour saisir la page. */
-.ov .pagination{flex:none;height:44px;display:flex;align-items:center;gap:14px;border-top:1px solid rgba(255,255,255,.08);padding:0 14px;font-size:12.5px;color:rgba(255,255,255,.75)}
-.ov .pagination select{height:28px;border:0;background:none;padding:0 2px;font-size:12.5px;color:rgba(255,255,255,.6);cursor:pointer}
+.ov .pagination{flex:none;height:44px;display:flex;align-items:center;gap:14px;border-top:1px solid rgb(var(--encre) / .08);padding:0 14px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .75)}
+.ov .pagination select{height:28px;border:0;background:none;padding:0 2px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .6);cursor:pointer}
 .ov .pages{display:flex;align-items:center;gap:4px}
-.ov .pl{min-width:24px;height:28px;font-size:12.5px;color:rgba(255,255,255,.6);transition:color .2s}
-.ov .pl:hover{color:#fff}
-.ov .pl.actif{color:#fff;font-weight:600;text-shadow:0 0 8px rgb(255 255 255 / .5)}
+.ov .pl{min-width:24px;height:28px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .6);transition:color .2s}
+.ov .pl:hover{color:rgb(var(--encre))}
+.ov .pl.actif{color:rgb(var(--encre));font-weight:600;text-shadow:0 0 8px rgb(var(--encre) / .5)}
 .ov .pl:disabled{opacity:.35;cursor:default}
-.ov .aller{width:3.4em;height:22px;margin:0 6px;border:0;background:none;padding:0;font:inherit;text-align:center;color:#fff}
-.ov .aller::placeholder{color:rgba(255,255,255,.7)}
-.ov .aller:hover::placeholder{color:#fff}
+.ov .aller{width:3.4em;height:22px;margin:0 6px;border:0;background:none;padding:0;font:inherit;text-align:center;color:rgb(var(--encre))}
+.ov .aller::placeholder{color:rgb(var(--encre) / .7)}
+.ov .aller:hover::placeholder{color:rgb(var(--encre))}
 .ov .aller:focus{outline:none}
 .ov .aller:focus::placeholder{color:transparent}
 
 /* Case de sélection : l'hexagone d'Ovrane, vide puis plein et lumineux. */
 .ov .case{appearance:none;display:block;width:11px;height:16px;margin:0;cursor:pointer;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-46 -68 92 136'%3E%3Cpolygon points='0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6' fill='none' stroke='white' stroke-opacity='.5' stroke-width='10' stroke-linejoin='round'/%3E%3C/svg%3E")}
 .ov .case:hover{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-46 -68 92 136'%3E%3Cpolygon points='0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6' fill='none' stroke='white' stroke-opacity='1' stroke-width='10' stroke-linejoin='round'/%3E%3C/svg%3E")}
-.ov .case:checked{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-46 -68 92 136'%3E%3Cpolygon points='0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6' fill='white' stroke='white' stroke-opacity='1' stroke-width='10' stroke-linejoin='round'/%3E%3C/svg%3E");filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 7px rgb(255 255 255 / .6))}
-.ov .case:focus-visible{outline:1px solid #fff;outline-offset:3px}
+.ov .case:checked{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-46 -68 92 136'%3E%3Cpolygon points='0,-60.3 37.8,-31.6 37.8,31.6 0,60.3 -37.8,31.6 -37.8,-31.6' fill='white' stroke='white' stroke-opacity='1' stroke-width='10' stroke-linejoin='round'/%3E%3C/svg%3E");filter:drop-shadow(0 0 3px rgb(var(--encre))) drop-shadow(0 0 7px rgb(var(--encre) / .6))}
+.ov .case:focus-visible{outline:1px solid rgb(var(--encre));outline-offset:3px}
 
 /* Étape : un trait de sa couleur puis son nom. */
-.ov .eo{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:500;color:rgba(255,255,255,.82)}
+.ov .eo{display:inline-flex;align-items:center;gap:7px;font-size:var(--t-corps,12px);font-weight:500;color:rgb(var(--encre) / .82)}
 .ov .eo::before{content:"";flex:none;width:3px;height:13px;background:currentColor;opacity:.75}
 .ov .eo:is(.env,.main,.inad,.ech)::before{opacity:1;box-shadow:0 0 6px currentColor}
-.ov .eo.env{color:#93FFB3}.ov .eo.main{color:#FFF58D}.ov .eo.inad{color:#93F4FF}.ov .eo.ech{color:#ffb0b0}
-.ov .eo.eca{color:rgba(255,255,255,.5)}
+.ov .eo.env{color:rgb(var(--vert))}.ov .eo.main{color:rgb(var(--jaune))}.ov .eo.inad{color:rgb(var(--cyan))}.ov .eo.ech{color:rgb(var(--rouge))}
+.ov .eo.eca{color:rgb(var(--encre) / .5)}
 .ov .eo.eca::before{background:repeating-linear-gradient(currentColor 0 2px,transparent 2px 4px)}
-.ov .t-envoi{color:#93FFB3}.ov .t-rep{color:var(--accent)}.ov .t-faire{color:#FFF58D}
+.ov .t-envoi{color:rgb(var(--vert))}.ov .t-rep{color:var(--accent)}.ov .t-faire{color:rgb(var(--jaune))}
 
 /* Signal d'écoute : quatre barres, vivantes quand ça tourne. */
-.ov .onde{display:inline-block;font-size:10.5px;color:rgba(255,255,255,.65);white-space:nowrap}
+.ov .onde{display:inline-block;font-size:var(--t-petit,10.5px);color:rgb(var(--encre) / .65);white-space:nowrap}
 .ov .onde.on{color:var(--accent)}
 .ov .onde>.barres{margin-right:5px;vertical-align:1px}
 .ov .barres{display:inline-flex;align-items:flex-end;gap:1.5px;height:10px}
@@ -183,33 +187,33 @@
 @keyframes ov-pouls{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* Zones de sélection : boutons pleins sans verre, le choisi en blanc. */
-.ov .choix{background:var(--boite);border:1px solid rgba(255,255,255,.12);transition:border-color .2s,background .2s}
-.ov .choix:hover{border-color:rgba(255,255,255,.32)}
-.ov .choix:is(.actif,:has(:checked)){background:rgb(255 255 255 / .1);border-color:rgba(255,255,255,.85);color:#fff;text-shadow:0 0 8px rgb(255 255 255 / .5);box-shadow:inset 0 0 14px rgb(255 255 255 / .16)}
+.ov .choix{background:var(--boite);border:1px solid rgb(var(--encre) / .12);transition:border-color .2s,background .2s}
+.ov .choix:hover{border-color:rgb(var(--encre) / .32)}
+.ov .choix:is(.actif,:has(:checked)){background:rgb(var(--encre) / .1);border-color:rgb(var(--encre) / .85);color:rgb(var(--encre));text-shadow:0 0 8px rgb(var(--encre) / .5);box-shadow:inset 0 0 14px rgb(var(--encre) / calc(.16 * var(--lueur)))}
 
 /* Activité : le bilan du jour filtre le fil ; le plus récent en bas. */
-.ov{--c-envoi:#93FFB3;--c-reponse:#93F4FF;--c-entretien:#FF9EDB;--c-relance:#FFC08A;--c-offres:#B9A8FF;--c-afaire:#FFF58D}
+.ov{--c-envoi:rgb(var(--vert));--c-reponse:rgb(var(--cyan));--c-entretien:rgb(var(--rose));--c-relance:rgb(var(--orange));--c-offres:rgb(var(--violet));--c-afaire:rgb(var(--jaune))}
 .ov .echos{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 10px 10px}
 .ov .echos-tete{flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 4px 8px}
-.ov .echos-tete :is(a,button){font-size:11.5px;color:rgba(255,255,255,.65);text-decoration:underline;text-decoration-color:rgba(255,255,255,.25);text-underline-offset:3px}
+.ov .echos-tete :is(a,button){font-size:var(--t-petit,11.5px);color:rgb(var(--encre) / .65);text-decoration:underline;text-decoration-color:rgb(var(--encre) / .25);text-underline-offset:3px}
 .ov .liens-tete{display:flex;gap:12px;white-space:nowrap}
 .ov .tuiles-sortes{flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:0 4px 6px}
-.ov .tuile-sorte{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;color:#fff;cursor:pointer}
+.ov .tuile-sorte{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;color:rgb(var(--encre));cursor:pointer}
 .ov .tuile-sorte .chiffre{display:flex;align-items:center;gap:5px}
 .ov .tuile-sorte svg{width:12px;height:12px}
 .ov .tuile-sorte b{font-size:15px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}
-.ov .tuile-sorte small{font-size:9.5px;color:#fff;white-space:nowrap}
+.ov .tuile-sorte small{font-size:var(--t-petit,9.5px);color:rgb(var(--encre));white-space:nowrap}
 .ov .tuile-sorte input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
-.ov .tuile-sorte:has(input:focus-visible){outline:1px solid #fff;outline-offset:2px}
+.ov .tuile-sorte:has(input:focus-visible){outline:1px solid rgb(var(--encre));outline-offset:2px}
 .ov .fil-actions{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column-reverse;gap:8px;padding:10px 6px 2px 8px;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 36px);mask-image:linear-gradient(transparent,#000 36px)}
 .ov .fil-actions::-webkit-scrollbar{display:none}
-.ov .fil-actions li{flex:none;padding-left:10px;border-left:1px solid rgba(255,255,255,.2)}
-.ov .fil-actions .phrase{margin-top:2px !important;font-size:11.5px;font-weight:400;line-height:1.3;color:#fff}
-.ov .fil-actions .etiquette{font-size:9px;letter-spacing:.18em}
+.ov .fil-actions li{flex:none;padding-left:10px;border-left:1px solid rgb(var(--encre) / .2)}
+.ov .fil-actions .phrase{margin-top:2px !important;font-size:var(--t-petit,11.5px);font-weight:400;line-height:1.3;color:rgb(var(--encre))}
+.ov .fil-actions .etiquette{font-size:var(--t-petit,9px);letter-spacing:.18em}
 .ov .fil-actions .encours{position:relative;border-left:2px solid var(--accent)}
 .ov .fil-actions .encours .etiquette{color:var(--accent)}
 .ov .fil-actions .encours .phrase::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);vertical-align:2px;animation:ov-pouls 1.4s infinite}
-.ov .fil-actions .jour{padding:0;border:0;text-align:center;color:rgba(255,255,255,.4)}
+.ov .fil-actions .jour{padding:0;border:0;text-align:center;color:rgb(var(--encre) / .4)}
 /* La ligne « Maintenant » peut ouvrir un onglet : toute la ligne est bouton. */
 .ov .ouvre-li{position:absolute;inset:0;cursor:pointer}
 .ov .tuile-sorte.s-envoi svg,.ov .fil-actions .envoi .etiquette{color:var(--c-envoi)}
@@ -223,8 +227,8 @@
 /* Tuile allumée : teintée et bordée de sa couleur ; éteinte : contour seul. */
 .ov .tuile-sorte.s-envoi{--c:var(--c-envoi)}.ov .tuile-sorte.s-reponse{--c:var(--c-reponse)}.ov .tuile-sorte.s-entretien{--c:var(--c-entretien)}.ov .tuile-sorte.s-relance{--c:var(--c-relance)}.ov .tuile-sorte.s-offres{--c:var(--c-offres)}.ov .tuile-sorte.s-afaire{--c:var(--c-afaire)}
 .ov .tuile-sorte.choix:has(:checked){background:color-mix(in srgb,var(--c) 16%,transparent);border-color:color-mix(in srgb,var(--c) 65%,transparent);box-shadow:none;text-shadow:none}
-.ov .tuile-sorte.choix:not(:has(:checked)){background:none;border-color:rgba(255,255,255,.2)}
-.ov .tuile-sorte:not(:has(:checked)) :is(b,small){color:rgba(255,255,255,.72)}
+.ov .tuile-sorte.choix:not(:has(:checked)){background:none;border-color:rgb(var(--encre) / .2)}
+.ov .tuile-sorte:not(:has(:checked)) :is(b,small){color:rgb(var(--encre) / .72)}
 .ov .tuile-sorte:not(:has(:checked)) svg{opacity:.6}
 /* Activité large : bilan à gauche, fil en grille, le plus récent en bas. */
 .ov .echos[data-forme=large]{display:grid;grid-template-columns:228px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:16px}
@@ -235,90 +239,90 @@
 .ov .echos[data-forme=large] .fil-actions>li.jour{flex:0 0 100%}
 
 /* Fenêtres flottantes : au-dessus de la page, déplacées par leur barre. */
-.ov .flottante{position:absolute;z-index:8;display:flex;flex-direction:column;max-height:calc(100% - 96px);background:rgb(14 14 18 / .62);-webkit-backdrop-filter:blur(26px) saturate(150%);backdrop-filter:blur(26px) saturate(150%);border:1px solid rgb(255 255 255 / .18);box-shadow:0 24px 64px rgb(0 0 0 / .4)}
-.ov .f-barre{flex:none;display:flex;align-items:center;gap:10px;height:38px;padding:0 4px 0 12px;border-bottom:1px solid rgb(255 255 255 / .1);cursor:move;user-select:none}
-.ov .f-poignee{flex:none;width:10px;height:14px;background:radial-gradient(circle,rgb(255 255 255 / .5) 1px,transparent 1.6px) 0 0/5px 5px}
-.ov .f-titre{flex:1;min-width:0;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ov .f-btn{flex:none;display:grid;place-items:center;width:30px;height:30px;color:rgb(255 255 255 / .7);cursor:pointer;transition:color .2s,background .2s}
-.ov .f-btn:hover{color:#fff;background:rgb(255 255 255 / .08)}
+.ov .flottante{position:absolute;z-index:8;display:flex;flex-direction:column;max-height:calc(100% - 96px);background:rgb(var(--sombre-14) / .62);-webkit-backdrop-filter:blur(26px) saturate(150%);backdrop-filter:blur(26px) saturate(150%);border:1px solid rgb(var(--encre) / .18);box-shadow:0 24px 64px rgb(0 0 0 / .4)}
+.ov .f-barre{flex:none;display:flex;align-items:center;gap:10px;height:38px;padding:0 4px 0 12px;border-bottom:1px solid rgb(var(--encre) / .1);cursor:move;user-select:none}
+.ov .f-poignee{flex:none;width:10px;height:14px;background:radial-gradient(circle,rgb(var(--encre) / .5) 1px,transparent 1.6px) 0 0/5px 5px}
+.ov .f-titre{flex:1;min-width:0;font-size:var(--t-petit,10px);font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgb(var(--encre));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov .f-btn{flex:none;display:grid;place-items:center;width:30px;height:30px;color:rgb(var(--encre) / .7);cursor:pointer;transition:color .2s,background .2s}
+.ov .f-btn:hover{color:rgb(var(--encre));background:rgb(var(--encre) / .08)}
 .ov .f-btn svg{width:12px;height:12px}
 .ov .f-corps{flex:1;min-height:0;overflow:auto;padding:16px;scrollbar-width:none}
 .ov .f-corps::-webkit-scrollbar{display:none}
-.ov .f-pied{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:22px;padding:10px 16px;border-top:1px solid rgb(255 255 255 / .1)}
+.ov .f-pied{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:22px;padding:10px 16px;border-top:1px solid rgb(var(--encre) / .1)}
 .ov .f-pied .gauche{margin-right:auto}
 /* Pied rempli par le corps (<AuPied>) : caché tant qu'il n'a rien à montrer. */
 .ov .f-pied[data-porte]:empty{display:none}
 
 /* Contenu des fenêtres : sections, libellés en capitales, interrupteurs. */
-.ov .section-f+.section-f{margin-top:14px;padding-top:14px;border-top:1px solid rgb(255 255 255 / .08)}
-.ov .section-f h3{margin:0 0 12px;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff}
+.ov .section-f+.section-f{margin-top:14px;padding-top:14px;border-top:1px solid rgb(var(--encre) / .08)}
+.ov .section-f h3{margin:0 0 12px;font-size:var(--t-petit,10px);font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgb(var(--encre))}
 .ov .champ{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .ov .champ:last-child{margin-bottom:0}
-.ov .champ>label,.ov .lib-champ{font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgb(255 255 255 / .62)}
-.ov .saisie{width:100%;height:32px;padding:0 10px;border:1px solid rgb(255 255 255 / .16);background:rgb(0 0 0 / .25);font:inherit;font-size:12.5px;color:#fff}
-.ov .saisie:focus{outline:none;border-color:#fff}
+.ov .champ>label,.ov .lib-champ{font-size:var(--t-petit,9.5px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgb(var(--encre) / .62)}
+.ov .saisie{width:100%;height:32px;padding:0 10px;border:1px solid rgb(var(--encre) / .16);background:rgb(var(--noir) / .25);font:inherit;font-size:var(--t-corps,12.5px);color:rgb(var(--encre))}
+.ov .saisie:focus{outline:none;border-color:rgb(var(--encre))}
 .ov textarea.saisie{height:auto;min-height:70px;padding:8px 10px;resize:vertical;line-height:1.45}
 .ov select.saisie{cursor:pointer}
-.ov .aide-champ{font-size:11px;line-height:1.4;color:rgb(255 255 255 / .5)}
+.ov .aide-champ{font-size:var(--t-petit,11px);line-height:1.4;color:rgb(var(--encre) / .5)}
 .ov .grille-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
-.ov .inter{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:32px;font-size:12.5px;color:rgb(255 255 255 / .88);cursor:pointer}
-.ov .inter input{appearance:none;flex:none;width:32px;height:18px;margin:0;border:1px solid rgb(255 255 255 / .4);background:linear-gradient(rgb(255 255 255 / .5),rgb(255 255 255 / .5)) 3px 50%/10px 10px no-repeat;cursor:pointer;transition:background-position .2s,border-color .2s}
-.ov .inter input:checked{border-color:#fff;background:linear-gradient(#fff,#fff) calc(100% - 3px) 50%/10px 10px no-repeat;box-shadow:0 0 8px rgb(255 255 255 / .3)}
-.ov .reglage{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:36px;font-size:12.5px;color:rgb(255 255 255 / .88)}
+.ov .inter{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:32px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .88);cursor:pointer}
+.ov .inter input{appearance:none;flex:none;width:32px;height:18px;margin:0;border:1px solid rgb(var(--encre) / .4);background:linear-gradient(rgb(var(--encre) / .5),rgb(var(--encre) / .5)) 3px 50%/10px 10px no-repeat;cursor:pointer;transition:background-position .2s,border-color .2s}
+.ov .inter input:checked{border-color:rgb(var(--encre));background:linear-gradient(rgb(var(--encre)),rgb(var(--encre))) calc(100% - 3px) 50%/10px 10px no-repeat;box-shadow:0 0 8px rgb(var(--encre) / calc(.3 * var(--lueur)))}
+.ov .reglage{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:36px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .88)}
 .ov .reglage>.saisie{flex:none;width:84px;height:30px;text-align:right}
 .ov .reglage>select.saisie{width:200px;text-align:left}
 .ov .liste-f{display:flex;flex-direction:column}
-.ov .liste-f>li{display:flex;align-items:center;gap:12px;min-height:34px;border-top:1px solid rgb(255 255 255 / .07);font-size:12.5px}
+.ov .liste-f>li{display:flex;align-items:center;gap:12px;min-height:34px;border-top:1px solid rgb(var(--encre) / .07);font-size:var(--t-corps,12.5px)}
 .ov .liste-f>li:first-child{border-top:0}
 .ov .liste-f .d{margin-left:auto}
-.ov .texte-f{margin-bottom:10px !important;font-size:12.5px;line-height:1.45;color:rgb(255 255 255 / .82)}
-.ov .lien{color:#fff;text-decoration:underline;text-decoration-color:rgb(255 255 255 / .3);text-underline-offset:3px}
-.ov .lien-d{font-size:11.5px;font-weight:600;color:rgb(255 255 255 / .68);text-decoration:underline;text-decoration-color:rgb(255 255 255 / .25);text-underline-offset:3px;transition:color .2s}
-.ov .lien-d:hover{color:#fff}
+.ov .texte-f{margin-bottom:10px !important;font-size:var(--t-corps,12.5px);line-height:1.45;color:rgb(var(--encre) / .82)}
+.ov .lien{color:rgb(var(--encre));text-decoration:underline;text-decoration-color:rgb(var(--encre) / .3);text-underline-offset:3px}
+.ov .lien-d{font-size:var(--t-petit,11.5px);font-weight:600;color:rgb(var(--encre) / .68);text-decoration:underline;text-decoration-color:rgb(var(--encre) / .25);text-underline-offset:3px;transition:color .2s}
+.ov .lien-d:hover{color:rgb(var(--encre))}
 /* Carré d'état : bleu « en process », cyan « en cours », vert « finie ». */
 .ov .carre{display:inline-block;flex:none;width:8px;height:8px;margin-right:7px;background:currentColor;vertical-align:1px}
-.ov .carre.bleu{color:#8FB4FF}.ov .carre.finie{color:#93FFB3}
+.ov .carre.bleu{color:rgb(var(--bleu))}.ov .carre.finie{color:rgb(var(--vert))}
 .ov .carre.cours{color:var(--accent);box-shadow:0 0 6px var(--accent);animation:ov-pouls 1.4s infinite}
 /* Puces à trait fin ; pointillé pour une exigence sous-entendue. */
 .ov .puces{display:flex;flex-wrap:wrap;gap:4px}
-.ov .puce{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border:1px solid rgb(255 255 255 / .22);font-size:11.5px;color:rgb(255 255 255 / .88);white-space:nowrap}
-.ov .puce button{font-size:13px;font-weight:700;line-height:1;color:inherit;opacity:.75}
+.ov .puce{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border:1px solid rgb(var(--encre) / .22);font-size:var(--t-petit,11.5px);color:rgb(var(--encre) / .88);white-space:nowrap}
+.ov .puce button{font-size:var(--t-corps,13px);font-weight:700;line-height:1;color:inherit;opacity:.75}
 .ov .puce button:hover{opacity:1}
-.ov .puce.manque{border-color:rgb(255 192 138 / .5);color:#FFC08A}
-.ov .puce.implicite{border-style:dashed;color:rgb(255 255 255 / .7)}
-.ov .puce.incomplet{border-color:rgb(255 176 176 / .55);color:#ffb0b0}
-.ov .puce.ajout{border-style:dashed;color:rgb(255 255 255 / .7);cursor:pointer}
+.ov .puce.manque{border-color:rgb(var(--orange) / .5);color:rgb(var(--orange))}
+.ov .puce.implicite{border-style:dashed;color:rgb(var(--encre) / .7)}
+.ov .puce.incomplet{border-color:rgb(var(--rouge) / .55);color:rgb(var(--rouge))}
+.ov .puce.ajout{border-style:dashed;color:rgb(var(--encre) / .7);cursor:pointer}
 /* Fiche : tête, champs clés en trois colonnes, lignes libellé-valeur. */
 .ov .f-tete{margin-bottom:14px}
 .ov .f-tete h3{font-size:15px;font-weight:600;line-height:1.3}
-.ov .f-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:6px !important;font-size:12px;color:rgb(255 255 255 / .72)}
+.ov .f-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:6px !important;font-size:var(--t-corps,12px);color:rgb(var(--encre) / .72)}
 .ov .grille-fiche{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 14px}
-.ov .grille-fiche>div{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:12.5px;line-height:1.35;overflow-wrap:anywhere}
-.ov .grille-fiche small{font-size:11px;color:rgb(255 255 255 / .55)}
+.ov .grille-fiche>div{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:var(--t-corps,12.5px);line-height:1.35;overflow-wrap:anywhere}
+.ov .grille-fiche small{font-size:var(--t-petit,11px);color:rgb(var(--encre) / .55)}
 .ov .def{display:grid;grid-template-columns:132px minmax(0,1fr);margin:0}
-.ov .def>dt,.ov .def>dd{margin:0;padding:7px 0;border-top:1px solid rgb(255 255 255 / .07);line-height:17px}
+.ov .def>dt,.ov .def>dd{margin:0;padding:7px 0;border-top:1px solid rgb(var(--encre) / .07);line-height:17px}
 .ov .def>dt{padding-right:12px}
-.ov .def>dd{font-size:12.5px;overflow-wrap:anywhere}
+.ov .def>dd{font-size:var(--t-corps,12.5px);overflow-wrap:anywhere}
 .ov .def>:nth-child(-n+2){border-top:0}
-.ov .bloc-f{border-top:1px solid rgb(255 255 255 / .08)}
+.ov .bloc-f{border-top:1px solid rgb(var(--encre) / .08)}
 .ov .section-f+.bloc-f{margin-top:14px}
-.ov .bloc-f>summary{display:flex;align-items:center;gap:10px;height:38px;list-style:none;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#fff}
+.ov .bloc-f>summary{display:flex;align-items:center;gap:10px;height:38px;list-style:none;cursor:pointer;font-size:var(--t-petit,10px);font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgb(var(--encre))}
 .ov .bloc-f>summary::-webkit-details-marker{display:none}
 .ov .bloc-f>summary svg{width:12px;height:12px;margin-left:auto;transition:transform .2s}
 .ov .bloc-f[open]>summary svg{transform:rotate(180deg)}
-.ov .bloc-f>div{padding:0 0 12px;font-size:12.5px;color:rgb(255 255 255 / .82)}
+.ov .bloc-f>div{padding:0 0 12px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .82)}
 
 /* Panneau intégré : un onglet par sous-fenêtre, l'ouvert en blanc. */
 .ov .panneau{min-width:0;display:flex;flex-direction:column}
-.ov .p-tete{flex:none;display:flex;align-items:center;gap:6px;height:44px;padding:0 4px 0 16px;border-bottom:1px solid rgb(255 255 255 / .1)}
+.ov .p-tete{flex:none;display:flex;align-items:center;gap:6px;height:44px;padding:0 4px 0 16px;border-bottom:1px solid rgb(var(--encre) / .1)}
 .ov .p-onglets{flex:1;min-width:0;display:flex;gap:16px;overflow:hidden}
 /* Hexagone de focus en tête de chaque fenêtre d'éléments. */
 .ov .p-tete>.case{flex:none;margin-right:8px}
 .ov span.p-onglet{cursor:default}
-.ov .p-onglet{position:relative;display:flex;align-items:center;height:44px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;color:rgb(255 255 255 / .5);cursor:pointer;transition:color .2s}
-.ov .p-onglet:hover{color:rgb(255 255 255 / .85)}
-.ov .p-onglet.actif{color:#fff;text-shadow:0 0 6px rgb(255 255 255 / .5)}
-.ov .p-onglet.actif::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:#fff;box-shadow:0 0 6px #fff}
+.ov .p-onglet{position:relative;display:flex;align-items:center;height:44px;font-size:var(--t-petit,10px);font-weight:700;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;color:rgb(var(--encre) / .5);cursor:pointer;transition:color .2s}
+.ov .p-onglet:hover{color:rgb(var(--encre) / .85)}
+.ov .p-onglet.actif{color:rgb(var(--encre));text-shadow:0 0 6px rgb(var(--encre) / .5)}
+.ov .p-onglet.actif::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:rgb(var(--encre));box-shadow:0 0 6px rgb(var(--encre) / var(--lueur))}
 .ov .p-vue{display:none;flex:1;min-height:0;flex-direction:column}
 .ov .p-vue.ouverte{display:flex}
 .ov .p-vue>.f-corps{padding:16px}
@@ -330,9 +334,9 @@
 /* Avant la première pose (rendu serveur), les fenêtres sont invisibles. */
 .ov .dock:not([data-pret]) [data-fen]{visibility:hidden}
 /* Fenêtre flottante : au-dessus des autres, liseré clair, suit la main. */
-.ov .dock [data-flot]{transition:none;box-shadow:inset 0 0 0 1px rgb(255 255 255 / .38)}
+.ov .dock [data-flot]{transition:none;box-shadow:inset 0 0 0 1px rgb(var(--encre) / calc(.38 * var(--lueur)))}
 /* Arrivée : chaque fenêtre naît d'une ligne centrale qui s'ouvre en 0,56 s. */
-.ov .ouv-ligne{display:none;position:absolute;left:0;right:0;top:calc(50% - 1px);z-index:4;height:1px;pointer-events:none;background:rgb(255 255 255 / .225);box-shadow:0 0 6px rgb(255 255 255 / .125),0 0 14px rgb(255 255 255 / .06);transform:scaleX(0)}
+.ov .ouv-ligne{display:none;position:absolute;left:0;right:0;top:calc(50% - 1px);z-index:4;height:1px;pointer-events:none;background:rgb(var(--encre) / .225);box-shadow:0 0 6px rgb(var(--encre) / calc(.125 * var(--lueur))),0 0 14px rgb(var(--encre) / calc(.06 * var(--lueur)));transform:scaleX(0)}
 .ov.ouverture .dock[data-pret] .ouv-ligne{display:block;animation:ov-ligne-haut .56s cubic-bezier(.6,0,.2,1) both,ov-eteint .42s ease-out .56s both}
 .ov.ouverture .dock[data-pret] .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-eteint}
 .ov.ouverture .dock[data-pret] [data-fen]{animation:ov-ouverture .56s cubic-bezier(.6,0,.2,1) both}
@@ -357,35 +361,41 @@
 .ov.glisse-en-cours,.ov.glisse-en-cours *{user-select:none;cursor:grabbing !important}
 .ov.tire-en-cours,.ov.tire-en-cours *{user-select:none}
 /* Place visée : un cadre clair et lumineux borde la case à prendre. */
-.ov .place-entiere{position:absolute;z-index:2;pointer-events:none;box-sizing:border-box;border:1px solid rgb(255 255 255 / .55);background:rgb(255 255 255 / .05);box-shadow:inset 0 0 36px rgb(255 255 255 / .08),0 0 12px rgb(255 255 255 / .18);opacity:0;transition:opacity .2s}
+.ov .place-entiere{position:absolute;z-index:2;pointer-events:none;box-sizing:border-box;border:1px solid rgb(var(--encre) / .55);background:rgb(var(--encre) / .05);box-shadow:inset 0 0 36px rgb(var(--encre) / calc(.08 * var(--lueur))),0 0 12px rgb(var(--encre) / calc(.18 * var(--lueur)));opacity:0;transition:opacity .2s}
 .ov .place-entiere.vu{opacity:1}
 .ov .fentes{display:contents}
 /* Remise en place : icône discrète en haut à droite si la grille change. */
-.ov .remise{position:absolute;top:22px;right:24px;z-index:30;display:grid;place-items:center;width:32px;height:32px;color:rgb(255 255 255 / .6);opacity:0;pointer-events:none;transition:opacity .25s,color .2s,filter .2s}
+.ov .remise{position:absolute;top:22px;right:24px;z-index:30;display:grid;place-items:center;width:32px;height:32px;color:rgb(var(--encre) / .6);opacity:0;pointer-events:none;transition:opacity .25s,color .2s,filter .2s}
 .ov .remise.vu{opacity:1;pointer-events:auto}
-.ov .remise:hover{color:#fff;filter:drop-shadow(0 0 4px rgb(255 255 255 / .6))}
+.ov .remise:hover{color:rgb(var(--encre));filter:drop-shadow(0 0 4px rgb(var(--encre) / .6))}
 .ov .remise svg{width:18px;height:18px}
-/* Prise : une rangée de points en haut de chaque fenêtre. */
-.ov .prise{position:absolute;top:3px;left:50%;z-index:3;width:30px;height:7px;margin-left:-15px;cursor:grab;touch-action:none;background:radial-gradient(circle,rgb(255 255 255 / .6) 1px,transparent 1.5px) 0 0/6px 3.5px;opacity:.35;transition:opacity .2s}
-.ov [data-fen]:hover>.prise{opacity:1}
+/* Prise : en tête de fenêtre, à gauche ; un clic détache ou remet. */
+.ov .prise{position:absolute;top:10px;left:8px;z-index:3;display:grid;place-items:center;width:28px;height:28px;color:rgb(var(--encre) / .6);cursor:grab;touch-action:none;transition:color .2s,background .2s}
+.ov .prise svg{display:block;width:18px;height:18px;fill:currentColor}
+.ov .prise:hover{color:rgb(var(--encre));background:rgb(var(--encre) / .08)}
+.ov .prise:active{cursor:grabbing}
+.ov .prise+.outils,.ov .prise+.p-tete,.ov .prise+.echos-tete{padding-left:40px}
+.ov .prise+.confirmer,.ov .prise+.outils~.confirmer{margin-left:40px}
 .ov .dock :is(.tete,.echos-tete,.p-tete,.outils){cursor:grab;touch-action:none}
 .ov .dock :is(.tete,.echos-tete,.p-tete,.outils) :is(a,button,label,input,select){cursor:pointer}
 /* Fentes : la place entre deux fenêtres se tire, trait blanc au survol. */
 .ov .separateur{position:absolute;z-index:5;touch-action:none}
 .ov .separateur.ligne{cursor:col-resize}
 .ov .separateur.colonne{cursor:row-resize}
-.ov .separateur::after{content:"";position:absolute;inset:0;margin:auto;background:#fff;opacity:0;transition:opacity .2s}
+.ov .separateur::after{content:"";position:absolute;inset:0;margin:auto;background:rgb(var(--encre));opacity:0;transition:opacity .2s}
 .ov .separateur.ligne::after{width:1px}
 .ov .separateur.colonne::after{height:1px}
-.ov .separateur:hover::after,.ov .separateur.actif::after{opacity:.6;box-shadow:0 0 6px #fff}
+.ov .separateur:hover::after,.ov .separateur.actif::after{opacity:.6;box-shadow:0 0 6px rgb(var(--encre) / var(--lueur))}
 .ov.glisse-en-cours .separateur{display:none}
 /* Taille d'une fenêtre flottante : bord droit, bord bas et coin se tirent. */
 .ov .taille{position:absolute;z-index:4;display:none;touch-action:none}
 .ov [data-flot] .taille{display:block}
 .ov .taille.d{top:0;right:0;width:8px;height:100%;cursor:ew-resize}
 .ov .taille.b{left:0;bottom:0;width:100%;height:8px;cursor:ns-resize}
-.ov .taille.c{right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 60%,rgb(255 255 255 / .45) 60% 66%,transparent 66% 76%,rgb(255 255 255 / .45) 76% 82%,transparent 82%)}
+.ov .taille.c{right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 60%,rgb(var(--encre) / .45) 60% 66%,transparent 66% 76%,rgb(var(--encre) / .45) 76% 82%,transparent 82%)}
 
 /* Tous les angles droits, voyants compris. */
 .ov .verre{--verre-rayon:0px}
-.ov *,.ov *::before,.ov *::after{border-radius:0 !important}
+.ov:not(.th-plat) *,.ov:not(.th-plat) *::before,.ov:not(.th-plat) *::after{border-radius:0 !important}
+/* Le bandeau du profil laisse la prise libre. */
+.ov [data-fen]>.prise+.bandeau{margin-left:48px}

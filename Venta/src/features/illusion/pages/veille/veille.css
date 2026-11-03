@@ -2,12 +2,12 @@
 
 /* État de la veille : cyan tant qu'elle écoute ou tourne. */
 .ov [data-fen=veille] .etat-v{cursor:default}
-.ov [data-fen=veille] .etat-v .onde{font-size:12.5px}
-.ov [data-fen=veille] .etat-v>.d{margin-left:4px;font-size:12px}
+.ov [data-fen=veille] .etat-v .onde{font-size:var(--t-corps,12.5px)}
+.ov [data-fen=veille] .etat-v>.d{margin-left:4px;font-size:var(--t-corps,12px)}
 .ov [data-fen=veille] .outils .etat-v .lib{display:inline}
 /* Vider les offres reste rouge sans sélection : il porte sur tout le stock. */
-.ov [data-fen=veille] .action.alerte{color:#ffb0b0}
-.ov [data-fen=veille] .action.alerte:hover{color:#ffd0d0}
+.ov [data-fen=veille] .action.alerte{color:rgb(var(--rouge))}
+.ov [data-fen=veille] .action.alerte:hover{color:rgb(var(--rouge-2))}
 /* Rangée d'outils : selon sa largeur, les gestes se replient sur leur icône. */
 .ov [data-fen=veille] .outils{container-type:inline-size}
 @container (max-width:1199px){.ov [data-fen=veille] .outils .repli-1 .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
@@ -19,70 +19,131 @@
 /* Corps de la veille : bandeau, plateformes, jobboards ; seul il défile. */
 .ov [data-fen=veille] .veille-corps{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;overflow:auto;padding:4px 14px 14px;scrollbar-width:none;container-type:inline-size}
 .ov [data-fen=veille] .veille-corps::-webkit-scrollbar{display:none}
-.ov [data-fen=veille] .bandeau-echec{position:relative;z-index:3;flex:none;display:flex;align-items:center;gap:16px;min-height:36px;padding:0 12px;border-left:2px solid #ffb0b0;background:rgb(255 176 176 / .08);font-size:12.5px}
-.ov [data-fen=veille] .bandeau-echec p{flex:1;min-width:0;color:rgba(255,255,255,.88)}
-.ov [data-fen=veille] .bandeau-echec b{font-weight:600;color:#ffb0b0}
+.ov [data-fen=veille] .bandeau-echec{position:relative;z-index:3;flex:none;display:flex;align-items:center;gap:16px;min-height:36px;padding:0 12px;border-left:2px solid rgb(var(--rouge));background:rgb(var(--rouge) / .08);font-size:var(--t-corps,12.5px)}
+.ov [data-fen=veille] .bandeau-echec p{flex:1;min-width:0;color:rgb(var(--encre) / .88)}
+.ov [data-fen=veille] .bandeau-echec b{font-weight:600;color:rgb(var(--rouge))}
 /* Sortie de la brique : dépliant par-dessus, sans pousser la page. */
-.ov [data-fen=veille] .sortie>summary{display:inline-flex;align-items:center;gap:6px;list-style:none;cursor:pointer;font-size:12px;font-weight:600;color:rgba(255,255,255,.8);white-space:nowrap}
+.ov [data-fen=veille] .sortie>summary{display:inline-flex;align-items:center;gap:6px;list-style:none;cursor:pointer;font-size:var(--t-corps,12px);font-weight:600;color:rgb(var(--encre) / .8);white-space:nowrap}
 .ov [data-fen=veille] .sortie>summary::-webkit-details-marker{display:none}
-.ov [data-fen=veille] .sortie>summary:hover{color:#fff}
+.ov [data-fen=veille] .sortie>summary:hover{color:rgb(var(--encre))}
 .ov [data-fen=veille] .sortie>summary svg{transition:transform .2s}
 .ov [data-fen=veille] .sortie[open]>summary svg{transform:rotate(180deg)}
-.ov [data-fen=veille] .sortie pre{position:absolute;top:calc(100% + 4px);right:0;width:min(520px,100%);max-height:260px;overflow:auto;margin:0;padding:12px 14px;background:rgb(14 14 18 / .92);border:1px solid rgb(255 255 255 / .18);font:11px/1.6 var(--font-geist-mono),ui-monospace,monospace;color:rgba(255,255,255,.8);white-space:pre-wrap;scrollbar-width:none}
+.ov [data-fen=veille] .sortie pre{position:absolute;top:calc(100% + 4px);right:0;width:min(520px,100%);max-height:260px;overflow:auto;margin:0;padding:12px 14px;background:rgb(var(--sombre-14) / .92);border:1px solid rgb(var(--encre) / .18);font:11px/1.6 var(--font-geist-mono),ui-monospace,monospace;color:rgb(var(--encre) / .8);white-space:pre-wrap;scrollbar-width:none}
 /* Têtes des blocs : le titre à gauche, le compte ou les gestes à droite. */
 .ov [data-fen=veille] .bloc-v{flex:none}
 .ov [data-fen=veille] .bloc-tete{display:flex;align-items:center;justify-content:space-between;gap:12px;height:28px;margin-bottom:8px}
 .ov [data-fen=veille] .bloc-tete .compteur{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Carte par plateforme : voyant, nom, compteur, motif, clés ; 4 colonnes. */
 .ov [data-fen=veille] .grille-pf{display:grid;grid-template-columns:repeat(auto-fill,minmax(max(208px,(100% - 24px) / 4),1fr));gap:8px}
-.ov [data-fen=veille] .carte-pf{display:flex;flex-direction:column;gap:3px;min-width:0;padding:9px 12px 10px;text-align:left;color:#fff}
+.ov [data-fen=veille] .carte-pf{display:flex;flex-direction:column;gap:3px;min-width:0;padding:9px 12px 10px;text-align:left;color:rgb(var(--encre))}
 .ov [data-fen=veille] .pf-tete{display:flex;align-items:center;gap:8px}
-.ov [data-fen=veille] .pf-nom{flex:1;min-width:0;font-size:12.5px;font-weight:600;white-space:nowrap}
+.ov [data-fen=veille] .pf-nom{flex:1;min-width:0;font-size:var(--t-corps,12.5px);font-weight:600;white-space:nowrap}
 .ov [data-fen=veille] .pf-nb{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
-.ov [data-fen=veille] .pf-motif{font-size:11.5px;color:rgba(255,255,255,.72);white-space:nowrap}
-.ov [data-fen=veille] .pf-cles{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);white-space:nowrap}
-.ov [data-fen=veille] .carte-pf.actif .pf-motif{color:rgba(255,255,255,.9)}
-.ov [data-fen=veille] .carte-pf:focus-visible{outline:1px solid #fff;outline-offset:2px}
+.ov [data-fen=veille] .pf-motif{font-size:var(--t-petit,11.5px);color:rgb(var(--encre) / .72);white-space:nowrap}
+.ov [data-fen=veille] .pf-cles{font-size:var(--t-petit,9px);font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgb(var(--encre) / .5);white-space:nowrap}
+.ov [data-fen=veille] .carte-pf.actif .pf-motif{color:rgb(var(--encre) / .9)}
+.ov [data-fen=veille] .carte-pf:focus-visible{outline:1px solid rgb(var(--encre));outline-offset:2px}
 /* Fenêtre étroite : voyant, nom et compte ; le motif reste en infobulle. */
 @container (max-width:659px){.ov [data-fen=veille] .carte-pf :is(.pf-motif,.pf-cles){display:none}.ov [data-fen=veille] .carte-pf{padding:6px 12px 7px}}
 /* Voyant : vert offres, jaune erreur, rouge muette, violet vide, gris. */
-.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .voyant{flex:none;display:inline-block;width:8px;height:8px;background:rgba(255,255,255,.3)}
-.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-verte{background:#93FFB3;box-shadow:0 0 6px #93FFB3}
-.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-jaune{background:#FFF58D;box-shadow:0 0 6px #FFF58D}
-.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-rouge{background:#ff8a8a;box-shadow:0 0 6px #ff8a8a}
-.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-violette{background:#B9A8FF;box-shadow:0 0 6px #B9A8FF}
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .voyant{flex:none;display:inline-block;width:8px;height:8px;background:rgb(var(--encre) / .3)}
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-verte{background:rgb(var(--vert));box-shadow:0 0 6px rgb(var(--vert))}
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-jaune{background:rgb(var(--jaune));box-shadow:0 0 6px rgb(var(--jaune))}
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-rouge{background:rgb(var(--rouge-3));box-shadow:0 0 6px rgb(var(--rouge-3))}
+.ov :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-violette{background:rgb(var(--violet));box-shadow:0 0 6px rgb(var(--violet))}
 /* Jobboards fouillés : nom, adresse, récolte, interrupteur. */
-.ov [data-fen=veille] .jobboards-l>li{display:grid;grid-template-columns:minmax(150px,1fr) minmax(250px,2fr) minmax(150px,1fr) 32px;align-items:center;gap:16px;height:34px;border-top:1px solid rgba(255,255,255,.08);font-size:12.5px;white-space:nowrap;cursor:pointer}
+.ov [data-fen=veille] .jobboards-l>li{display:grid;grid-template-columns:minmax(150px,1fr) minmax(250px,2fr) minmax(150px,1fr) 32px;align-items:center;gap:16px;height:34px;border-top:1px solid rgb(var(--encre) / .08);font-size:var(--t-corps,12.5px);white-space:nowrap;cursor:pointer}
 .ov [data-fen=veille] .jobboards-l>li>*{min-width:0;overflow:hidden;text-overflow:ellipsis}
-.ov [data-fen=veille] .jobboards-l>li:hover,.ov [data-fen=veille] .jobboards-l>li.actif{background:rgba(255,255,255,.05)}
-.ov [data-fen=veille] .jobboards-l>li.actif{box-shadow:inset 2px 0 0 #fff}
-.ov [data-fen=veille] .jobboards-l>li:focus-visible{outline:1px solid #fff;outline-offset:-1px}
-.ov [data-fen=veille] .jobboards-l>li.vide{display:block;cursor:default;color:rgba(255,255,255,.6)}
+.ov [data-fen=veille] .jobboards-l>li:hover,.ov [data-fen=veille] .jobboards-l>li.actif{background:rgb(var(--encre) / .05)}
+.ov [data-fen=veille] .jobboards-l>li.actif{box-shadow:inset 2px 0 0 rgb(var(--encre))}
+.ov [data-fen=veille] .jobboards-l>li:focus-visible{outline:1px solid rgb(var(--encre));outline-offset:-1px}
+.ov [data-fen=veille] .jobboards-l>li.vide{display:block;cursor:default;color:rgb(var(--encre) / .6)}
 .ov [data-fen=veille] .jobboards-l b{display:inline-flex;align-items:center;gap:8px;font-weight:600}
-.ov [data-fen=veille] .jobboards-l .eteint{color:rgba(255,255,255,.5)}
-.ov [data-fen=veille] .jobboards-l .eteint b{color:rgba(255,255,255,.6)}
+.ov [data-fen=veille] .jobboards-l .eteint{color:rgb(var(--encre) / .5)}
+.ov [data-fen=veille] .jobboards-l .eteint b{color:rgb(var(--encre) / .6)}
 .ov [data-fen=veille] .jobboards-l .inter{justify-content:flex-end;overflow:visible}
-.ov [data-fen=veille] .tag-f{padding:2px 6px;border:1px solid rgb(255 255 255 / .2);font-size:8.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);white-space:nowrap}
+.ov [data-fen=veille] .tag-f{padding:2px 6px;border:1px solid rgb(var(--encre) / .2);font-size:var(--t-petit,8.5px);font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgb(var(--encre) / .6);white-space:nowrap}
 @container (max-width:659px){.ov [data-fen=veille] .jobboards-l>li:not(.vide){grid-template-columns:minmax(110px,1fr) minmax(200px,2fr) 32px}.ov [data-fen=veille] .jobboards-l>li>:nth-child(3){display:none}}
 
 /* Panneau : voyant et dernier passage en tête ; un secret jamais réaffiché. */
-.ov [data-fen=veille]~[data-fen=panneau] .voyant-l{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:12.5px}
-.ov [data-fen=veille]~[data-fen=panneau] .voyant-l .d{margin-left:auto;font-size:11.5px}
+.ov [data-fen=veille]~[data-fen=panneau] .voyant-l{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:var(--t-corps,12.5px)}
+.ov [data-fen=veille]~[data-fen=panneau] .voyant-l .d{margin-left:auto;font-size:var(--t-petit,11.5px)}
 .ov [data-fen=veille]~[data-fen=panneau] .secret{position:relative;display:block}
 .ov [data-fen=veille]~[data-fen=panneau] .secret .lien-d{position:absolute;top:50%;right:10px;transform:translateY(-50%)}
 .ov [data-fen=veille]~[data-fen=panneau] .section-f .aide-champ{margin-top:10px}
 .ov [data-fen=veille]~[data-fen=panneau] .grille-2.bas{align-items:end}
 /* Sélecteur de catalogue : puces avec croix, recherche dans le même champ. */
 .ov [data-fen=veille]~[data-fen=panneau] .catalogue-hote{position:relative}
-.ov [data-fen=veille]~[data-fen=panneau] .catalogue{display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-height:32px;padding:4px;border:1px solid rgb(255 255 255 / .16);background:rgb(0 0 0 / .25)}
-.ov [data-fen=veille]~[data-fen=panneau] .catalogue:focus-within{border-color:#fff}
-.ov [data-fen=veille]~[data-fen=panneau] .catalogue input{flex:1;min-width:90px;height:22px;border:0;background:none;padding:0 6px;font-size:12.5px;color:#fff}
-.ov [data-fen=veille]~[data-fen=panneau] .catalogue input::placeholder{color:rgba(255,255,255,.45)}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue{display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-height:32px;padding:4px;border:1px solid rgb(var(--encre) / .16);background:rgb(var(--noir) / .25)}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue:focus-within{border-color:rgb(var(--encre))}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue input{flex:1;min-width:90px;height:22px;border:0;background:none;padding:0 6px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre))}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue input::placeholder{color:rgb(var(--encre) / .45)}
 .ov [data-fen=veille]~[data-fen=panneau] .catalogue input:focus{outline:none}
-.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce{padding:0 0 0 8px;font-size:12px;color:#fff}
-.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce b{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;font-weight:500;color:rgba(255,255,255,.65)}
-.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce button{display:grid;place-items:center;width:20px;height:20px;color:rgba(255,255,255,.55)}
-.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce button:hover{color:#fff}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce{padding:0 0 0 8px;font-size:var(--t-corps,12px);color:rgb(var(--encre))}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce b{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11px);font-weight:500;color:rgb(var(--encre) / .65)}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce button{display:grid;place-items:center;width:20px;height:20px;color:rgb(var(--encre) / .55)}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce button:hover{color:rgb(var(--encre))}
 .ov [data-fen=veille]~[data-fen=panneau] .catalogue .puce svg{width:9px;height:9px}
 .ov [data-fen=veille]~[data-fen=panneau] .catalogue-hote .menu{top:calc(100% + 4px);left:0;right:0;min-width:0}
-.ov [data-fen=veille]~[data-fen=panneau] .catalogue-hote .menu-option b{min-width:28px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:11px;font-weight:500;color:rgba(255,255,255,.65)}
+.ov [data-fen=veille]~[data-fen=panneau] .catalogue-hote .menu-option b{min-width:28px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11px);font-weight:500;color:rgb(var(--encre) / .65)}
+
+/* Thèmes plats : état, bandeau et sortie de la brique sur surfaces pleines. */
+.ov.th-plat [data-fen=veille] .etat-v:hover{background:none}
+.ov.th-plat [data-fen=veille] .etat-v .onde{font-size:.875rem;color:var(--texte)}
+.ov.th-plat [data-fen=veille] .etat-v .onde.on{color:var(--primaire)}
+.ov.th-plat [data-fen=veille] .etat-v>.d{font-size:.875rem}
+.ov.th-plat [data-fen=veille] .action.alerte,.ov.th-plat [data-fen=veille] .action.alerte:hover{color:var(--erreur)}
+.ov.th-plat [data-fen=veille] .veille-corps{gap:16px;padding:12px;scrollbar-width:thin}
+.ov.th-plat [data-fen=veille] .bandeau-echec{min-height:44px;padding:0 4px 0 16px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;color:var(--sur-erreur-douce)}
+.ov.th-plat [data-fen=veille] .bandeau-echec p{line-height:1.25rem;color:inherit}
+.ov.th-plat [data-fen=veille] .bandeau-echec b{font-weight:500;color:inherit}
+.ov.th-plat [data-fen=veille] .bandeau-echec .d{color:inherit}
+.ov.th-plat [data-fen=veille] .sortie>summary{min-height:44px;padding:0 8px 0 12px;border-radius:8px;font-size:.875rem;font-weight:500;color:inherit}
+.ov.th-plat [data-fen=veille] .sortie>summary:hover{background:color-mix(in srgb,currentColor 8%,transparent);color:inherit}
+.ov.th-plat [data-fen=veille] .sortie pre{padding:12px 16px;border:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.75rem;line-height:1.125rem;color:var(--texte);scrollbar-width:thin}
+/* Plateformes : cartes de 12 px, le choisi garde la teinte douce des choix. */
+.ov.th-plat [data-fen=veille] .bloc-tete{height:auto;min-height:44px;margin-bottom:4px}
+.ov.th-plat [data-fen=veille] .bloc-tete .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
+.ov.th-plat [data-fen=veille] .carte-pf{gap:2px;padding:12px;border-color:var(--filet);border-radius:12px}
+.ov.th-plat [data-fen=veille] .carte-pf:hover{border-color:var(--contour)}
+.ov.th-plat [data-fen=veille] .carte-pf.actif{border-color:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.th-plat [data-fen=veille] .pf-nom{font-size:.875rem;line-height:1.25rem;font-weight:500}
+.ov.th-plat [data-fen=veille] .pf-nb{font-size:1rem;line-height:1.25rem}
+.ov.th-plat [data-fen=veille] :is(.pf-motif,.pf-cles){font-size:.75rem;line-height:1rem;font-weight:400;color:var(--texte-2);white-space:normal}
+.ov.th-plat [data-fen=veille] .carte-pf.actif :is(.pf-motif,.pf-cles){color:inherit}
+.ov.th-plat [data-fen=veille] .carte-pf:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .voyant{border-radius:50%;background:var(--contour);box-shadow:none}
+.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-verte{background:var(--ok)}
+.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-jaune{background:var(--attente)}
+.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-rouge{background:var(--erreur)}
+.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-violette{background:var(--c-offres)}
+/* Jobboards : rangées de 48 px, place de l'interrupteur, choisi marqué. */
+.ov.th-plat [data-fen=veille] .jobboards-l>li{grid-template-columns:minmax(150px,1fr) minmax(220px,2fr) minmax(150px,1fr) 52px;gap:12px;height:auto;min-height:48px;padding:0 8px;border-top:0;border-bottom:1px solid var(--surface-moyenne);border-radius:0;font-size:.875rem}
+@container (max-width:659px){.ov.th-plat [data-fen=veille] .jobboards-l>li:not(.vide){grid-template-columns:minmax(110px,1fr) minmax(0,2fr) 52px}}
+.ov.th-plat [data-fen=veille] .jobboards-l>li:hover{background:var(--surface-basse)}
+.ov.th-plat [data-fen=veille] .jobboards-l>li.actif{background:var(--surface-moyenne);box-shadow:inset 3px 0 0 var(--primaire)}
+.ov.th-plat [data-fen=veille] .jobboards-l>li:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.th-plat [data-fen=veille] .jobboards-l>li.vide{display:flex;align-items:center;color:var(--texte-2)}
+.ov.th-plat [data-fen=veille] .jobboards-l>li.vide:hover{background:none}
+.ov.th-plat [data-fen=veille] .jobboards-l b{font-weight:500}
+.ov.th-plat [data-fen=veille] .jobboards-l .eteint,.ov.th-plat [data-fen=veille] .jobboards-l .eteint b{color:var(--texte-2)}
+.ov.th-plat [data-fen=veille] .jobboards-l .inter{min-height:0}
+.ov.th-plat [data-fen=veille] .tag-f{padding:0 6px;border-color:var(--contour);border-radius:6px;font-size:.75rem;font-weight:400;line-height:1.125rem;color:var(--texte-2)}
+/* Panneau : voyant, secret lisible, catalogue à contour comme les champs. */
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .voyant-l{min-height:24px;font-size:.875rem}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .voyant-l .d{font-size:.75rem}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .secret .saisie{padding-right:72px}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue{gap:6px;min-height:48px;padding:7px 8px;border-color:var(--contour);border-radius:8px;background:var(--surface)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue:hover{border-color:var(--texte)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue:focus-within{border-color:var(--primaire)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue input{height:32px;font-size:.875rem;color:var(--texte)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue input::placeholder{color:var(--texte-2);opacity:1}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce{gap:4px;padding:0 4px 0 8px;font-size:.875rem;color:var(--texte)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce b{font-size:.75rem;color:var(--texte-2)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce button{width:24px;height:24px;border-radius:50%;color:var(--texte-2)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce button:hover{background:var(--surface-moyenne);color:var(--texte)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce svg{width:12px;height:12px}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue-hote .menu-option b{font-size:.75rem;color:var(--texte-2)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .p-onglets{flex-wrap:wrap}
+.ov.th-plat [data-fen=veille]~[data-fen=panneau] .p-onglet{flex:none}

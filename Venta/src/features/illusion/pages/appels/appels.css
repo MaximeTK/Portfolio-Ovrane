@@ -3,30 +3,30 @@
 /* La liste du rappel passe à la ligne plutôt que d'être coupée. */
 .ov [data-fen=appels]{--ligne:46px}
 .ov [data-fen=appels] .outils{height:auto;min-height:36px}
-.ov [data-fen=appels] .note-outils{min-width:0;font-size:11.5px;line-height:1.3;color:rgba(255,255,255,.55)}
+.ov [data-fen=appels] .note-outils{min-width:0;font-size:var(--t-petit,11.5px);line-height:1.3;color:rgb(var(--encre) / .55)}
 /* Un appel : titre puis offre ; l'appel choisi s'allume. */
 .ov [data-fen=appels] thead th:nth-child(1){width:calc(98px + (100cqw - 466px) / 4)}
 .ov [data-fen=appels] thead th:nth-child(2){width:calc(188px + (100cqw - 466px) / 4)}
-.ov [data-fen=appels] td.mono{font-size:11px}
+.ov [data-fen=appels] td.mono{font-size:var(--t-petit,11px)}
 .ov [data-fen=appels] thead th:nth-child(3){width:calc(74px + (100cqw - 466px) / 4)}
 .ov [data-fen=appels] thead th:nth-child(4){width:calc(44px + (100cqw - 466px) / 4)}
 .ov [data-fen=appels] thead th:nth-child(5){width:62px}
 .ov [data-fen=appels] .t-appel{display:block;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis}
-.ov [data-fen=appels] .offre-appel{display:block;font-size:11px;line-height:1.3;color:rgba(255,255,255,.55);overflow:hidden;text-overflow:ellipsis}
-.ov [data-fen=appels] .offre-appel.sans{color:rgba(255,255,255,.35)}
-.ov [data-fen=appels] tr.choisi td{background:rgb(255 255 255 / .08);color:#fff}
-.ov [data-fen=appels] tr.choisi td:first-child{box-shadow:inset 2px 0 #fff}
-.ov [data-fen=appels] tr.choisi .t-appel{text-shadow:0 0 8px rgb(255 255 255 / .45)}
-.ov [data-fen=appels] tr:focus-visible{outline:1px solid #fff;outline-offset:-1px}
-.ov [data-fen=appels] .analyse-faite{font-size:11.5px;color:var(--accent)}
+.ov [data-fen=appels] .offre-appel{display:block;font-size:var(--t-petit,11px);line-height:1.3;color:rgb(var(--encre) / .55);overflow:hidden;text-overflow:ellipsis}
+.ov [data-fen=appels] .offre-appel.sans{color:rgb(var(--encre) / .35)}
+.ov [data-fen=appels] tr.choisi td{background:rgb(var(--encre) / .08);color:rgb(var(--encre))}
+.ov [data-fen=appels] tr.choisi td:first-child{box-shadow:inset 2px 0 rgb(var(--encre))}
+.ov [data-fen=appels] tr.choisi .t-appel{text-shadow:0 0 8px rgb(var(--encre) / .45)}
+.ov [data-fen=appels] tr:focus-visible{outline:1px solid rgb(var(--encre));outline-offset:-1px}
+.ov [data-fen=appels] .analyse-faite{font-size:var(--t-petit,11.5px);color:var(--accent)}
 /* L'appel qui tourne : cyan, un voyant qui bat devant. */
 .ov [data-fen=appels] .direct-c{display:inline-flex;align-items:center;gap:7px;color:var(--accent)}
 .ov [data-fen=appels] .direct-c::before,.ov .ruby-f .voyant-live{content:"";flex:none;width:6px;height:6px;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:ov-pouls 1.4s infinite}
-.ov [data-fen=appels] tr.vide-f td{height:auto;padding:16px 20px;white-space:normal;color:rgb(255 255 255 / .6);cursor:default}
+.ov [data-fen=appels] tr.vide-f td{height:auto;padding:16px 20px;white-space:normal;color:rgb(var(--encre) / .6);cursor:default}
 .ov [data-fen=appels] tr.vide-f:hover td{background:none}
 /* L'avis d'un geste, en bas à droite ; un clic le ferme. */
-.ov [data-fen=appels] .avis-appels{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(520px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
-.ov [data-fen=appels] .avis-appels.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+.ov [data-fen=appels] .avis-appels{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(520px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-10) / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
+.ov [data-fen=appels] .avis-appels.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
 @media (max-height:780px){.ov [data-fen=appels]{--ligne:42px}}
 
 /* Détail : titre, méta, offre et voix, puis la conversation qui défile. */
@@ -35,13 +35,13 @@
 /* Dans sa fenêtre, seule la conversation défile. */
 .ov .p-vue>.f-corps:has(>.appel-d){display:flex;flex-direction:column}
 .ov .appel-d .confirmer{margin:0}
-.ov .appel-d .titre-appel{width:100%;height:30px;border:0;border-bottom:1px solid transparent;background:none;padding:0;font-size:17px;font-weight:600;color:#fff}
-.ov .appel-d .titre-appel:hover{border-bottom-color:rgba(255,255,255,.25)}
-.ov .appel-d .titre-appel:focus{outline:none;border-bottom-color:#fff}
-.ov .appel-d .meta-appel{margin-top:2px !important;font-size:11.5px;color:rgba(255,255,255,.6)}
+.ov .appel-d .titre-appel{width:100%;height:30px;border:0;border-bottom:1px solid transparent;background:none;padding:0;font-size:17px;font-weight:600;color:rgb(var(--encre))}
+.ov .appel-d .titre-appel:hover{border-bottom-color:rgb(var(--encre) / .25)}
+.ov .appel-d .titre-appel:focus{outline:none;border-bottom-color:rgb(var(--encre))}
+.ov .appel-d .meta-appel{margin-top:2px !important;font-size:var(--t-petit,11.5px);color:rgb(var(--encre) / .6)}
 .ov .appel-d .champ{margin:0}
 .ov .appel-d .lib-offre{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.ov .appel-d .lib-offre .lien-d{font-size:11px}
+.ov .appel-d .lib-offre .lien-d{font-size:var(--t-petit,11px)}
 .ov .appel-d .voix-appel{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 12px}
 .ov .appel-d .voix-appel .champ{flex:1 1 130px;min-width:0}
 .ov .appel-d .voix-appel .action{flex:none;height:32px}
@@ -50,41 +50,112 @@
 .ov .appel-d .defile-appel h3{margin-bottom:-4px !important}
 /* Transcription : heure en chasse fixe, voix en couleur, puis le texte. */
 .ov .appel-d .transcription{display:flex;flex-direction:column;gap:5px}
-.ov .appel-d .transcription li{padding-left:44px;text-indent:-44px;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.88);overflow-wrap:anywhere}
-.ov .appel-d .transcription time{display:inline-block;width:44px;text-indent:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:10.5px;color:rgba(255,255,255,.5)}
+.ov .appel-d .transcription li{padding-left:44px;text-indent:-44px;font-size:var(--t-corps,12.5px);line-height:1.45;color:rgb(var(--encre) / .88);overflow-wrap:anywhere}
+.ov .appel-d .transcription time{display:inline-block;width:44px;text-indent:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,10.5px);color:rgb(var(--encre) / .5)}
 .ov .appel-d .transcription b{margin-right:6px;font-weight:600}
-.ov :is(.appel-d,.ruby-f) .v-moi{color:#93FFB3}
+.ov :is(.appel-d,.ruby-f) .v-moi{color:rgb(var(--vert))}
 .ov :is(.appel-d,.ruby-f) .v-autre{color:var(--accent)}
 /* Analyse : chaque partie en petites capitales à gauche, le texte à droite. */
-.ov .appel-d .analyse{margin:0;display:grid;grid-template-columns:132px minmax(0,1fr);gap:7px 14px;align-items:baseline;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.88)}
-.ov .appel-d .analyse dt{font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+.ov .appel-d .analyse{margin:0;display:grid;grid-template-columns:132px minmax(0,1fr);gap:7px 14px;align-items:baseline;font-size:var(--t-corps,12.5px);line-height:1.45;color:rgb(var(--encre) / .88)}
+.ov .appel-d .analyse dt{font-size:var(--t-petit,9.5px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgb(var(--encre) / .62)}
 .ov .appel-d .analyse dd{margin:0;white-space:pre-line;overflow-wrap:anywhere}
-.ov .appel-d .analyse-brute{font-size:12.5px;line-height:1.45;white-space:pre-line;color:rgba(255,255,255,.88);overflow-wrap:anywhere}
+.ov .appel-d .analyse-brute{font-size:var(--t-corps,12.5px);line-height:1.45;white-space:pre-line;color:rgb(var(--encre) / .88);overflow-wrap:anywhere}
 /* Supprimer l'appel reste visible en bas. */
-.ov .appel-d .pied-appel{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 22px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
-.ov .appel-d .vide-appel{margin:auto 0 !important;text-align:center;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6)}
-.ov .appel-d .vide-appel b{display:block;color:#fff;font-weight:600}
+.ov .appel-d .pied-appel{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 22px;padding-top:10px;border-top:1px solid rgb(var(--encre) / .08)}
+.ov .appel-d .vide-appel{margin:auto 0 !important;text-align:center;font-size:var(--t-corps,12.5px);line-height:1.5;color:rgb(var(--encre) / .6)}
+.ov .appel-d .vide-appel b{display:block;color:rgb(var(--encre));font-weight:600}
 
 /* Panneau : le direct et les réglages de RUBY en deux boutons pleins. */
 .ov .ruby-f .lieux-f{display:flex;flex-direction:column;gap:6px}
 .ov .ruby-f .lieu-f{display:flex;flex-direction:column;gap:1px;padding:8px 12px;cursor:pointer}
-.ov .ruby-f .lieu-f b{font-size:12.5px;font-weight:600}
-.ov .ruby-f .lieu-f small{font-size:11px;color:rgba(255,255,255,.6)}
-.ov .ruby-f .lieu-f:has(:checked) small{text-shadow:none;color:rgba(255,255,255,.8)}
-.ov .ruby-f .lieu-f:has(:focus-visible){outline:1px solid #fff;outline-offset:2px}
+.ov .ruby-f .lieu-f b{font-size:var(--t-corps,12.5px);font-weight:600}
+.ov .ruby-f .lieu-f small{font-size:var(--t-petit,11px);color:rgb(var(--encre) / .6)}
+.ov .ruby-f .lieu-f:has(:checked) small{text-shadow:none;color:rgb(var(--encre) / .8)}
+.ov .ruby-f .lieu-f:has(:focus-visible){outline:1px solid rgb(var(--encre));outline-offset:2px}
 .ov .ruby-f .champ>label .marque-admin{vertical-align:1px}
-.ov .ruby-f .avis-f{margin:0 0 12px !important;padding-left:10px;border-left:2px solid rgba(255,255,255,.5);font-size:12px;line-height:1.4;color:rgba(255,255,255,.88)}
-.ov .ruby-f .avis-f.erreur{border-color:#ff8a8a;color:#ffb0b0}
+.ov .ruby-f .avis-f{margin:0 0 12px !important;padding-left:10px;border-left:2px solid rgb(var(--encre) / .5);font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--encre) / .88)}
+.ov .ruby-f .avis-f.erreur{border-color:rgb(var(--rouge-3));color:rgb(var(--rouge))}
 /* Appel en cours : voyant et durée, puis la transcription qui arrive. */
-.ov .ruby-f .live-tete{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600}
+.ov .ruby-f .live-tete{display:flex;align-items:center;gap:9px;font-size:var(--t-corps,13px);font-weight:600}
 .ov .ruby-f .live-titre{flex:1;min-width:0}
-.ov .ruby-f .live-tete time{flex:none;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:12px;font-weight:500;color:var(--accent)}
-.ov .ruby-f .meta-f{margin-top:4px !important;font-size:12px;color:rgba(255,255,255,.7)}
+.ov .ruby-f .live-tete time{flex:none;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-corps,12px);font-weight:500;color:var(--accent)}
+.ov .ruby-f .meta-f{margin-top:4px !important;font-size:var(--t-corps,12px);color:rgb(var(--encre) / .7)}
 .ov .ruby-f .tours-direct{display:flex;flex-direction:column;gap:8px;margin:12px 0 4px !important}
-.ov .ruby-f .tours-direct li{font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.9);overflow-wrap:anywhere}
+.ov .ruby-f .tours-direct li{font-size:var(--t-corps,12.5px);line-height:1.45;color:rgb(var(--encre) / .9);overflow-wrap:anywhere}
 .ov .ruby-f .tours-direct b{margin-right:6px;font-weight:600}
-.ov .ruby-f .tours-direct .partiel{color:rgba(255,255,255,.55)}
+.ov .ruby-f .tours-direct .partiel{color:rgb(var(--encre) / .55)}
 .ov .ruby-f .points{display:inline-flex;gap:3px;margin-left:5px;vertical-align:middle}
 .ov .ruby-f .points i{width:4px;height:4px;background:var(--accent);animation:ov-pouls 1.2s infinite}
 .ov .ruby-f .points i:nth-child(2){animation-delay:.15s}
 .ov .ruby-f .points i:nth-child(3){animation-delay:.3s}
+
+/* Thèmes plats : liste et détail aux valeurs de la planche, verre intact. */
+.ov.th-plat [data-fen=appels]{--ligne:56px}
+.ov.th-plat [data-fen=appels] .outils{flex-wrap:nowrap}
+.ov.th-plat [data-fen=appels] .note-outils{flex:1 1 0;font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.th-plat [data-fen=appels] .outils .espace{flex:none;width:8px}
+.ov.th-plat [data-fen=appels] .outils .actions{flex:none}
+.ov.th-plat [data-fen=appels]>.prise+.outils~.confirmer{padding-left:52px}
+/* Colonnes reprises pour 14 px ; l'appel prend ce qui reste. */
+.ov.th-plat [data-fen=appels] thead th:nth-child(1){width:104px}
+.ov.th-plat [data-fen=appels] thead th:nth-child(2){width:auto}
+.ov.th-plat [data-fen=appels] thead th:nth-child(3){width:96px}
+.ov.th-plat [data-fen=appels] thead th:nth-child(4){width:60px}
+.ov.th-plat [data-fen=appels] thead th:nth-child(5){width:76px}
+.ov.th-plat [data-fen=appels] td.mono{font-family:inherit;font-size:.875rem}
+.ov.th-plat [data-fen=appels] .t-appel{font-weight:500;line-height:1.25rem}
+.ov.th-plat [data-fen=appels] .offre-appel{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.th-plat [data-fen=appels] .offre-appel.sans{color:var(--texte-2)}
+.ov.th-plat [data-fen=appels] tr.choisi td{background:var(--selection);color:var(--texte)}
+.ov.th-plat [data-fen=appels] tr.choisi .d{color:var(--texte-2)}
+.ov.th-plat [data-fen=appels] tr.choisi td:first-child{box-shadow:inset 3px 0 0 var(--primaire)}
+.ov.th-plat [data-fen=appels] tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.th-plat [data-fen=appels] .analyse-faite{font-size:.75rem;color:var(--info)}
+.ov.th-plat [data-fen=appels] .direct-c{gap:6px;font-weight:500;color:var(--ok)}
+.ov.th-plat [data-fen=appels] .direct-c::before,.ov.th-plat .ruby-f .voyant-live{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:none}
+.ov.th-plat [data-fen=appels] tr.vide-f td{color:var(--texte-2)}
+.ov.th-plat [data-fen=appels] .avis-appels{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;color:var(--texte)}
+.ov.th-plat [data-fen=appels] .avis-appels.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+/* Détail : le titre commence après la prise, à 52 px du bord. */
+.ov.th-plat [data-fen=appel]{padding:8px 16px 12px}
+.ov.th-plat .appel-d{gap:10px}
+.ov.th-plat [data-fen=appel] .appel-d .titre-appel{width:calc(100% - 36px);margin-left:36px}
+.ov.th-plat .appel-d .titre-appel{height:auto;min-height:44px;border-bottom:1px solid var(--contour);font-size:1.125rem;font-weight:500;color:var(--texte)}
+.ov.th-plat .appel-d .titre-appel:hover{border-bottom-color:var(--texte)}
+.ov.th-plat .appel-d .titre-appel:focus{border-bottom-color:var(--primaire)}
+.ov.th-plat .appel-d .titre-appel:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+/* Supprimer l'appel : la phrase passe à la ligne au lieu d'être coupée. */
+.ov.th-plat .appel-d .confirmer{flex-wrap:wrap;padding:4px 4px 4px 16px;border-radius:12px;white-space:normal}
+.ov.th-plat .appel-d .confirmer p{flex:1 1 200px;overflow:visible}
+.ov.th-plat .appel-d .meta-appel{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.th-plat .appel-d .saisie{min-height:44px}
+.ov.th-plat .appel-d .voix-appel .action{height:auto}
+.ov.th-plat .appel-d .defile-appel{scrollbar-width:thin}
+.ov.th-plat .appel-d .defile-appel .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
+.ov.th-plat .appel-d .transcription{gap:4px}
+.ov.th-plat .appel-d .transcription li{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat .appel-d .transcription time{font-size:.75rem;color:var(--texte-2)}
+.ov.th-plat .appel-d .transcription b{font-weight:500}
+.ov.th-plat :is(.appel-d,.ruby-f) .v-moi{color:var(--ok)}
+.ov.th-plat :is(.appel-d,.ruby-f) .v-autre{color:var(--info)}
+.ov.th-plat .appel-d .analyse{grid-template-columns:112px minmax(0,1fr);gap:4px 12px;font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat .appel-d .analyse dt{font-size:.75rem;line-height:1rem;font-weight:400;color:var(--texte-2)}
+.ov.th-plat .appel-d .analyse-brute{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat .appel-d .pied-appel{gap:8px;padding-top:8px;border-top:1px solid var(--filet)}
+.ov.th-plat .appel-d .vide-appel{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.th-plat .appel-d .vide-appel b{font-weight:500;color:var(--texte)}
+/* Panneau RUBY : choix de 44 px, avis pleins, direct sans lueur. */
+.ov.th-plat .ruby-f .lieu-f{min-height:44px;justify-content:center}
+.ov.th-plat .ruby-f .lieu-f b{font-size:.875rem;font-weight:500}
+.ov.th-plat .ruby-f .lieu-f small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.th-plat .ruby-f .lieu-f:has(:checked) small{color:var(--sur-primaire-doux)}
+.ov.th-plat .ruby-f .lieu-f:has(:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.ov.th-plat .ruby-f .avis-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--surface-basse);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat .ruby-f .avis-f.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.th-plat .ruby-f .live-tete{gap:8px;font-size:.875rem;font-weight:500}
+.ov.th-plat .ruby-f .live-tete time{font-size:.875rem;font-weight:400;color:var(--texte-2)}
+.ov.th-plat .ruby-f .meta-f{font-size:.875rem;color:var(--texte-2)}
+.ov.th-plat .ruby-f .tours-direct li{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat .ruby-f .tours-direct b{font-weight:500}
+.ov.th-plat .ruby-f .tours-direct .partiel{color:var(--texte-2)}
+.ov.th-plat .ruby-f .points i{border-radius:50%;background:var(--primaire)}

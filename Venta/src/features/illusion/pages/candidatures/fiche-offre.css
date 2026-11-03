@@ -1,23 +1,23 @@
 /* Fiche d'une offre partagée par les pages qui en montrent une. */
-.ov .avis-fiche{margin:0 0 12px !important;padding:6px 10px;border-left:2px solid rgb(255 255 255 / .6);background:rgb(255 255 255 / .06);font-size:12px;line-height:1.4;color:#fff;overflow-wrap:anywhere}
-.ov .avis-fiche.erreur{border-left-color:#ff8a8a;background:rgb(255 138 138 / .08);color:#ffd0d0}
-.ov .fiche-offre .f-meta .lien-d{font-size:11px}
-.ov .fiche-offre .refus,.ov .saisies-f .refus{color:#ffb0b0}
+.ov .avis-fiche{margin:0 0 12px !important;padding:6px 10px;border-left:2px solid rgb(var(--encre) / .6);background:rgb(var(--encre) / .06);font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--encre));overflow-wrap:anywhere}
+.ov .avis-fiche.erreur{border-left-color:rgb(var(--rouge-3));background:rgb(var(--rouge-3) / .08);color:rgb(var(--rouge-2))}
+.ov .fiche-offre .f-meta .lien-d{font-size:var(--t-petit,11px)}
+.ov .fiche-offre .refus,.ov .saisies-f .refus{color:rgb(var(--rouge))}
 .ov .fiche-offre .cle-offre{grid-column:span 2}
-.ov .fiche-offre .cle-offre .mono{font-size:11px;color:rgb(255 255 255 / .7)}
-.ov .fiche-offre .def .d{font-size:12px}
+.ov .fiche-offre .cle-offre .mono{font-size:var(--t-petit,11px);color:rgb(var(--encre) / .7)}
+.ov .fiche-offre .def .d{font-size:var(--t-corps,12px)}
 .ov .fiche-offre .lien{font:inherit;cursor:pointer;overflow-wrap:anywhere}
 /* Suivi : le carré dit ce qui est arrivé, de la couleur de l'état. */
-.ov .carre.s-vert{color:#93FFB3}.ov .carre.s-jaune{color:#FFF58D}.ov .carre.s-orange{color:#FFC08A}.ov .carre.s-bleu{color:#8FB4FF}.ov .carre.s-rouge{color:#ffb0b0}
+.ov .carre.s-vert{color:rgb(var(--vert))}.ov .carre.s-jaune{color:rgb(var(--jaune))}.ov .carre.s-orange{color:rgb(var(--orange))}.ov .carre.s-bleu{color:rgb(var(--bleu))}.ov .carre.s-rouge{color:rgb(var(--rouge))}
 /* Compétence manquante : lilas, la coche dit qu'elle est ajoutée. */
-.ov .puce.ajoutee{border-color:rgb(185 168 255 / .55);color:#B9A8FF}
+.ov .puce.ajoutee{border-color:rgb(var(--violet) / .55);color:rgb(var(--violet))}
 .ov .bloc-f>summary .compteur{margin-left:4px}
 .ov .bloc-f .action{margin-top:4px}
 .ov .bloc-f .liste-f>li{flex-wrap:wrap;row-gap:0;padding:4px 0}
 .ov .bloc-f .liste-f .lien-d{margin-left:12px}
 .ov .annonce-f{white-space:pre-wrap}
 /* Ce qui a été saisi : question, valeur, origine et signalement. */
-.ov .saisies-f .q{flex:1 1 100%;color:rgb(255 255 255 / .7);font-size:11.5px}
+.ov .saisies-f .q{flex:1 1 100%;color:rgb(var(--encre) / .7);font-size:var(--t-petit,11.5px)}
 .ov .saisies-f .v{flex:1;min-width:0;overflow-wrap:anywhere}
 .ov .saisies-f .d{margin-left:0}
 /* Préparation : un onglet par interlocuteur, questions cochées. */
@@ -26,14 +26,38 @@
 .ov .onglets-q .compteur{margin-left:4px}
 .ov .questions-q{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
 .ov .questions-q ul{display:flex;flex-direction:column;gap:4px;margin:4px 0 0 18px}
-.ov .noeud-q{display:flex;gap:8px;width:100%;padding:4px 0;text-align:left;font-size:12px;line-height:1.35;color:rgb(255 255 255 / .9)}
-.ov .noeud-q small{display:block;font-size:10.5px;color:rgb(255 255 255 / .55)}
+.ov .noeud-q{display:flex;gap:8px;width:100%;padding:4px 0;text-align:left;font-size:var(--t-corps,12px);line-height:1.35;color:rgb(var(--encre) / .9)}
+.ov .noeud-q small{display:block;font-size:var(--t-petit,10.5px);color:rgb(var(--encre) / .55)}
 .ov .marque-q{flex:none;width:14px;text-align:center}
-.ov .noeud-q.etat-parcouru .marque-q{color:#93FFB3}.ov .noeud-q.etat-non .marque-q{color:#ffb0b0}
-.ov .reponse-q{margin-left:22px;font-size:11.5px;color:rgb(255 255 255 / .75)}
+.ov .noeud-q.etat-parcouru .marque-q{color:rgb(var(--vert))}.ov .noeud-q.etat-non .marque-q{color:rgb(var(--rouge))}
+.ov .reponse-q{margin-left:22px;font-size:var(--t-petit,11.5px);color:rgb(var(--encre) / .75)}
 .ov .reponse-q>summary{cursor:pointer}
 .ov .reponse-q>p{margin-top:4px !important}
-.ov .liste-q{margin:4px 0 10px;padding-left:14px;list-style:square;font-size:12px;line-height:1.45}
+.ov .liste-q{margin:4px 0 10px;padding-left:14px;list-style:square;font-size:var(--t-corps,12px);line-height:1.45}
 /* Ajout d'une compétence au profil : titre, profil visé, champs et gestes. */
 .ov .titre-ajout{margin-bottom:8px;font-size:14px;font-weight:600;line-height:1.3}
 .ov .actions-ajout{display:flex;justify-content:flex-end;gap:22px;margin-top:6px}
+
+/* Thèmes plats : avis teintés, textes seconds lisibles, suivi par jetons. */
+.ov.th-plat .avis-fiche{padding:8px 12px;border-left:0;border-radius:8px;background:var(--neutre-doux);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat .avis-fiche.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.th-plat .fiche-offre .f-meta .lien-d{font-size:.875rem}
+.ov.th-plat .fiche-offre .refus,.ov.th-plat .saisies-f .refus{color:var(--erreur)}
+.ov.th-plat .fiche-offre .cle-offre .mono{font-size:.75rem;color:var(--texte-2)}
+.ov.th-plat .fiche-offre .def .d{font-size:.875rem}
+.ov.th-plat .carre.s-vert{color:var(--ok)}
+.ov.th-plat .carre.s-jaune,.ov.th-plat .carre.s-orange{color:var(--attente)}
+.ov.th-plat .carre.s-bleu{color:var(--info)}
+.ov.th-plat .carre.s-rouge{color:var(--erreur)}
+.ov.th-plat .puce.ajoutee{border-color:var(--primaire);background:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.th-plat .saisies-f .q{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+/* Préparation : questions en 14 px, réponses et notes en texte second. */
+.ov.th-plat .onglets-q{gap:0 4px;margin-bottom:8px}
+.ov.th-plat .noeud-q{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat .noeud-q small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.th-plat .noeud-q.etat-parcouru .marque-q{color:var(--ok)}
+.ov.th-plat .noeud-q.etat-non .marque-q{color:var(--erreur)}
+.ov.th-plat .reponse-q{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.th-plat .liste-q{font-size:.875rem;line-height:1.25rem}
+.ov.th-plat .titre-ajout{font-size:1rem;font-weight:500;line-height:1.5rem}
+.ov.th-plat .actions-ajout{gap:4px}

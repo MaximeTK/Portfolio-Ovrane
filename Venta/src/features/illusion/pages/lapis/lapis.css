@@ -11,10 +11,10 @@
 .ov .lapis .outils{container:outils-l/inline-size}
 .ov .lapis .onglets-l{flex:none;display:flex;align-items:center}
 .ov .lapis .onglets-l .compteur{margin-left:-1px}
-.ov .lapis .onglets-l .filtre.actif .compteur{color:#fff}
+.ov .lapis .onglets-l .filtre.actif .compteur{color:rgb(var(--encre))}
 /* Ce que la passe cherche, sur deux lignes à côté des onglets. */
-.ov .lapis .resume{display:flex;flex-direction:column;justify-content:center;min-width:0;margin-left:28px;padding-left:18px;border-left:1px solid rgba(255,255,255,.14);font-size:11.5px;line-height:1.35;color:rgba(255,255,255,.7);white-space:nowrap}
-.ov .lapis .resume b{font-weight:500;color:#fff}
+.ov .lapis .resume{display:flex;flex-direction:column;justify-content:center;min-width:0;margin-left:28px;padding-left:18px;border-left:1px solid rgb(var(--encre) / .14);font-size:var(--t-petit,11.5px);line-height:1.35;color:rgb(var(--encre) / .7);white-space:nowrap}
+.ov .lapis .resume b{font-weight:500;color:rgb(var(--encre))}
 @media (max-width:1366px){.ov .lapis .resume{margin-left:16px;padding-left:12px}.ov .lapis .onglets-l .filtre+.filtre{margin-left:14px}}
 /* Fenêtre resserrée : ce que la passe cherche se retire. */
 @container outils-l (max-width:900px){.ov .lapis .resume{display:none}}
@@ -28,52 +28,99 @@
 .ov .lapis .galerie.haute:not(.ajuste){grid-auto-rows:minmax(146px,auto)}
 .ov .lapis .galerie::-webkit-scrollbar{display:none}
 /* Carte : trait fin sans verre, initiales dans un carré, puis le texte. */
-.ov .lapis .personne{min-width:0;min-height:0;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);transition:box-shadow .2s,background .2s}
+.ov .lapis .personne{min-width:0;min-height:0;overflow:hidden;box-shadow:inset 0 0 0 1px rgb(var(--encre) / calc(.1 * var(--lueur)));transition:box-shadow .2s,background .2s}
 .ov .lapis .galerie.ajuste .personne{container-type:size}
 @container (max-height:1px){.ov .lapis .personne>div{visibility:hidden}}
-.ov .lapis .personne:hover{background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.ov .lapis .personne:hover{background:rgb(var(--encre) / .04);box-shadow:inset 0 0 0 1px rgb(var(--encre) / calc(.3 * var(--lueur)))}
 .ov .lapis .personne.cliquable{cursor:pointer}
-.ov .lapis .personne.ouverte{background:rgb(255 255 255 / .1);box-shadow:inset 0 0 0 1px #fff}
+.ov .lapis .personne.ouverte{background:rgb(var(--encre) / .1);box-shadow:inset 0 0 0 1px rgb(var(--encre) / var(--lueur))}
 .ov .lapis .personne>div{display:flex;align-items:center;gap:12px;height:100%;padding:12px 14px}
-.ov :is(.lapis,.lapis-offre) .initiales{position:relative;flex:none;display:grid;place-items:center;width:40px;height:40px;overflow:hidden;border:1px solid rgba(255,255,255,.3);font-size:13px;font-weight:600;letter-spacing:.06em}
+.ov :is(.lapis,.lapis-offre) .initiales{position:relative;flex:none;display:grid;place-items:center;width:40px;height:40px;overflow:hidden;border:1px solid rgb(var(--encre) / .3);font-size:var(--t-corps,13px);font-weight:600;letter-spacing:.06em}
 .ov :is(.lapis,.lapis-offre) .initiales img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .ov .lapis .qui{min-width:0;display:flex;flex-direction:column;line-height:17px}
 .ov .lapis .qui>*{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ov .lapis .qui b{font-size:13px;font-weight:600}
-.ov .lapis .qui .titre-c{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-weight:600;text-align:left;color:#fff}
-.ov .lapis .qui .titre-c:hover{text-decoration:underline;text-decoration-color:rgba(255,255,255,.4);text-underline-offset:3px}
-.ov .lapis .qui .titre-p{font-size:12px;color:rgba(255,255,255,.75)}
-.ov .lapis .qui .poste{font-size:11.5px;color:rgba(255,255,255,.9)}
-.ov .lapis .qui .poste i{font-style:normal;color:rgba(255,255,255,.55)}
-.ov .lapis .qui .nature{margin-right:6px;padding:0 5px;border:1px solid rgba(255,255,255,.22);font-size:10.5px}
-.ov .lapis .qui .lien{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;font-size:11.5px;font-weight:600;text-decoration:none;color:rgba(255,255,255,.88)}
-.ov .lapis .qui .lien:hover{color:#fff}
+.ov .lapis .qui b{font-size:var(--t-corps,13px);font-weight:600}
+.ov .lapis .qui .titre-c{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-weight:600;text-align:left;color:rgb(var(--encre))}
+.ov .lapis .qui .titre-c:hover{text-decoration:underline;text-decoration-color:rgb(var(--encre) / .4);text-underline-offset:3px}
+.ov .lapis .qui .titre-p{font-size:var(--t-corps,12px);color:rgb(var(--encre) / .75)}
+.ov .lapis .qui .poste{font-size:var(--t-petit,11.5px);color:rgb(var(--encre) / .9)}
+.ov .lapis .qui .poste i{font-style:normal;color:rgb(var(--encre) / .55)}
+.ov .lapis .qui .nature{margin-right:6px;padding:0 5px;border:1px solid rgb(var(--encre) / .22);font-size:var(--t-petit,10.5px)}
+.ov .lapis .qui .lien{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;font-size:var(--t-petit,11.5px);font-weight:600;text-decoration:none;color:rgb(var(--encre) / .88)}
+.ov .lapis .qui .lien:hover{color:rgb(var(--encre))}
 .ov .lapis .qui .lien svg{width:10px;height:10px}
 .ov .lapis .qui .liens{display:flex;gap:14px}
-.ov .lapis .qui .origine{font-size:11px;color:rgba(255,255,255,.55)}
-.ov .lapis .qui .origine :is(a,button){font:inherit;color:rgba(255,255,255,.8);text-decoration:underline;text-decoration-color:rgba(255,255,255,.3);text-underline-offset:2px}
-.ov .lapis .qui .origine :is(a,button):hover{color:#fff}
+.ov .lapis .qui .origine{font-size:var(--t-petit,11px);color:rgb(var(--encre) / .55)}
+.ov .lapis .qui .origine :is(a,button){font:inherit;color:rgb(var(--encre) / .8);text-decoration:underline;text-decoration-color:rgb(var(--encre) / .3);text-underline-offset:2px}
+.ov .lapis .qui .origine :is(a,button):hover{color:rgb(var(--encre))}
 /* Le résumé tient sur deux lignes ; la carte le donne entier au survol. */
-.ov .lapis .qui .resume-c{display:-webkit-box;margin-top:3px;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;font-size:11.5px;line-height:16px;color:rgba(255,255,255,.7)}
-.ov .lapis .vide-l{grid-column:1/-1;align-self:start;padding:12px 0;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.62)}
-.ov .lapis .vide-l.erreur{color:#ffd0d0}
+.ov .lapis .qui .resume-c{display:-webkit-box;margin-top:3px;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;font-size:var(--t-petit,11.5px);line-height:16px;color:rgb(var(--encre) / .7)}
+.ov .lapis .vide-l{grid-column:1/-1;align-self:start;padding:12px 0;font-size:var(--t-corps,12.5px);line-height:1.5;color:rgb(var(--encre) / .62)}
+.ov .lapis .vide-l.erreur{color:rgb(var(--rouge-2))}
 .ov .lapis .pages .numero{display:contents}
 .ov .lapis .pagination .trou{min-width:16px;text-align:center;line-height:28px}
 .ov .lapis .pagination .compteur{white-space:nowrap}
 /* L'avis d'un geste, en bas à droite ; un clic le ferme. */
-.ov .lapis .avis-l{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(560px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid #fff;background:rgb(10 10 14 / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:12px;line-height:1.4;color:#fff;cursor:pointer;overflow-wrap:anywhere}
-.ov .lapis .avis-l.erreur{border-left-color:#ff8a8a;color:#ffd0d0}
+.ov .lapis .avis-l{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(560px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-10) / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
+.ov .lapis .avis-l.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
 
 /* Offre repérée : auteur du post, résumé, puis détail en lignes. */
 .ov .lapis-offre .auteur{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.ov .lapis-offre .auteur p{min-width:0;font-size:12px;line-height:1.4;color:rgba(255,255,255,.75)}
-.ov .lapis-offre .auteur p b{display:block;font-size:13px;font-weight:600;color:#fff}
-.ov .lapis-offre .resume-offre{margin-bottom:10px !important;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.88)}
+.ov .lapis-offre .auteur p{min-width:0;font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--encre) / .75)}
+.ov .lapis-offre .auteur p b{display:block;font-size:var(--t-corps,13px);font-weight:600;color:rgb(var(--encre))}
+.ov .lapis-offre .resume-offre{margin-bottom:10px !important;font-size:var(--t-corps,12.5px);line-height:1.5;color:rgb(var(--encre) / .88)}
 .ov .lapis-offre .liste-f>li{flex-wrap:wrap;row-gap:2px;padding:6px 0}
 .ov .lapis-offre .liste-f .d{display:inline-flex;align-items:center;gap:5px;text-align:right;overflow-wrap:anywhere}
-.ov .lapis-offre .liste-f a.d{color:rgba(255,255,255,.75);transition:color .2s}
-.ov .lapis-offre .liste-f a.d:hover{color:#fff}
+.ov .lapis-offre .liste-f a.d{color:rgb(var(--encre) / .75);transition:color .2s}
+.ov .lapis-offre .liste-f a.d:hover{color:rgb(var(--encre))}
 .ov .lapis-offre .liste-f a.d svg{flex:none;width:10px;height:10px}
-.ov .lapis-reglages .erreur-f{margin-top:10px !important;padding:8px 10px;border-left:2px solid #ff8a8a;background:rgb(255 138 138 / .08);font-size:12px;line-height:1.4;color:#ffd0d0;overflow-wrap:anywhere}
+.ov .lapis-reglages .erreur-f{margin-top:10px !important;padding:8px 10px;border-left:2px solid rgb(var(--rouge-3));background:rgb(var(--rouge-3) / .08);font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--rouge-2));overflow-wrap:anywhere}
 .ov .lapis-reglages .champ>label .marque-admin{margin-left:8px}
 .ov .lapis-reglages .champ+.aide-champ{margin:-6px 0 12px !important}
+
+/* Thèmes plats : le panneau centre sa croix, ses gestes éteints se lisent. */
+.ov.th-plat:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete{align-items:center}
+.ov.th-plat:has([data-fen=galerie].lapis) [data-fen=panneau] .p-onglet{height:auto}
+.ov.th-plat:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete .f-btn{margin-top:0}
+.ov.th-plat:has([data-fen=galerie].lapis) [data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+/* Onglets : l'ouvert en teinte douce ; ce que la passe cherche en petit. */
+.ov.th-plat .lapis .onglets-l{gap:4px}
+.ov.th-plat .lapis .onglets-l .filtre{padding:0 6px}
+.ov.th-plat .lapis .onglets-l .filtre+.filtre{margin-left:0}
+.ov.th-plat .lapis .onglets-l .compteur{margin-left:4px}
+.ov.th-plat .lapis .onglets-l .filtre.actif{background:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.th-plat .lapis .onglets-l .filtre.actif .compteur{color:var(--texte)}
+.ov.th-plat .lapis .resume{margin-left:12px;padding-left:12px;border-left-color:var(--filet);font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.th-plat .lapis .resume b{color:var(--texte)}
+@container outils-l (max-width:1064px){.ov.th-plat .lapis .resume{display:none}}
+/* Galerie : cartes de 12 px au filet, survol et ouverte bien distincts. */
+.ov.th-plat .lapis .galerie{gap:8px;padding:12px}
+.ov.th-plat .lapis .personne{border-radius:12px;box-shadow:inset 0 0 0 1px var(--filet)}
+.ov.th-plat .lapis .personne:hover{background:var(--surface-basse);box-shadow:inset 0 0 0 1px var(--contour)}
+.ov.th-plat .lapis .personne.ouverte{background:var(--selection);box-shadow:inset 0 0 0 2px var(--primaire)}
+.ov.th-plat .lapis .personne>div{padding:8px 12px}
+.ov.th-plat :is(.lapis,.lapis-offre) .initiales{border:0;border-radius:50%;background:var(--primaire-doux);font-size:.875rem;font-weight:500;color:var(--sur-primaire-doux)}
+.ov.th-plat .lapis .qui{line-height:1.25rem}
+.ov.th-plat .lapis .qui b{font-size:.875rem;font-weight:500}
+.ov.th-plat .lapis .qui .titre-c{font-weight:500;color:var(--primaire)}
+.ov.th-plat .lapis .qui .titre-c:hover{text-decoration-color:currentColor}
+.ov.th-plat .lapis .qui .titre-p{font-size:.875rem;color:var(--texte-2)}
+.ov.th-plat .lapis .qui .poste{font-size:.75rem;line-height:1rem;color:var(--texte)}
+.ov.th-plat .lapis .qui .poste i{color:var(--texte-2)}
+.ov.th-plat .lapis .qui .nature{border-color:var(--contour);border-radius:6px;font-size:.75rem;color:var(--texte-2)}
+.ov.th-plat .lapis .qui .lien{min-height:24px;min-width:0;font-size:.75rem;line-height:1rem;font-weight:500;color:var(--primaire)}
+.ov.th-plat .lapis .qui .lien:hover{color:var(--primaire);text-decoration:underline;text-underline-offset:2px}
+.ov.th-plat .lapis .qui .origine{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.th-plat .lapis .qui .origine :is(a,button),.ov.th-plat .lapis .qui .origine :is(a,button):hover{color:var(--primaire);text-decoration-color:currentColor}
+.ov.th-plat .lapis .qui .resume-c{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.th-plat .lapis .vide-l{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.th-plat .lapis .vide-l.erreur{color:var(--erreur)}
+.ov.th-plat .lapis .pl:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.th-plat .lapis .avis-l{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat .lapis .avis-l.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+/* Panneau : offre repérée et réglages en 14 px, liens en primaire. */
+.ov.th-plat .lapis-offre .auteur p{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.th-plat .lapis-offre .auteur p b{font-size:.875rem;font-weight:500;color:var(--texte)}
+.ov.th-plat .lapis-offre .resume-offre{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.th-plat .lapis-offre .liste-f a.d,.ov.th-plat .lapis-offre .liste-f a.d:hover{color:var(--primaire)}
+.ov.th-plat .lapis-reglages .erreur-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;line-height:1.25rem;color:var(--sur-erreur-douce)}

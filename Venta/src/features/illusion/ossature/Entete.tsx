@@ -1,9 +1,10 @@
 'use client';
 
 import '../styles/illusion.css';
+import '../styles/themes.css';
 import { useEffect, useRef, useState } from 'react';
 import { useUIStore } from '@/lib/uiStore';
-import { useApparence } from '../apparence';
+import { classesTheme, useApparence } from '../apparence';
 import type { Compte } from '../api';
 import { DUREES, ecrire } from '../partage/glyphes';
 import { LienIllusion } from '../partage/LienIllusion';
@@ -31,6 +32,7 @@ type ProprietesEntete = { compte: Compte; visible: boolean };
 export function Entete({ compte, visible }: ProprietesEntete) {
   const page = useUIStore((s) => (s.page?.startsWith('illusion/') ? s.page.slice(9).split('?')[0] : null));
   const matiere = useApparence((s) => s.matiere);
+  const theme = useApparence((s) => s.theme);
   // Les fenêtres ne bougent pas au passage ; seuls les noms des canaux s'écrivent
   const barre = useRef<HTMLDivElement>(null);
   const vuAvant = useRef(visible);
@@ -60,10 +62,9 @@ export function Entete({ compte, visible }: ProprietesEntete) {
   );
 
   return (
-    <div ref={barre} inert={!visible} className={`ov ov-barre mat-${matiere}${visible ? ' visible' : ''}${page === 'accueil' ? ' sur-accueil' : ''}`}>
+    <div ref={barre} inert={!visible} className={`ov ov-barre mat-${matiere} ${classesTheme(theme)}${visible ? ' visible' : ''}${page === 'accueil' ? ' sur-accueil' : ''}`}>
       <nav className="barre-canaux" aria-label="Canaux d'Illusion">
         <div className="cote gauche">
-          {onglet('reglages', 'Réglages', REGLAGES)}
           {onglet('offres', 'Offres')}
           {onglet('candidatures', 'Candidatures')}
           {onglet('documents', 'Documents')}
@@ -81,8 +82,11 @@ export function Entete({ compte, visible }: ProprietesEntete) {
           {onglet('mails', 'Mails')}
           {onglet('appels', 'Appels')}
           {onglet('relations', 'Relations')}
-          {onglet('profil', 'Profil', PERSONNE)}
           {compte.admin && <MenuAdministration page={page} />}
+        </div>
+        <div className="coin">
+          {onglet('reglages', 'Réglages', REGLAGES)}
+          {onglet('profil', 'Profil', PERSONNE)}
         </div>
       </nav>
     </div>

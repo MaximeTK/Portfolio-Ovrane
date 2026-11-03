@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { COLOR_PALETTES } from '@/features/fond/colorPalettes';
-import { useApparence, type Matiere } from '../../apparence';
+import { useApparence, type Matiere, type Theme } from '../../apparence';
 import type { Onglet } from '../../dock/Panneau';
 
 const PALETTES = Object.values(COLOR_PALETTES);
@@ -11,11 +11,17 @@ const MATIERES: { cle: Matiere; nom: string; detail: string }[] = [
   { cle: 'verre', nom: 'Verre', detail: 'Flou, halos et liseré' },
   { cle: 'teinte', nom: 'Teinte', detail: 'Fond sombre uni' },
 ];
+const THEMES: { cle: Theme; nom: string; detail: string }[] = [
+  { cle: 'verre', nom: 'Glassmorphisme', detail: 'Verre, texte en glyphes' },
+  { cle: 'clair', nom: 'Clair', detail: 'Fenêtres blanches, simple fondu' },
+  { cle: 'sombre', nom: 'Sombre', detail: 'Fenêtres sombres, simple fondu' },
+];
 
-// Palette d'Ovrane (compte) et matière des fenêtres ; Fermer défait l'essai.
+// Thème, palette d'Ovrane (compte) et matière ; Fermer défait l'essai.
 export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fermer: () => void; dire: (t: string, e?: boolean) => void }): Onglet {
   const palette = useBackgroundStore((s) => s.currentPalette);
   const matiere = useApparence((s) => s.matiere);
+  const theme = useApparence((s) => s.theme);
   const gardee = useRef<string | null>(null);
 
   // À la fermeture, ce qui n'a pas été enregistré se défait.
@@ -26,20 +32,22 @@ export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fe
     }
     if (gardee.current === null) return;
     if (useBackgroundStore.getState().currentPalette.id !== gardee.current) useBackgroundStore.getState().setBackground(gardee.current);
-    const { matiere: essayee, enregistree, choisirMatiere } = useApparence.getState();
+    const { matiere: essayee, enregistree, choisirMatiere, theme: themeEssaye, themeEnregistre, choisirTheme } = useApparence.getState();
     if (essayee !== enregistree) choisirMatiere(enregistree);
+    if (themeEssaye !== themeEnregistre) choisirTheme(themeEnregistre);
     gardee.current = null;
   }, [actif]);
 
   const enregistrer = async () => {
     try {
       if (palette.id !== gardee.current) useBackgroundStore.getState().choisirFond(palette.id);
-      if (matiere !== useApparence.getState().enregistree) await useApparence.getState().enregistrer(matiere);
+      const { enregistree, themeEnregistre, enregistrer: garder } = useApparence.getState();
+      if (matiere !== enregistree || theme !== themeEnregistre) await garder({ matiere, theme });
       gardee.current = palette.id;
       dire('Apparence enregistrée : elle suit le compte partout.');
       fermer();
     } catch (e) {
-      dire(`Matière non enregistrée : ${e instanceof Error ? e.message : String(e)}`, true);
+      dire(`Apparence non enregistrée : ${e instanceof Error ? e.message : String(e)}`, true);
     }
   };
 
@@ -48,6 +56,18 @@ export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fe
     corps: (
       <div className="apparence">
         <div className="section-f">
+          <h3>Thème</h3>
+          <div className="matieres themes" role="radiogroup" aria-label="Thème d'Illusion">
+            {THEMES.map((t) => (
+              <label key={t.cle} className="choix matiere">
+                <input type="radio" name="theme" className="cache" checked={theme === t.cle} onChange={() => useApparence.getState().choisirTheme(t.cle)} />
+                <span className={`apercu-mat t-${t.cle}`} aria-hidden="true" />
+                <span><b>{t.nom}</b><small>{t.detail}</small></span>
+              </label>
+            ))}
+          </div>
+        </div>
+        {theme === 'verre' && <><div className="section-f">
           <h3 className="h3-val">Palette<span className="val">{palette.name}</span></h3>
           <div className="palettes" role="radiogroup" aria-label="Palettes">
             {PALETTES.map((p) => (
@@ -69,7 +89,7 @@ export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fe
               </label>
             ))}
           </div>
-        </div>
+        </div></>}
       </div>
     ),
     pied: (
@@ -77,6 +97,7 @@ export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fe
         <button type="button" className="action gauche" onClick={() => {
           useBackgroundStore.getState().setBackground('default');
           useApparence.getState().choisirMatiere('teinte');
+          useApparence.getState().choisirTheme('verre');
         }}>Par défaut</button>
         <button type="button" className="action" onClick={fermer}>Fermer</button>
         <button type="button" className="action plein" onClick={enregistrer}>Enregistrer<span className="ico">

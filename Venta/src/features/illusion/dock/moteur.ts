@@ -9,7 +9,7 @@ export type Arbre = Feuille | Partage;
 export type Zone = { x: number; y: number; w: number; h: number };
 export type ArbreDepart = Arbre | ((zone: Zone, style: CSSStyleDeclaration) => Arbre);
 
-export const ECART = 16, SEUIL = 6, BORD = 26, MARGE = 0.3, ARMEMENT = 450, IMMOBILE = 10;
+export const ECART = 16, DECROCHE = 16, SEUIL = 6, BORD = 26, MARGE = 0.3, ARMEMENT = 450, IMMOBILE = 10;
 // Glissement des fenêtres vers leur place, comme la feuille de style (0,3 s)
 export const DUREE_RANGEMENT = 300;
 export const TRANSITION_DE = (duree: number, delai = 0) => ['left', 'top', 'width', 'height'].map((p) => `${p} ${Math.round(duree)}ms cubic-bezier(.2,.8,.2,1) ${Math.round(delai)}ms`).join(',');
@@ -72,7 +72,7 @@ type Cote = 'gauche' | 'droite' | 'haut' | 'bas';
 type Cible = { remplir?: boolean; bord?: boolean; id?: string; cote?: Cote };
 type Fente = { n: Partage; a: number; b: number; ta: number; tb: number; ma: number; mb: number; somme: number; total: number; ligne: boolean; ajoutA: number; ajoutB: number; libreA: number; libreB: number } & Zone;
 type Calcul = { res: Record<string, Zone>; fentes: Fente[] };
-type EtatFenetre = { flot: Zone | null; tailleFlot: Taille | null; z: string };
+type EtatFenetre = { flot: Zone | null; tailleFlot: Taille | null; z: string; retour?: { avant: Arbre | null; apres: string } };
 // Disposition d'une page gardée pendant la session, jusqu'à la remise
 type Memoire = { racine: Arbre | null; fen: Record<string, EtatFenetre>; zMax: number; change: boolean };
 type Action =
@@ -499,8 +499,47 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   }
   const cle = (c: Cible | null) => (!c ? '' : c.remplir ? 'remplir' : (c.bord ? 'bord-' : c.id + '-') + c.cote);
 
+  // Sortie de l'arbre : sa case d'avant reste connue tant que rien ne change
+  const sortirDeLArbre = (id: string) => {
+    const avant = copie(memoire.racine);
+    memoire.racine = normaliser(retirer(memoire.racine, id));
+    etat(id).retour = { avant, apres: JSON.stringify(memoire.racine) };
+  };
+  // Clic sur la prise : détachée tout de suite, ou remise en place
+  const basculer = (id: string) => {
+    const f = etat(id), el = els[id];
+    if (!el) return;
+    if (!f.flot) {
+      const c = cadre(), r = el.getBoundingClientRect(), m = mini(id), t = f.tailleFlot || o.tailles()[id]?.flot || [r.width, r.height];
+      const w = Math.max(Math.min(t[0], c.r.width - 40), m[0]), h = Math.max(Math.min(t[1], c.r.height - 40), m[1]);
+      f.flot = { x: r.left - c.r.left + DECROCHE, y: r.top - c.r.top + DECROCHE, w, h };
+      f.tailleFlot = [w, h];
+      el.dataset.flot = '1';
+      el.style.zIndex = f.z = String(++memoire.zMax);
+      sortirDeLArbre(id);
+      poser(el, f.flot);
+    } else {
+      memoire.racine = f.retour?.apres === JSON.stringify(memoire.racine) ? f.retour.avant
+        : normaliser((o.elements?.(id) && placerElement(id)) || inserer(memoire.racine, { bord: true, cote: 'droite' }, id));
+      f.flot = null;
+      f.z = '';
+      f.retour = undefined;
+      delete el.dataset.flot;
+      el.style.zIndex = '';
+    }
+    changer();
+    ranger(true);
+  };
+  // Le clic qui finit un glissement de la prise ne bascule pas
+  let glisse = false;
+  const cliquer = (e: MouseEvent) => {
+    const el = (e.target as HTMLElement).closest('.prise')?.closest<HTMLElement>('[data-fen]');
+    if (el && !glisse) basculer(el.dataset.fen!);
+  };
+
   const presser = (e: PointerEvent) => {
     const cible = e.target as HTMLElement;
+    glisse = false;
     // Tout clic sur une fenêtre flottante la passe au premier plan
     const dessus = cible.closest<HTMLElement>('[data-fen]');
     if (dessus && etat(dessus.dataset.fen!).flot) dessus.style.zIndex = etat(dessus.dataset.fen!).z = String(++memoire.zMax);
@@ -571,7 +610,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
         a.dy = Math.min(a.dy, 30);
         f.flot = { x: e.clientX - c.r.left - a.dx, y: r.top - c.r.top, w, h };
         f.tailleFlot = [w, h];
-        memoire.racine = normaliser(retirer(memoire.racine, a.id));
+        sortirDeLArbre(a.id);
         base = calculer(memoire.racine);
         appliquer(base, a.id, false);
       }
@@ -622,6 +661,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     clearTimeout(a.minuteur);
     entiere.classList.remove('vu');
     if (!a.actif) return;
+    glisse = true;
     changer();
     if (a.cible && a.arme) {
       // Posée sur une cible : elle glisse vers sa case, l'arbre garde le partage
@@ -629,6 +669,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       const f = etat(a.id);
       f.flot = null;
       f.z = '';
+      f.retour = undefined;
       delete a.el.dataset.flot;
       a.el.style.zIndex = '';
     }
@@ -651,6 +692,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   };
 
   coq.addEventListener('pointerdown', presser);
+  coq.addEventListener('click', cliquer);
   window.addEventListener('pointermove', bouger);
   window.addEventListener('pointerup', lacher);
   window.addEventListener('pointercancel', lacher);
@@ -678,6 +720,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       if (action?.type === 'fenetre') clearTimeout(action.minuteur);
       action = null;
       coq.removeEventListener('pointerdown', presser);
+      coq.removeEventListener('click', cliquer);
       window.removeEventListener('pointermove', bouger);
       window.removeEventListener('pointerup', lacher);
       window.removeEventListener('pointercancel', lacher);

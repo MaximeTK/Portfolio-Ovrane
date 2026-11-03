@@ -63,7 +63,7 @@ export const ICONES = {
 
 // Un tag : la pastille carrée de sa couleur, puis son nom
 export function Nature({ tag }: { tag: string }) {
-  return <span className="nat" style={{ '--n': COULEURS_NATURE[tag] ?? 'rgb(255 255 255 / .5)' } as React.CSSProperties}>{NATURES[tag] ?? tag}</span>;
+  return <span className="nat" style={{ '--n': COULEURS_NATURE[tag] ?? 'rgb(var(--encre) / .5)' } as React.CSSProperties}>{NATURES[tag] ?? tag}</span>;
 }
 
 type PieceEnvoi = { nom: string; contenu: string; taille: number };
