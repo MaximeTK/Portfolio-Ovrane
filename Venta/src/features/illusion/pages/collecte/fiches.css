@@ -111,76 +111,76 @@
 .ov [data-fen=fiches][data-l=xs] .outils .action.plein .txt{position:static;width:auto;height:auto;overflow:visible;clip:auto}
 
 /* Thèmes plats : colonnes pour 14 px, Secteur prend ce qui reste. */
-.ov.th-plat [data-fen=fiches] .fiches :is(th,td){padding:0 6px}
-.ov.th-plat [data-fen=fiches] .fiches :is(th,td):has(>.case){padding:0 0 0 4px}
-.ov.th-plat [data-fen=fiches] .fiches :is(th,td):nth-child(2){padding-left:8px}
-.ov.th-plat [data-fen=fiches] .fiches :is(th,td):last-child{padding-right:12px}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(1){width:48px}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(2){width:max(80px,calc(80px + (100cqw - 1074px) / 3))}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(3){width:auto}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(4){width:90px}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(5){width:94px}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(6){width:100px}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(7){width:118px}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(8){width:106px}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(9){width:54px}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(10){width:88px}
-.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(11){width:96px}
-@container (max-width:925px){.ov.th-plat [data-fen=fiches] .fiches thead th:nth-child(2){width:max(72px,calc(80px + (100cqw - 572px) / 2))}}
-.ov.th-plat [data-fen=fiches] td.ent2{line-height:1rem}
-.ov.th-plat [data-fen=fiches] td.ent2 .ent{line-height:1.25rem}
-.ov.th-plat [data-fen=fiches] td.ent2 .siren{line-height:1rem}
-.ov.th-plat [data-fen=fiches] td.vide{color:var(--contour)}
-.ov.th-plat [data-fen=fiches] .vide-tableau td{color:var(--texte-2)}
+.ov.trame [data-fen=fiches] .fiches :is(th,td){padding:0 6px}
+.ov.trame [data-fen=fiches] .fiches :is(th,td):has(>.case){padding:0 0 0 4px}
+.ov.trame [data-fen=fiches] .fiches :is(th,td):nth-child(2){padding-left:8px}
+.ov.trame [data-fen=fiches] .fiches :is(th,td):last-child{padding-right:12px}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(1){width:48px}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(2){width:max(80px,calc(80px + (100cqw - 1074px) / 3))}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(3){width:auto}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(4){width:90px}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(5){width:94px}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(6){width:100px}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(7){width:118px}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(8){width:106px}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(9){width:54px}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(10){width:88px}
+.ov.trame [data-fen=fiches] .fiches thead th:nth-child(11){width:96px}
+@container (max-width:925px){.ov.trame [data-fen=fiches] .fiches thead th:nth-child(2){width:max(72px,calc(80px + (100cqw - 572px) / 2))}}
+.ov.trame [data-fen=fiches] td.ent2{line-height:1rem}
+.ov.trame [data-fen=fiches] td.ent2 .ent{line-height:1.25rem}
+.ov.trame [data-fen=fiches] td.ent2 .siren{line-height:1rem}
+.ov.trame [data-fen=fiches] td.vide{color:var(--contour)}
+.ov.trame [data-fen=fiches] .vide-tableau td{color:var(--texte-2)}
 /* Canaux : icônes de 16 px, à trois contrastes de leur fond même éteintes. */
-.ov.th-plat [data-fen=fiches] .marques{gap:4px}
-.ov.th-plat [data-fen=fiches] .marques svg{width:16px;height:16px;opacity:.5}
-.ov.th-plat [data-fen=fiches] .marques .on svg{opacity:1}
+.ov.trame [data-fen=fiches] .marques{gap:4px}
+.ov.trame [data-fen=fiches] .marques svg{width:16px;height:16px;opacity:.5}
+.ov.trame [data-fen=fiches] .marques .on svg{opacity:1}
 /* Recherche : une cible de 44 px au trait plein, comme la planche. */
-.ov.th-plat [data-fen=fiches] .cherche{height:44px;gap:8px;margin-left:8px;border-bottom-color:var(--contour);color:var(--texte-2)}
-.ov.th-plat [data-fen=fiches] .cherche:focus-within{border-color:var(--primaire);color:var(--texte)}
-.ov.th-plat [data-fen=fiches] .ico-cherche svg{width:18px;height:18px}
-.ov.th-plat [data-fen=fiches] .cherche input{height:42px;color:var(--texte)}
-.ov.th-plat [data-fen=fiches] .cherche input::placeholder{color:var(--texte-2);opacity:1}
+.ov.trame [data-fen=fiches] .cherche{height:44px;gap:8px;margin-left:8px;border-bottom-color:var(--contour);color:var(--texte-2)}
+.ov.trame [data-fen=fiches] .cherche:focus-within{border-color:var(--primaire);color:var(--texte)}
+.ov.trame [data-fen=fiches] .ico-cherche svg{width:18px;height:18px}
+.ov.trame [data-fen=fiches] .cherche input{height:42px;color:var(--texte)}
+.ov.trame [data-fen=fiches] .cherche input::placeholder{color:var(--texte-2);opacity:1}
 /* Menus, lots et gestes éteints : lisibles sans changer de place. */
-.ov.th-plat [data-fen=fiches] .menu-option .compte{color:var(--texte-2)}
-.ov.th-plat [data-fen=fiches] .etat-a{font-size:.75rem;color:var(--primaire)}
-.ov.th-plat [data-fen=fiches] .action:disabled,.ov.th-plat [data-fen=fiches]~[data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
-.ov.th-plat [data-fen=fiches] .pl:disabled{opacity:1;color:rgb(var(--encre) / .62)}
-.ov.th-plat [data-fen=fiches] .note-bas{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=fiches] .note-bas b{color:var(--texte)}
-.ov.th-plat [data-fen=fiches] .note-bas.avis{color:var(--texte)}
-.ov.th-plat [data-fen=fiches] .note-bas.erreur{color:var(--erreur)}
+.ov.trame [data-fen=fiches] .menu-option .compte{color:var(--texte-2)}
+.ov.trame [data-fen=fiches] .etat-a{font-size:.75rem;color:var(--primaire)}
+.ov.trame [data-fen=fiches] .action:disabled,.ov.trame [data-fen=fiches]~[data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame [data-fen=fiches] .pl:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame [data-fen=fiches] .note-bas{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame [data-fen=fiches] .note-bas b{color:var(--texte)}
+.ov.trame [data-fen=fiches] .note-bas.avis{color:var(--texte)}
+.ov.trame [data-fen=fiches] .note-bas.erreur{color:var(--erreur)}
 
 /* Panneau des trois pages : catalogue à contour, propositions pleines. */
-.ov.th-plat [data-fen=fiches]~[data-fen=panneau] .p-onglets{flex-wrap:wrap}
-.ov.th-plat [data-fen=fiches]~[data-fen=panneau] .p-onglet{flex:none}
-.ov.th-plat .pf .catalogue{gap:6px;min-height:48px;padding:7px 8px;border-color:var(--contour);border-radius:8px;background:var(--surface)}
-.ov.th-plat .pf .catalogue:hover{border-color:var(--texte)}
-.ov.th-plat .pf .catalogue:focus-within{border-color:var(--primaire)}
-.ov.th-plat .pf .catalogue input{height:32px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat .pf .catalogue input::placeholder{color:var(--texte-2);opacity:1}
-.ov.th-plat .pf .catalogue .puce{gap:4px;padding:0 4px 0 8px;font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .pf .catalogue .puce b{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .pf .catalogue .puce button{width:24px;height:24px;border-radius:50%;color:var(--texte-2)}
-.ov.th-plat .pf .catalogue .puce button:hover{background:var(--surface-moyenne);color:var(--texte)}
-.ov.th-plat .pf .catalogue .puce svg{width:12px;height:12px}
-.ov.th-plat .pf .propositions{top:calc(100% + 4px);padding:8px 0;border:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);scrollbar-width:thin}
-.ov.th-plat .pf .propositions button{gap:8px;min-height:44px;padding:0 12px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat .pf .propositions button:is(:hover,:focus-visible){background:var(--surface-moyenne);color:var(--texte)}
-.ov.th-plat .pf .propositions b{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .pf .couleurs span{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .pf .couleurs i{border-color:var(--contour);border-radius:4px}
-.ov.th-plat .pf .badge{min-height:24px;padding:0 10px;border-radius:8px;line-height:1.5rem}
-.ov.th-plat .pf .badge.fini{background:var(--ok-doux);color:var(--ok)}
-.ov.th-plat .pf .badge.echec{background:var(--erreur-douce);color:var(--erreur)}
-.ov.th-plat .pf .note-f{padding-left:12px;border-left-color:var(--filet);font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat .pf .journal-f{font-size:.75rem;line-height:1.125rem;color:var(--texte-2);scrollbar-width:thin}
-.ov.th-plat .pf .cmd>summary::after{color:var(--texte-2)}
-.ov.th-plat .pf .soc-d{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat .pf .soc .siren{white-space:nowrap}
-.ov.th-plat .pf .tag-f{padding:0 6px;border-color:var(--contour);border-radius:6px;font-size:.75rem;font-weight:400;line-height:1.125rem;color:var(--texte-2)}
-.ov.th-plat .pf .tranche{gap:4px;padding:8px 12px}
-.ov.th-plat .pf .tr-lib{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .pf .tranche:has(:checked) .tr-lib{color:inherit}
-.ov.th-plat .pf .tr-val{font-size:.875rem}
+.ov.trame [data-fen=fiches]~[data-fen=panneau] .p-onglets{flex-wrap:wrap}
+.ov.trame [data-fen=fiches]~[data-fen=panneau] .p-onglet{flex:none}
+.ov.trame .pf .catalogue{gap:6px;min-height:48px;padding:7px 8px;border-color:var(--contour);border-radius:8px;background:var(--surface)}
+.ov.trame .pf .catalogue:hover{border-color:var(--texte)}
+.ov.trame .pf .catalogue:focus-within{border-color:var(--primaire)}
+.ov.trame .pf .catalogue input{height:32px;font-size:.875rem;color:var(--texte)}
+.ov.trame .pf .catalogue input::placeholder{color:var(--texte-2);opacity:1}
+.ov.trame .pf .catalogue .puce{gap:4px;padding:0 4px 0 8px;font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .pf .catalogue .puce b{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .pf .catalogue .puce button{width:24px;height:24px;border-radius:50%;color:var(--texte-2)}
+.ov.trame .pf .catalogue .puce button:hover{background:var(--surface-moyenne);color:var(--texte)}
+.ov.trame .pf .catalogue .puce svg{width:12px;height:12px}
+.ov.trame .pf .propositions{top:calc(100% + 4px);padding:8px 0;border:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);scrollbar-width:thin}
+.ov.trame .pf .propositions button{gap:8px;min-height:44px;padding:0 12px;font-size:.875rem;color:var(--texte)}
+.ov.trame .pf .propositions button:is(:hover,:focus-visible){background:var(--surface-moyenne);color:var(--texte)}
+.ov.trame .pf .propositions b{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .pf .couleurs span{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .pf .couleurs i{border-color:var(--contour);border-radius:4px}
+.ov.trame .pf .badge{min-height:24px;padding:0 10px;border-radius:8px;line-height:1.5rem}
+.ov.trame .pf .badge.fini{background:var(--ok-doux);color:var(--ok)}
+.ov.trame .pf .badge.echec{background:var(--erreur-douce);color:var(--erreur)}
+.ov.trame .pf .note-f{padding-left:12px;border-left-color:var(--filet);font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame .pf .journal-f{font-size:.75rem;line-height:1.125rem;color:var(--texte-2);scrollbar-width:thin}
+.ov.trame .pf .cmd>summary::after{color:var(--texte-2)}
+.ov.trame .pf .soc-d{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame .pf .soc .siren{white-space:nowrap}
+.ov.trame .pf .tag-f{padding:0 6px;border-color:var(--contour);border-radius:6px;font-size:.75rem;font-weight:400;line-height:1.125rem;color:var(--texte-2)}
+.ov.trame .pf .tranche{gap:4px;padding:8px 12px}
+.ov.trame .pf .tr-lib{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .pf .tranche:has(:checked) .tr-lib{color:inherit}
+.ov.trame .pf .tr-val{font-size:.875rem}

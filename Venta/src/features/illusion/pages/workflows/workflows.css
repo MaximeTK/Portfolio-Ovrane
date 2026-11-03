@@ -134,73 +134,73 @@
 .ov .wf-p .comparaison dd{display:flex;flex-wrap:wrap;gap:4px 8px}
 
 /* Thèmes plats : le panneau centre sa croix, ses gestes éteints se lisent. */
-.ov.th-plat:has([data-fen=arbre].workflows) [data-fen=panneau] .p-tete{align-items:center}
-.ov.th-plat:has([data-fen=arbre].workflows) [data-fen=panneau] .p-onglet{height:auto}
-.ov.th-plat:has([data-fen=arbre].workflows) [data-fen=panneau] .p-tete .f-btn{margin-top:0}
-.ov.th-plat:has([data-fen=arbre].workflows) [data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame:has([data-fen=arbre].workflows) [data-fen=panneau] .p-tete{align-items:center}
+.ov.trame:has([data-fen=arbre].workflows) [data-fen=panneau] .p-onglet{height:auto}
+.ov.trame:has([data-fen=arbre].workflows) [data-fen=panneau] .p-tete .f-btn{margin-top:0}
+.ov.trame:has([data-fen=arbre].workflows) [data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
 /* Recherche et résumé : cibles de 44 px, trait primaire à la saisie. */
-.ov.th-plat .workflows .cherche{height:44px;gap:4px;color:var(--texte-2)}
-.ov.th-plat .workflows .cherche .loupe{width:44px;height:44px;border-radius:50%}
-.ov.th-plat .workflows .cherche .loupe:hover{background:var(--surface-moyenne)}
-.ov.th-plat .workflows .cherche svg{width:18px;height:18px}
-.ov.th-plat .workflows .cherche input{height:44px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat .workflows .cherche input::placeholder{color:var(--texte-2);opacity:1}
-.ov.th-plat .workflows .cherche input:focus{border-bottom-color:var(--primaire)}
-.ov.th-plat .workflows .resume{margin:0 12px;padding-left:12px;border-left-color:var(--filet);font-size:.875rem;line-height:1.25rem}
-.ov.th-plat .workflows .resume b{font-weight:500}
-.ov.th-plat .workflows .resume span{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .workflows .menu-option{min-height:44px;padding:6px 12px}
-.ov.th-plat .workflows .menu-option .num{width:16px;font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .workflows .menu-option .adr{font-size:.75rem;line-height:1rem}
+.ov.trame .workflows .cherche{height:44px;gap:4px;color:var(--texte-2)}
+.ov.trame .workflows .cherche .loupe{width:44px;height:44px;border-radius:50%}
+.ov.trame .workflows .cherche .loupe:hover{background:var(--surface-moyenne)}
+.ov.trame .workflows .cherche svg{width:18px;height:18px}
+.ov.trame .workflows .cherche input{height:44px;font-size:.875rem;color:var(--texte)}
+.ov.trame .workflows .cherche input::placeholder{color:var(--texte-2);opacity:1}
+.ov.trame .workflows .cherche input:focus{border-bottom-color:var(--primaire)}
+.ov.trame .workflows .resume{margin:0 12px;padding-left:12px;border-left-color:var(--filet);font-size:.875rem;line-height:1.25rem}
+.ov.trame .workflows .resume b{font-weight:500}
+.ov.trame .workflows .resume span{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .workflows .menu-option{min-height:44px;padding:6px 12px}
+.ov.trame .workflows .menu-option .num{width:16px;font-size:.75rem;color:var(--texte-2)}
+.ov.trame .workflows .menu-option .adr{font-size:.75rem;line-height:1rem}
 /* Arbre : lignes de 44 px, cible et source en second plan, fils discrets. */
-.ov.th-plat .workflows .arbre{padding:0 12px;--h-l:44px}
-.ov.th-plat .workflows .arbre-defile{scrollbar-width:thin}
-.ov.th-plat .workflows .arbre-tete{height:44px;border-bottom:1px solid var(--filet);font-size:.875rem;font-weight:500;color:var(--texte-2)}
-.ov.th-plat .workflows .l{border-top:0;border-bottom:1px solid var(--surface-moyenne);font-size:.875rem;line-height:1.25rem}
-.ov.th-plat .workflows .l:hover{background:var(--surface-basse)}
-.ov.th-plat .workflows .rg{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .workflows .ge{font-size:.875rem;color:var(--texte)}
-.ov.th-plat .workflows .ci{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .workflows .so{color:var(--texte-2)}
-.ov.th-plat .workflows .so i{color:var(--contour)}
-.ov.th-plat .workflows .lb{gap:4px 8px}
-.ov.th-plat .workflows .lb b{font-weight:500}
-.ov.th-plat .workflows .lb b em{color:var(--texte-2)}
-.ov.th-plat .workflows .mq{min-height:20px;border-color:var(--contour);border-radius:6px;font-size:.75rem;line-height:1.125rem;color:var(--texte-2)}
-.ov.th-plat .workflows .mq.vers{border-color:var(--primaire-doux);background:var(--primaire-doux);color:var(--sur-primaire-doux)}
-.ov.th-plat .workflows .arbre-l>li.sec{align-items:center;height:44px;padding-bottom:0;border-top:0;border-bottom:1px solid var(--filet);font-size:.875rem;font-weight:500;color:var(--texte)}
-.ov.th-plat .workflows .sous{border-left-color:var(--filet)}
-.ov.th-plat .workflows .portee>summary{padding:12px 0 11px;border-top:0;border-bottom:1px solid var(--surface-moyenne);font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat .workflows .portee>summary:hover{background:var(--surface-basse);color:var(--texte)}
-.ov.th-plat .workflows .morte{color:var(--attente)}
-.ov.th-plat .workflows .retirer,.ov.th-plat .workflows .retirer:hover{font-size:.875rem;font-weight:500;color:var(--erreur);text-decoration:underline;text-underline-offset:2px}
-.ov.th-plat .workflows .vide-wf{padding:16px 4px;font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat .workflows .vide-wf b{font-weight:500;color:var(--texte)}
-.ov.th-plat .workflows .avis-wf{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .workflows .avis-wf.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame .workflows .arbre{padding:0 12px;--h-l:44px}
+.ov.trame .workflows .arbre-defile{scrollbar-width:thin}
+.ov.trame .workflows .arbre-tete{height:44px;border-bottom:1px solid var(--filet);font-size:.875rem;font-weight:500;color:var(--texte-2)}
+.ov.trame .workflows .l{border-top:0;border-bottom:1px solid var(--surface-moyenne);font-size:.875rem;line-height:1.25rem}
+.ov.trame .workflows .l:hover{background:var(--surface-basse)}
+.ov.trame .workflows .rg{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .workflows .ge{font-size:.875rem;color:var(--texte)}
+.ov.trame .workflows .ci{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .workflows .so{color:var(--texte-2)}
+.ov.trame .workflows .so i{color:var(--contour)}
+.ov.trame .workflows .lb{gap:4px 8px}
+.ov.trame .workflows .lb b{font-weight:500}
+.ov.trame .workflows .lb b em{color:var(--texte-2)}
+.ov.trame .workflows .mq{min-height:20px;border-color:var(--contour);border-radius:6px;font-size:.75rem;line-height:1.125rem;color:var(--texte-2)}
+.ov.trame .workflows .mq.vers{border-color:var(--primaire-doux);background:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.trame .workflows .arbre-l>li.sec{align-items:center;height:44px;padding-bottom:0;border-top:0;border-bottom:1px solid var(--filet);font-size:.875rem;font-weight:500;color:var(--texte)}
+.ov.trame .workflows .sous{border-left-color:var(--filet)}
+.ov.trame .workflows .portee>summary{padding:12px 0 11px;border-top:0;border-bottom:1px solid var(--surface-moyenne);font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame .workflows .portee>summary:hover{background:var(--surface-basse);color:var(--texte)}
+.ov.trame .workflows .morte{color:var(--attente)}
+.ov.trame .workflows .retirer,.ov.trame .workflows .retirer:hover{font-size:.875rem;font-weight:500;color:var(--erreur);text-decoration:underline;text-underline-offset:2px}
+.ov.trame .workflows .vide-wf{padding:16px 4px;font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame .workflows .vide-wf b{font-weight:500;color:var(--texte)}
+.ov.trame .workflows .avis-wf{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .workflows .avis-wf.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Panneau : tableaux en 14 px, boutons de ligne et journal lisibles. */
-.ov.th-plat .wf-p .tab-wf{font-size:.875rem}
-.ov.th-plat .wf-p .tab-wf td{padding-top:8px;padding-bottom:8px;line-height:1.25rem}
-.ov.th-plat .wf-p code{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .wf-p .src.att{color:var(--attente)}
-.ov.th-plat .wf-p .btn-l{min-height:32px;font-size:.875rem;font-weight:500;color:var(--primaire)}
-.ov.th-plat .wf-p .btn-l:hover{color:var(--primaire);text-decoration:underline;text-underline-offset:2px}
-.ov.th-plat .wf-p .btn-l.gris,.ov.th-plat .wf-p .btn-l.gris:hover{color:var(--texte-2)}
-.ov.th-plat .wf-p .btn-l:disabled{opacity:1;color:rgb(var(--encre) / .62)}
-.ov.th-plat .wf-p .signalee{font-size:.75rem;line-height:1rem;color:var(--attente)}
-.ov.th-plat .wf-p .erreur-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;line-height:1.25rem;color:var(--sur-erreur-douce)}
-.ov.th-plat .wf-rejeu .etat-rejeu{font-size:.875rem;line-height:1.25rem}
-.ov.th-plat .wf-rejeu .etat-rejeu b{font-weight:500}
-.ov.th-plat .wf-rejeu .etat-rejeu .on{color:var(--primaire)}
-.ov.th-plat .wf-rejeu .voyant{width:8px;height:8px;border-radius:50%;background:var(--primaire);box-shadow:none}
-.ov.th-plat .wf-rejeu .adresse{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .wf-rejeu .journal{font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat .wf-rejeu .journal .pl{min-width:44px;height:44px}
-.ov.th-plat .wf-rejeu .journal .pl:disabled{opacity:1;color:rgb(var(--encre) / .62)}
-.ov.th-plat .wf-rejeu .lignes-journal pre{padding:8px 12px;border-radius:8px;background:var(--surface-basse);font-size:.75rem;line-height:1.125rem;color:var(--texte);scrollbar-width:thin}
-.ov.th-plat .wf-rejeu .lot-page{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .wf-rejeu .gestes{font-size:.875rem;line-height:1.25rem}
-.ov.th-plat .wf-rejeu .gestes li>span:first-child{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .wf-rejeu .gestes small{font-size:.75rem;font-weight:500;color:var(--texte-2)}
-.ov.th-plat .wf-rejeu .capture{border-color:var(--filet);border-radius:8px;background:var(--surface-moyenne)}
-.ov.th-plat .wf-p .comparaison dt{font-size:.875rem;color:var(--texte-2)}
+.ov.trame .wf-p .tab-wf{font-size:.875rem}
+.ov.trame .wf-p .tab-wf td{padding-top:8px;padding-bottom:8px;line-height:1.25rem}
+.ov.trame .wf-p code{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .wf-p .src.att{color:var(--attente)}
+.ov.trame .wf-p .btn-l{min-height:32px;font-size:.875rem;font-weight:500;color:var(--primaire)}
+.ov.trame .wf-p .btn-l:hover{color:var(--primaire);text-decoration:underline;text-underline-offset:2px}
+.ov.trame .wf-p .btn-l.gris,.ov.trame .wf-p .btn-l.gris:hover{color:var(--texte-2)}
+.ov.trame .wf-p .btn-l:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame .wf-p .signalee{font-size:.75rem;line-height:1rem;color:var(--attente)}
+.ov.trame .wf-p .erreur-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;line-height:1.25rem;color:var(--sur-erreur-douce)}
+.ov.trame .wf-rejeu .etat-rejeu{font-size:.875rem;line-height:1.25rem}
+.ov.trame .wf-rejeu .etat-rejeu b{font-weight:500}
+.ov.trame .wf-rejeu .etat-rejeu .on{color:var(--primaire)}
+.ov.trame .wf-rejeu .voyant{width:8px;height:8px;border-radius:50%;background:var(--primaire);box-shadow:none}
+.ov.trame .wf-rejeu .adresse{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .wf-rejeu .journal{font-size:.875rem;color:var(--texte-2)}
+.ov.trame .wf-rejeu .journal .pl{min-width:44px;height:44px}
+.ov.trame .wf-rejeu .journal .pl:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame .wf-rejeu .lignes-journal pre{padding:8px 12px;border-radius:8px;background:var(--surface-basse);font-size:.75rem;line-height:1.125rem;color:var(--texte);scrollbar-width:thin}
+.ov.trame .wf-rejeu .lot-page{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .wf-rejeu .gestes{font-size:.875rem;line-height:1.25rem}
+.ov.trame .wf-rejeu .gestes li>span:first-child{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .wf-rejeu .gestes small{font-size:.75rem;font-weight:500;color:var(--texte-2)}
+.ov.trame .wf-rejeu .capture{border-color:var(--filet);border-radius:8px;background:var(--surface-moyenne)}
+.ov.trame .wf-p .comparaison dt{font-size:.875rem;color:var(--texte-2)}

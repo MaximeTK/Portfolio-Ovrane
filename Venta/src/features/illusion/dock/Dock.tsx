@@ -448,7 +448,8 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
         plus(tour, () => {
           if (!el.current) return;
           e.anims.forEach((c) => c.annuler());
-          e.anims = [ecrire(el.current, { duree: DUREES.contenu })];
+          // Dépliée après la grande : son contenu finit en même temps que le sien
+          e.anims = [ecrire(el.current, { duree: DUREES.contenu - DUREE_RANGEMENT })];
         }, DUREE_RANGEMENT);
       } else {
         el.current.style.setProperty('--holo-delai', `${delai}ms`);

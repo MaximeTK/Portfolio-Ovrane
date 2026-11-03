@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useUIStore, VERRE_DEFAUT } from '@/lib/uiStore';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { COLOR_PALETTES } from '@/features/fond/colorPalettes';
 import { useApparence, type Matiere, type Theme } from '../../apparence';
@@ -22,6 +23,7 @@ export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fe
   const palette = useBackgroundStore((s) => s.currentPalette);
   const matiere = useApparence((s) => s.matiere);
   const theme = useApparence((s) => s.theme);
+  const opacite = useUIStore((s) => s.verreOpacite);
   const gardee = useRef<string | null>(null);
 
   // À la fermeture, ce qui n'a pas été enregistré se défait.
@@ -90,6 +92,13 @@ export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fe
             ))}
           </div>
         </div></>}
+        <div className="section-f teinte">
+          <h3 className="h3-val">Teinte des boîtes<span className="val">{Math.round(opacite * 100)} %</span></h3>
+          <p className="aide-champ">Vos messages et le champ de saisie du chat d&apos;Ovrane.</p>
+          <input type="range" min={0} max={0.9} step={0.05} value={opacite} aria-label="Teinte des boîtes" onChange={(e) => useUIStore.getState().reglerVerre(Number(e.target.value))} />
+          <p className="apercu-teinte">Le texte reste-t-il lisible sur ce fond ?</p>
+          <button type="button" className="lien-d" onClick={() => useUIStore.getState().reglerVerre(VERRE_DEFAUT)}>Revenir à {Math.round(VERRE_DEFAUT * 100)} %</button>
+        </div>
       </div>
     ),
     pied: (

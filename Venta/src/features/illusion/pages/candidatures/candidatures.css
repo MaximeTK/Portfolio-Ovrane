@@ -84,86 +84,86 @@
 .ov .carre.arretee{color:rgb(var(--rouge))}
 
 /* Thèmes plats : colonnes de la planche pour 14 px, Intitulé prend le reste. */
-.ov.th-plat .candidatures table{--e:max(0px,calc((100cqw - 1137px) / 8))}
-.ov.th-plat .candidatures thead th:nth-child(1){width:52px}
-.ov.th-plat .candidatures thead th:nth-child(2){width:calc(68px + var(--e))}
-.ov.th-plat .candidatures thead th:nth-child(3){width:calc(88px + var(--e))}
-.ov.th-plat .candidatures thead th:nth-child(4){width:auto}
-.ov.th-plat .candidatures thead th:nth-child(5){width:calc(128px + var(--e))}
-.ov.th-plat .candidatures thead th:nth-child(6){width:calc(184px + var(--e))}
-.ov.th-plat .candidatures thead th:nth-child(7){width:calc(164px + var(--e))}
-.ov.th-plat .candidatures thead th:nth-child(8){width:calc(134px + var(--e))}
-.ov.th-plat .candidatures thead th:nth-child(9){width:calc(104px + var(--e))}
+.ov.trame .candidatures table{--e:max(0px,calc((100cqw - 1137px) / 8))}
+.ov.trame .candidatures thead th:nth-child(1){width:52px}
+.ov.trame .candidatures thead th:nth-child(2){width:calc(68px + var(--e))}
+.ov.trame .candidatures thead th:nth-child(3){width:calc(88px + var(--e))}
+.ov.trame .candidatures thead th:nth-child(4){width:auto}
+.ov.trame .candidatures thead th:nth-child(5){width:calc(128px + var(--e))}
+.ov.trame .candidatures thead th:nth-child(6){width:calc(184px + var(--e))}
+.ov.trame .candidatures thead th:nth-child(7){width:calc(164px + var(--e))}
+.ov.trame .candidatures thead th:nth-child(8){width:calc(134px + var(--e))}
+.ov.trame .candidatures thead th:nth-child(9){width:calc(104px + var(--e))}
 /* Moins de place : Profil et Source partent, puis Lieu / contrat. */
 @container (max-width:984px){
-  .ov.th-plat .candidatures table{--e:max(0px,calc((100cqw - 800px) / 6))}
-  .ov.th-plat .candidatures :is(th,td):is(:nth-child(6),:nth-child(7)){display:none}
+  .ov.trame .candidatures table{--e:max(0px,calc((100cqw - 800px) / 6))}
+  .ov.trame .candidatures :is(th,td):is(:nth-child(6),:nth-child(7)){display:none}
 }
 @container (max-width:760px){
-  .ov.th-plat .candidatures table{--e:0px}
-  .ov.th-plat .candidatures :is(th,td):nth-child(5){display:none}
+  .ov.trame .candidatures table{--e:0px}
+  .ov.trame .candidatures :is(th,td):nth-child(5){display:none}
 }
 /* Serré, 1366 px ou panneau ouvert : 13 px comme la planche à cette taille. */
 @container (min-width:985px) and (max-width:1120px){
-  .ov.th-plat .candidatures table{--e:0px;font-size:.8125rem}
-  .ov.th-plat .candidatures th,.ov.th-plat .candidatures td.chrono{font-size:.8125rem}
-  .ov.th-plat .candidatures :is(th,td):not(:first-child,:last-child){padding:0 6px}
-  .ov.th-plat .candidatures .auto{margin-left:4px;padding:0 4px}
-  .ov.th-plat .candidatures thead th:nth-child(1){width:48px}
-  .ov.th-plat .candidatures thead th:nth-child(2){width:56px}
-  .ov.th-plat .candidatures thead th:nth-child(3){width:76px}
-  .ov.th-plat .candidatures thead th:nth-child(5){width:112px}
-  .ov.th-plat .candidatures thead th:nth-child(6){width:164px}
-  .ov.th-plat .candidatures thead th:nth-child(7){width:146px}
-  .ov.th-plat .candidatures thead th:nth-child(8){width:122px}
-  .ov.th-plat .candidatures thead th:nth-child(9){width:96px}
+  .ov.trame .candidatures table{--e:0px;font-size:.8125rem}
+  .ov.trame .candidatures th,.ov.trame .candidatures td.chrono{font-size:.8125rem}
+  .ov.trame .candidatures :is(th,td):not(:first-child,:last-child){padding:0 6px}
+  .ov.trame .candidatures .auto{margin-left:4px;padding:0 4px}
+  .ov.trame .candidatures thead th:nth-child(1){width:48px}
+  .ov.trame .candidatures thead th:nth-child(2){width:56px}
+  .ov.trame .candidatures thead th:nth-child(3){width:76px}
+  .ov.trame .candidatures thead th:nth-child(5){width:112px}
+  .ov.trame .candidatures thead th:nth-child(6){width:164px}
+  .ov.trame .candidatures thead th:nth-child(7){width:146px}
+  .ov.trame .candidatures thead th:nth-child(8){width:122px}
+  .ov.trame .candidatures thead th:nth-child(9){width:96px}
 }
 @container (max-width:680px){
-  .ov.th-plat .candidatures table{--e:0px;font-size:.8125rem}
-  .ov.th-plat .candidatures th,.ov.th-plat .candidatures td.chrono{font-size:.8125rem}
-  .ov.th-plat .candidatures :is(th,td):not(:first-child,:last-child){padding:0 6px}
-  .ov.th-plat .candidatures .auto{margin-left:4px;padding:0 4px}
-  .ov.th-plat .candidatures thead th:nth-child(1){width:48px}
-  .ov.th-plat .candidatures thead th:nth-child(2){width:56px}
-  .ov.th-plat .candidatures thead th:nth-child(3){width:76px}
-  .ov.th-plat .candidatures thead th:nth-child(5){width:112px}
-  .ov.th-plat .candidatures thead th:nth-child(6){width:164px}
-  .ov.th-plat .candidatures thead th:nth-child(7){width:146px}
-  .ov.th-plat .candidatures thead th:nth-child(8){width:122px}
-  .ov.th-plat .candidatures thead th:nth-child(9){width:96px}
+  .ov.trame .candidatures table{--e:0px;font-size:.8125rem}
+  .ov.trame .candidatures th,.ov.trame .candidatures td.chrono{font-size:.8125rem}
+  .ov.trame .candidatures :is(th,td):not(:first-child,:last-child){padding:0 6px}
+  .ov.trame .candidatures .auto{margin-left:4px;padding:0 4px}
+  .ov.trame .candidatures thead th:nth-child(1){width:48px}
+  .ov.trame .candidatures thead th:nth-child(2){width:56px}
+  .ov.trame .candidatures thead th:nth-child(3){width:76px}
+  .ov.trame .candidatures thead th:nth-child(5){width:112px}
+  .ov.trame .candidatures thead th:nth-child(6){width:164px}
+  .ov.trame .candidatures thead th:nth-child(7){width:146px}
+  .ov.trame .candidatures thead th:nth-child(8){width:122px}
+  .ov.trame .candidatures thead th:nth-child(9){width:96px}
 }
 /* L'employeur : le lien primaire souligné de la planche, cible de 44 px. */
-.ov.th-plat .candidatures td .ent{min-height:44px;font-weight:500;line-height:44px;color:var(--primaire);text-decoration:underline;text-decoration-color:currentColor;text-underline-offset:2px}
-.ov.th-plat .candidatures td button.ent:hover{text-decoration-color:currentColor;text-underline-offset:2px}
-.ov.th-plat .candidatures tbody tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.ov.th-plat .candidatures tr.vide-f td{font-size:.875rem;color:var(--texte-2)}
+.ov.trame .candidatures td .ent{min-height:44px;font-weight:500;line-height:44px;color:var(--primaire);text-decoration:underline;text-decoration-color:currentColor;text-underline-offset:2px}
+.ov.trame .candidatures td button.ent:hover{text-decoration-color:currentColor;text-underline-offset:2px}
+.ov.trame .candidatures tbody tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.trame .candidatures tr.vide-f td{font-size:.875rem;color:var(--texte-2)}
 /* Filtres : l'écart vient de la rangée, resserrée quand la fenêtre l'est. */
-.ov.th-plat [data-fen].candidatures .filtre-hote+.filtre-hote{margin-left:0}
-.ov.th-plat [data-fen].candidatures[data-l=s] .filtre .precis{display:none}
-.ov.th-plat [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils{gap:4px;padding-right:8px}
-.ov.th-plat [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils .actions{gap:4px}
-.ov.th-plat [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils .filtre{padding:0 2px 0 8px}
-.ov.th-plat [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils .action.plein{padding:0 8px}
+.ov.trame [data-fen].candidatures .filtre-hote+.filtre-hote{margin-left:0}
+.ov.trame [data-fen].candidatures[data-l=s] .filtre .precis{display:none}
+.ov.trame [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils{gap:4px;padding-right:8px}
+.ov.trame [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils .actions{gap:4px}
+.ov.trame [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils .filtre{padding:0 2px 0 8px}
+.ov.trame [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils .action.plein{padding:0 8px}
 /* L'avis : une barre pleine au-dessus de la pagination, inversée. */
-.ov.th-plat .candidatures .avis-file{bottom:68px;padding:10px 16px;border-left:0;border-radius:8px;background:var(--texte);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--surface)}
-.ov.th-plat .candidatures .avis-file.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
-.ov.th-plat .candidatures .pagination .trou{line-height:44px}
+.ov.trame .candidatures .avis-file{bottom:68px;padding:10px 16px;border-left:0;border-radius:8px;background:var(--texte);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--surface)}
+.ov.trame .candidatures .avis-file.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame .candidatures .pagination .trou{line-height:44px}
 /* Panneau : onglets jointifs, fichier lisible, En direct sans chasse fixe. */
-.ov.th-plat:has([data-fen=tableau].candidatures) [data-fen=panneau] .p-onglets{column-gap:0}
-.ov.th-plat:has([data-fen=tableau].candidatures) [data-fen=panneau] .p-tete .f-btn{margin-top:2px}
-.ov.th-plat:has([data-fen=tableau].candidatures) [data-fen=panneau] .saisie.fichier{padding:12px;font-size:.875rem}
-.ov.th-plat:has([data-fen=tableau].candidatures) [data-fen=panneau] .p-onglet{padding:0 8px}
-.ov.th-plat:has([data-fen=tableau].candidatures) [data-fen=panneau] .p-onglet.actif::after{left:8px;right:8px}
-.ov.th-plat:has([data-fen=tableau].candidatures) [data-fen=panneau] .reglage>select.saisie{width:min(62%,240px)}
-.ov.th-plat:has([data-fen=tableau].candidatures) [data-fen=panneau] .action:disabled{opacity:1;color:var(--contour)}
-.ov.th-plat [data-fen=panneau] .onglets-d{gap:8px}
-.ov.th-plat [data-fen=panneau] .onglet-d{padding:8px 12px}
-.ov.th-plat [data-fen=panneau] .onglet-d strong{font-size:.875rem;font-weight:500}
-.ov.th-plat [data-fen=panneau] .onglet-d small{font-size:.75rem;line-height:1rem;color:inherit}
-.ov.th-plat [data-fen=panneau] .ecran-d h3{font-size:1rem;font-weight:500;line-height:1.5rem}
-.ov.th-plat [data-fen=panneau] .ecran-d>.d{font-size:.875rem}
-.ov.th-plat [data-fen=panneau] .chiffres-d span{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=panneau] .chiffres-d b{font-size:1.375rem;font-weight:500;line-height:1.75rem;color:var(--texte)}
-.ov.th-plat [data-fen=panneau] .etat-d{font-size:.875rem;line-height:1.25rem;color:var(--primaire)}
-.ov.th-plat [data-fen=panneau] .page-d{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .carre.arretee{color:var(--erreur)}
+.ov.trame:has([data-fen=tableau].candidatures) [data-fen=panneau] .p-onglets{column-gap:0}
+.ov.trame:has([data-fen=tableau].candidatures) [data-fen=panneau] .p-tete .f-btn{margin-top:2px}
+.ov.trame:has([data-fen=tableau].candidatures) [data-fen=panneau] .saisie.fichier{padding:12px;font-size:.875rem}
+.ov.trame:has([data-fen=tableau].candidatures) [data-fen=panneau] .p-onglet{padding:0 8px}
+.ov.trame:has([data-fen=tableau].candidatures) [data-fen=panneau] .p-onglet.actif::after{left:8px;right:8px}
+.ov.trame:has([data-fen=tableau].candidatures) [data-fen=panneau] .reglage>select.saisie{width:min(62%,240px)}
+.ov.trame:has([data-fen=tableau].candidatures) [data-fen=panneau] .action:disabled{opacity:1;color:var(--contour)}
+.ov.trame [data-fen=panneau] .onglets-d{gap:8px}
+.ov.trame [data-fen=panneau] .onglet-d{padding:8px 12px}
+.ov.trame [data-fen=panneau] .onglet-d strong{font-size:.875rem;font-weight:500}
+.ov.trame [data-fen=panneau] .onglet-d small{font-size:.75rem;line-height:1rem;color:inherit}
+.ov.trame [data-fen=panneau] .ecran-d h3{font-size:1rem;font-weight:500;line-height:1.5rem}
+.ov.trame [data-fen=panneau] .ecran-d>.d{font-size:.875rem}
+.ov.trame [data-fen=panneau] .chiffres-d span{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame [data-fen=panneau] .chiffres-d b{font-size:1.375rem;font-weight:500;line-height:1.75rem;color:var(--texte)}
+.ov.trame [data-fen=panneau] .etat-d{font-size:.875rem;line-height:1.25rem;color:var(--primaire)}
+.ov.trame [data-fen=panneau] .page-d{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .carre.arretee{color:var(--erreur)}

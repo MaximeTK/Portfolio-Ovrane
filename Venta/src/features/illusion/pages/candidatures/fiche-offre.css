@@ -39,25 +39,25 @@
 .ov .actions-ajout{display:flex;justify-content:flex-end;gap:22px;margin-top:6px}
 
 /* Thèmes plats : avis teintés, textes seconds lisibles, suivi par jetons. */
-.ov.th-plat .avis-fiche{padding:8px 12px;border-left:0;border-radius:8px;background:var(--neutre-doux);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .avis-fiche.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
-.ov.th-plat .fiche-offre .f-meta .lien-d{font-size:.875rem}
-.ov.th-plat .fiche-offre .refus,.ov.th-plat .saisies-f .refus{color:var(--erreur)}
-.ov.th-plat .fiche-offre .cle-offre .mono{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .fiche-offre .def .d{font-size:.875rem}
-.ov.th-plat .carre.s-vert{color:var(--ok)}
-.ov.th-plat .carre.s-jaune,.ov.th-plat .carre.s-orange{color:var(--attente)}
-.ov.th-plat .carre.s-bleu{color:var(--info)}
-.ov.th-plat .carre.s-rouge{color:var(--erreur)}
-.ov.th-plat .puce.ajoutee{border-color:var(--primaire);background:var(--primaire-doux);color:var(--sur-primaire-doux)}
-.ov.th-plat .saisies-f .q{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .avis-fiche{padding:8px 12px;border-left:0;border-radius:8px;background:var(--neutre-doux);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .avis-fiche.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame .fiche-offre .f-meta .lien-d{font-size:.875rem}
+.ov.trame .fiche-offre .refus,.ov.trame .saisies-f .refus{color:var(--erreur)}
+.ov.trame .fiche-offre .cle-offre .mono{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .fiche-offre .def .d{font-size:.875rem}
+.ov.trame .carre.s-vert{color:var(--ok)}
+.ov.trame .carre.s-jaune,.ov.trame .carre.s-orange{color:var(--attente)}
+.ov.trame .carre.s-bleu{color:var(--info)}
+.ov.trame .carre.s-rouge{color:var(--erreur)}
+.ov.trame .puce.ajoutee{border-color:var(--primaire);background:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.trame .saisies-f .q{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
 /* Préparation : questions en 14 px, réponses et notes en texte second. */
-.ov.th-plat .onglets-q{gap:0 4px;margin-bottom:8px}
-.ov.th-plat .noeud-q{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .noeud-q small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .noeud-q.etat-parcouru .marque-q{color:var(--ok)}
-.ov.th-plat .noeud-q.etat-non .marque-q{color:var(--erreur)}
-.ov.th-plat .reponse-q{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat .liste-q{font-size:.875rem;line-height:1.25rem}
-.ov.th-plat .titre-ajout{font-size:1rem;font-weight:500;line-height:1.5rem}
-.ov.th-plat .actions-ajout{gap:4px}
+.ov.trame .onglets-q{gap:0 4px;margin-bottom:8px}
+.ov.trame .noeud-q{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .noeud-q small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .noeud-q.etat-parcouru .marque-q{color:var(--ok)}
+.ov.trame .noeud-q.etat-non .marque-q{color:var(--erreur)}
+.ov.trame .reponse-q{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame .liste-q{font-size:.875rem;line-height:1.25rem}
+.ov.trame .titre-ajout{font-size:1rem;font-weight:500;line-height:1.5rem}
+.ov.trame .actions-ajout{gap:4px}

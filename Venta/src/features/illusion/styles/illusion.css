@@ -29,11 +29,12 @@
 .ov .mono{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11.5px)}
 
 /* Verre d'Ovrane : fond recopié sous un voile, halos de deux coins, liseré. */
-.ov .verre{position:relative;isolation:isolate;border-radius:var(--verre-rayon,25px);clip-path:inset(0 round var(--verre-rayon,25px));--halo:rgb(217 217 217 / .5),rgb(204 204 204 / .4375) 5.73%,rgb(192 192 192 / .375) 11.45%,rgb(179 179 179 / .3125) 17.18%,rgb(166 166 166 / .25) 22.9%,rgb(153 153 153 / .1875) 28.63%,rgb(140 140 140 / .125) 34.35%,rgb(128 128 128 / .0625) 40.08%,rgb(115 115 115 / 0) 45.8%}
+.ov .verre{position:relative;isolation:isolate;border-radius:var(--verre-rayon,25px);clip-path:inset(0 round var(--verre-rayon,25px));}
 .ov .verre::before,.ov .verre::after{content:"";position:absolute;inset:0;pointer-events:none}
 /* Verre assombri deux fois de 25 % par un voile noir sous halos et liseré. */
 .ov .verre::before{position:fixed;min-height:100vh;z-index:-3;background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0),linear-gradient(180deg,var(--fond-haut),var(--fond-bas))}
-.ov .verre-halos{position:absolute;inset:0;z-index:-2;margin:0;border:0;pointer-events:none;mix-blend-mode:color-dodge;opacity:.75;transition:opacity .3s;background:radial-gradient(circle farthest-side at -1px 0,var(--halo)),radial-gradient(circle farthest-side at calc(100% - 1px) 100%,var(--halo))}
+/* Une seule lumière, tirée du haut du fond, quelle que soit la place. */
+.ov .verre-halos{--halo:rgb(from var(--lumiere) r g b / .5),rgb(from var(--lumiere) r g b / .22) 11%,rgb(from var(--lumiere) r g b / .08) 23%,rgb(from var(--lumiere) r g b / 0) 45.8%;--lumiere:rgb(from var(--fond-haut) calc(r * 3.3) calc(g * 3.3) calc(b * 3.3));position:absolute;inset:0;z-index:-2;margin:0;border:0;pointer-events:none;opacity:.75;transition:opacity .3s;background:radial-gradient(circle farthest-side at -1px 0,var(--halo)),radial-gradient(circle farthest-side at calc(100% - 1px) 100%,var(--halo))}
 .ov :is(a,button).verre:is(:hover,:focus-visible)>.verre-halos{opacity:1}
 .ov .verre:focus-visible{outline-offset:-4px}
 /* Le liseré déborde d'un pixel sous la découpe : aucun fil sombre au bord. */
@@ -57,8 +58,8 @@
 .ov .barre-canaux{display:inline-grid;grid-template-columns:1fr 64px 1fr;align-items:center;height:44px}
 .ov .barre-canaux .cote{display:flex;align-items:center;gap:28px}
 .ov .barre-canaux .gauche{justify-content:flex-end}
-/* Réglages et Profil au coin droit de la barre, hors des canaux. */
-.ov .coin{position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:16px;height:44px}
+/* Coin : le dessin de Profil finit à l'aplomb du bord droit des fenêtres. */
+.ov .coin{position:absolute;top:16px;right:9.4px;display:flex;align-items:center;gap:4px;height:44px}
 .ov .onglet{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:var(--t-petit,10px);font-weight:700;letter-spacing:.25em;text-transform:uppercase;white-space:nowrap;color:rgb(var(--encre) / .6);transition:color .5s,filter .5s}
 .ov .onglet:hover{color:rgb(var(--encre))}
 .ov .onglet.actif{color:rgb(var(--encre));filter:drop-shadow(0 0 3px rgb(var(--encre) / .5))}
@@ -364,11 +365,11 @@
 .ov .place-entiere{position:absolute;z-index:2;pointer-events:none;box-sizing:border-box;border:1px solid rgb(var(--encre) / .55);background:rgb(var(--encre) / .05);box-shadow:inset 0 0 36px rgb(var(--encre) / calc(.08 * var(--lueur))),0 0 12px rgb(var(--encre) / calc(.18 * var(--lueur)));opacity:0;transition:opacity .2s}
 .ov .place-entiere.vu{opacity:1}
 .ov .fentes{display:contents}
-/* Remise en place : icône discrète en haut à droite si la grille change. */
-.ov .remise{position:absolute;top:22px;right:24px;z-index:30;display:grid;place-items:center;width:32px;height:32px;color:rgb(var(--encre) / .6);opacity:0;pointer-events:none;transition:opacity .25s,color .2s,filter .2s}
+/* Remise en place : à gauche des Réglages, de même taille qu'eux. */
+.ov .remise{position:absolute;top:16px;right:calc(9.4px + 92px + 4px);z-index:30;display:grid;place-items:center;width:44px;height:44px;color:rgb(var(--encre) / .6);opacity:0;pointer-events:none;transition:opacity .25s,color .2s,filter .2s}
 .ov .remise.vu{opacity:1;pointer-events:auto}
 .ov .remise:hover{color:rgb(var(--encre));filter:drop-shadow(0 0 4px rgb(var(--encre) / .6))}
-.ov .remise svg{width:18px;height:18px}
+.ov .remise svg{width:20px;height:20px}
 /* Prise : en tête de fenêtre, à gauche ; un clic détache ou remet. */
 .ov .prise{position:absolute;top:10px;left:8px;z-index:3;display:grid;place-items:center;width:28px;height:28px;color:rgb(var(--encre) / .6);cursor:grab;touch-action:none;transition:color .2s,background .2s}
 .ov .prise svg{display:block;width:18px;height:18px;fill:currentColor}
@@ -396,6 +397,6 @@
 
 /* Tous les angles droits, voyants compris. */
 .ov .verre{--verre-rayon:0px}
-.ov:not(.th-plat) *,.ov:not(.th-plat) *::before,.ov:not(.th-plat) *::after{border-radius:0 !important}
+.ov.th-verre *,.ov.th-verre *::before,.ov.th-verre *::after{border-radius:0 !important}
 /* Le bandeau du profil laisse la prise libre. */
 .ov [data-fen]>.prise+.bandeau{margin-left:48px}

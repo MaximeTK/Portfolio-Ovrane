@@ -1,17 +1,17 @@
 'use client';
 
 import '../styles/illusion.css';
-import { use, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import '../styles/themes.css';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { classesTheme, useApparence } from '../apparence';
 import type { Compte } from '../api';
 import { DUREES, ecrire, mouvementReduit } from '../partage/glyphes';
-import { PAGE_DEPART, chargerAdministration } from '../pages/liste';
-import { REGISTRE } from '../pages/registre';
 import { poserCompte } from '../stockage';
 
 type ProprietesRacine = {
-  compte: Compte;
+  // Absent pour un visiteur d'Ovrane
+  compte?: Compte;
   // Page affichée : l'accueil a son allure
   page: string;
   // Palette imposée (banc d'essai), sinon celle choisie dans Ovrane
@@ -24,7 +24,7 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
   const matiere = useApparence((s) => s.matiere);
   const theme = useApparence((s) => s.theme);
   // Au rendu, avant les pages : leurs brouillons se lisent sous ce compte
-  poserCompte(compte.email);
+  if (compte) poserCompte(compte.email);
 
   useEffect(() => {
     if (palette) useBackgroundStore.getState().setBackground(palette);
@@ -52,24 +52,12 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
   }, [ouvre]);
 
   return (
-    <div ref={racine} className={`ov mat-${matiere} ${classesTheme(theme)}${compte.admin ? ' admin' : ''}${page === 'accueil' ? ' vue-accueil' : ''}${ouvre ? ' ouverture' : ''}`}>
+    <div ref={racine} className={`ov mat-${matiere} ${classesTheme(theme)}${compte?.admin ? ' admin' : ''}${page === 'accueil' ? ' vue-accueil' : ''}${ouvre ? ' ouverture' : ''}`}>
       <div className="fond" />
       <div className="place-entete" aria-hidden="true" />
       <div key={page} className="scene">
         {children}
       </div>
     </div>
-  );
-}
-
-// Une page d'Illusion ouverte dans le site, chargée à la première ouverture
-export default function VueIllusion({ compte, page, recherche }: { compte: Compte; page: string; recherche: string }) {
-  // Attendu avant de monter : l'ouverture trouve les fenêtres de la page
-  const admin = compte.admin ? use(chargerAdministration()).REGISTRE_ADMIN : null;
-  const Composant = REGISTRE[page] ?? admin?.[page] ?? REGISTRE[PAGE_DEPART];
-  return (
-    <RacineIllusion compte={compte} page={page}>
-      <Composant compte={compte} recherche={recherche} />
-    </RacineIllusion>
   );
 }

@@ -90,72 +90,73 @@
 .ov .ruby-f .points i:nth-child(3){animation-delay:.3s}
 
 /* Thèmes plats : liste et détail aux valeurs de la planche, verre intact. */
-.ov.th-plat [data-fen=appels]{--ligne:56px}
-.ov.th-plat [data-fen=appels] .outils{flex-wrap:nowrap}
-.ov.th-plat [data-fen=appels] .note-outils{flex:1 1 0;font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=appels] .outils .espace{flex:none;width:8px}
-.ov.th-plat [data-fen=appels] .outils .actions{flex:none}
-.ov.th-plat [data-fen=appels]>.prise+.outils~.confirmer{padding-left:52px}
+.ov.trame [data-fen=appels]{--ligne:56px}
+.ov.trame [data-fen=appels] .outils{flex-wrap:nowrap}
+.ov.trame [data-fen=appels] .note-outils{flex:1 1 0;font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame [data-fen=appels] .outils .espace{flex:none;width:8px}
+.ov.trame [data-fen=appels] .outils .actions{flex:none}
+.ov.trame [data-fen=appels]>.prise+.outils~.confirmer{padding-left:52px}
 /* Colonnes reprises pour 14 px ; l'appel prend ce qui reste. */
-.ov.th-plat [data-fen=appels] thead th:nth-child(1){width:104px}
-.ov.th-plat [data-fen=appels] thead th:nth-child(2){width:auto}
-.ov.th-plat [data-fen=appels] thead th:nth-child(3){width:96px}
-.ov.th-plat [data-fen=appels] thead th:nth-child(4){width:60px}
-.ov.th-plat [data-fen=appels] thead th:nth-child(5){width:76px}
-.ov.th-plat [data-fen=appels] td.mono{font-family:inherit;font-size:.875rem}
-.ov.th-plat [data-fen=appels] .t-appel{font-weight:500;line-height:1.25rem}
-.ov.th-plat [data-fen=appels] .offre-appel{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=appels] .offre-appel.sans{color:var(--texte-2)}
-.ov.th-plat [data-fen=appels] tr.choisi td{background:var(--selection);color:var(--texte)}
-.ov.th-plat [data-fen=appels] tr.choisi .d{color:var(--texte-2)}
-.ov.th-plat [data-fen=appels] tr.choisi td:first-child{box-shadow:inset 3px 0 0 var(--primaire)}
-.ov.th-plat [data-fen=appels] tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.ov.th-plat [data-fen=appels] .analyse-faite{font-size:.75rem;color:var(--info)}
-.ov.th-plat [data-fen=appels] .direct-c{gap:6px;font-weight:500;color:var(--ok)}
-.ov.th-plat [data-fen=appels] .direct-c::before,.ov.th-plat .ruby-f .voyant-live{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:none}
-.ov.th-plat [data-fen=appels] tr.vide-f td{color:var(--texte-2)}
-.ov.th-plat [data-fen=appels] .avis-appels{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;color:var(--texte)}
-.ov.th-plat [data-fen=appels] .avis-appels.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame [data-fen=appels] thead th:nth-child(1){width:104px}
+.ov.trame [data-fen=appels] thead th:nth-child(2){width:auto}
+.ov.trame [data-fen=appels] thead th:nth-child(3){width:96px}
+.ov.trame [data-fen=appels] thead th:nth-child(4){width:60px}
+.ov.trame [data-fen=appels] thead th:nth-child(5){width:76px}
+.ov.trame [data-fen=appels] td.mono{font-family:inherit;font-size:.875rem}
+.ov.trame [data-fen=appels] .t-appel{font-weight:500;line-height:1.25rem}
+.ov.trame [data-fen=appels] .offre-appel{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame [data-fen=appels] .offre-appel.sans{color:var(--texte-2)}
+.ov.trame [data-fen=appels] tr.choisi td{background:var(--selection);color:var(--texte)}
+.ov.trame [data-fen=appels] tr.choisi .d{color:var(--texte-2)}
+.ov.trame [data-fen=appels] tr.choisi td:first-child{box-shadow:inset 3px 0 0 var(--primaire)}
+.ov.trame [data-fen=appels] tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.trame [data-fen=appels] .analyse-faite{font-size:.75rem;color:var(--info)}
+.ov.trame [data-fen=appels] .direct-c{gap:6px;font-weight:500;color:var(--ok)}
+.ov.trame [data-fen=appels] .direct-c::before,.ov.trame .ruby-f .voyant-live{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.ov.th-plein [data-fen=appels] .direct-c::before,.ov.th-plein .ruby-f .voyant-live{box-shadow:none}
+.ov.trame [data-fen=appels] tr.vide-f td{color:var(--texte-2)}
+.ov.trame [data-fen=appels] .avis-appels{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;color:var(--texte)}
+.ov.trame [data-fen=appels] .avis-appels.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Détail : le titre commence après la prise, à 52 px du bord. */
-.ov.th-plat [data-fen=appel]{padding:8px 16px 12px}
-.ov.th-plat .appel-d{gap:10px}
-.ov.th-plat [data-fen=appel] .appel-d .titre-appel{width:calc(100% - 36px);margin-left:36px}
-.ov.th-plat .appel-d .titre-appel{height:auto;min-height:44px;border-bottom:1px solid var(--contour);font-size:1.125rem;font-weight:500;color:var(--texte)}
-.ov.th-plat .appel-d .titre-appel:hover{border-bottom-color:var(--texte)}
-.ov.th-plat .appel-d .titre-appel:focus{border-bottom-color:var(--primaire)}
-.ov.th-plat .appel-d .titre-appel:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.ov.trame [data-fen=appel]{padding:8px 16px 12px}
+.ov.trame .appel-d{gap:10px}
+.ov.trame [data-fen=appel] .appel-d .titre-appel{width:calc(100% - 36px);margin-left:36px}
+.ov.trame .appel-d .titre-appel{height:auto;min-height:44px;border-bottom:1px solid var(--contour);font-size:1.125rem;font-weight:500;color:var(--texte)}
+.ov.trame .appel-d .titre-appel:hover{border-bottom-color:var(--texte)}
+.ov.trame .appel-d .titre-appel:focus{border-bottom-color:var(--primaire)}
+.ov.trame .appel-d .titre-appel:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 /* Supprimer l'appel : la phrase passe à la ligne au lieu d'être coupée. */
-.ov.th-plat .appel-d .confirmer{flex-wrap:wrap;padding:4px 4px 4px 16px;border-radius:12px;white-space:normal}
-.ov.th-plat .appel-d .confirmer p{flex:1 1 200px;overflow:visible}
-.ov.th-plat .appel-d .meta-appel{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .appel-d .saisie{min-height:44px}
-.ov.th-plat .appel-d .voix-appel .action{height:auto}
-.ov.th-plat .appel-d .defile-appel{scrollbar-width:thin}
-.ov.th-plat .appel-d .defile-appel .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
-.ov.th-plat .appel-d .transcription{gap:4px}
-.ov.th-plat .appel-d .transcription li{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .appel-d .transcription time{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .appel-d .transcription b{font-weight:500}
-.ov.th-plat :is(.appel-d,.ruby-f) .v-moi{color:var(--ok)}
-.ov.th-plat :is(.appel-d,.ruby-f) .v-autre{color:var(--info)}
-.ov.th-plat .appel-d .analyse{grid-template-columns:112px minmax(0,1fr);gap:4px 12px;font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .appel-d .analyse dt{font-size:.75rem;line-height:1rem;font-weight:400;color:var(--texte-2)}
-.ov.th-plat .appel-d .analyse-brute{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .appel-d .pied-appel{gap:8px;padding-top:8px;border-top:1px solid var(--filet)}
-.ov.th-plat .appel-d .vide-appel{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat .appel-d .vide-appel b{font-weight:500;color:var(--texte)}
+.ov.trame .appel-d .confirmer{flex-wrap:wrap;padding:4px 4px 4px 16px;border-radius:12px;white-space:normal}
+.ov.trame .appel-d .confirmer p{flex:1 1 200px;overflow:visible}
+.ov.trame .appel-d .meta-appel{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .appel-d .saisie{min-height:44px}
+.ov.trame .appel-d .voix-appel .action{height:auto}
+.ov.trame .appel-d .defile-appel{scrollbar-width:thin}
+.ov.trame .appel-d .defile-appel .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
+.ov.trame .appel-d .transcription{gap:4px}
+.ov.trame .appel-d .transcription li{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .appel-d .transcription time{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .appel-d .transcription b{font-weight:500}
+.ov.trame :is(.appel-d,.ruby-f) .v-moi{color:var(--ok)}
+.ov.trame :is(.appel-d,.ruby-f) .v-autre{color:var(--info)}
+.ov.trame .appel-d .analyse{grid-template-columns:112px minmax(0,1fr);gap:4px 12px;font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .appel-d .analyse dt{font-size:.75rem;line-height:1rem;font-weight:400;color:var(--texte-2)}
+.ov.trame .appel-d .analyse-brute{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .appel-d .pied-appel{gap:8px;padding-top:8px;border-top:1px solid var(--filet)}
+.ov.trame .appel-d .vide-appel{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame .appel-d .vide-appel b{font-weight:500;color:var(--texte)}
 /* Panneau RUBY : choix de 44 px, avis pleins, direct sans lueur. */
-.ov.th-plat .ruby-f .lieu-f{min-height:44px;justify-content:center}
-.ov.th-plat .ruby-f .lieu-f b{font-size:.875rem;font-weight:500}
-.ov.th-plat .ruby-f .lieu-f small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .ruby-f .lieu-f:has(:checked) small{color:var(--sur-primaire-doux)}
-.ov.th-plat .ruby-f .lieu-f:has(:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
-.ov.th-plat .ruby-f .avis-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--surface-basse);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .ruby-f .avis-f.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
-.ov.th-plat .ruby-f .live-tete{gap:8px;font-size:.875rem;font-weight:500}
-.ov.th-plat .ruby-f .live-tete time{font-size:.875rem;font-weight:400;color:var(--texte-2)}
-.ov.th-plat .ruby-f .meta-f{font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat .ruby-f .tours-direct li{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .ruby-f .tours-direct b{font-weight:500}
-.ov.th-plat .ruby-f .tours-direct .partiel{color:var(--texte-2)}
-.ov.th-plat .ruby-f .points i{border-radius:50%;background:var(--primaire)}
+.ov.trame .ruby-f .lieu-f{min-height:44px;justify-content:center}
+.ov.trame .ruby-f .lieu-f b{font-size:.875rem;font-weight:500}
+.ov.trame .ruby-f .lieu-f small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .ruby-f .lieu-f:has(:checked) small{color:var(--sur-primaire-doux)}
+.ov.trame .ruby-f .lieu-f:has(:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.ov.trame .ruby-f .avis-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--surface-basse);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .ruby-f .avis-f.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame .ruby-f .live-tete{gap:8px;font-size:.875rem;font-weight:500}
+.ov.trame .ruby-f .live-tete time{font-size:.875rem;font-weight:400;color:var(--texte-2)}
+.ov.trame .ruby-f .meta-f{font-size:.875rem;color:var(--texte-2)}
+.ov.trame .ruby-f .tours-direct li{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .ruby-f .tours-direct b{font-weight:500}
+.ov.trame .ruby-f .tours-direct .partiel{color:var(--texte-2)}
+.ov.trame .ruby-f .points i{border-radius:50%;background:var(--primaire)}

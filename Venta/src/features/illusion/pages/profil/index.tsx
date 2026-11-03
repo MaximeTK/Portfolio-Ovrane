@@ -10,6 +10,7 @@ import { Activite } from '../../activite/Activite';
 import type { ProprietesPage } from '../liste';
 import { FORMES_CHAMP, SECTIONS_DE_CHAMP, libelleDonnee, titreProfil, type ChampSchema } from './champs';
 import { EditeurProfil, useEditeur, type EtatProfil, type Profil } from './editeur';
+import { useUIStore } from '@/lib/uiStore';
 import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
 
 type ProfilDispo = { nom: string; chemin: string };
@@ -20,6 +21,7 @@ type Dire = (texte: string, erreur?: boolean) => void;
 const nomFichier = (chemin: string) => chemin.split(/[\\/]/).pop() ?? chemin;
 const SANS_ETAT: EtatProfil = { manquants: [], a_completer: [] };
 const ICONES = {
+  compte: <svg {...TRAIT}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>,
   ...ICONES_COMMUNES,
   dupliquer: <svg {...TRAIT}><rect x="8" y="8" width="12" height="12" /><path d="M16 8V4H4v12h4" /></svg>,
   fleche: <svg {...TRAIT}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
@@ -36,13 +38,17 @@ export default function PageProfil({ compte, recherche }: ProprietesPage) {
     <Dock id="profil" principal="profils" panneau={depart}
       fenetres={{ profils: { mini: [520, 300], pref: [760, 420], flot: [900, 600] }, panneau: { flot: [480, 640] } }}>
       <Activite />
-      <Profils admin={compte.admin} fiche={params.get('fiche')} champ={params.get('champ')} libelle={params.get('libelle')} />
+      <Profils admin={compte.admin} depart={depart} fiche={params.get('fiche')} champ={params.get('champ')} libelle={params.get('libelle')} />
     </Dock>
   );
 }
 
-function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: string | null; champ: string | null; libelle: string | null }) {
+function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; depart: string | null; fiche: string | null; champ: string | null; libelle: string | null }) {
   const { onglet, ouvrir, fermer } = usePanneau();
+  // Un lien vers un panneau l'ouvre aussi sur une section déjà visitée
+  useEffect(() => {
+    if (depart) ouvrir(depart);
+  }, [depart, ouvrir]);
   // Profils lus et profil ouvert gardés d'une visite à l'autre
   const [profils, setProfils] = useState(() => repris<ProfilDispo[] | null>('profil:profils', null));
   const [incomplets, setIncomplets] = useState(() => repris<Record<string, Manque[]>>('profil:incomplets', {}));
@@ -214,6 +220,7 @@ function Profils({ admin, fiche, champ, libelle }: { admin: boolean; fiche: stri
         <div className="outils">
           <p className="titre-page"><span className="etiquette">Profils de candidature</span><span className="compteur">{profils?.length ?? ''}</span></p>
           <span className="espace" />
+          <button type="button" className="action" title="Pseudo, e-mail et déconnexion" onClick={() => useUIStore.getState().setPage('connexion')}>{ico(ICONES.compte)}<span className="txt">Compte</span></button>
           {choisi && (
             <div className="actions" role="group" aria-label="Actions du profil">
               <button type="button" className="action rouge" title="Supprimer le profil" onClick={() => setConfirmation('supprimer')}>{ico(ICONES.supprimer)}<span className="txt">Supprimer le profil</span></button>

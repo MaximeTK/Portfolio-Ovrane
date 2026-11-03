@@ -72,9 +72,10 @@ type Cote = 'gauche' | 'droite' | 'haut' | 'bas';
 type Cible = { remplir?: boolean; bord?: boolean; id?: string; cote?: Cote };
 type Fente = { n: Partage; a: number; b: number; ta: number; tb: number; ma: number; mb: number; somme: number; total: number; ligne: boolean; ajoutA: number; ajoutB: number; libreA: number; libreB: number } & Zone;
 type Calcul = { res: Record<string, Zone>; fentes: Fente[] };
-type EtatFenetre = { flot: Zone | null; tailleFlot: Taille | null; z: string; retour?: { avant: Arbre | null; apres: string } };
+type EtatFenetre = { flot: Zone | null; tailleFlot: Taille | null; z: string };
 // Disposition d'une page gardée pendant la session, jusqu'à la remise
-type Memoire = { racine: Arbre | null; fen: Record<string, EtatFenetre>; zMax: number; change: boolean };
+// `reference` : l'arbre d'avant le premier décrochage, pour les remises
+type Memoire = { racine: Arbre | null; reference?: Arbre | null; fen: Record<string, EtatFenetre>; zMax: number; change: boolean };
 type Action =
   | { type: 'fente'; f: Fente; x0: number; y0: number; el: HTMLElement }
   | { type: 'taille'; id: string; sens: string; x0: number; y0: number; w0: number; h0: number }
@@ -499,11 +500,21 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   }
   const cle = (c: Cible | null) => (!c ? '' : c.remplir ? 'remplir' : (c.bord ? 'bord-' : c.id + '-') + c.cote);
 
-  // Sortie de l'arbre : sa case d'avant reste connue tant que rien ne change
+  // Sortie de l'arbre : la disposition d'avant reste connue pour la remise
   const sortirDeLArbre = (id: string) => {
-    const avant = copie(memoire.racine);
+    memoire.reference ??= copie(memoire.racine);
     memoire.racine = normaliser(retirer(memoire.racine, id));
-    etat(id).retour = { avant, apres: JSON.stringify(memoire.racine) };
+  };
+  // Remise en place : la référence, sans les fenêtres encore dehors ni fermées
+  const rentrerDansLArbre = (id: string) => {
+    const presentes = new Set([...ids(memoire.racine), id]);
+    let arbre = copie(memoire.reference ?? memoire.racine);
+    for (const x of ids(arbre)) if (!presentes.has(x)) arbre = retirer(arbre, x);
+    memoire.racine = normaliser(arbre);
+    // Celles ouvertes depuis gardent la place qu'elles auraient prise
+    for (const x of presentes) {
+      if (!ids(memoire.racine).includes(x)) memoire.racine = normaliser((o.elements?.(x) && placerElement(x)) || inserer(memoire.racine, { bord: true, cote: 'droite' }, x));
+    }
   };
   // Clic sur la prise : détachée tout de suite, ou remise en place
   const basculer = (id: string) => {
@@ -519,13 +530,12 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       sortirDeLArbre(id);
       poser(el, f.flot);
     } else {
-      memoire.racine = f.retour?.apres === JSON.stringify(memoire.racine) ? f.retour.avant
-        : normaliser((o.elements?.(id) && placerElement(id)) || inserer(memoire.racine, { bord: true, cote: 'droite' }, id));
+      rentrerDansLArbre(id);
       f.flot = null;
       f.z = '';
-      f.retour = undefined;
       delete el.dataset.flot;
       el.style.zIndex = '';
+      if (!Object.values(fen).some((x) => x.flot)) memoire.reference = null;
     }
     changer();
     ranger(true);
@@ -535,6 +545,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   const cliquer = (e: MouseEvent) => {
     const el = (e.target as HTMLElement).closest('.prise')?.closest<HTMLElement>('[data-fen]');
     if (el && !glisse) basculer(el.dataset.fen!);
+    glisse = false;
   };
 
   const presser = (e: PointerEvent) => {
@@ -669,7 +680,8 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       const f = etat(a.id);
       f.flot = null;
       f.z = '';
-      f.retour = undefined;
+      // Posée à la main : cette disposition devient celle à laquelle revenir
+      memoire.reference = null;
       delete a.el.dataset.flot;
       a.el.style.zIndex = '';
     }
@@ -679,6 +691,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   // Remise en place : arbre de départ, fenêtres rangées, tailles oubliées
   const remettre = () => {
     memoire.racine = copie(racineDepart);
+    memoire.reference = null;
     memoire.change = false;
     for (const id in fen) {
       fen[id] = { flot: null, tailleFlot: null, z: '' };

@@ -58,30 +58,30 @@
 .ov :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ren-pied{grid-area:act;display:flex;gap:22px}
 
 /* Thèmes plats : l'avis inversé, couleurs et fichiers en surfaces pleines. */
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .avis-doc{bottom:68px;padding:10px 16px;border-left:0;border-radius:8px;background:var(--texte);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--surface)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .avis-doc.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .menu-date{font-size:.75rem;font-weight:400;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .pastille-c .pastille{border-color:var(--contour);border-radius:6px;overflow:hidden}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .retirer-c{width:18px;height:18px;border-color:var(--contour);border-radius:50%;background:var(--surface);font-size:.75rem;color:var(--texte)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .ajout-c{min-height:44px;padding:0 8px;border-radius:8px;font-size:.875rem;font-weight:500;color:var(--primaire)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .ajout-c:hover{background:var(--surface-moyenne);color:var(--primaire)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) i.pastille.petite{border-color:var(--contour);border-radius:50%}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .avis-doc{bottom:68px;padding:10px 16px;border-left:0;border-radius:8px;background:var(--texte);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--surface)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .avis-doc.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .menu-date{font-size:.75rem;font-weight:400;line-height:1rem;color:var(--texte-2)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .pastille-c .pastille{border-color:var(--contour);border-radius:6px;overflow:hidden}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .retirer-c{width:18px;height:18px;border-color:var(--contour);border-radius:50%;background:var(--surface);font-size:.75rem;color:var(--texte)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .ajout-c{min-height:44px;padding:0 8px;border-radius:8px;font-size:.875rem;font-weight:500;color:var(--primaire)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .ajout-c:hover{background:var(--surface-moyenne);color:var(--primaire)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) i.pastille.petite{border-color:var(--contour);border-radius:50%}
 /* Gestionnaire de fichiers : filets, cibles de 44 px, petits textes nets. */
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .vide-f{font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers:not(.compact)>li{border-top-color:var(--filet)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers:not(.compact)>li:last-child{border-bottom-color:var(--filet)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers>li:hover{background:var(--surface-basse)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers>li.vise{background:var(--selection)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .nf b{font-size:.875rem;font-weight:500}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .nf small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) :is(.mini,.fichiers .bt){width:44px;height:44px;border-radius:50%;font-size:1rem;color:var(--texte-2);transition:background-color .15s var(--courbe)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) :is(.mini,.fichiers .bt):hover{background:var(--surface-moyenne);color:var(--texte-2)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt.sup:hover{color:var(--erreur)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt svg{width:18px;height:18px}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt+.bt{margin-left:0}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap{border-color:var(--filet);border-radius:4px}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap.feuille{background:#fff;border-color:var(--filet);border-radius:2px}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap.police{background:var(--surface-basse);color:var(--texte)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap.police.illisible{color:var(--erreur)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers li.renomme label{font-size:.75rem;font-weight:400;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ren-pied{gap:4px}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .vide-f{font-size:.875rem;color:var(--texte-2)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers:not(.compact)>li{border-top-color:var(--filet)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers:not(.compact)>li:last-child{border-bottom-color:var(--filet)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers>li:hover{background:var(--surface-basse)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers>li.vise{background:var(--selection)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .nf b{font-size:.875rem;font-weight:500}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .nf small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) :is(.mini,.fichiers .bt){width:44px;height:44px;border-radius:50%;font-size:1rem;color:var(--texte-2);transition:background-color .15s var(--courbe)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) :is(.mini,.fichiers .bt):hover{background:var(--surface-moyenne);color:var(--texte-2)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt.sup:hover{color:var(--erreur)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt svg{width:18px;height:18px}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .bt+.bt{margin-left:0}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap{border-color:var(--filet);border-radius:4px}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap.feuille{background:#fff;border-color:var(--filet);border-radius:2px}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap.police{background:var(--surface-basse);color:var(--texte)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ap.police.illisible{color:var(--erreur)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers li.renomme label{font-size:.75rem;font-weight:400;line-height:1rem;color:var(--texte-2)}
+.ov.trame :is(.docs-galerie,.docs-f,.docs-constructeur) .fichiers .ren-pied{gap:4px}

@@ -108,60 +108,60 @@
 .ov .serveur-f .aide-champ{margin-top:10px}
 
 /* Thèmes plats : groupes en cibles de 44 px, le choisi en teinte douce. */
-.ov.th-plat [data-fen=serveur] .titre-groupe:hover{background:none}
-.ov.th-plat [data-fen=serveur] .corps-groupes{border-top-color:var(--filet)}
-.ov.th-plat [data-fen=serveur] .groupes{gap:2px;width:176px;padding:8px;border-right-color:var(--filet);scrollbar-width:thin}
-.ov.th-plat [data-fen=serveur] .rubrique{height:auto;min-height:44px;padding:4px 12px;border-radius:8px;font-size:.875rem;line-height:1.25rem;color:var(--texte-2);white-space:normal;transition:background-color .15s var(--courbe)}
-.ov.th-plat [data-fen=serveur] .rubrique:hover{background:var(--surface-moyenne);color:var(--texte)}
-.ov.th-plat [data-fen=serveur] .rubrique.actif{background:var(--primaire-doux);font-weight:500;color:var(--sur-primaire-doux)}
-.ov.th-plat [data-fen=serveur] .rubrique.danger,.ov.th-plat [data-fen=serveur] .rubrique.danger:hover{color:var(--erreur)}
-.ov.th-plat [data-fen=serveur] .rubrique.allume,.ov.th-plat [data-fen=serveur] .rubrique.allume:hover{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
-.ov.th-plat [data-fen=serveur] .aide-groupe{padding:8px 16px;font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=serveur] .aide-groupe.erreur{color:var(--erreur)}
-.ov.th-plat [data-fen=serveur] .pied-groupe{height:auto;min-height:60px;padding:8px 12px 8px 16px;border-top-color:var(--filet);font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=serveur] .action:disabled,.ov.th-plat [data-fen=serveur]~[data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
-.ov.th-plat [data-fen=serveur]~[data-fen=panneau] .p-onglets{flex-wrap:wrap}
-.ov.th-plat [data-fen=serveur]~[data-fen=panneau] .p-onglet{flex:none}
-.ov.th-plat [data-fen=serveur] .form-colonnes{gap:4px 24px;padding:8px 16px 16px}
-.ov.th-plat :is([data-fen=serveur],.serveur-f) .effacer{min-height:44px;font-size:.875rem;font-weight:500;color:var(--primaire);text-decoration-color:currentColor}
-.ov.th-plat :is([data-fen=serveur],.serveur-f) .effacer:hover{color:var(--primaire)}
+.ov.trame [data-fen=serveur] .titre-groupe:hover{background:none}
+.ov.trame [data-fen=serveur] .corps-groupes{border-top-color:var(--filet)}
+.ov.trame [data-fen=serveur] .groupes{gap:2px;width:176px;padding:8px;border-right-color:var(--filet);scrollbar-width:thin}
+.ov.trame [data-fen=serveur] .rubrique{height:auto;min-height:44px;padding:4px 12px;border-radius:8px;font-size:.875rem;line-height:1.25rem;color:var(--texte-2);white-space:normal;transition:background-color .15s var(--courbe)}
+.ov.trame [data-fen=serveur] .rubrique:hover{background:var(--surface-moyenne);color:var(--texte)}
+.ov.trame [data-fen=serveur] .rubrique.actif{background:var(--primaire-doux);font-weight:500;color:var(--sur-primaire-doux)}
+.ov.trame [data-fen=serveur] .rubrique.danger,.ov.trame [data-fen=serveur] .rubrique.danger:hover{color:var(--erreur)}
+.ov.trame [data-fen=serveur] .rubrique.allume,.ov.trame [data-fen=serveur] .rubrique.allume:hover{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame [data-fen=serveur] .aide-groupe{padding:8px 16px;font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame [data-fen=serveur] .aide-groupe.erreur{color:var(--erreur)}
+.ov.trame [data-fen=serveur] .pied-groupe{height:auto;min-height:60px;padding:8px 12px 8px 16px;border-top-color:var(--filet);font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame [data-fen=serveur] .action:disabled,.ov.trame [data-fen=serveur]~[data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame [data-fen=serveur]~[data-fen=panneau] .p-onglets{flex-wrap:wrap}
+.ov.trame [data-fen=serveur]~[data-fen=panneau] .p-onglet{flex:none}
+.ov.trame [data-fen=serveur] .form-colonnes{gap:4px 24px;padding:8px 16px 16px}
+.ov.trame :is([data-fen=serveur],.serveur-f) .effacer{min-height:44px;font-size:.875rem;font-weight:500;color:var(--primaire);text-decoration-color:currentColor}
+.ov.trame :is([data-fen=serveur],.serveur-f) .effacer:hover{color:var(--primaire)}
 /* Catalogue : colonnes pour 14 px, Nom et Modèle se partagent ce qui reste. */
-.ov.th-plat [data-fen=serveur] .tab-modeles :is(th,td){padding:0 6px}
-.ov.th-plat [data-fen=serveur] .tab-modeles :is(th,td):has(>.case){padding:0 0 0 4px}
-.ov.th-plat [data-fen=serveur] .tab-modeles :is(th,td):last-child{padding-right:12px}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:nth-child(1){width:48px}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:is(:nth-child(2),:nth-child(4)){width:auto}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:nth-child(3){width:88px}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:nth-child(5){width:88px}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:nth-child(6){width:81px}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:nth-child(7){width:79px}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:nth-child(8){width:78px}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:nth-child(9){width:112px}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:nth-child(10){width:20px}
-.ov.th-plat [data-fen=serveur] .tab-modeles thead th:nth-child(11){width:74px}
+.ov.trame [data-fen=serveur] .tab-modeles :is(th,td){padding:0 6px}
+.ov.trame [data-fen=serveur] .tab-modeles :is(th,td):has(>.case){padding:0 0 0 4px}
+.ov.trame [data-fen=serveur] .tab-modeles :is(th,td):last-child{padding-right:12px}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:nth-child(1){width:48px}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:is(:nth-child(2),:nth-child(4)){width:auto}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:nth-child(3){width:88px}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:nth-child(5){width:88px}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:nth-child(6){width:81px}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:nth-child(7){width:79px}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:nth-child(8){width:78px}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:nth-child(9){width:112px}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:nth-child(10){width:20px}
+.ov.trame [data-fen=serveur] .tab-modeles thead th:nth-child(11){width:74px}
 /* Moins large que ses 14 px : les prix partent d'abord, puis Tokens et Clé. */
-@container (max-width:895.98px){.ov.th-plat [data-fen=serveur] .tab-modeles :is(th,td):is(:nth-child(6),:nth-child(7),:nth-child(8)){display:none}}
-@container (max-width:657.98px){.ov.th-plat [data-fen=serveur] .tab-modeles :is(th,td):is(:nth-child(5),:nth-child(9)){display:none}}
-.ov.th-plat [data-fen=serveur] .tab-modeles tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.ov.th-plat [data-fen=serveur] .tab-modeles b{font-weight:500}
-.ov.th-plat [data-fen=serveur] .tab-modeles tr.vide-s td{color:var(--texte-2)}
-.ov.th-plat [data-fen=serveur] .d.vide{color:var(--texte-2)}
-.ov.th-plat :is([data-fen=serveur],.serveur-f,.tester-f) .voyant{border-radius:50%;background:var(--contour)}
-.ov.th-plat :is([data-fen=serveur],.serveur-f,.tester-f) .voyant.ok{background:var(--ok);box-shadow:none}
-.ov.th-plat :is([data-fen=serveur],.serveur-f,.tester-f) .voyant.encours{background:var(--primaire)}
-.ov.th-plat :is([data-fen=serveur],.serveur-f,.tester-f) .voyant.ko{background:var(--erreur);box-shadow:none}
+@container (max-width:895.98px){.ov.trame [data-fen=serveur] .tab-modeles :is(th,td):is(:nth-child(6),:nth-child(7),:nth-child(8)){display:none}}
+@container (max-width:657.98px){.ov.trame [data-fen=serveur] .tab-modeles :is(th,td):is(:nth-child(5),:nth-child(9)){display:none}}
+.ov.trame [data-fen=serveur] .tab-modeles tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.trame [data-fen=serveur] .tab-modeles b{font-weight:500}
+.ov.trame [data-fen=serveur] .tab-modeles tr.vide-s td{color:var(--texte-2)}
+.ov.trame [data-fen=serveur] .d.vide{color:var(--texte-2)}
+.ov.trame :is([data-fen=serveur],.serveur-f,.tester-f) .voyant{border-radius:50%;background:var(--contour)}
+.ov.trame :is([data-fen=serveur],.serveur-f,.tester-f) .voyant.ok{background:var(--ok);box-shadow:none}
+.ov.trame :is([data-fen=serveur],.serveur-f,.tester-f) .voyant.encours{background:var(--primaire)}
+.ov.trame :is([data-fen=serveur],.serveur-f,.tester-f) .voyant.ko{background:var(--erreur);box-shadow:none}
 /* Modèle de chaque brique : même titre de section, champs de 48 px. */
-.ov.th-plat [data-fen=serveur] .briques{padding:12px 16px 16px;border-top-color:var(--filet)}
-.ov.th-plat [data-fen=serveur] .briques .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
-.ov.th-plat [data-fen=serveur] .grille-4{gap:8px 12px}
-.ov.th-plat [data-fen=serveur] .avis{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat [data-fen=serveur] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame [data-fen=serveur] .briques{padding:12px 16px 16px;border-top-color:var(--filet)}
+.ov.trame [data-fen=serveur] .briques .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
+.ov.trame [data-fen=serveur] .grille-4{gap:8px 12px}
+.ov.trame [data-fen=serveur] .avis{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame [data-fen=serveur] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Panneau : formulaire d'un modèle, décompte de ce qui sera effacé. */
-.ov.th-plat .serveur-f .form-serre+.form-serre{margin-top:16px;padding-top:0}
-.ov.th-plat .serveur-f .alerte-f{font-size:.875rem;line-height:1.25rem;color:var(--erreur)}
-.ov.th-plat .serveur-f .intro-f{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .serveur-f .liste-f.compte>li{min-height:44px}
-.ov.th-plat .serveur-f .liste-f.compte>li.rien{color:var(--texte-2)}
-.ov.th-plat .serveur-f .liste-f.compte .n{font-weight:500}
-.ov.th-plat .serveur-f .liste-f.compte small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .serveur-f .liste-f.compte .total{border-top-color:var(--contour);font-weight:500}
+.ov.trame .serveur-f .form-serre+.form-serre{margin-top:16px;padding-top:0}
+.ov.trame .serveur-f .alerte-f{font-size:.875rem;line-height:1.25rem;color:var(--erreur)}
+.ov.trame .serveur-f .intro-f{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .serveur-f .liste-f.compte>li{min-height:44px}
+.ov.trame .serveur-f .liste-f.compte>li.rien{color:var(--texte-2)}
+.ov.trame .serveur-f .liste-f.compte .n{font-weight:500}
+.ov.trame .serveur-f .liste-f.compte small{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .serveur-f .liste-f.compte .total{border-top-color:var(--contour);font-weight:500}

@@ -95,61 +95,61 @@
 .ov .docs-f .profil-c{margin-top:12px}
 
 /* Thèmes plats : une rangée d'outils, repliée par paliers si elle déborde. */
-.ov.th-plat .docs-galerie .outils{flex-wrap:nowrap}
-.ov.th-plat .docs-galerie .outils[data-repli="3"]{flex-wrap:wrap}
-.ov.th-plat .docs-galerie .filtre-doc+.filtre-doc,.ov.th-plat .docs-galerie .outils:not([data-repli="0"]) .filtre-doc+.filtre-doc,.ov.th-plat .docs-galerie .outils[data-repli="3"] .filtre-doc+.filtre-doc{margin-left:0}
-.ov.th-plat .docs-galerie .outils:not([data-repli="0"]){gap:4px;padding-right:8px}
-.ov.th-plat .docs-galerie .outils:not([data-repli="0"]) .filtre{padding:0 2px 0 8px}
-.ov.th-plat .docs-galerie .outils:not([data-repli="0"]) .actions,.ov.th-plat .docs-galerie .outils[data-repli="3"] .actions{gap:4px}
-.ov.th-plat .docs-galerie .tout-voir{margin-left:4px}
+.ov.trame .docs-galerie .outils{flex-wrap:nowrap}
+.ov.trame .docs-galerie .outils[data-repli="3"]{flex-wrap:wrap}
+.ov.trame .docs-galerie .filtre-doc+.filtre-doc,.ov.trame .docs-galerie .outils:not([data-repli="0"]) .filtre-doc+.filtre-doc,.ov.trame .docs-galerie .outils[data-repli="3"] .filtre-doc+.filtre-doc{margin-left:0}
+.ov.trame .docs-galerie .outils:not([data-repli="0"]){gap:4px;padding-right:8px}
+.ov.trame .docs-galerie .outils:not([data-repli="0"]) .filtre{padding:0 2px 0 8px}
+.ov.trame .docs-galerie .outils:not([data-repli="0"]) .actions,.ov.trame .docs-galerie .outils[data-repli="3"] .actions{gap:4px}
+.ov.trame .docs-galerie .tout-voir{margin-left:4px}
 /* Galerie : vignettes à filet, tête de 44 px, choix et ouverture primaires. */
-.ov.th-plat .docs-galerie .galerie{padding:12px 14px 14px;border-top:1px solid var(--filet)}
-.ov.th-plat .docs-galerie .vide-g{font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat .docs-galerie .vignette{gap:4px;padding:0 8px 8px;border-color:var(--filet);border-radius:12px}
-.ov.th-plat .docs-galerie .vignette:hover{border-color:var(--filet);background:var(--surface-basse)}
-.ov.th-plat .docs-galerie .vignette:has(.case:checked){background:var(--selection);border-color:var(--primaire);color:var(--texte)}
-.ov.th-plat .docs-galerie .choix.vignette.ouverte{background:var(--surface-moyenne);border-color:var(--primaire);box-shadow:inset 0 0 0 1px var(--primaire);color:var(--texte)}
-.ov.th-plat .docs-galerie .v-ouvrir{border-radius:12px}
-.ov.th-plat .docs-galerie .v-ouvrir:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.ov.th-plat .docs-galerie .v-tete{gap:4px;height:44px;margin:0 -8px}
-.ov.th-plat .docs-galerie .v-oeil{width:44px;height:44px;border-radius:50%;color:var(--texte-2);transition:background-color .15s var(--courbe)}
-.ov.th-plat .docs-galerie .v-oeil:hover{background:var(--surface-moyenne);color:var(--texte-2)}
-.ov.th-plat .docs-galerie .v-oeil svg{width:18px;height:18px}
-.ov.th-plat .docs-galerie :is(.essai,.etat-m){padding:0 6px;border-color:var(--contour);border-radius:6px;font-size:.75rem;font-weight:400;line-height:1.125rem;color:var(--texte-2)}
-.ov.th-plat .docs-galerie .etat-m{margin-left:8px}
-.ov.th-plat .docs-galerie .v-texte strong{font-size:.875rem;font-weight:500;line-height:1.25rem}
-.ov.th-plat .docs-galerie .v-texte span,.ov.th-plat .docs-galerie .v-texte .prof{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .docs-galerie .galerie{padding:12px 14px 14px;border-top:1px solid var(--filet)}
+.ov.trame .docs-galerie .vide-g{font-size:.875rem;color:var(--texte-2)}
+.ov.trame .docs-galerie .vignette{gap:4px;padding:0 8px 8px;border-color:var(--filet);border-radius:12px}
+.ov.trame .docs-galerie .vignette:hover{border-color:var(--filet);background:var(--surface-basse)}
+.ov.trame .docs-galerie .vignette:has(.case:checked){background:var(--selection);border-color:var(--primaire);color:var(--texte)}
+.ov.trame .docs-galerie .choix.vignette.ouverte{background:var(--surface-moyenne);border-color:var(--primaire);box-shadow:inset 0 0 0 1px var(--primaire);color:var(--texte)}
+.ov.trame .docs-galerie .v-ouvrir{border-radius:12px}
+.ov.trame .docs-galerie .v-ouvrir:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.trame .docs-galerie .v-tete{gap:4px;height:44px;margin:0 -8px}
+.ov.trame .docs-galerie .v-oeil{width:44px;height:44px;border-radius:50%;color:var(--texte-2);transition:background-color .15s var(--courbe)}
+.ov.trame .docs-galerie .v-oeil:hover{background:var(--surface-moyenne);color:var(--texte-2)}
+.ov.trame .docs-galerie .v-oeil svg{width:18px;height:18px}
+.ov.trame .docs-galerie :is(.essai,.etat-m){padding:0 6px;border-color:var(--contour);border-radius:6px;font-size:.75rem;font-weight:400;line-height:1.125rem;color:var(--texte-2)}
+.ov.trame .docs-galerie .etat-m{margin-left:8px}
+.ov.trame .docs-galerie .v-texte strong{font-size:.875rem;font-weight:500;line-height:1.25rem}
+.ov.trame .docs-galerie .v-texte span,.ov.trame .docs-galerie .v-texte .prof{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
 /* Feuilles : papier blanc dans les deux thèmes, encre fixe comme la planche. */
-.ov.th-plat :is(.docs-galerie,.docs-f) .page-img{border-color:var(--filet);border-radius:2px;background:#fff}
-.ov.th-plat :is(.docs-galerie,.docs-f) .page{--l1:rgb(28 27 31 / .72);--l2:rgb(28 27 31 / .4);--l3:rgb(28 27 31 / .24);border-color:var(--filet);border-radius:2px;background:linear-gradient(var(--l1) 0 0) 88% 8%/50% 6px no-repeat,linear-gradient(var(--l2) 0 0) 74% 13%/34% 3px no-repeat,linear-gradient(var(--l3) 0 0) 92% 24%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 92% 28%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 86% 32%/48% 2px no-repeat,linear-gradient(var(--l2) 0 0) 70% 42%/26% 3px no-repeat,linear-gradient(var(--l3) 0 0) 92% 47%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 92% 51%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 88% 55%/50% 2px no-repeat,linear-gradient(var(--l2) 0 0) 70% 65%/26% 3px no-repeat,linear-gradient(var(--l3) 0 0) 92% 70%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 92% 74%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 84% 78%/46% 2px no-repeat,linear-gradient(color-mix(in srgb,var(--t) 28%,#fff) 0 0) var(--bloc) no-repeat,#fff}
-.ov.th-plat :is(.docs-galerie,.docs-f) .page.lettre{background:linear-gradient(var(--l2) 0 0) 9% 6%/34% 3px no-repeat,linear-gradient(var(--l3) 0 0) 9% 9%/26% 2px no-repeat,linear-gradient(var(--l3) 0 0) 91% 17%/30% 2px no-repeat,linear-gradient(color-mix(in srgb,var(--t) 75%,#fff) 0 0) 9% 25%/42% 2px no-repeat,linear-gradient(var(--l3) 0 0) 50% 34%/82% 2px no-repeat,linear-gradient(var(--l3) 0 0) 50% 38%/82% 2px no-repeat,linear-gradient(var(--l3) 0 0) 50% 42%/82% 2px no-repeat,linear-gradient(var(--l3) 0 0) 41% 46%/64% 2px no-repeat,#fff}
-.ov.th-plat :is(.docs-galerie,.docs-f) .page.a-batir{border-color:var(--contour);background:repeating-linear-gradient(135deg,rgb(28 27 31 / .05) 0 6px,transparent 6px 12px),#fff}
-.ov.th-plat :is(.docs-galerie,.docs-f) .page .format{font-size:.75rem;font-weight:500;color:#49454f}
+.ov.trame :is(.docs-galerie,.docs-f) .page-img{border-color:var(--filet);border-radius:2px;background:#fff}
+.ov.trame :is(.docs-galerie,.docs-f) .page{--l1:rgb(28 27 31 / .72);--l2:rgb(28 27 31 / .4);--l3:rgb(28 27 31 / .24);border-color:var(--filet);border-radius:2px;background:linear-gradient(var(--l1) 0 0) 88% 8%/50% 6px no-repeat,linear-gradient(var(--l2) 0 0) 74% 13%/34% 3px no-repeat,linear-gradient(var(--l3) 0 0) 92% 24%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 92% 28%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 86% 32%/48% 2px no-repeat,linear-gradient(var(--l2) 0 0) 70% 42%/26% 3px no-repeat,linear-gradient(var(--l3) 0 0) 92% 47%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 92% 51%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 88% 55%/50% 2px no-repeat,linear-gradient(var(--l2) 0 0) 70% 65%/26% 3px no-repeat,linear-gradient(var(--l3) 0 0) 92% 70%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 92% 74%/56% 2px no-repeat,linear-gradient(var(--l3) 0 0) 84% 78%/46% 2px no-repeat,linear-gradient(color-mix(in srgb,var(--t) 28%,#fff) 0 0) var(--bloc) no-repeat,#fff}
+.ov.trame :is(.docs-galerie,.docs-f) .page.lettre{background:linear-gradient(var(--l2) 0 0) 9% 6%/34% 3px no-repeat,linear-gradient(var(--l3) 0 0) 9% 9%/26% 2px no-repeat,linear-gradient(var(--l3) 0 0) 91% 17%/30% 2px no-repeat,linear-gradient(color-mix(in srgb,var(--t) 75%,#fff) 0 0) 9% 25%/42% 2px no-repeat,linear-gradient(var(--l3) 0 0) 50% 34%/82% 2px no-repeat,linear-gradient(var(--l3) 0 0) 50% 38%/82% 2px no-repeat,linear-gradient(var(--l3) 0 0) 50% 42%/82% 2px no-repeat,linear-gradient(var(--l3) 0 0) 41% 46%/64% 2px no-repeat,#fff}
+.ov.trame :is(.docs-galerie,.docs-f) .page.a-batir{border-color:var(--contour);background:repeating-linear-gradient(135deg,rgb(28 27 31 / .05) 0 6px,transparent 6px 12px),#fff}
+.ov.trame :is(.docs-galerie,.docs-f) .page .format{font-size:.75rem;font-weight:500;color:#49454f}
 /* Pied de la galerie et onglets du panneau, jointifs comme la planche. */
-.ov.th-plat .docs-galerie .tout{gap:4px;min-height:44px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat .docs-galerie .compte{color:var(--texte-2)}
-.ov.th-plat:has(.docs-galerie) [data-fen=panneau] .p-onglets{column-gap:0}
-.ov.th-plat:has(.docs-galerie) [data-fen=panneau] .p-onglet{padding:0 8px}
-.ov.th-plat:has(.docs-galerie) [data-fen=panneau] .p-onglet.actif::after{left:8px;right:8px}
-.ov.th-plat:has(.docs-galerie) [data-fen=panneau] .p-tete .f-btn{margin-top:2px}
-.ov.th-plat:has(.docs-galerie) [data-fen=panneau] .action:disabled{opacity:1;color:var(--contour)}
+.ov.trame .docs-galerie .tout{gap:4px;min-height:44px;font-size:.875rem;color:var(--texte)}
+.ov.trame .docs-galerie .compte{color:var(--texte-2)}
+.ov.trame:has(.docs-galerie) [data-fen=panneau] .p-onglets{column-gap:0}
+.ov.trame:has(.docs-galerie) [data-fen=panneau] .p-onglet{padding:0 8px}
+.ov.trame:has(.docs-galerie) [data-fen=panneau] .p-onglet.actif::after{left:8px;right:8px}
+.ov.trame:has(.docs-galerie) [data-fen=panneau] .p-tete .f-btn{margin-top:2px}
+.ov.trame:has(.docs-galerie) [data-fen=panneau] .action:disabled{opacity:1;color:var(--contour)}
 /* Fiche de fabrication et formulaires : puces et états par jetons. */
-.ov.th-plat .docs-f .fiche .liste-f>li{min-height:44px}
-.ov.th-plat .docs-f button.d.lien{font-size:.875rem;font-weight:500;color:var(--primaire)}
-.ov.th-plat .docs-f .sous-f{font-size:.875rem;font-weight:500;color:var(--texte)}
-.ov.th-plat .docs-f .competences{border-top-color:var(--filet)}
-.ov.th-plat .docs-f .puce{gap:6px;height:auto;min-height:32px;font-size:.875rem}
-.ov.th-plat .docs-f button.puce{transition:background-color .15s var(--courbe)}
-.ov.th-plat .docs-f button.puce:hover{border-color:var(--contour);background:var(--surface-moyenne)}
-.ov.th-plat .docs-f .puce b{font-weight:500;color:inherit}
-.ov.th-plat .docs-f .puce.actif{border-color:var(--primaire-doux);background:var(--primaire-doux);color:var(--sur-primaire-doux)}
-.ov.th-plat .docs-f .puce.ajoutee{border-color:var(--ok-doux);background:var(--ok-doux);color:var(--ok)}
-.ov.th-plat .docs-f .puce.ajoutee b{color:inherit}
-.ov.th-plat .docs-f .inter.inactif{opacity:1;color:var(--contour)}
-.ov.th-plat .docs-f .inter.inactif input{opacity:.6}
-.ov.th-plat .docs-f .etat-l{font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat .docs-f .etat-l.cours{color:var(--primaire)}
-.ov.th-plat .docs-f .etat-l.echec{color:var(--erreur)}
-.ov.th-plat .docs-f .rubrique{min-height:44px}
-.ov.th-plat .docs-f .rubrique .lib-r{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .docs-f .gestes{gap:4px}
+.ov.trame .docs-f .fiche .liste-f>li{min-height:44px}
+.ov.trame .docs-f button.d.lien{font-size:.875rem;font-weight:500;color:var(--primaire)}
+.ov.trame .docs-f .sous-f{font-size:.875rem;font-weight:500;color:var(--texte)}
+.ov.trame .docs-f .competences{border-top-color:var(--filet)}
+.ov.trame .docs-f .puce{gap:6px;height:auto;min-height:32px;font-size:.875rem}
+.ov.trame .docs-f button.puce{transition:background-color .15s var(--courbe)}
+.ov.trame .docs-f button.puce:hover{border-color:var(--contour);background:var(--surface-moyenne)}
+.ov.trame .docs-f .puce b{font-weight:500;color:inherit}
+.ov.trame .docs-f .puce.actif{border-color:var(--primaire-doux);background:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.trame .docs-f .puce.ajoutee{border-color:var(--ok-doux);background:var(--ok-doux);color:var(--ok)}
+.ov.trame .docs-f .puce.ajoutee b{color:inherit}
+.ov.trame .docs-f .inter.inactif{opacity:1;color:var(--contour)}
+.ov.trame .docs-f .inter.inactif input{opacity:.6}
+.ov.trame .docs-f .etat-l{font-size:.875rem;color:var(--texte-2)}
+.ov.trame .docs-f .etat-l.cours{color:var(--primaire)}
+.ov.trame .docs-f .etat-l.echec{color:var(--erreur)}
+.ov.trame .docs-f .rubrique{min-height:44px}
+.ov.trame .docs-f .rubrique .lib-r{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .docs-f .gestes{gap:4px}

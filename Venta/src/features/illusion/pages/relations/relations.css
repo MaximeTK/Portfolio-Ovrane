@@ -66,57 +66,57 @@
 .ov .rel-f .chrono-r details p{margin-top:6px !important;white-space:pre-line;line-height:1.45;color:rgb(var(--encre) / .75)}
 
 /* Thèmes plats : recherche en pastille, nuage lisible dans les deux thèmes. */
-.ov.th-plat [data-fen=nuage] .recherche{min-height:44px;height:auto;min-width:44px;padding:0 12px;border:1px solid var(--contour);border-radius:22px;color:var(--texte-2)}
-.ov.th-plat [data-fen=nuage] .recherche svg{width:18px;height:18px}
-.ov.th-plat [data-fen=nuage] .recherche input{height:auto;min-height:40px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat [data-fen=nuage] .recherche input::placeholder{color:var(--texte-2);opacity:1}
-.ov.th-plat [data-fen=nuage] .recherche:focus-within{color:var(--texte)}
-.ov.th-plat [data-fen=nuage] .recherche:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
-.ov.th-plat [data-fen=nuage] .recherche input:focus-visible{outline:none}
+.ov.trame [data-fen=nuage] .recherche{min-height:44px;height:auto;min-width:44px;padding:0 12px;border:1px solid var(--contour);border-radius:22px;color:var(--texte-2)}
+.ov.trame [data-fen=nuage] .recherche svg{width:18px;height:18px}
+.ov.trame [data-fen=nuage] .recherche input{height:auto;min-height:40px;font-size:.875rem;color:var(--texte)}
+.ov.trame [data-fen=nuage] .recherche input::placeholder{color:var(--texte-2);opacity:1}
+.ov.trame [data-fen=nuage] .recherche:focus-within{color:var(--texte)}
+.ov.trame [data-fen=nuage] .recherche:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.ov.trame [data-fen=nuage] .recherche input:focus-visible{outline:none}
 /* Deux rangées de puces entières avant le défilement. */
-.ov.th-plat [data-fen=nuage] .trouvees-r{gap:6px;max-height:76px;padding:0 16px 6px}
-.ov.th-plat [data-fen=nuage] .trouvees-r .puce:hover{border-color:var(--primaire);color:var(--primaire)}
-.ov.th-plat [data-fen=nuage]>.prise+.outils~.confirmer{padding-left:52px}
+.ov.trame [data-fen=nuage] .trouvees-r{gap:6px;max-height:76px;padding:0 16px 6px}
+.ov.trame [data-fen=nuage] .trouvees-r .puce:hover{border-color:var(--primaire);color:var(--primaire)}
+.ov.trame [data-fen=nuage]>.prise+.outils~.confirmer{padding-left:52px}
 /* Points : foncés sur le clair, clairs sur le sombre, liseré de surface. */
 .ov.th-clair [data-fen=nuage] .point-r{fill:oklch(55% .15 var(--t))}
 .ov.th-sombre [data-fen=nuage] .point-r{fill:oklch(78% .13 var(--t))}
 .ov.th-clair [data-fen=nuage] .cle-r i{background:oklch(55% .15 var(--t))}
 .ov.th-sombre [data-fen=nuage] .cle-r i{background:oklch(78% .13 var(--t))}
-.ov.th-plat [data-fen=nuage] .point-r{stroke:var(--surface)}
-.ov.th-plat [data-fen=nuage] .point-r:hover{stroke:var(--primaire)}
-.ov.th-plat [data-fen=nuage] .point-r:focus-visible{stroke:var(--focus)}
-.ov.th-plat [data-fen=nuage] .point-r.choisi{fill:var(--primaire);stroke:var(--surface)}
-.ov.th-plat [data-fen=nuage] .anneau-r{stroke:var(--primaire);stroke-width:2;opacity:1;vector-effect:non-scaling-stroke}
-.ov.th-plat [data-fen=nuage] .trait-r{stroke:var(--contour)}
-.ov.th-plat [data-fen=nuage] .trait-r.implicite{opacity:1}
-.ov.th-plat [data-fen=nuage] :is(.point-r,.trait-r).eteint{opacity:.2}
+.ov.trame [data-fen=nuage] .point-r{stroke:var(--surface)}
+.ov.trame [data-fen=nuage] .point-r:hover{stroke:var(--primaire)}
+.ov.trame [data-fen=nuage] .point-r:focus-visible{stroke:var(--focus)}
+.ov.trame [data-fen=nuage] .point-r.choisi{fill:var(--primaire);stroke:var(--surface)}
+.ov.trame [data-fen=nuage] .anneau-r{stroke:var(--primaire);stroke-width:2;opacity:1;vector-effect:non-scaling-stroke}
+.ov.trame [data-fen=nuage] .trait-r{stroke:var(--contour)}
+.ov.trame [data-fen=nuage] .trait-r.implicite{opacity:1}
+.ov.trame [data-fen=nuage] :is(.point-r,.trait-r).eteint{opacity:.2}
 /* Noms : un halo de surface les détache des traits qu'ils croisent. */
-.ov.th-plat [data-fen=nuage] .nom-r{fill:var(--texte);stroke:var(--surface);stroke-width:.2em;stroke-linejoin:round;paint-order:stroke}
-.ov.th-plat [data-fen=nuage] .nom-r.choisi{fill:var(--primaire);font-weight:500}
-.ov.th-plat [data-fen=nuage] .vide-r{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=nuage] .vide-r b{font-weight:500;color:var(--texte)}
-.ov.th-plat [data-fen=nuage] .legende-r{min-height:60px;gap:4px 16px;padding:8px 16px;border-top:1px solid var(--filet);font-size:.875rem}
-.ov.th-plat [data-fen=nuage] .cle-r{color:var(--texte)}
-.ov.th-plat [data-fen=nuage] .cle-r i{width:10px;height:10px;border-radius:3px}
-.ov.th-plat [data-fen=nuage] .note-r{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=nuage] .total-r{font-weight:500;color:var(--texte)}
-.ov.th-plat [data-fen=nuage] .avis-r{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;color:var(--texte)}
-.ov.th-plat [data-fen=nuage] .avis-r.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame [data-fen=nuage] .nom-r{fill:var(--texte);stroke:var(--surface);stroke-width:.2em;stroke-linejoin:round;paint-order:stroke}
+.ov.trame [data-fen=nuage] .nom-r.choisi{fill:var(--primaire);font-weight:500}
+.ov.trame [data-fen=nuage] .vide-r{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame [data-fen=nuage] .vide-r b{font-weight:500;color:var(--texte)}
+.ov.trame [data-fen=nuage] .legende-r{min-height:60px;gap:4px 16px;padding:8px 16px;border-top:1px solid var(--filet);font-size:.875rem}
+.ov.trame [data-fen=nuage] .cle-r{color:var(--texte)}
+.ov.trame [data-fen=nuage] .cle-r i{width:10px;height:10px;border-radius:3px}
+.ov.trame [data-fen=nuage] .note-r{font-size:.75rem;color:var(--texte-2)}
+.ov.trame [data-fen=nuage] .total-r{font-weight:500;color:var(--texte)}
+.ov.trame [data-fen=nuage] .avis-r{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;color:var(--texte)}
+.ov.trame [data-fen=nuage] .avis-r.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Fiche : texte en 14 px, faits et échanges aux teintes de la planche. */
-.ov.th-plat .rel-f .meta-f{font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat .rel-f .resume-r{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .rel-f .sujets-r{font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat .rel-f .faits-r li{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .rel-f .faits-r li::before{border-radius:50%;background:var(--contour)}
-.ov.th-plat .rel-f .faits-r small{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .rel-f .lien-r{display:inline-flex;align-items:center;min-height:44px;font-weight:500;color:var(--primaire);text-decoration-color:currentColor;text-underline-offset:2px}
-.ov.th-plat .rel-f .liste-f .x-r{width:44px;height:44px;border-radius:50%;font-size:1.125rem;color:var(--texte-2)}
-.ov.th-plat .rel-f .liste-f .x-r:hover{background:var(--surface-moyenne);color:var(--erreur)}
-.ov.th-plat .rel-f .liste-f .d{color:var(--texte-2)}
-.ov.th-plat .rel-f .rangee-r .action{height:auto}
-.ov.th-plat .rel-f .rangee-r textarea.saisie{min-height:72px}
-.ov.th-plat .rel-f .chrono-r li{grid-template-columns:44px 60px minmax(0,1fr);border-top:1px solid var(--filet);font-size:.875rem;line-height:1.25rem}
-.ov.th-plat .rel-f .chrono-r time{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .rel-f .chrono-r .genre{font-size:.75rem;font-weight:400;color:var(--texte-2)}
-.ov.th-plat .rel-f .chrono-r summary{color:var(--texte)}
-.ov.th-plat .rel-f .chrono-r details p{line-height:1.25rem;color:var(--texte-2)}
+.ov.trame .rel-f .meta-f{font-size:.875rem;color:var(--texte-2)}
+.ov.trame .rel-f .resume-r{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .rel-f .sujets-r{font-size:.875rem;color:var(--texte-2)}
+.ov.trame .rel-f .faits-r li{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .rel-f .faits-r li::before{border-radius:50%;background:var(--contour)}
+.ov.trame .rel-f .faits-r small{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .rel-f .lien-r{display:inline-flex;align-items:center;min-height:44px;font-weight:500;color:var(--primaire);text-decoration-color:currentColor;text-underline-offset:2px}
+.ov.trame .rel-f .liste-f .x-r{width:44px;height:44px;border-radius:50%;font-size:1.125rem;color:var(--texte-2)}
+.ov.trame .rel-f .liste-f .x-r:hover{background:var(--surface-moyenne);color:var(--erreur)}
+.ov.trame .rel-f .liste-f .d{color:var(--texte-2)}
+.ov.trame .rel-f .rangee-r .action{height:auto}
+.ov.trame .rel-f .rangee-r textarea.saisie{min-height:72px}
+.ov.trame .rel-f .chrono-r li{grid-template-columns:44px 60px minmax(0,1fr);border-top:1px solid var(--filet);font-size:.875rem;line-height:1.25rem}
+.ov.trame .rel-f .chrono-r time{font-size:.75rem;color:var(--texte-2)}
+.ov.trame .rel-f .chrono-r .genre{font-size:.75rem;font-weight:400;color:var(--texte-2)}
+.ov.trame .rel-f .chrono-r summary{color:var(--texte)}
+.ov.trame .rel-f .chrono-r details p{line-height:1.25rem;color:var(--texte-2)}

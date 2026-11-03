@@ -169,70 +169,70 @@
 .ov .metriques-f .genre-m+.genre-m{margin-top:18px}
 
 /* Thèmes plats : le panneau centre sa croix, ses gestes éteints se lisent. */
-.ov.th-plat .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-tete{align-items:center}
-.ov.th-plat .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-onglet{height:auto}
-.ov.th-plat .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-tete .f-btn{margin-top:0}
-.ov.th-plat [data-fen=metriques] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-tete{align-items:center}
+.ov.trame .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-onglet{height:auto}
+.ov.trame .coquille:has(>[data-fen=metriques]) [data-fen=panneau] .p-tete .f-btn{margin-top:0}
+.ov.trame [data-fen=metriques] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
 /* Période : le raccourci choisi en teinte douce, comme la planche. */
-.ov.th-plat [data-fen=metriques] .raccourcis{gap:4px;margin-left:8px;padding-left:8px;border-left-color:var(--filet)}
-.ov.th-plat [data-fen=metriques] .raccourcis .filtre{padding:0 8px}
-.ov.th-plat [data-fen=metriques] .raccourcis .filtre+.filtre{margin-left:0}
-.ov.th-plat [data-fen=metriques] .raccourcis .filtre.actif{background:var(--primaire-doux);color:var(--sur-primaire-doux)}
-.ov.th-plat [data-fen=metriques] .menu-periode{padding:12px 16px}
-.ov.th-plat [data-fen=metriques] .attente-m{padding:16px;font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=metriques] .attente-m.erreur{color:var(--erreur)}
+.ov.trame [data-fen=metriques] .raccourcis{gap:4px;margin-left:8px;padding-left:8px;border-left-color:var(--filet)}
+.ov.trame [data-fen=metriques] .raccourcis .filtre{padding:0 8px}
+.ov.trame [data-fen=metriques] .raccourcis .filtre+.filtre{margin-left:0}
+.ov.trame [data-fen=metriques] .raccourcis .filtre.actif{background:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.trame [data-fen=metriques] .menu-periode{padding:12px 16px}
+.ov.trame [data-fen=metriques] .attente-m{padding:16px;font-size:.875rem;color:var(--texte-2)}
+.ov.trame [data-fen=metriques] .attente-m.erreur{color:var(--erreur)}
 /* Tuiles dans un même cadre, trait de couleur sans lueur par sorte. */
-.ov.th-plat [data-fen=metriques] .metriques{padding:12px}
-.ov.th-plat [data-fen=metriques] .tuiles-m{border:1px solid var(--filet);border-radius:12px}
-.ov.th-plat [data-fen=metriques] .tuile-m+.tuile-m{border-left-color:var(--filet)}
-.ov.th-plat [data-fen=metriques] .tuile-m .etiquette{min-height:2rem;line-height:1rem}
-.ov.th-plat [data-fen=metriques] .tuile-m b{font-size:1.125rem;font-weight:500;line-height:1.5rem}
-.ov.th-plat [data-fen=metriques] .tuile-m::before{top:0;height:3px;border-radius:0 0 3px 3px;box-shadow:none}
+.ov.trame [data-fen=metriques] .metriques{padding:12px}
+.ov.trame [data-fen=metriques] .tuiles-m{border:1px solid var(--filet);border-radius:12px}
+.ov.trame [data-fen=metriques] .tuile-m+.tuile-m{border-left-color:var(--filet)}
+.ov.trame [data-fen=metriques] .tuile-m .etiquette{min-height:2rem;line-height:1rem}
+.ov.trame [data-fen=metriques] .tuile-m b{font-size:1.125rem;font-weight:500;line-height:1.5rem}
+.ov.trame [data-fen=metriques] .tuile-m::before{top:0;height:3px;border-radius:0 0 3px 3px;box-shadow:none}
 /* Cartes : 12 px de rayon, contour au survol, trait primaire pour l'ouverte. */
-.ov.th-plat [data-fen=metriques] .carte{padding:8px 12px;border-color:var(--filet);border-radius:12px}
-.ov.th-plat [data-fen=metriques] .carte:hover{border-color:var(--contour)}
-.ov.th-plat [data-fen=metriques] .carte.ouverte{border-color:var(--primaire);box-shadow:inset 0 0 0 1px var(--primaire)}
-.ov.th-plat [data-fen=metriques] .carte-tete .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
-.ov.th-plat [data-fen=metriques] .carte-tete .d{font-size:.75rem}
-.ov.th-plat [data-fen=metriques] .carte-tete .detail{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=metriques] .carte:hover .detail,.ov.th-plat [data-fen=metriques] .carte .detail:focus-visible{color:var(--primaire)}
-.ov.th-plat [data-fen=metriques] .carte.ouverte .detail{color:var(--primaire)}
-.ov.th-plat [data-fen=metriques] .vide-m{font-size:.875rem;color:var(--texte-2)}
+.ov.trame [data-fen=metriques] .carte{padding:8px 12px;border-color:var(--filet);border-radius:12px}
+.ov.trame [data-fen=metriques] .carte:hover{border-color:var(--contour)}
+.ov.trame [data-fen=metriques] .carte.ouverte{border-color:var(--primaire);box-shadow:inset 0 0 0 1px var(--primaire)}
+.ov.trame [data-fen=metriques] .carte-tete .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
+.ov.trame [data-fen=metriques] .carte-tete .d{font-size:.75rem}
+.ov.trame [data-fen=metriques] .carte-tete .detail{font-size:.75rem;color:var(--texte-2)}
+.ov.trame [data-fen=metriques] .carte:hover .detail,.ov.trame [data-fen=metriques] .carte .detail:focus-visible{color:var(--primaire)}
+.ov.trame [data-fen=metriques] .carte.ouverte .detail{color:var(--primaire)}
+.ov.trame [data-fen=metriques] .vide-m{font-size:.875rem;color:var(--texte-2)}
 /* Tableaux compacts : 14 px, en-têtes en petit libellé, chiffres en clair. */
-.ov.th-plat :is([data-fen=metriques],.metriques-f) .compact{font-size:.875rem}
-.ov.th-plat :is([data-fen=metriques],.metriques-f) .compact thead th{position:static;background:none;font-size:.75rem;line-height:1rem;font-weight:500;color:var(--texte-2)}
-.ov.th-plat :is([data-fen=metriques],.metriques-f) .compact td{color:var(--texte-2)}
-.ov.th-plat :is([data-fen=metriques],.metriques-f) .compact td:first-child{font-weight:500;color:var(--texte)}
-.ov.th-plat :is([data-fen=metriques],.metriques-f) .compact tfoot td{border-top-color:var(--contour);font-weight:500;color:var(--texte)}
+.ov.trame :is([data-fen=metriques],.metriques-f) .compact{font-size:.875rem}
+.ov.trame :is([data-fen=metriques],.metriques-f) .compact thead th{position:static;background:none;font-size:.75rem;line-height:1rem;font-weight:500;color:var(--texte-2)}
+.ov.trame :is([data-fen=metriques],.metriques-f) .compact td{color:var(--texte-2)}
+.ov.trame :is([data-fen=metriques],.metriques-f) .compact td:first-child{font-weight:500;color:var(--texte)}
+.ov.trame :is([data-fen=metriques],.metriques-f) .compact tfoot td{border-top-color:var(--contour);font-weight:500;color:var(--texte)}
 /* Histogramme : barres primaires, repères et lignes en jetons. */
-.ov.th-plat [data-fen=metriques] .histo-y,.ov.th-plat [data-fen=metriques] .histo-x{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=metriques] .histo-y{margin:-8px 0}
-.ov.th-plat [data-fen=metriques] .histo-trace{border-bottom-color:var(--contour);background:linear-gradient(var(--filet),var(--filet)) 0 0/100% 1px no-repeat,linear-gradient(var(--filet),var(--filet)) 0 50%/100% 1px no-repeat}
-.ov.th-plat [data-fen=metriques] .histo-svg rect{fill:var(--primaire)}
-.ov.th-plat [data-fen=metriques] .histo-svg rect:hover{fill:var(--texte)}
-.ov.th-plat [data-fen=metriques] .postes li{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=metriques] .postes span{font-size:.75rem;color:var(--texte)}
+.ov.trame [data-fen=metriques] .histo-y,.ov.trame [data-fen=metriques] .histo-x{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame [data-fen=metriques] .histo-y{margin:-8px 0}
+.ov.trame [data-fen=metriques] .histo-trace{border-bottom-color:var(--contour);background:linear-gradient(var(--filet),var(--filet)) 0 0/100% 1px no-repeat,linear-gradient(var(--filet),var(--filet)) 0 50%/100% 1px no-repeat}
+.ov.trame [data-fen=metriques] .histo-svg rect{fill:var(--primaire)}
+.ov.trame [data-fen=metriques] .histo-svg rect:hover{fill:var(--texte)}
+.ov.trame [data-fen=metriques] .postes li{font-size:.75rem;color:var(--texte-2)}
+.ov.trame [data-fen=metriques] .postes span{font-size:.75rem;color:var(--texte)}
 /* Winrate : rail plein, valeur et sous-titre en second plan lisible. */
-.ov.th-plat :is([data-fen=metriques],.metriques-f) .sous-carte{font-size:.75rem;line-height:1rem;font-weight:500;color:var(--texte-2)}
-.ov.th-plat [data-fen=metriques] .winrate li{font-size:.875rem}
-.ov.th-plat [data-fen=metriques] .w-nom{font-weight:500}
-.ov.th-plat [data-fen=metriques] .w-barre{border-radius:3px;background:var(--surface-moyenne);overflow:hidden}
-.ov.th-plat [data-fen=metriques] .w-val{font-size:.75rem;color:var(--texte-2)}
+.ov.trame :is([data-fen=metriques],.metriques-f) .sous-carte{font-size:.75rem;line-height:1rem;font-weight:500;color:var(--texte-2)}
+.ov.trame [data-fen=metriques] .winrate li{font-size:.875rem}
+.ov.trame [data-fen=metriques] .w-nom{font-weight:500}
+.ov.trame [data-fen=metriques] .w-barre{border-radius:3px;background:var(--surface-moyenne);overflow:hidden}
+.ov.trame [data-fen=metriques] .w-val{font-size:.75rem;color:var(--texte-2)}
 /* Petites cartes : 12 px de rayon, teinte de sélection pour l'allumée. */
-.ov.th-plat [data-fen=metriques] .mini-m{gap:2px;padding:8px 12px;border-color:var(--filet);border-radius:12px}
-.ov.th-plat [data-fen=metriques] .mini-m:hover,.ov.th-plat [data-fen=metriques] .mini-m:focus-visible{border-color:var(--contour);background:var(--surface-basse)}
-.ov.th-plat [data-fen=metriques] .mini-m.allume{border-color:var(--primaire);background:var(--selection)}
-.ov.th-plat [data-fen=metriques] .mini-m b{font-size:.875rem;font-weight:500}
-.ov.th-plat [data-fen=metriques] .avis{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat [data-fen=metriques] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame [data-fen=metriques] .mini-m{gap:2px;padding:8px 12px;border-color:var(--filet);border-radius:12px}
+.ov.trame [data-fen=metriques] .mini-m:hover,.ov.trame [data-fen=metriques] .mini-m:focus-visible{border-color:var(--contour);background:var(--surface-basse)}
+.ov.trame [data-fen=metriques] .mini-m.allume{border-color:var(--primaire);background:var(--selection)}
+.ov.trame [data-fen=metriques] .mini-m b{font-size:.875rem;font-weight:500}
+.ov.trame [data-fen=metriques] .avis{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame [data-fen=metriques] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Panneau des détails : blocs, listes et alertes sur les mêmes jetons. */
-.ov.th-plat .metriques-f .intro-f{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .metriques-f .alerte-f{font-size:.875rem;line-height:1.25rem;color:var(--erreur)}
-.ov.th-plat .metriques-f :is(.tab-bilans,.tab-liste) td{line-height:1.25rem;border-top:0;border-bottom:1px solid var(--surface-moyenne)}
-.ov.th-plat .metriques-f .tab-liste thead th{text-align:left}
-.ov.th-plat .metriques-f .tab-liste td:first-child{font-weight:400;color:var(--texte-2)}
-.ov.th-plat .metriques-f .tab-liste tbody tr[tabindex]:hover td{background:var(--surface-basse)}
-.ov.th-plat .metriques-f .tab-liste tbody tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.ov.th-plat .metriques-f .bloc-m h4{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
-.ov.th-plat .metriques-f .bloc-m .def>:is(dt,dd){font-size:.875rem;line-height:1.25rem}
-.ov.th-plat .metriques-f .bloc-m dt{color:var(--texte-2)}
+.ov.trame .metriques-f .intro-f{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .metriques-f .alerte-f{font-size:.875rem;line-height:1.25rem;color:var(--erreur)}
+.ov.trame .metriques-f :is(.tab-bilans,.tab-liste) td{line-height:1.25rem;border-top:0;border-bottom:1px solid var(--surface-moyenne)}
+.ov.trame .metriques-f .tab-liste thead th{text-align:left}
+.ov.trame .metriques-f .tab-liste td:first-child{font-weight:400;color:var(--texte-2)}
+.ov.trame .metriques-f .tab-liste tbody tr[tabindex]:hover td{background:var(--surface-basse)}
+.ov.trame .metriques-f .tab-liste tbody tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.trame .metriques-f .bloc-m h4{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
+.ov.trame .metriques-f .bloc-m .def>:is(dt,dd){font-size:.875rem;line-height:1.25rem}
+.ov.trame .metriques-f .bloc-m dt{color:var(--texte-2)}

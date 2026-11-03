@@ -65,7 +65,7 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
   if (mouvementReduit() || typeof (cible as HTMLElement).animate !== 'function') return RIEN;
   const ecrit = sens === 'ecrire';
   // Thèmes pleins : mêmes morceaux, moments et durées, sans glyphes
-  const plat = !!document.querySelector('.ov.th-plat');
+  const plat = !!document.querySelector('.ov.th-plein');
   const r = cible.getBoundingClientRect();
   const anims: Animation[] = [];
   const textes: Texte[] = [];

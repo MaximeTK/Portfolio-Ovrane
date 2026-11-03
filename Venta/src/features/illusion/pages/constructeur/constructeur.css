@@ -36,15 +36,15 @@
 .ov .docs-constructeur .imposes select.saisie{width:220px;max-width:100%}
 
 /* Thèmes plats : résumé et colonnes de 14 px, filets et petits textes. */
-.ov.th-plat .docs-constructeur .resume{font-size:.875rem;line-height:1.25rem}
-.ov.th-plat .docs-constructeur .resume b{font-weight:500}
-.ov.th-plat .docs-constructeur .resume span{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .docs-constructeur .action:disabled,.ov.th-plat .docs-constructeur .action:disabled:hover{opacity:1;background:none;color:var(--contour)}
-.ov.th-plat .docs-constructeur .elements{padding:12px 12px 16px;border-top:1px solid var(--filet)}
-.ov.th-plat .docs-constructeur .gest{padding:0 16px}
-.ov.th-plat .docs-constructeur .gest:first-child{padding-left:0}
-.ov.th-plat .docs-constructeur .gest:last-child{padding-right:0}
-.ov.th-plat .docs-constructeur .gest+.gest{border-left-color:var(--filet)}
-.ov.th-plat .docs-constructeur .gest-tete{height:auto;min-height:32px;font-size:1rem;font-weight:500;line-height:1.5rem}
-.ov.th-plat .docs-constructeur .gest-tete .compteur{margin-left:auto}
-.ov.th-plat .docs-constructeur .imposes{padding-top:16px;border-top-color:var(--filet)}
+.ov.trame .docs-constructeur .resume{font-size:.875rem;line-height:1.25rem}
+.ov.trame .docs-constructeur .resume b{font-weight:500}
+.ov.trame .docs-constructeur .resume span{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .docs-constructeur .action:disabled,.ov.trame .docs-constructeur .action:disabled:hover{opacity:1;background:none;color:var(--contour)}
+.ov.trame .docs-constructeur .elements{padding:12px 12px 16px;border-top:1px solid var(--filet)}
+.ov.trame .docs-constructeur .gest{padding:0 16px}
+.ov.trame .docs-constructeur .gest:first-child{padding-left:0}
+.ov.trame .docs-constructeur .gest:last-child{padding-right:0}
+.ov.trame .docs-constructeur .gest+.gest{border-left-color:var(--filet)}
+.ov.trame .docs-constructeur .gest-tete{height:auto;min-height:32px;font-size:1rem;font-weight:500;line-height:1.5rem}
+.ov.trame .docs-constructeur .gest-tete .compteur{margin-left:auto}
+.ov.trame .docs-constructeur .imposes{padding-top:16px;border-top-color:var(--filet)}

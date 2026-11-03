@@ -9,13 +9,13 @@ import { ADMINISTRATION, MON_ESPACE, PAGE_DEPART, chargerAdministration, estAdmi
 import { PROJETS, trouverProjet } from './projets';
 import { ProjectPage, Sommaire } from './ProjectPage';
 import { LegalPage } from './LegalPage';
-import { ReglagesPage } from './ReglagesPage';
 import { ConnexionPage } from './ConnexionPage';
 import type { useChatController } from '@/features/chat/useChatController';
 
 // Illusion ne se charge que pour un compte qui y a accès
-const chargerIllusion = () => import('@/features/illusion/ossature/RacineIllusion');
+const chargerIllusion = () => import('@/features/illusion/ossature/VueIllusion');
 const VueIllusion = dynamic(chargerIllusion);
+const ReglagesVisiteur = dynamic(() => import('@/features/illusion/pages/reglages/visiteur'));
 
 // Vues qui ne sont pas des études de cas, et leur titre d'onglet
 const VUES: Record<string, string> = { legal: 'Informations légales', reglages: 'Réglages', connexion: 'Compte' };
@@ -130,6 +130,11 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
     if (partiesIllusion(page) && compteIllusion === null && !erreurIllusion) setPage('connexion');
   }, [page, compteIllusion, erreurIllusion, setPage]);
 
+  // Réglages avec un compte : ses fenêtres d'Illusion
+  useEffect(() => {
+    if (page === 'reglages' && compteIllusion) setPage('illusion/reglages');
+  }, [page, compteIllusion, setPage]);
+
   const illusion = partiesIllusion(affichee);
   const projet = affichee && !VUES[affichee] && !illusion ? trouverProjet(affichee) : undefined;
   const rang = projet ? PROJETS.indexOf(projet) : -1;
@@ -143,7 +148,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
       inert={!page}
       aria-hidden={!page}
       className={`fixed inset-0 z-20 overflow-y-auto overscroll-contain outline-none ${
-        illusion ? '' : '[scrollbar-gutter:stable_both-edges] [touch-action:pan-y] [mask-image:linear-gradient(to_bottom,transparent_56px,black_104px)]'
+        illusion || affichee === 'reglages' ? '' : '[scrollbar-gutter:stable_both-edges] [touch-action:pan-y] [mask-image:linear-gradient(to_bottom,transparent_56px,black_104px)]'
       } transition-all duration-500 ease-in-out ${
         // Ouverte, sans translation : le fond que le verre recopie reste fixe à l'écran
         page ? 'opacity-100 translate-none' : 'pointer-events-none translate-y-8 opacity-0'
@@ -155,10 +160,11 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
         ) : (
           erreurIllusion && <p role="alert" className="grid min-h-screen place-items-center p-6 text-center font-sans text-white">{erreurIllusion}</p>
         )
+      ) : affichee === 'reglages' ? (
+        <ReglagesVisiteur />
       ) : (
         <div key={affichee ?? ''} className="apparition">
           {affichee === 'legal' && <LegalPage />}
-          {affichee === 'reglages' && <ReglagesPage />}
           {affichee === 'connexion' && (
             <ConnexionPage sendAuth={sendAuth} utilisateur={utilisateur} reinit={reinit} finirReinit={() => setReinit(null)} />
           )}

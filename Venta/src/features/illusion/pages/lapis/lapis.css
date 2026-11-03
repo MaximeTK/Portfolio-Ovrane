@@ -79,48 +79,48 @@
 .ov .lapis-reglages .champ+.aide-champ{margin:-6px 0 12px !important}
 
 /* Thèmes plats : le panneau centre sa croix, ses gestes éteints se lisent. */
-.ov.th-plat:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete{align-items:center}
-.ov.th-plat:has([data-fen=galerie].lapis) [data-fen=panneau] .p-onglet{height:auto}
-.ov.th-plat:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete .f-btn{margin-top:0}
-.ov.th-plat:has([data-fen=galerie].lapis) [data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete{align-items:center}
+.ov.trame:has([data-fen=galerie].lapis) [data-fen=panneau] .p-onglet{height:auto}
+.ov.trame:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete .f-btn{margin-top:0}
+.ov.trame:has([data-fen=galerie].lapis) [data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
 /* Onglets : l'ouvert en teinte douce ; ce que la passe cherche en petit. */
-.ov.th-plat .lapis .onglets-l{gap:4px}
-.ov.th-plat .lapis .onglets-l .filtre{padding:0 6px}
-.ov.th-plat .lapis .onglets-l .filtre+.filtre{margin-left:0}
-.ov.th-plat .lapis .onglets-l .compteur{margin-left:4px}
-.ov.th-plat .lapis .onglets-l .filtre.actif{background:var(--primaire-doux);color:var(--sur-primaire-doux)}
-.ov.th-plat .lapis .onglets-l .filtre.actif .compteur{color:var(--texte)}
-.ov.th-plat .lapis .resume{margin-left:12px;padding-left:12px;border-left-color:var(--filet);font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .lapis .resume b{color:var(--texte)}
-@container outils-l (max-width:1064px){.ov.th-plat .lapis .resume{display:none}}
+.ov.trame .lapis .onglets-l{gap:4px}
+.ov.trame .lapis .onglets-l .filtre{padding:0 6px}
+.ov.trame .lapis .onglets-l .filtre+.filtre{margin-left:0}
+.ov.trame .lapis .onglets-l .compteur{margin-left:4px}
+.ov.trame .lapis .onglets-l .filtre.actif{background:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.trame .lapis .onglets-l .filtre.actif .compteur{color:var(--texte)}
+.ov.trame .lapis .resume{margin-left:12px;padding-left:12px;border-left-color:var(--filet);font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .lapis .resume b{color:var(--texte)}
+@container outils-l (max-width:1064px){.ov.trame .lapis .resume{display:none}}
 /* Galerie : cartes de 12 px au filet, survol et ouverte bien distincts. */
-.ov.th-plat .lapis .galerie{gap:8px;padding:12px}
-.ov.th-plat .lapis .personne{border-radius:12px;box-shadow:inset 0 0 0 1px var(--filet)}
-.ov.th-plat .lapis .personne:hover{background:var(--surface-basse);box-shadow:inset 0 0 0 1px var(--contour)}
-.ov.th-plat .lapis .personne.ouverte{background:var(--selection);box-shadow:inset 0 0 0 2px var(--primaire)}
-.ov.th-plat .lapis .personne>div{padding:8px 12px}
-.ov.th-plat :is(.lapis,.lapis-offre) .initiales{border:0;border-radius:50%;background:var(--primaire-doux);font-size:.875rem;font-weight:500;color:var(--sur-primaire-doux)}
-.ov.th-plat .lapis .qui{line-height:1.25rem}
-.ov.th-plat .lapis .qui b{font-size:.875rem;font-weight:500}
-.ov.th-plat .lapis .qui .titre-c{font-weight:500;color:var(--primaire)}
-.ov.th-plat .lapis .qui .titre-c:hover{text-decoration-color:currentColor}
-.ov.th-plat .lapis .qui .titre-p{font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat .lapis .qui .poste{font-size:.75rem;line-height:1rem;color:var(--texte)}
-.ov.th-plat .lapis .qui .poste i{color:var(--texte-2)}
-.ov.th-plat .lapis .qui .nature{border-color:var(--contour);border-radius:6px;font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat .lapis .qui .lien{min-height:24px;min-width:0;font-size:.75rem;line-height:1rem;font-weight:500;color:var(--primaire)}
-.ov.th-plat .lapis .qui .lien:hover{color:var(--primaire);text-decoration:underline;text-underline-offset:2px}
-.ov.th-plat .lapis .qui .origine{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .lapis .qui .origine :is(a,button),.ov.th-plat .lapis .qui .origine :is(a,button):hover{color:var(--primaire);text-decoration-color:currentColor}
-.ov.th-plat .lapis .qui .resume-c{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat .lapis .vide-l{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat .lapis .vide-l.erreur{color:var(--erreur)}
-.ov.th-plat .lapis .pl:disabled{opacity:1;color:rgb(var(--encre) / .62)}
-.ov.th-plat .lapis .avis-l{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .lapis .avis-l.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame .lapis .galerie{gap:8px;padding:12px}
+.ov.trame .lapis .personne{border-radius:12px;box-shadow:inset 0 0 0 1px var(--filet)}
+.ov.trame .lapis .personne:hover{background:var(--surface-basse);box-shadow:inset 0 0 0 1px var(--contour)}
+.ov.trame .lapis .personne.ouverte{background:var(--selection);box-shadow:inset 0 0 0 2px var(--primaire)}
+.ov.trame .lapis .personne>div{padding:8px 12px}
+.ov.trame :is(.lapis,.lapis-offre) .initiales{border:0;border-radius:50%;background:var(--primaire-doux);font-size:.875rem;font-weight:500;color:var(--sur-primaire-doux)}
+.ov.trame .lapis .qui{line-height:1.25rem}
+.ov.trame .lapis .qui b{font-size:.875rem;font-weight:500}
+.ov.trame .lapis .qui .titre-c{font-weight:500;color:var(--primaire)}
+.ov.trame .lapis .qui .titre-c:hover{text-decoration-color:currentColor}
+.ov.trame .lapis .qui .titre-p{font-size:.875rem;color:var(--texte-2)}
+.ov.trame .lapis .qui .poste{font-size:.75rem;line-height:1rem;color:var(--texte)}
+.ov.trame .lapis .qui .poste i{color:var(--texte-2)}
+.ov.trame .lapis .qui .nature{border-color:var(--contour);border-radius:6px;font-size:.75rem;color:var(--texte-2)}
+.ov.trame .lapis .qui .lien{min-height:24px;min-width:0;font-size:.75rem;line-height:1rem;font-weight:500;color:var(--primaire)}
+.ov.trame .lapis .qui .lien:hover{color:var(--primaire);text-decoration:underline;text-underline-offset:2px}
+.ov.trame .lapis .qui .origine{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .lapis .qui .origine :is(a,button),.ov.trame .lapis .qui .origine :is(a,button):hover{color:var(--primaire);text-decoration-color:currentColor}
+.ov.trame .lapis .qui .resume-c{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame .lapis .vide-l{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame .lapis .vide-l.erreur{color:var(--erreur)}
+.ov.trame .lapis .pl:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame .lapis .avis-l{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .lapis .avis-l.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Panneau : offre repérée et réglages en 14 px, liens en primaire. */
-.ov.th-plat .lapis-offre .auteur p{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.th-plat .lapis-offre .auteur p b{font-size:.875rem;font-weight:500;color:var(--texte)}
-.ov.th-plat .lapis-offre .resume-offre{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .lapis-offre .liste-f a.d,.ov.th-plat .lapis-offre .liste-f a.d:hover{color:var(--primaire)}
-.ov.th-plat .lapis-reglages .erreur-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;line-height:1.25rem;color:var(--sur-erreur-douce)}
+.ov.trame .lapis-offre .auteur p{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
+.ov.trame .lapis-offre .auteur p b{font-size:.875rem;font-weight:500;color:var(--texte)}
+.ov.trame .lapis-offre .resume-offre{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .lapis-offre .liste-f a.d,.ov.trame .lapis-offre .liste-f a.d:hover{color:var(--primaire)}
+.ov.trame .lapis-reglages .erreur-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;line-height:1.25rem;color:var(--sur-erreur-douce)}

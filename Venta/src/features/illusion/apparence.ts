@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect } from 'react';
 import { create } from 'zustand';
+import { useUIStore } from '@/lib/uiStore';
 import { appeler } from './api';
 
 export type Matiere = 'verre' | 'teinte';
 export type Theme = 'verre' | 'clair' | 'sombre';
 
-// Classes de la racine : le verre, ou l'un des deux thèmes pleins
-export const classesTheme = (t: Theme) => `th-${t}${t === 'verre' ? '' : ' th-plat'}`;
+// Classes de la racine : la disposition commune, puis le dessin du thème
+export const classesTheme = (t: Theme) => `trame th-${t}${t === 'verre' ? '' : ' th-plein'}`;
 
 type Reglage = { matiere: Matiere; theme: Theme };
 type EtatApparence = Reglage & {
@@ -15,18 +16,20 @@ type EtatApparence = Reglage & {
   themeEnregistre: Theme;
   choisirMatiere: (m: Matiere) => void;
   choisirTheme: (t: Theme) => void;
-  relireTheme: () => void;
+  relire: () => void;
   charger: () => Promise<void>;
   enregistrer: (r: Reglage) => Promise<void>;
 };
 
-// Dernier thème de ce navigateur, pour ne pas clignoter avant la réponse
+// Dernier réglage du navigateur : sans clignotement, et celui d'un visiteur
 const CLE_THEME = 'illusion:theme';
-function retenirTheme(theme: Theme) {
+const CLE_MATIERE = 'illusion:matiere';
+function retenir({ matiere, theme }: Reglage) {
   try {
     localStorage.setItem(CLE_THEME, theme);
+    localStorage.setItem(CLE_MATIERE, matiere);
   } catch {
-    // Stockage bloqué : le thème viendra du serveur
+    // Stockage bloqué : le réglage vaut pour cette visite
   }
 }
 
@@ -47,21 +50,25 @@ const magasin = create<EtatApparence>((set) => ({
     choix += 1;
     set({ theme });
   },
-  relireTheme: () => {
+  relire: () => {
     try {
-      const lu = localStorage.getItem(CLE_THEME);
-      if (!choix && (lu === 'clair' || lu === 'sombre')) set({ theme: lu });
+      const theme = localStorage.getItem(CLE_THEME);
+      const matiere = localStorage.getItem(CLE_MATIERE);
+      if (!choix && (theme === 'clair' || theme === 'sombre')) set({ theme, themeEnregistre: theme });
+      if (!choix && (matiere === 'verre' || matiere === 'teinte')) set({ matiere, enregistree: matiere });
     } catch {
-      // Stockage bloqué : le thème viendra du serveur
+      // Stockage bloqué : l'apparence par défaut reste
     }
   },
   charger: () => {
+    // Un visiteur n'a que ce navigateur
+    if (!useUIStore.getState().compteIllusion) return Promise.resolve();
     enCours ??= (async () => {
       const avant = choix;
       try {
         const { matiere, theme = 'verre' } = await appeler<Partial<Reglage>>('/parametres', { signal: null });
         if (matiere !== 'verre' && matiere !== 'teinte') return;
-        retenirTheme(theme);
+        retenir({ matiere, theme });
         const garde = { enregistree: matiere, themeEnregistre: theme };
         set(avant === choix ? { ...garde, matiere, theme } : garde);
       } catch {
@@ -73,16 +80,16 @@ const magasin = create<EtatApparence>((set) => ({
     return enCours;
   },
   enregistrer: async ({ matiere, theme }) => {
-    await appeler('/parametres', { methode: 'PUT', corps: { matiere, theme } });
+    if (useUIStore.getState().compteIllusion) await appeler('/parametres', { methode: 'PUT', corps: { matiere, theme } });
     choix += 1;
-    retenirTheme(theme);
+    retenir({ matiere, theme });
     set({ matiere, enregistree: matiere, theme, themeEnregistre: theme });
   },
 }));
 
 // Apparence gardée avec le compte, relue à chaque montage de l'ossature
 function useApparenceDuCompte<T>(lire: (s: EtatApparence) => T): T {
-  useLayoutEffect(() => magasin.getState().relireTheme(), []);
+  useLayoutEffect(() => magasin.getState().relire(), []);
   useEffect(() => {
     void magasin.getState().charger();
   }, []);

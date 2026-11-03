@@ -349,9 +349,10 @@ type ProprietesFicheRelation = { numero: number; donnees: Donnees | null; setAvi
 // Fiche d'une personne, une par fenêtre, avec son propre pied
 function FicheRelation({ numero, donnees, setAvis, relire }: ProprietesFicheRelation) {
   const { ouvrir, fermer } = usePanneau();
-  const [fiche, setFiche] = useState<Fiche | null>(null);
+  const [fiche, setFiche] = useState(() => repris<Fiche | null>(`relations:fiche-${numero}`, null));
   const [erreur, setErreur] = useState('');
-  const [appels, setAppels] = useState<AppelCourt[]>([]);
+  const [appels, setAppels] = useState(() => repris<AppelCourt[]>('relations:appels', []));
+  useGarder('relations', { [`fiche-${numero}`]: fiche, appels });
   const [occupe, setOccupe] = useState(false);
   const [confirmer, setConfirmer] = useState(false);
   const formulaire = useId();
@@ -359,7 +360,8 @@ function FicheRelation({ numero, donnees, setAvis, relire }: ProprietesFicheRela
     let vivant = true;
     Promise.all([appeler<Fiche>(`/relations/${numero}`), appeler<{ appels: AppelCourt[] }>('/appels')]).then(([f, a]) => {
       if (!vivant) return;
-      setFiche(f);
+      // Inchangée depuis la dernière visite : rien ne bouge sous la main
+      setFiche((x) => (JSON.stringify(x) === JSON.stringify(f) ? x : f));
       setAppels(a.appels);
       setErreur('');
     }).catch((e) => vivant && setErreur(message(e)));

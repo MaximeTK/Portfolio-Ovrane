@@ -95,73 +95,73 @@
 .ov :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .saisie.fichier{height:auto;padding:5px 10px}
 
 /* Thèmes plats : file de la planche, deux étages sur 52 px, 14 px de texte. */
-.ov.th-plat [data-fen=offres] .file{--ligne:52px;--e:max(0px,calc((100cqw - 902px) / 6))}
-.ov.th-plat [data-fen=offres] .file td{line-height:1.25rem}
-.ov.th-plat [data-fen=offres] .file thead th:nth-child(1){width:calc(68px + var(--e))}
-.ov.th-plat [data-fen=offres] .file thead th:nth-child(2){width:calc(112px + var(--e))}
-.ov.th-plat [data-fen=offres] .file thead th:nth-child(3){width:auto}
-.ov.th-plat [data-fen=offres] .file thead th:nth-child(4){width:calc(136px + var(--e))}
-.ov.th-plat [data-fen=offres] .file thead th:nth-child(5){width:calc(168px + var(--e))}
-.ov.th-plat [data-fen=offres] .file thead th:nth-child(6){width:calc(148px + var(--e))}
+.ov.trame [data-fen=offres] .file{--ligne:52px;--e:max(0px,calc((100cqw - 902px) / 6))}
+.ov.trame [data-fen=offres] .file td{line-height:1.25rem}
+.ov.trame [data-fen=offres] .file thead th:nth-child(1){width:calc(68px + var(--e))}
+.ov.trame [data-fen=offres] .file thead th:nth-child(2){width:calc(112px + var(--e))}
+.ov.trame [data-fen=offres] .file thead th:nth-child(3){width:auto}
+.ov.trame [data-fen=offres] .file thead th:nth-child(4){width:calc(136px + var(--e))}
+.ov.trame [data-fen=offres] .file thead th:nth-child(5){width:calc(168px + var(--e))}
+.ov.trame [data-fen=offres] .file thead th:nth-child(6){width:calc(148px + var(--e))}
 /* Fenêtre étroite : Lieu / contrat et Source partent, Intitulé reste large. */
 @container (max-width:860px){
-  .ov.th-plat [data-fen=offres] .file{--e:max(0px,calc((100cqw - 598px) / 4))}
-  .ov.th-plat [data-fen=offres] .file :is(th,td):is(:nth-child(4),:nth-child(5)){display:none}
+  .ov.trame [data-fen=offres] .file{--e:max(0px,calc((100cqw - 598px) / 4))}
+  .ov.trame [data-fen=offres] .file :is(th,td):is(:nth-child(4),:nth-child(5)){display:none}
 }
 /* Écartées : mêmes marges, le motif en pastille rouge douce. */
-.ov.th-plat [data-fen=offres] .ecartees{--e:max(0px,calc((100cqw - 900px) / 6))}
-.ov.th-plat [data-fen=offres] .ecartees thead th:nth-child(1){width:calc(68px + var(--e))}
-.ov.th-plat [data-fen=offres] .ecartees thead th:nth-child(2){width:calc(180px + var(--e))}
-.ov.th-plat [data-fen=offres] .ecartees thead th:nth-child(3){width:calc(100px + var(--e))}
-.ov.th-plat [data-fen=offres] .ecartees thead th:nth-child(4){width:auto}
-.ov.th-plat [data-fen=offres] .ecartees thead th:nth-child(5){width:calc(136px + var(--e))}
-.ov.th-plat [data-fen=offres] .ecartees thead th:nth-child(6){width:calc(168px + var(--e))}
-.ov.th-plat [data-fen=offres] .ecartees thead th:nth-child(7){width:calc(60px + var(--e))}
+.ov.trame [data-fen=offres] .ecartees{--e:max(0px,calc((100cqw - 900px) / 6))}
+.ov.trame [data-fen=offres] .ecartees thead th:nth-child(1){width:calc(68px + var(--e))}
+.ov.trame [data-fen=offres] .ecartees thead th:nth-child(2){width:calc(180px + var(--e))}
+.ov.trame [data-fen=offres] .ecartees thead th:nth-child(3){width:calc(100px + var(--e))}
+.ov.trame [data-fen=offres] .ecartees thead th:nth-child(4){width:auto}
+.ov.trame [data-fen=offres] .ecartees thead th:nth-child(5){width:calc(136px + var(--e))}
+.ov.trame [data-fen=offres] .ecartees thead th:nth-child(6){width:calc(168px + var(--e))}
+.ov.trame [data-fen=offres] .ecartees thead th:nth-child(7){width:calc(60px + var(--e))}
 @container (max-width:869px){
-  .ov.th-plat [data-fen=offres] .ecartees{--e:max(0px,calc((100cqw - 760px) / 4))}
+  .ov.trame [data-fen=offres] .ecartees{--e:max(0px,calc((100cqw - 760px) / 4))}
 }
-.ov.th-plat [data-fen=offres] .motif{height:auto;min-height:24px;padding:0 10px;border:0;border-radius:8px;background:var(--erreur-douce);font-size:.75rem;line-height:1rem;color:var(--erreur)}
+.ov.trame [data-fen=offres] .motif{height:auto;min-height:24px;padding:0 10px;border:0;border-radius:8px;background:var(--erreur-douce);font-size:.75rem;line-height:1rem;color:var(--erreur)}
 /* Sous-lignes en texte second, lien de fiche primaire souligné. */
-.ov.th-plat [data-fen=offres] .sous{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=offres] button.ent:hover{text-decoration-color:currentColor;text-underline-offset:2px}
-.ov.th-plat [data-fen=offres] .lien-fiche{display:flex;align-items:center;min-width:44px;min-height:24px;color:var(--primaire);text-decoration-color:currentColor;text-underline-offset:2px}
-.ov.th-plat [data-fen=offres] .lien-fiche:hover,.ov.th-plat [data-fen=offres] tr.ouverte .lien-fiche{color:var(--primaire);text-decoration-color:currentColor}
-.ov.th-plat [data-fen=offres] tr.ouverte .lien-fiche{font-weight:700}
-.ov.th-plat [data-fen=offres] tbody tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.ov.th-plat [data-fen=offres] tr.vide td{font-size:.875rem;color:var(--texte-2)}
+.ov.trame [data-fen=offres] .sous{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame [data-fen=offres] button.ent:hover{text-decoration-color:currentColor;text-underline-offset:2px}
+.ov.trame [data-fen=offres] .lien-fiche{display:flex;align-items:center;min-width:44px;min-height:24px;color:var(--primaire);text-decoration-color:currentColor;text-underline-offset:2px}
+.ov.trame [data-fen=offres] .lien-fiche:hover,.ov.trame [data-fen=offres] tr.ouverte .lien-fiche{color:var(--primaire);text-decoration-color:currentColor}
+.ov.trame [data-fen=offres] tr.ouverte .lien-fiche{font-weight:700}
+.ov.trame [data-fen=offres] tbody tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.trame [data-fen=offres] tr.vide td{font-size:.875rem;color:var(--texte-2)}
 /* Filtres : l'écart vient de la rangée, pas d'une marge du verre. */
-.ov.th-plat [data-fen=offres] .menu-filtre+.menu-filtre{margin-left:0}
-.ov.th-plat [data-fen=offres] .outils .actions{gap:4px}
+.ov.trame [data-fen=offres] .menu-filtre+.menu-filtre{margin-left:0}
+.ov.trame [data-fen=offres] .outils .actions{gap:4px}
 @container (max-width:759px){
-  .ov.th-plat [data-fen=offres] .menu-filtre+.menu-filtre{margin-left:0}
-  .ov.th-plat [data-fen=offres] .outils .filtre{padding:0 2px 0 8px}
+  .ov.trame [data-fen=offres] .menu-filtre+.menu-filtre{margin-left:0}
+  .ov.trame [data-fen=offres] .outils .filtre{padding:0 2px 0 8px}
 }
 /* L'avis : une barre pleine au-dessus de la pagination, inversée. */
-.ov.th-plat :is([data-fen=offres],[data-fen=veille]) .avis{bottom:68px;padding:10px 16px;border-left:0;border-radius:8px;background:var(--texte);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--surface)}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille]) .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame :is([data-fen=offres],[data-fen=veille]) .avis{bottom:68px;padding:10px 16px;border-left:0;border-radius:8px;background:var(--texte);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--surface)}
+.ov.trame :is([data-fen=offres],[data-fen=veille]) .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Onglets du panneau à la ligne, gestes du pied resserrés sur une rangée. */
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-tete{align-items:flex-start}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-onglets{flex-wrap:wrap}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-onglet{flex:none;padding:0 8px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-onglet.actif::after{left:8px;right:8px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-tete .f-btn{margin-top:2px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .f-pied .action{padding:0 8px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .action:disabled{opacity:1;color:var(--contour)}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-tete{align-items:flex-start}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-onglets{flex-wrap:wrap}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-onglet{flex:none;padding:0 8px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-onglet.actif::after{left:8px;right:8px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .p-tete .f-btn{margin-top:2px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .f-pied .action{padding:0 8px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .action:disabled{opacity:1;color:var(--contour)}
 /* Cartes du panneau : surface pleine et filet, 12 px d'angle et d'écart. */
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f{display:flex;flex-direction:column;gap:12px;border-color:var(--filet);border-radius:12px;background:var(--surface)}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f.alerte{border-color:var(--erreur)}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f.en-vol{outline:2px dashed var(--primaire)}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f .champ{margin-bottom:0}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f textarea.saisie{height:72px;min-height:72px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f .reglage{min-height:48px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .alerte-f{padding:8px 12px;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;line-height:1.25rem;color:var(--sur-erreur-douce)}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .attacher{gap:8px;margin-top:4px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .lien-d:disabled{opacity:1;color:var(--contour);text-decoration:none}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-pied .inter{gap:12px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .poignee-carte{display:inline-grid;place-items:center;min-width:44px;min-height:44px;border-radius:50%;font-size:1.125rem;color:var(--texte-2)}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .poignee-carte:is(:hover,:focus-visible){background:var(--surface-moyenne);color:var(--texte)}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .puce-p{height:auto;min-height:32px;padding:0 12px;font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .puce-p:has(:checked){color:var(--sur-primaire-doux)}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .puce-p:has(:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .puce-lien:hover{text-underline-offset:2px}
-.ov.th-plat :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .saisie.fichier{padding:12px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f{display:flex;flex-direction:column;gap:12px;border-color:var(--filet);border-radius:12px;background:var(--surface)}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f.alerte{border-color:var(--erreur)}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f.en-vol{outline:2px dashed var(--primaire)}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f .champ{margin-bottom:0}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f textarea.saisie{height:72px;min-height:72px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-f .reglage{min-height:48px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .alerte-f{padding:8px 12px;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;line-height:1.25rem;color:var(--sur-erreur-douce)}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .attacher{gap:8px;margin-top:4px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .lien-d:disabled{opacity:1;color:var(--contour);text-decoration:none}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .carte-pied .inter{gap:12px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .poignee-carte{display:inline-grid;place-items:center;min-width:44px;min-height:44px;border-radius:50%;font-size:1.125rem;color:var(--texte-2)}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .poignee-carte:is(:hover,:focus-visible){background:var(--surface-moyenne);color:var(--texte)}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .puce-p{height:auto;min-height:32px;padding:0 12px;font-size:.875rem;color:var(--texte-2)}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .puce-p:has(:checked){color:var(--sur-primaire-doux)}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .puce-p:has(:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .puce-lien:hover{text-underline-offset:2px}
+.ov.trame :is([data-fen=offres],[data-fen=veille])~[data-fen=panneau] .saisie.fichier{padding:12px}

@@ -88,62 +88,62 @@
 .ov [data-fen=veille]~[data-fen=panneau] .catalogue-hote .menu-option b{min-width:28px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11px);font-weight:500;color:rgb(var(--encre) / .65)}
 
 /* Thèmes plats : état, bandeau et sortie de la brique sur surfaces pleines. */
-.ov.th-plat [data-fen=veille] .etat-v:hover{background:none}
-.ov.th-plat [data-fen=veille] .etat-v .onde{font-size:.875rem;color:var(--texte)}
-.ov.th-plat [data-fen=veille] .etat-v .onde.on{color:var(--primaire)}
-.ov.th-plat [data-fen=veille] .etat-v>.d{font-size:.875rem}
-.ov.th-plat [data-fen=veille] .action.alerte,.ov.th-plat [data-fen=veille] .action.alerte:hover{color:var(--erreur)}
-.ov.th-plat [data-fen=veille] .veille-corps{gap:16px;padding:12px;scrollbar-width:thin}
-.ov.th-plat [data-fen=veille] .bandeau-echec{min-height:44px;padding:0 4px 0 16px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;color:var(--sur-erreur-douce)}
-.ov.th-plat [data-fen=veille] .bandeau-echec p{line-height:1.25rem;color:inherit}
-.ov.th-plat [data-fen=veille] .bandeau-echec b{font-weight:500;color:inherit}
-.ov.th-plat [data-fen=veille] .bandeau-echec .d{color:inherit}
-.ov.th-plat [data-fen=veille] .sortie>summary{min-height:44px;padding:0 8px 0 12px;border-radius:8px;font-size:.875rem;font-weight:500;color:inherit}
-.ov.th-plat [data-fen=veille] .sortie>summary:hover{background:color-mix(in srgb,currentColor 8%,transparent);color:inherit}
-.ov.th-plat [data-fen=veille] .sortie pre{padding:12px 16px;border:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.75rem;line-height:1.125rem;color:var(--texte);scrollbar-width:thin}
+.ov.trame [data-fen=veille] .etat-v:hover{background:none}
+.ov.trame [data-fen=veille] .etat-v .onde{font-size:.875rem;color:var(--texte)}
+.ov.trame [data-fen=veille] .etat-v .onde.on{color:var(--primaire)}
+.ov.trame [data-fen=veille] .etat-v>.d{font-size:.875rem}
+.ov.trame [data-fen=veille] .action.alerte,.ov.trame [data-fen=veille] .action.alerte:hover{color:var(--erreur)}
+.ov.trame [data-fen=veille] .veille-corps{gap:16px;padding:12px;scrollbar-width:thin}
+.ov.trame [data-fen=veille] .bandeau-echec{min-height:44px;padding:0 4px 0 16px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;color:var(--sur-erreur-douce)}
+.ov.trame [data-fen=veille] .bandeau-echec p{line-height:1.25rem;color:inherit}
+.ov.trame [data-fen=veille] .bandeau-echec b{font-weight:500;color:inherit}
+.ov.trame [data-fen=veille] .bandeau-echec .d{color:inherit}
+.ov.trame [data-fen=veille] .sortie>summary{min-height:44px;padding:0 8px 0 12px;border-radius:8px;font-size:.875rem;font-weight:500;color:inherit}
+.ov.trame [data-fen=veille] .sortie>summary:hover{background:color-mix(in srgb,currentColor 8%,transparent);color:inherit}
+.ov.trame [data-fen=veille] .sortie pre{padding:12px 16px;border:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.75rem;line-height:1.125rem;color:var(--texte);scrollbar-width:thin}
 /* Plateformes : cartes de 12 px, le choisi garde la teinte douce des choix. */
-.ov.th-plat [data-fen=veille] .bloc-tete{height:auto;min-height:44px;margin-bottom:4px}
-.ov.th-plat [data-fen=veille] .bloc-tete .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
-.ov.th-plat [data-fen=veille] .carte-pf{gap:2px;padding:12px;border-color:var(--filet);border-radius:12px}
-.ov.th-plat [data-fen=veille] .carte-pf:hover{border-color:var(--contour)}
-.ov.th-plat [data-fen=veille] .carte-pf.actif{border-color:var(--primaire-doux);color:var(--sur-primaire-doux)}
-.ov.th-plat [data-fen=veille] .pf-nom{font-size:.875rem;line-height:1.25rem;font-weight:500}
-.ov.th-plat [data-fen=veille] .pf-nb{font-size:1rem;line-height:1.25rem}
-.ov.th-plat [data-fen=veille] :is(.pf-motif,.pf-cles){font-size:.75rem;line-height:1rem;font-weight:400;color:var(--texte-2);white-space:normal}
-.ov.th-plat [data-fen=veille] .carte-pf.actif :is(.pf-motif,.pf-cles){color:inherit}
-.ov.th-plat [data-fen=veille] .carte-pf:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .voyant{border-radius:50%;background:var(--contour);box-shadow:none}
-.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-verte{background:var(--ok)}
-.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-jaune{background:var(--attente)}
-.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-rouge{background:var(--erreur)}
-.ov.th-plat :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-violette{background:var(--c-offres)}
+.ov.trame [data-fen=veille] .bloc-tete{height:auto;min-height:44px;margin-bottom:4px}
+.ov.trame [data-fen=veille] .bloc-tete .etiquette{font-size:.875rem;line-height:1.25rem;font-weight:500;color:var(--texte)}
+.ov.trame [data-fen=veille] .carte-pf{gap:2px;padding:12px;border-color:var(--filet);border-radius:12px}
+.ov.trame [data-fen=veille] .carte-pf:hover{border-color:var(--contour)}
+.ov.trame [data-fen=veille] .carte-pf.actif{border-color:var(--primaire-doux);color:var(--sur-primaire-doux)}
+.ov.trame [data-fen=veille] .pf-nom{font-size:.875rem;line-height:1.25rem;font-weight:500}
+.ov.trame [data-fen=veille] .pf-nb{font-size:1rem;line-height:1.25rem}
+.ov.trame [data-fen=veille] :is(.pf-motif,.pf-cles){font-size:.75rem;line-height:1rem;font-weight:400;color:var(--texte-2);white-space:normal}
+.ov.trame [data-fen=veille] .carte-pf.actif :is(.pf-motif,.pf-cles){color:inherit}
+.ov.trame [data-fen=veille] .carte-pf:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.ov.trame :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .voyant{border-radius:50%;background:var(--contour);box-shadow:none}
+.ov.trame :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-verte{background:var(--ok)}
+.ov.trame :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-jaune{background:var(--attente)}
+.ov.trame :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-rouge{background:var(--erreur)}
+.ov.trame :is([data-fen=veille],[data-fen=veille]~[data-fen=panneau]) .v-violette{background:var(--c-offres)}
 /* Jobboards : rangées de 48 px, place de l'interrupteur, choisi marqué. */
-.ov.th-plat [data-fen=veille] .jobboards-l>li{grid-template-columns:minmax(150px,1fr) minmax(220px,2fr) minmax(150px,1fr) 52px;gap:12px;height:auto;min-height:48px;padding:0 8px;border-top:0;border-bottom:1px solid var(--surface-moyenne);border-radius:0;font-size:.875rem}
-@container (max-width:659px){.ov.th-plat [data-fen=veille] .jobboards-l>li:not(.vide){grid-template-columns:minmax(110px,1fr) minmax(0,2fr) 52px}}
-.ov.th-plat [data-fen=veille] .jobboards-l>li:hover{background:var(--surface-basse)}
-.ov.th-plat [data-fen=veille] .jobboards-l>li.actif{background:var(--surface-moyenne);box-shadow:inset 3px 0 0 var(--primaire)}
-.ov.th-plat [data-fen=veille] .jobboards-l>li:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.ov.th-plat [data-fen=veille] .jobboards-l>li.vide{display:flex;align-items:center;color:var(--texte-2)}
-.ov.th-plat [data-fen=veille] .jobboards-l>li.vide:hover{background:none}
-.ov.th-plat [data-fen=veille] .jobboards-l b{font-weight:500}
-.ov.th-plat [data-fen=veille] .jobboards-l .eteint,.ov.th-plat [data-fen=veille] .jobboards-l .eteint b{color:var(--texte-2)}
-.ov.th-plat [data-fen=veille] .jobboards-l .inter{min-height:0}
-.ov.th-plat [data-fen=veille] .tag-f{padding:0 6px;border-color:var(--contour);border-radius:6px;font-size:.75rem;font-weight:400;line-height:1.125rem;color:var(--texte-2)}
+.ov.trame [data-fen=veille] .jobboards-l>li{grid-template-columns:minmax(150px,1fr) minmax(220px,2fr) minmax(150px,1fr) 52px;gap:12px;height:auto;min-height:48px;padding:0 8px;border-top:0;border-bottom:1px solid var(--surface-moyenne);border-radius:0;font-size:.875rem}
+@container (max-width:659px){.ov.trame [data-fen=veille] .jobboards-l>li:not(.vide){grid-template-columns:minmax(110px,1fr) minmax(0,2fr) 52px}}
+.ov.trame [data-fen=veille] .jobboards-l>li:hover{background:var(--surface-basse)}
+.ov.trame [data-fen=veille] .jobboards-l>li.actif{background:var(--surface-moyenne);box-shadow:inset 3px 0 0 var(--primaire)}
+.ov.trame [data-fen=veille] .jobboards-l>li:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.trame [data-fen=veille] .jobboards-l>li.vide{display:flex;align-items:center;color:var(--texte-2)}
+.ov.trame [data-fen=veille] .jobboards-l>li.vide:hover{background:none}
+.ov.trame [data-fen=veille] .jobboards-l b{font-weight:500}
+.ov.trame [data-fen=veille] .jobboards-l .eteint,.ov.trame [data-fen=veille] .jobboards-l .eteint b{color:var(--texte-2)}
+.ov.trame [data-fen=veille] .jobboards-l .inter{min-height:0}
+.ov.trame [data-fen=veille] .tag-f{padding:0 6px;border-color:var(--contour);border-radius:6px;font-size:.75rem;font-weight:400;line-height:1.125rem;color:var(--texte-2)}
 /* Panneau : voyant, secret lisible, catalogue à contour comme les champs. */
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .voyant-l{min-height:24px;font-size:.875rem}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .voyant-l .d{font-size:.75rem}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .secret .saisie{padding-right:72px}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue{gap:6px;min-height:48px;padding:7px 8px;border-color:var(--contour);border-radius:8px;background:var(--surface)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue:hover{border-color:var(--texte)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue:focus-within{border-color:var(--primaire)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue input{height:32px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue input::placeholder{color:var(--texte-2);opacity:1}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce{gap:4px;padding:0 4px 0 8px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce b{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce button{width:24px;height:24px;border-radius:50%;color:var(--texte-2)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce button:hover{background:var(--surface-moyenne);color:var(--texte)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue .puce svg{width:12px;height:12px}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .catalogue-hote .menu-option b{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .p-onglets{flex-wrap:wrap}
-.ov.th-plat [data-fen=veille]~[data-fen=panneau] .p-onglet{flex:none}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .voyant-l{min-height:24px;font-size:.875rem}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .voyant-l .d{font-size:.75rem}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .secret .saisie{padding-right:72px}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue{gap:6px;min-height:48px;padding:7px 8px;border-color:var(--contour);border-radius:8px;background:var(--surface)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue:hover{border-color:var(--texte)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue:focus-within{border-color:var(--primaire)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue input{height:32px;font-size:.875rem;color:var(--texte)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue input::placeholder{color:var(--texte-2);opacity:1}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue .puce{gap:4px;padding:0 4px 0 8px;font-size:.875rem;color:var(--texte)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue .puce b{font-size:.75rem;color:var(--texte-2)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue .puce button{width:24px;height:24px;border-radius:50%;color:var(--texte-2)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue .puce button:hover{background:var(--surface-moyenne);color:var(--texte)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue .puce svg{width:12px;height:12px}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .catalogue-hote .menu-option b{font-size:.75rem;color:var(--texte-2)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .action:disabled{opacity:1;color:rgb(var(--encre) / .62)}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .p-onglets{flex-wrap:wrap}
+.ov.trame [data-fen=veille]~[data-fen=panneau] .p-onglet{flex:none}

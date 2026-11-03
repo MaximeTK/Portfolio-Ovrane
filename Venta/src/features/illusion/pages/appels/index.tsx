@@ -228,13 +228,19 @@ function Detail({ vue, choisi, version, setChoisi, setAvis, relire }: Proprietes
 type ProprietesContenu = { id: number; vue: Vue | null; version: number; setAvis: (a: Avis) => void; relire: () => Promise<void>; supprime: () => void };
 
 // Un appel en fenêtre : titre, offre, voix, transcription, analyse, gestes.
+// Le micro d'abord, puis le son de l'appel, chaque piste par lettre
+const nomsDe = (d: DetailAppel) => Object.fromEntries(d.segments.map((s) => [`${s.piste}:${s.locuteur || ''}`, s.nom])
+  .sort(([a], [b]) => Number(a.startsWith('appel')) - Number(b.startsWith('appel')) || a.localeCompare(b)));
+
 function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: ProprietesContenu) {
   const { ouvrir } = usePanneau();
   const direct = useDirect();
-  const [detail, setDetail] = useState<DetailAppel | null>(null);
+  const [detail, setDetail] = useState(() => repris<DetailAppel | null>(`appels:detail-${id}`, null));
+  useGarder('appels', { [`detail-${id}`]: detail });
+  const detailVu = useRef(detail);
   const [erreur, setErreur] = useState('');
-  const [titre, setTitre] = useState('');
-  const [noms, setNoms] = useState<Record<string, string>>({});
+  const [titre, setTitre] = useState(() => detail?.titre ?? '');
+  const [noms, setNoms] = useState<Record<string, string>>(() => (detail ? nomsDe(detail) : {}));
   const [geste, setGeste] = useState<'clore' | 'analyser' | null>(null);
   const [confirmer, setConfirmer] = useState(false);
   const [occupe, setOccupe] = useState(false);
@@ -242,18 +248,18 @@ function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: Propriete
   const analyseEnCours = direct.analyse === id;
 
   const montrer = useCallback((d: DetailAppel) => {
+    detailVu.current = d;
     setDetail(d);
     setTitre(d.titre);
-    // Le micro d'abord, puis le son de l'appel, chaque piste par lettre
-    setNoms(Object.fromEntries(d.segments.map((s) => [`${s.piste}:${s.locuteur || ''}`, s.nom])
-      .sort(([a], [b]) => Number(a.startsWith('appel')) - Number(b.startsWith('appel')) || a.localeCompare(b))));
+    setNoms(nomsDe(d));
   }, []);
   useEffect(() => {
     if (analyseEnCours) return;
     let vivant = true;
     appeler<DetailAppel>(`/appels/${id}`).then((d) => {
       if (!vivant) return;
-      montrer(d);
+      // Inchangé depuis la dernière visite : rien ne bouge sous la main
+      if (JSON.stringify(detailVu.current) !== JSON.stringify(d)) montrer(d);
       setErreur('');
     }).catch((e) => {
       if (!vivant) return;

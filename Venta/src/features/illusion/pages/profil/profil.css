@@ -103,64 +103,64 @@
 .ov .champ-profil .inter{margin-top:4px}
 
 /* Thèmes plats : cartes et éditeur en surfaces pleines, verre intact. */
-.ov.th-plat [data-fen=profils] .profil .nom-p{font-size:.875rem;font-weight:500}
-.ov.th-plat [data-fen=profils] .profil .chemin{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=profils] .profil.actif .chemin{color:var(--sur-primaire-doux)}
-.ov.th-plat [data-fen=profils] .profil.neuf{border:1px dashed var(--contour);border-radius:8px;font-size:.875rem;font-weight:500;color:var(--texte);transition:background-color .15s var(--courbe)}
-.ov.th-plat [data-fen=profils] .profil.neuf:hover,.ov.th-plat [data-fen=profils] .profil.neuf.allume{border-color:var(--primaire);background:var(--selection);color:var(--primaire)}
-.ov.th-plat [data-fen=profils] .profil.neuf .ico{width:24px;height:24px;background:none;color:var(--primaire)}
-.ov.th-plat [data-fen=profils] .profil.neuf .ico svg{width:18px;height:18px}
-.ov.th-plat [data-fen=profils] .editeur{border-left:1px solid var(--filet)}
+.ov.trame [data-fen=profils] .profil .nom-p{font-size:.875rem;font-weight:500}
+.ov.trame [data-fen=profils] .profil .chemin{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame [data-fen=profils] .profil.actif .chemin{color:var(--sur-primaire-doux)}
+.ov.trame [data-fen=profils] .profil.neuf{border:1px dashed var(--contour);border-radius:8px;font-size:.875rem;font-weight:500;color:var(--texte);transition:background-color .15s var(--courbe)}
+.ov.trame [data-fen=profils] .profil.neuf:hover,.ov.trame [data-fen=profils] .profil.neuf.allume{border-color:var(--primaire);background:var(--selection);color:var(--primaire)}
+.ov.trame [data-fen=profils] .profil.neuf .ico{width:24px;height:24px;background:none;color:var(--primaire)}
+.ov.trame [data-fen=profils] .profil.neuf .ico svg{width:18px;height:18px}
+.ov.trame [data-fen=profils] .editeur{border-left:1px solid var(--filet)}
 /* Bandeau : 52 px libres pour la prise, texte large, gestes dessous. */
-.ov.th-plat [data-fen=profils] .bandeau{margin-top:8px;margin-right:12px;padding:8px 12px;border-left:0;border-radius:12px;background:var(--erreur-douce);color:var(--sur-erreur-douce)}
-.ov.th-plat [data-fen]>.prise+.bandeau{margin-left:52px}
-.ov.th-plat [data-fen=profils] .bandeau>.f-corps{flex:1 1 100%;max-height:30vh;overflow:auto;scrollbar-width:thin}
-.ov.th-plat [data-fen=profils] .bandeau .texte-f{font-weight:500;color:inherit}
-.ov.th-plat [data-fen=profils] .bandeau :is(.d,.aide-champ){color:inherit}
-.ov.th-plat [data-fen=profils] .bandeau .action{color:inherit}
+.ov.trame [data-fen=profils] .bandeau{margin-top:8px;margin-right:12px;padding:8px 12px;border-left:0;border-radius:12px;background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame [data-fen]>.prise+.bandeau{margin-left:52px}
+.ov.trame [data-fen=profils] .bandeau>.f-corps{flex:1 1 100%;max-height:30vh;overflow:auto;scrollbar-width:thin}
+.ov.trame [data-fen=profils] .bandeau .texte-f{font-weight:500;color:inherit}
+.ov.trame [data-fen=profils] .bandeau :is(.d,.aide-champ){color:inherit}
+.ov.trame [data-fen=profils] .bandeau .action{color:inherit}
 /* Dupliquer : barre neutre, champ de 40 px, prise libre. */
-.ov.th-plat [data-fen=profils] .confirmer.copie{background:var(--surface-moyenne);color:var(--texte)}
-.ov.th-plat [data-fen=profils] .confirmer.copie .action:not(.rouge-plein){color:var(--texte)}
-.ov.th-plat [data-fen=profils] .confirmer.copie .action.plein{color:var(--primaire)}
-.ov.th-plat [data-fen=profils] .confirmer.copie .saisie{height:auto;min-height:40px}
-.ov.th-plat [data-fen=profils] .confirmer.copie .lib-champ{margin-right:0}
-.ov.th-plat [data-fen=profils]>.prise+.outils~.confirmer{padding-left:52px}
-.ov.th-plat [data-fen=profils] .avis{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat [data-fen=profils] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame [data-fen=profils] .confirmer.copie{background:var(--surface-moyenne);color:var(--texte)}
+.ov.trame [data-fen=profils] .confirmer.copie .action:not(.rouge-plein){color:var(--texte)}
+.ov.trame [data-fen=profils] .confirmer.copie .action.plein{color:var(--primaire)}
+.ov.trame [data-fen=profils] .confirmer.copie .saisie{height:auto;min-height:40px}
+.ov.trame [data-fen=profils] .confirmer.copie .lib-champ{margin-right:0}
+.ov.trame [data-fen=profils]>.prise+.outils~.confirmer{padding-left:52px}
+.ov.trame [data-fen=profils] .avis{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame [data-fen=profils] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Éditeur : sections en 14 px, fermées en puces, poignées lisibles. */
-.ov.th-plat .ed-profil .mono{font-family:inherit;font-size:.875rem}
-.ov.th-plat .ed-profil .requis{color:var(--erreur)}
-.ov.th-plat .ed-profil .sec>summary{height:auto;min-height:44px;border-radius:8px;font-size:.875rem;font-weight:500;color:var(--texte);transition:background-color .15s var(--courbe)}
-.ov.th-plat .ed-profil .sec[open]>summary{border-bottom:1px solid var(--filet);border-radius:8px 8px 0 0}
-.ov.th-plat .ed-profil .sec>summary:hover{background:var(--surface-basse)}
-.ov.th-plat .ed-profil .sec>summary .chevron{width:18px;height:18px;color:var(--texte-2)}
-.ov.th-plat .ed-profil .sec:not([open])>summary{height:auto;min-height:44px;padding:0 12px;border:1px solid var(--contour);font-size:.875rem;color:var(--texte)}
-.ov.th-plat .ed-profil .sec:not([open])>summary:hover{border-color:var(--contour);color:var(--texte)}
-.ov.th-plat .ed-profil .sec:not([open])>summary .chevron{width:18px;height:18px}
-.ov.th-plat .ed-profil :is(.poignee,.poignee-b){color:var(--texte-2)}
-.ov.th-plat .ed-profil :is(.poignee,.poignee-b):hover{color:var(--texte)}
+.ov.trame .ed-profil .mono{font-family:inherit;font-size:.875rem}
+.ov.trame .ed-profil .requis{color:var(--erreur)}
+.ov.trame .ed-profil .sec>summary{height:auto;min-height:44px;border-radius:8px;font-size:.875rem;font-weight:500;color:var(--texte);transition:background-color .15s var(--courbe)}
+.ov.trame .ed-profil .sec[open]>summary{border-bottom:1px solid var(--filet);border-radius:8px 8px 0 0}
+.ov.trame .ed-profil .sec>summary:hover{background:var(--surface-basse)}
+.ov.trame .ed-profil .sec>summary .chevron{width:18px;height:18px;color:var(--texte-2)}
+.ov.trame .ed-profil .sec:not([open])>summary{height:auto;min-height:44px;padding:0 12px;border:1px solid var(--contour);font-size:.875rem;color:var(--texte)}
+.ov.trame .ed-profil .sec:not([open])>summary:hover{border-color:var(--contour);color:var(--texte)}
+.ov.trame .ed-profil .sec:not([open])>summary .chevron{width:18px;height:18px}
+.ov.trame .ed-profil :is(.poignee,.poignee-b){color:var(--texte-2)}
+.ov.trame .ed-profil :is(.poignee,.poignee-b):hover{color:var(--texte)}
 /* Encarts : pleins et teintés, à la place du trait de couleur. */
-.ov.th-plat .ed-profil .encart{padding:12px;border-left:0;border-radius:12px;background:var(--attente-doux);color:var(--attente)}
-.ov.th-plat .ed-profil .encart.rouge{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame .ed-profil .encart{padding:12px;border-left:0;border-radius:12px;background:var(--attente-doux);color:var(--attente)}
+.ov.trame .ed-profil .encart.rouge{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Sur de grandes surfaces, le rouge du thème sombre s'adoucit. */
 .ov.th-sombre [data-fen=profils] .bandeau,.ov.th-sombre .ed-profil .encart.rouge{background:color-mix(in srgb,var(--erreur-douce) 55%,var(--surface))}
-.ov.th-plat .ed-profil .encart h3{font-size:.875rem;line-height:1.25rem;font-weight:500;color:inherit}
-.ov.th-plat .ed-profil .encart>p{font-size:.75rem;line-height:1rem;color:inherit}
-.ov.th-plat .ed-profil .encart .liens{gap:0 16px;font-size:.875rem}
+.ov.trame .ed-profil .encart h3{font-size:.875rem;line-height:1.25rem;font-weight:500;color:inherit}
+.ov.trame .ed-profil .encart>p{font-size:.75rem;line-height:1rem;color:inherit}
+.ov.trame .ed-profil .encart .liens{gap:0 16px;font-size:.875rem}
 /* Éditeur riche : barre de 44 px sur la surface basse, zone à contour. */
-.ov.th-plat .ed-profil .barre-r{min-height:44px;padding:0 4px;border:1px solid var(--contour);border-bottom:1px solid var(--filet);border-radius:8px 8px 0 0;background:var(--surface-basse)}
-.ov.th-plat .ed-profil .outil-r{min-width:36px;height:44px;border-radius:8px;font-size:.875rem;color:var(--texte);transition:background-color .15s var(--courbe)}
-.ov.th-plat .ed-profil .outil-r:hover{background:var(--surface-moyenne);color:var(--texte)}
-.ov.th-plat .ed-profil .outil-r.coul i{width:16px;height:3px;border-radius:2px}
-.ov.th-plat .ed-profil .barre-r select{height:44px;border-radius:8px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat .ed-profil .barre-r select:hover{background:var(--surface-moyenne)}
-.ov.th-plat .ed-profil .sep-r{height:24px;background:var(--filet)}
-.ov.th-plat .ed-profil .zone-r{min-height:72px;padding:12px;border:1px solid var(--contour);border-radius:8px;background:var(--surface);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.th-plat .ed-profil .barre-r+.zone-r{border-radius:0 0 8px 8px;border-top:0}
-.ov.th-plat .ed-profil .zone-r:focus{border-color:var(--primaire)}
-.ov.th-plat .ed-profil .zone-r:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.ov.th-plat .ed-profil .zone-r:empty::before{color:var(--texte-2)}
+.ov.trame .ed-profil .barre-r{min-height:44px;padding:0 4px;border:1px solid var(--contour);border-bottom:1px solid var(--filet);border-radius:8px 8px 0 0;background:var(--surface-basse)}
+.ov.trame .ed-profil .outil-r{min-width:36px;height:44px;border-radius:8px;font-size:.875rem;color:var(--texte);transition:background-color .15s var(--courbe)}
+.ov.trame .ed-profil .outil-r:hover{background:var(--surface-moyenne);color:var(--texte)}
+.ov.trame .ed-profil .outil-r.coul i{width:16px;height:3px;border-radius:2px}
+.ov.trame .ed-profil .barre-r select{height:44px;border-radius:8px;font-size:.875rem;color:var(--texte)}
+.ov.trame .ed-profil .barre-r select:hover{background:var(--surface-moyenne)}
+.ov.trame .ed-profil .sep-r{height:24px;background:var(--filet)}
+.ov.trame .ed-profil .zone-r{min-height:72px;padding:12px;border:1px solid var(--contour);border-radius:8px;background:var(--surface);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame .ed-profil .barre-r+.zone-r{border-radius:0 0 8px 8px;border-top:0}
+.ov.trame .ed-profil .zone-r:focus{border-color:var(--primaire)}
+.ov.trame .ed-profil .zone-r:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.ov.trame .ed-profil .zone-r:empty::before{color:var(--texte-2)}
 /* Entrées répétables : cartes à filet, poignée sur le premier champ. */
-.ov.th-plat .ed-profil .bloc{padding:12px 12px 8px 36px;border:1px solid var(--filet);border-radius:12px;background:var(--surface)}
-.ov.th-plat .ed-profil .bloc .poignee-b{left:12px}
-.ov.th-plat .ed-profil .lieux .menu-option{min-height:44px;font-size:.875rem}
+.ov.trame .ed-profil .bloc{padding:12px 12px 8px 36px;border:1px solid var(--filet);border-radius:12px;background:var(--surface)}
+.ov.trame .ed-profil .bloc .poignee-b{left:12px}
+.ov.trame .ed-profil .lieux .menu-option{min-height:44px;font-size:.875rem}

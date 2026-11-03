@@ -152,106 +152,106 @@
 .ov:has([data-fen=boite]) [data-fen^=panneau] .mots-f .grille-2 .champ{margin-bottom:12px}
 
 /* Thèmes plats : boîte et panneau aux valeurs de la planche, verre intact. */
-.ov.th-plat [data-fen=boite] .filtre-hote+.filtre-hote{margin-left:4px}
-.ov.th-plat [data-fen=boite] .menu-option{gap:16px}
-.ov.th-plat [data-fen=boite] .menu-option .compteur{padding:0 6px;color:var(--texte-2)}
-.ov.th-plat [data-fen=boite] .recherche{min-height:44px;height:auto;min-width:44px;margin-left:8px;padding:0 12px;border:1px solid var(--contour);border-radius:22px;color:var(--texte-2)}
-.ov.th-plat [data-fen=boite] .recherche svg{width:18px;height:18px}
-.ov.th-plat [data-fen=boite] .recherche input{height:auto;min-height:40px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat [data-fen=boite] .recherche input::placeholder{color:var(--texte-2);opacity:1}
-.ov.th-plat [data-fen=boite] .recherche:focus-within{color:var(--texte)}
-.ov.th-plat [data-fen=boite] .recherche:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
-.ov.th-plat [data-fen=boite] .recherche input:focus-visible{outline:none}
+.ov.trame [data-fen=boite] .filtre-hote+.filtre-hote{margin-left:4px}
+.ov.trame [data-fen=boite] .menu-option{gap:16px}
+.ov.trame [data-fen=boite] .menu-option .compteur{padding:0 6px;color:var(--texte-2)}
+.ov.trame [data-fen=boite] .recherche{min-height:44px;height:auto;min-width:44px;margin-left:8px;padding:0 12px;border:1px solid var(--contour);border-radius:22px;color:var(--texte-2)}
+.ov.trame [data-fen=boite] .recherche svg{width:18px;height:18px}
+.ov.trame [data-fen=boite] .recherche input{height:auto;min-height:40px;font-size:.875rem;color:var(--texte)}
+.ov.trame [data-fen=boite] .recherche input::placeholder{color:var(--texte-2);opacity:1}
+.ov.trame [data-fen=boite] .recherche:focus-within{color:var(--texte)}
+.ov.trame [data-fen=boite] .recherche:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.ov.trame [data-fen=boite] .recherche input:focus-visible{outline:none}
 /* Ligne d'état : 24 px ; les gestes de l'admin gardent 44 px de cible. */
-.ov.th-plat [data-fen=boite] .etat-boite{gap:24px;height:auto;min-height:24px;margin:-4px 0 4px;padding:0 16px;font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=boite] .etat-boite:has(.actions-etat){min-height:44px;margin:0}
-.ov.th-plat [data-fen=boite] .etat-boite .lib-champ{margin-right:8px;font-size:.75rem}
-.ov.th-plat [data-fen=boite] .actions-etat{gap:0}
-.ov.th-plat [data-fen=boite] .actions-etat .action{height:auto;gap:6px;font-size:.75rem;color:var(--texte)}
-.ov.th-plat [data-fen=boite] .actions-etat .action:hover{color:var(--texte)}
-.ov.th-plat [data-fen=boite] .actions-etat .action .ico{width:16px;height:16px}
-.ov.th-plat [data-fen=boite] .actions-etat .action .ico svg{width:16px;height:16px}
-.ov.th-plat [data-fen=boite] .voyant-ecoute{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:none}
-.ov.th-plat [data-fen=boite] .voyant-ecoute.arrete{background:none;box-shadow:none;border:1px solid var(--contour)}
+.ov.trame [data-fen=boite] .etat-boite{gap:24px;height:auto;min-height:24px;margin:-4px 0 4px;padding:0 16px;font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame [data-fen=boite] .etat-boite:has(.actions-etat){min-height:44px;margin:0}
+.ov.trame [data-fen=boite] .etat-boite .lib-champ{margin-right:8px;font-size:.75rem}
+.ov.trame [data-fen=boite] .actions-etat{gap:0}
+.ov.trame [data-fen=boite] .actions-etat .action{height:auto;gap:6px;font-size:.75rem;color:var(--texte)}
+.ov.trame [data-fen=boite] .actions-etat .action:hover{color:var(--texte)}
+.ov.trame [data-fen=boite] .actions-etat .action .ico{width:16px;height:16px}
+.ov.trame [data-fen=boite] .actions-etat .action .ico svg{width:16px;height:16px}
+.ov.trame [data-fen=boite] .voyant-ecoute{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:none}
+.ov.trame [data-fen=boite] .voyant-ecoute.arrete{background:none;box-shadow:none;border:1px solid var(--contour)}
 /* Vider et Supprimer laissent la prise libre, outils cachés avant eux. */
-.ov.th-plat [data-fen=boite]>.prise+.outils~.confirmer{padding-left:52px}
+.ov.trame [data-fen=boite]>.prise+.outils~.confirmer{padding-left:52px}
 /* Mails cochés, fenêtre resserrée : les libellés cèdent aux gestes. */
-.ov.th-plat [data-fen=boite].boite:not([data-l=l]):has(tbody .case:checked) .outils .filtre .lib{display:none}
+.ov.trame [data-fen=boite].boite:not([data-l=l]):has(tbody .case:checked) .outils .filtre .lib{display:none}
 /* En 14 px, l'adresse garde sa place : les gestes se replient plus tôt. */
-@container (max-width:780px){.ov.th-plat [data-fen=boite] .actions-etat .action .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
+@container (max-width:780px){.ov.trame [data-fen=boite] .actions-etat .action .txt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
 /* Colonnes reprises pour 14 px : l'objet prend ce qui reste. */
-.ov.th-plat [data-fen=boite] thead{--e:max(0px,calc((100cqw - 1074px) / 8))}
-@container (max-width:930px){.ov.th-plat [data-fen=boite] thead{--e:max(0px,calc((100cqw - 648px) / 4))}}
-.ov.th-plat [data-fen=boite] thead th:nth-child(1){width:52px}
-.ov.th-plat [data-fen=boite] thead th:nth-child(2){width:calc(36px + var(--e))}
-.ov.th-plat [data-fen=boite] thead th:nth-child(3){width:calc(96px + var(--e))}
-.ov.th-plat [data-fen=boite] thead th:nth-child(4){width:calc(164px + var(--e))}
-.ov.th-plat [data-fen=boite] thead th:nth-child(5){width:auto}
-.ov.th-plat [data-fen=boite] thead th:nth-child(6){width:calc(48px + var(--e))}
-.ov.th-plat [data-fen=boite] thead th:nth-child(7){width:calc(190px + var(--e))}
-.ov.th-plat [data-fen=boite] thead th:nth-child(8){width:calc(116px + var(--e))}
-.ov.th-plat [data-fen=boite] thead th:nth-child(9){width:calc(84px + var(--e))}
+.ov.trame [data-fen=boite] thead{--e:max(0px,calc((100cqw - 1074px) / 8))}
+@container (max-width:930px){.ov.trame [data-fen=boite] thead{--e:max(0px,calc((100cqw - 648px) / 4))}}
+.ov.trame [data-fen=boite] thead th:nth-child(1){width:52px}
+.ov.trame [data-fen=boite] thead th:nth-child(2){width:calc(36px + var(--e))}
+.ov.trame [data-fen=boite] thead th:nth-child(3){width:calc(96px + var(--e))}
+.ov.trame [data-fen=boite] thead th:nth-child(4){width:calc(164px + var(--e))}
+.ov.trame [data-fen=boite] thead th:nth-child(5){width:auto}
+.ov.trame [data-fen=boite] thead th:nth-child(6){width:calc(48px + var(--e))}
+.ov.trame [data-fen=boite] thead th:nth-child(7){width:calc(190px + var(--e))}
+.ov.trame [data-fen=boite] thead th:nth-child(8){width:calc(116px + var(--e))}
+.ov.trame [data-fen=boite] thead th:nth-child(9){width:calc(84px + var(--e))}
 /* Cellules : teintes de la planche, tiret et « à » lisibles. */
-.ov.th-plat [data-fen=boite] .sens{font-size:1.125rem}
-.ov.th-plat [data-fen=boite] .sens.recu{color:var(--info)}
-.ov.th-plat [data-fen=boite] .sens.envoye{color:var(--ok)}
-.ov.th-plat [data-fen=boite] td.non-lu{font-weight:700;color:var(--texte)}
-.ov.th-plat [data-fen=boite] .vers{color:var(--texte-2)}
-.ov.th-plat [data-fen=boite] .pj{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat [data-fen=boite] .pj svg{width:14px;height:14px}
-.ov.th-plat [data-fen=boite] .sur button{display:inline-flex;align-items:center;min-height:44px;color:var(--primaire);text-decoration-color:currentColor;text-underline-offset:2px}
-.ov.th-plat [data-fen=boite] .sur button:hover{color:var(--primaire);text-decoration-color:currentColor}
-.ov.th-plat [data-fen=boite] .vide-c{color:var(--texte-2)}
-.ov.th-plat [data-fen=boite] .brouillon.redige{color:var(--texte)}
-.ov.th-plat [data-fen=boite] .brouillon.echec{color:var(--erreur)}
-.ov.th-plat [data-fen=boite] tbody tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
-.ov.th-plat [data-fen=boite] tr.vide-f td{color:var(--texte-2)}
-.ov.th-plat [data-fen=boite] .avis-boite{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;color:var(--texte)}
-.ov.th-plat [data-fen=boite] .avis-boite.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
+.ov.trame [data-fen=boite] .sens{font-size:1.125rem}
+.ov.trame [data-fen=boite] .sens.recu{color:var(--info)}
+.ov.trame [data-fen=boite] .sens.envoye{color:var(--ok)}
+.ov.trame [data-fen=boite] td.non-lu{font-weight:700;color:var(--texte)}
+.ov.trame [data-fen=boite] .vers{color:var(--texte-2)}
+.ov.trame [data-fen=boite] .pj{font-size:.75rem;color:var(--texte-2)}
+.ov.trame [data-fen=boite] .pj svg{width:14px;height:14px}
+.ov.trame [data-fen=boite] .sur button{display:inline-flex;align-items:center;min-height:44px;color:var(--primaire);text-decoration-color:currentColor;text-underline-offset:2px}
+.ov.trame [data-fen=boite] .sur button:hover{color:var(--primaire);text-decoration-color:currentColor}
+.ov.trame [data-fen=boite] .vide-c{color:var(--texte-2)}
+.ov.trame [data-fen=boite] .brouillon.redige{color:var(--texte)}
+.ov.trame [data-fen=boite] .brouillon.echec{color:var(--erreur)}
+.ov.trame [data-fen=boite] tbody tr:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.ov.trame [data-fen=boite] tr.vide-f td{color:var(--texte-2)}
+.ov.trame [data-fen=boite] .avis-boite{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;color:var(--texte)}
+.ov.trame [data-fen=boite] .avis-boite.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* La nature garde sa couleur, en pastille ronde et sans lueur. */
-.ov.th-plat:has([data-fen=boite]) .nat{gap:8px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat:has([data-fen=boite]) .nat::before{width:10px;height:10px;border-radius:50%;box-shadow:none}
+.ov.trame:has([data-fen=boite]) .nat{gap:8px;font-size:.875rem;color:var(--texte)}
+.ov.trame:has([data-fen=boite]) .nat::before{width:10px;height:10px;border-radius:50%;box-shadow:none}
 /* Panneau : gestes sur la première rangée, fil en cartes pleines. */
-.ov.th-plat:has([data-fen=boite]) [data-fen=panneau] .p-onglets{column-gap:0}
-.ov.th-plat:has([data-fen=boite]) [data-fen=panneau] .p-onglet{height:auto}
-.ov.th-plat:has([data-fen=boite]) [data-fen=panneau] .p-tete :is(.f-btn,.case){margin-top:2px}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .erreur-f{color:var(--erreur)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .meta-f{font-size:.875rem;color:var(--texte-2)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .actions-f{gap:8px}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .msg{padding:10px 12px;border-left:0;border-radius:12px;background:var(--surface-basse)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .msg.envoye{background:var(--selection)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .msg-tete{font-size:.875rem}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] summary.msg-tete{align-items:center;min-height:44px}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .msg-tete b{font-weight:500}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .msg-tete :is(.d,time){font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .msg-objet{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .msg-corps{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame:has([data-fen=boite]) [data-fen=panneau] .p-onglets{column-gap:0}
+.ov.trame:has([data-fen=boite]) [data-fen=panneau] .p-onglet{height:auto}
+.ov.trame:has([data-fen=boite]) [data-fen=panneau] .p-tete :is(.f-btn,.case){margin-top:2px}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .erreur-f{color:var(--erreur)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .meta-f{font-size:.875rem;color:var(--texte-2)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .actions-f{gap:8px}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .msg{padding:10px 12px;border-left:0;border-radius:12px;background:var(--surface-basse)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .msg.envoye{background:var(--selection)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .msg-tete{font-size:.875rem}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] summary.msg-tete{align-items:center;min-height:44px}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .msg-tete b{font-weight:500}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .msg-tete :is(.d,time){font-size:.75rem;color:var(--texte-2)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .msg-objet{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .msg-corps{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
 /* Le mail mis en page reste sur fond blanc, quel que soit le thème. */
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .corps-html{border-radius:8px;background:#fff}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .piece{min-height:44px;font-size:.875rem;color:var(--primaire)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] span.piece{color:var(--texte)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] button.piece:hover{color:var(--primaire)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .piece svg{width:16px;height:16px;color:inherit}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .piece small{font-size:.75rem;color:var(--texte-2)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .piece .retirer{width:44px;height:44px;border-radius:50%;font-size:1.125rem;color:var(--texte-2)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .piece .retirer:hover{background:var(--surface-moyenne);color:var(--texte-2)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .repondre{margin-top:16px;padding-top:16px;border-top:1px solid var(--filet)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .corps-html{border-radius:8px;background:#fff}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .piece{min-height:44px;font-size:.875rem;color:var(--primaire)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] span.piece{color:var(--texte)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] button.piece:hover{color:var(--primaire)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .piece svg{width:16px;height:16px;color:inherit}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .piece small{font-size:.75rem;color:var(--texte-2)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .piece .retirer{width:44px;height:44px;border-radius:50%;font-size:1.125rem;color:var(--texte-2)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .piece .retirer:hover{background:var(--surface-moyenne);color:var(--texte-2)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .repondre{margin-top:16px;padding-top:16px;border-top:1px solid var(--filet)}
 /* Étiqueter, Exécuter et Réglages : choix de 44 px, lueurs retirées. */
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] :is(.tag-f,.mode-f){height:auto;min-height:44px;padding:0 12px}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .tag-f .nat{white-space:normal}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .tag-f:has(:checked) .nat{color:var(--sur-primaire-doux)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .modes-f{flex-wrap:wrap}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .mode-f{font-size:.875rem;color:var(--texte)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .mode-f:is(.actif,:has(:checked)){color:var(--sur-primaire-doux)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .commandes-f{gap:6px}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .commande-f{grid-template-columns:64px 1fr;min-height:44px;padding:10px 12px}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .commande-f code{font-size:.875rem;color:var(--texte)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .commande-f span{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .commande-f:has(:checked) :is(code,span){color:var(--sur-primaire-doux)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .lancement{color:var(--texte-2)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .lancement.en-cours{color:var(--primaire)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .lancement.echec{color:var(--erreur)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .sortie-f{padding:12px;border-radius:8px;background:var(--surface-basse);font-size:.75rem;line-height:1rem;color:var(--texte)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .secret-f .action{font-size:.875rem}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .mots-f .champ>label{gap:8px;font-size:.875rem;color:var(--texte)}
-.ov.th-plat:has([data-fen=boite]) [data-fen^=panneau] .mots-f .champ>label::before{width:10px;height:10px;border-radius:50%;box-shadow:none}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] :is(.tag-f,.mode-f){height:auto;min-height:44px;padding:0 12px}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .tag-f .nat{white-space:normal}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .tag-f:has(:checked) .nat{color:var(--sur-primaire-doux)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .modes-f{flex-wrap:wrap}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .mode-f{font-size:.875rem;color:var(--texte)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .mode-f:is(.actif,:has(:checked)){color:var(--sur-primaire-doux)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .commandes-f{gap:6px}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .commande-f{grid-template-columns:64px 1fr;min-height:44px;padding:10px 12px}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .commande-f code{font-size:.875rem;color:var(--texte)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .commande-f span{font-size:.75rem;line-height:1rem;color:var(--texte-2)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .commande-f:has(:checked) :is(code,span){color:var(--sur-primaire-doux)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .lancement{color:var(--texte-2)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .lancement.en-cours{color:var(--primaire)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .lancement.echec{color:var(--erreur)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .sortie-f{padding:12px;border-radius:8px;background:var(--surface-basse);font-size:.75rem;line-height:1rem;color:var(--texte)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .secret-f .action{font-size:.875rem}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .mots-f .champ>label{gap:8px;font-size:.875rem;color:var(--texte)}
+.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .mots-f .champ>label::before{width:10px;height:10px;border-radius:50%;box-shadow:none}
