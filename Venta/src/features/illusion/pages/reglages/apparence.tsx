@@ -24,6 +24,7 @@ export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fe
   const matiere = useApparence((s) => s.matiere);
   const theme = useApparence((s) => s.theme);
   const opacite = useUIStore((s) => s.verreOpacite);
+  const flou = useUIStore((s) => s.verreFlou);
   const gardee = useRef<string | null>(null);
 
   // À la fermeture, ce qui n'a pas été enregistré se défait.
@@ -91,6 +92,11 @@ export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fe
               </label>
             ))}
           </div>
+        </div>
+        <div className="section-f teinte">
+          <h3 className="h3-val">Flou des fenêtres<span className="val">{flou ? `${flou} px` : 'Aucun'}</span></h3>
+          <p className="aide-champ">Une fenêtre détachée laisse voir, flouté, ce qu&apos;elle recouvre.</p>
+          <input type="range" min={0} max={40} step={2} value={flou} aria-label="Flou des fenêtres" onChange={(e) => useUIStore.getState().reglerFlou(Number(e.target.value))} />
         </div></>}
         <div className="section-f teinte">
           <h3 className="h3-val">Teinte des boîtes<span className="val">{Math.round(opacite * 100)} %</span></h3>
@@ -107,6 +113,7 @@ export function useOngletApparence({ actif, fermer, dire }: { actif: boolean; fe
           useBackgroundStore.getState().setBackground('default');
           useApparence.getState().choisirMatiere('teinte');
           useApparence.getState().choisirTheme('verre');
+          useUIStore.getState().reglerFlou(0);
         }}>Par défaut</button>
         <button type="button" className="action" onClick={fermer}>Fermer</button>
         <button type="button" className="action plein" onClick={enregistrer}>Enregistrer<span className="ico">

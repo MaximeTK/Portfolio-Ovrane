@@ -16,11 +16,11 @@
 .ov.th-sombre .fond{background:linear-gradient(rgb(0 0 0 / .4),rgb(0 0 0 / 0)),linear-gradient(rgb(0 0 0 / .68) 0 0),center/cover no-repeat url("/illusion/fond-clair.jpg")}
 
 /* Fenêtres : surfaces pleines, 16 px de rayon, ombre légère. */
-.ov.th-plein .verre{--verre-rayon:16px;clip-path:none;overflow:hidden;background:var(--surface);border-radius:var(--verre-rayon);box-shadow:var(--ombre-1)}
+.ov.th-plein .verre{--verre-rayon:16px;overflow:hidden;background:var(--surface);border-radius:var(--verre-rayon);box-shadow:var(--ombre-1)}
 .ov.th-plein .verre::before,.ov.th-plein .verre::after{content:none}
 .ov.th-plein .verre-halos{display:none}
 .ov.th-plein .dock [data-flot]{box-shadow:var(--ombre-3)}
-.ov.th-plein .ouv-ligne{background:var(--filet);box-shadow:none}
+.ov.th-plein .ouv-ligne{background:var(--surface);mix-blend-mode:normal}
 .ov.th-plein .flottante{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none;border:0;border-radius:16px;box-shadow:var(--ombre-3)}
 
 /* En-tête sur la photo : canaux blancs, trait sous le canal ouvert. */

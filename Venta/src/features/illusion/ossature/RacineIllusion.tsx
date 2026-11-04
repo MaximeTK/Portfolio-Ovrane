@@ -4,7 +4,9 @@ import '../styles/illusion.css';
 import '../styles/themes.css';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
+import { useUIStore } from '@/lib/uiStore';
 import { classesTheme, useApparence } from '../apparence';
+import { DUREE_FLOTTANTE, LENTEUR_FLOTTANTE } from '../dock/moteur';
 import type { Compte } from '../api';
 import { DUREES, ecrire, mouvementReduit } from '../partage/glyphes';
 import { poserCompte } from '../stockage';
@@ -23,6 +25,7 @@ type ProprietesRacine = {
 export function RacineIllusion({ compte, page, palette, children }: ProprietesRacine) {
   const matiere = useApparence((s) => s.matiere);
   const theme = useApparence((s) => s.theme);
+  const flou = useUIStore((s) => s.verreFlou);
   // Au rendu, avant les pages : leurs brouillons se lisent sous ce compte
   if (compte) poserCompte(compte.email);
 
@@ -42,9 +45,10 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
       setOuverture(null);
       return;
     }
-    const fenetres = Array.from(racine.current?.querySelectorAll('.dock [data-fen]:not([hidden])') ?? []);
-    const ecrits = fenetres.map((f) => ecrire(f, { duree: DUREES.ouvrir - DUREES.voile, delai: DUREES.voile }));
-    const fin = window.setTimeout(() => setOuverture(null), DUREES.ouvrir + 100);
+    const fenetres = Array.from(racine.current?.querySelectorAll<HTMLElement>('.dock [data-fen]:not([hidden])') ?? []);
+    const lenteur = (f: HTMLElement) => (f.dataset.flot === undefined ? 1 : LENTEUR_FLOTTANTE);
+    const ecrits = fenetres.map((f) => ecrire(f, { duree: (DUREES.ouvrir - DUREES.voile) * lenteur(f), delai: DUREES.voile * lenteur(f) }));
+    const fin = window.setTimeout(() => setOuverture(null), (fenetres.some((f) => f.dataset.flot !== undefined) ? DUREE_FLOTTANTE : DUREES.ouvrir) + 100);
     return () => {
       clearTimeout(fin);
       ecrits.forEach((c) => c.annuler());
@@ -52,7 +56,7 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
   }, [ouvre]);
 
   return (
-    <div ref={racine} className={`ov mat-${matiere} ${classesTheme(theme)}${compte?.admin ? ' admin' : ''}${page === 'accueil' ? ' vue-accueil' : ''}${ouvre ? ' ouverture' : ''}`}>
+    <div ref={racine} className={`ov mat-${matiere} ${classesTheme(theme)}${compte?.admin ? ' admin' : ''}${flou > 0 ? ' a-flou' : ''}${page === 'accueil' ? ' vue-accueil' : ''}${ouvre ? ' ouverture' : ''}`}>
       <div className="fond" />
       <div className="place-entete" aria-hidden="true" />
       <div key={page} className="scene">

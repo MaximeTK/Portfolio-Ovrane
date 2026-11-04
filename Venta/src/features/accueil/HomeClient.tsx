@@ -9,7 +9,7 @@ import { useChatController } from '@/features/chat/useChatController';
 import { InputArea } from '@/features/chat/InputArea';
 import { SiteHeader } from '@/features/site/SiteHeader';
 import { PageView } from '@/features/site/PageView';
-import { useUIStore, CLE_SON, CLE_VERRE } from '@/lib/uiStore';
+import { useUIStore, CLE_FLOU, CLE_SON, CLE_VERRE } from '@/lib/uiStore';
 import { CHAT_UI } from '@/lib/messages';
 import { IntroSequence } from './IntroSequence';
 
@@ -63,12 +63,14 @@ export default function HomeClient() {
     window.speechSynthesis?.getVoices();
   }, []);
 
-  // Préférences du navigateur (voix coupée, teinte des boîtes), relues d'abord
+  // Préférences du navigateur (voix, teinte des boîtes, flou), relues d'abord
   useEffect(() => {
     try {
       if (localStorage.getItem(CLE_SON) === '1') useUIStore.setState({ sonCoupe: true });
       const verre = localStorage.getItem(CLE_VERRE);
       if (verre !== null && Number(verre) >= 0 && Number(verre) <= 0.9) useUIStore.getState().reglerVerre(Number(verre));
+      const flou = localStorage.getItem(CLE_FLOU);
+      if (flou !== null && Number(flou) >= 0 && Number(flou) <= 40) useUIStore.getState().reglerFlou(Number(flou));
     } catch {
       // Stockage bloqué : réglages par défaut
     }

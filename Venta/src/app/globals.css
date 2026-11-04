@@ -84,6 +84,12 @@ body {
   initial-value: #0a0a0d;
 }
 
+@property --lumiere {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+
 /* Verre Figma 333-2359 : voile gris, halos de coin, liseré en incrustation */
 /* Les mélanges ne voient pas le fond : chaque panneau en recopie le dégradé */
 .verre {

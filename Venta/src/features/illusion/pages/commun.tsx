@@ -162,7 +162,7 @@ export function useLignesAuto(defile: React.RefObject<HTMLElement | null>, setAu
       const ligne = zone.querySelector('tbody tr')?.getBoundingClientRect().height || ligneDefaut;
       setAuto(Math.max(1, Math.floor((zone.clientHeight - tete) / ligne)));
     };
-    mesurer();
+    // Sa première annonce vient après la pose des fenêtres, en une seule mesure
     const observateur = new ResizeObserver(mesurer);
     observateur.observe(zone);
     return () => observateur.disconnect();

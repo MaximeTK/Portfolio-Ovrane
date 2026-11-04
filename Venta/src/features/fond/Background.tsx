@@ -44,7 +44,8 @@ export function Background({ children }: { children: React.ReactNode }) {
         style={{
           '--fond-haut': currentPalette.topColor,
           '--fond-bas': currentPalette.bottomColor,
-          transition: '--fond-haut 2500ms cubic-bezier(0.4, 0, 0.2, 1), --fond-bas 2500ms cubic-bezier(0.4, 0, 0.2, 1)',
+          '--lumiere': currentPalette.lumiere,
+          transition: '--fond-haut 2500ms cubic-bezier(0.4, 0, 0.2, 1), --fond-bas 2500ms cubic-bezier(0.4, 0, 0.2, 1), --lumiere 2500ms cubic-bezier(0.4, 0, 0.2, 1)',
         } as React.CSSProperties}
       >
         {children}

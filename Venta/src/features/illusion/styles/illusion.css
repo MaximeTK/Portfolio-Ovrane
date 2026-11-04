@@ -29,16 +29,19 @@
 .ov .mono{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11.5px)}
 
 /* Verre d'Ovrane : fond recopié sous un voile, halos de deux coins, liseré. */
-.ov .verre{position:relative;isolation:isolate;border-radius:var(--verre-rayon,25px);clip-path:inset(0 round var(--verre-rayon,25px));}
+.ov .verre{position:relative;isolation:isolate;border-radius:var(--verre-rayon,25px);clip-path:none;overflow:clip}
 .ov .verre::before,.ov .verre::after{content:"";position:absolute;inset:0;pointer-events:none}
 /* Verre assombri deux fois de 25 % par un voile noir sous halos et liseré. */
-.ov .verre::before{position:fixed;min-height:100vh;z-index:-3;background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0),linear-gradient(180deg,var(--fond-haut),var(--fond-bas))}
-/* Une seule lumière, tirée du haut du fond, quelle que soit la place. */
-.ov .verre-halos{--halo:rgb(from var(--lumiere) r g b / .5),rgb(from var(--lumiere) r g b / .22) 11%,rgb(from var(--lumiere) r g b / .08) 23%,rgb(from var(--lumiere) r g b / 0) 45.8%;--lumiere:rgb(from var(--fond-haut) calc(r * 3.3) calc(g * 3.3) calc(b * 3.3));position:absolute;inset:0;z-index:-2;margin:0;border:0;pointer-events:none;opacity:.75;transition:opacity .3s;background:radial-gradient(circle farthest-side at -1px 0,var(--halo)),radial-gradient(circle farthest-side at calc(100% - 1px) 100%,var(--halo))}
+/* Fond calé sur l'écran sans position fixe : une couche par écran en moins. */
+.ov .verre::before{z-index:-3;min-height:0;background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0),linear-gradient(180deg,var(--fond-haut),var(--fond-bas));background-attachment:fixed}
+@supports (-webkit-touch-callout:none){.ov .verre::before{position:fixed;min-height:100vh;background-attachment:scroll}.ov:not(.th-plein) .verre{clip-path:inset(0 round var(--verre-rayon,25px))}}
+/* Une seule lumière, de même taille sur toute fenêtre, dans les deux coins. */
+/* Mélange normal : l'intensité ne dépend jamais du fond derrière. */
+.ov .verre-halos{--halo:rgb(from var(--lumiere) r g b / .5),rgb(from var(--lumiere) r g b / .22) 11%,rgb(from var(--lumiere) r g b / .08) 23%,rgb(from var(--lumiere) r g b / 0) 45.8%;position:absolute;inset:0;z-index:-2;margin:0;border:0;pointer-events:none;mix-blend-mode:normal;opacity:.5625;transition:opacity .3s;background:radial-gradient(circle var(--halo-r,560px) at -1px 0,var(--halo)),radial-gradient(circle var(--halo-r,560px) at calc(100% - 1px) 100%,var(--halo))}
 .ov :is(a,button).verre:is(:hover,:focus-visible)>.verre-halos{opacity:1}
 .ov .verre:focus-visible{outline-offset:-4px}
-/* Le liseré déborde d'un pixel sous la découpe : aucun fil sombre au bord. */
-.ov .verre::after{z-index:-1;inset:-1px;border-radius:inherit;border:3px solid #fff;mix-blend-mode:overlay}
+/* Liseré de 2 px en overlay : il double la lumière, d'où son dégradé. */
+.ov .verre::after{z-index:-1;border-radius:inherit;border:2px solid #fff;mix-blend-mode:overlay}
 /* Matière « teinte » : le même verre, sans les halos des coins. */
 .ov.mat-teinte .verre>.verre-halos{display:none}
 
@@ -74,7 +77,7 @@
 
 /* Menus : colonne de choix dans la matière des fenêtres, courant allumé. */
 .ov .menu-hote{position:relative;display:inline-flex}
-.ov .menu{position:absolute;top:calc(100% + 6px);right:0;z-index:40;display:flex;flex-direction:column;min-width:210px;padding:6px 0}
+.ov .menu{--halo-r:220px;position:absolute;top:calc(100% + 6px);right:0;z-index:40;display:flex;flex-direction:column;min-width:210px;padding:6px 0}
 .ov .menu-option{display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:var(--t-corps,12.5px);white-space:nowrap;color:rgb(var(--encre) / .75);transition:color .2s,background .2s}
 .ov .menu-option:hover,.ov .menu-option:focus-visible{background:rgb(var(--encre) / .05);color:rgb(var(--encre))}
 .ov .menu-option.actif{color:rgb(var(--encre));text-shadow:0 0 8px rgb(var(--encre) / .35)}
@@ -331,31 +334,47 @@
 .ov .dock [data-fen]{position:absolute;box-sizing:border-box;margin:0;transition:left .3s cubic-bezier(.2,.8,.2,1),top .3s cubic-bezier(.2,.8,.2,1),width .3s cubic-bezier(.2,.8,.2,1),height .3s cubic-bezier(.2,.8,.2,1)}
 .ov.sans-anim .dock [data-fen]{transition:none}
 /* Avant la première pose (rendu serveur), les fenêtres sont invisibles. */
-.ov .dock:not([data-pret]) [data-fen]{visibility:hidden}
+.ov .dock:not([data-pret]) [data-fen]{opacity:0}
+/* Fenêtre qui glisse : son contenu neuf reste à sa taille finale. */
+@property --f-x{syntax:"<length>";inherits:false;initial-value:0px}
+@property --f-y{syntax:"<length>";inherits:false;initial-value:0px}
+@property --f-l{syntax:"<length>";inherits:false;initial-value:0px}
+@property --f-h{syntax:"<length>";inherits:false;initial-value:0px}
+.ov .dock [data-fige]>[data-figee]{position:absolute !important;left:var(--f-x) !important;top:var(--f-y) !important;width:var(--f-l) !important;height:var(--f-h) !important;min-width:0 !important;min-height:0 !important;max-width:none !important;max-height:none !important;margin:0 !important;contain:size layout}
+/* Repli : le contenu reste sur place, la fenêtre se referme dessus. */
+.ov .dock [data-repli]{clip-path:inset(0 round var(--verre-rayon,25px))}
+.ov .dock [data-repli]>[data-figee]{position:fixed !important}
 /* Fenêtre flottante : au-dessus des autres, liseré clair, suit la main. */
 .ov .dock [data-flot]{transition:none;box-shadow:inset 0 0 0 1px rgb(var(--encre) / calc(.38 * var(--lueur)))}
+/* Flou réglé : une flottante laisse voir ce qu'elle recouvre, voilé. */
+.ov.a-flou.th-verre .dock [data-flot]{-webkit-backdrop-filter:blur(var(--verre-flou));backdrop-filter:blur(var(--verre-flou))}
+.ov.a-flou.th-verre .dock [data-flot]::before{background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0)}
 /* Arrivée : chaque fenêtre naît d'une ligne centrale qui s'ouvre en 0,3 s. */
-.ov .ouv-ligne{display:none;position:absolute;left:0;right:0;top:calc(50% - 1px);z-index:4;height:1px;pointer-events:none;background:rgb(var(--encre) / .225);box-shadow:0 0 6px rgb(var(--encre) / calc(.125 * var(--lueur))),0 0 14px rgb(var(--encre) / calc(.06 * var(--lueur)));transform:scaleX(0)}
-.ov.ouverture .dock[data-pret] .ouv-ligne{display:block;animation:ov-ligne-haut .3s cubic-bezier(.6,0,.2,1) both,ov-eteint .1s ease-out .2s both}
-.ov.ouverture .dock[data-pret] .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-eteint}
+/* Même dessin que le liseré : ces lignes bordent la fenêtre en mouvement. */
+.ov .ouv-ligne{display:none;position:absolute;left:0;right:0;top:calc(50% - 1px);z-index:4;height:2px;pointer-events:none;background:#fff;mix-blend-mode:overlay}
+.ov.ouverture .dock[data-pret] .ouv-ligne{display:block;animation:ov-ligne-haut .3s cubic-bezier(.6,0,.2,1) both,ov-eteint 1ms .3s both}
+.ov.ouverture .dock[data-pret] .ouv-ligne+.ouv-ligne{animation-name:ov-ligne-bas,ov-eteint}
 .ov.ouverture .dock[data-pret] [data-fen]{animation:ov-ouverture .3s cubic-bezier(.6,0,.2,1) both}
 .ov.ouverture .dock[data-pret] [data-fen]>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation:ov-voile .12s backwards}
+/* Une flottante s'ouvre en 0,5 s, voile et lignes à la même échelle. */
+.ov.ouverture .dock[data-pret] [data-flot]{animation-duration:.5s}
+.ov.ouverture .dock[data-pret] [data-flot]>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation-duration:.2s}
+.ov.ouverture .dock[data-pret] [data-flot] .ouv-ligne{animation-duration:.5s,1ms;animation-delay:0s,.5s}
 @keyframes ov-ouverture{0%{clip-path:inset(calc(50% - 1px) 50% calc(50% - 1px) 50%)}40%{clip-path:inset(calc(50% - 1px) 0 calc(50% - 1px) 0)}100%{clip-path:inset(0 0 0 0 round var(--verre-rayon,25px))}}
-@keyframes ov-ligne-haut{0%{top:calc(50% - 1px);transform:scaleX(0)}40%{top:calc(50% - 1px);transform:scaleX(1)}100%{top:0;transform:scaleX(1)}}
-@keyframes ov-ligne-bas{0%{top:50%;transform:scaleX(0)}40%{top:50%;transform:scaleX(1)}100%{top:calc(100% - 1px);transform:scaleX(1)}}
+@keyframes ov-ligne-haut{0%,40%{top:calc(50% - 1px)}100%{top:0}}
+@keyframes ov-ligne-bas{0%,40%{top:calc(50% - 1px)}100%{top:calc(100% - 2px)}}
 @keyframes ov-eteint{to{opacity:0}}
 @keyframes ov-voile{from,to{visibility:hidden}}
 /* Au changement de page, la fenêtre propre s'ouvre après la fermeture. */
-.ov .dock[data-pret] .holo-ouvre .ouv-ligne{display:block;animation:ov-ligne-haut .3s cubic-bezier(.6,0,.2,1) both,ov-eteint .1s ease-out .2s both}
-.ov .dock[data-pret] .holo-ouvre .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-eteint}
-.ov .dock[data-pret] [data-fen].holo-ouvre{animation:ov-ouverture .3s cubic-bezier(.6,0,.2,1) both}
-.ov .dock[data-pret] [data-fen].holo-ouvre>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation:ov-voile .12s backwards}
-/* Fenêtres de la page quittée, copiées au premier plan, refermées en 0,3 s. */
+.ov .dock[data-pret] .holo-ouvre .ouv-ligne{display:block;animation:ov-ligne-haut .5s cubic-bezier(.6,0,.2,1) both,ov-eteint 1ms .5s both}
+.ov .dock[data-pret] .holo-ouvre .ouv-ligne+.ouv-ligne{animation-name:ov-ligne-bas,ov-eteint}
+.ov .dock[data-pret] [data-fen].holo-ouvre{animation:ov-ouverture .5s cubic-bezier(.6,0,.2,1) both}
+.ov .dock[data-pret] [data-fen].holo-ouvre>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation:ov-voile .2s backwards}
+/* Fenêtres de la page quittée, copiées devant ; flottantes en 0,5 s. */
 .ov .fantomes{position:absolute;inset:0;z-index:2;pointer-events:none}
-.ov .fantomes>.holo-ferme{animation:ov-ouverture .3s cubic-bezier(.6,0,.2,1) reverse both}
-.ov .fantomes .holo-ferme .ouv-ligne{display:block;animation:ov-ligne-haut .3s cubic-bezier(.6,0,.2,1) reverse both,ov-allume 1ms both}
-.ov .fantomes .holo-ferme .ouv-ligne+.ouv-ligne{top:50%;animation-name:ov-ligne-bas,ov-allume}
-.ov .fantomes>.replie>:not(.verre-halos,.prise,.taille,.ouv-ligne){visibility:hidden}
+.ov .fantomes>.holo-ferme{animation:ov-ouverture .5s cubic-bezier(.6,0,.2,1) reverse both}
+.ov .fantomes .holo-ferme .ouv-ligne{display:block;animation:ov-ligne-haut .5s cubic-bezier(.6,0,.2,1) reverse both,ov-allume 1ms both}
+.ov .fantomes .holo-ferme .ouv-ligne+.ouv-ligne{animation-name:ov-ligne-bas,ov-allume}
 @keyframes ov-allume{from{opacity:0}to{opacity:1}}
 .ov.glisse-en-cours,.ov.glisse-en-cours *{user-select:none;cursor:grabbing !important}
 .ov.tire-en-cours,.ov.tire-en-cours *{user-select:none}

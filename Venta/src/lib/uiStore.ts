@@ -5,9 +5,10 @@ type ViewMode = 'dashboard' | 'messaging';
 type AppState = 'sleeping' | 'processing' | 'awake';
 type Cote = 'ovrane' | 'illusion';
 
-// Choix « voix coupée » et teinte des boîtes, gardés dans ce navigateur
+// Choix « voix coupée », teinte des boîtes et flou, gardés dans ce navigateur
 export const CLE_SON = 'ovrane:son-coupe';
 export const CLE_VERRE = 'ovrane:verre';
+export const CLE_FLOU = 'ovrane:flou';
 export const VERRE_DEFAUT = 0.55;
 const MAX_FENETRES = 10;
 
@@ -37,10 +38,12 @@ interface UIState {
   maxZIndex: number;
   sonCoupe: boolean;
   verreOpacite: number;
+  verreFlou: number;
 
   setViewMode: (mode: ViewMode) => void;
   basculerSon: () => void;
   reglerVerre: (opacite: number) => void;
+  reglerFlou: (pixels: number) => void;
   setAppState: (state: AppState) => void;
   setPage: (page: string | null) => void;
   setCote: (cote: Cote) => void;
@@ -67,6 +70,7 @@ export const useUIStore = create<UIState>((set) => ({
   maxZIndex: 100,
   sonCoupe: false,
   verreOpacite: VERRE_DEFAUT,
+  verreFlou: 0,
 
   // Le chat est d'Ovrane : l'ouvrir ou le fermer remet ses canaux
   setViewMode: (mode) => set({ viewMode: mode, cote: 'ovrane' }),
@@ -79,6 +83,16 @@ export const useUIStore = create<UIState>((set) => ({
       // Stockage bloqué : le réglage vaut pour cette visite
     }
     set({ verreOpacite: opacite });
+  },
+  // --verre-flou : ce que les fenêtres flottantes d'Illusion laissent voir
+  reglerFlou: (pixels) => {
+    document.documentElement.style.setProperty('--verre-flou', `${pixels}px`);
+    try {
+      localStorage.setItem(CLE_FLOU, String(pixels));
+    } catch {
+      // Stockage bloqué : le réglage vaut pour cette visite
+    }
+    set({ verreFlou: pixels });
   },
   basculerSon: () =>
     set((s) => {

@@ -14,7 +14,7 @@ const HORS = 'textarea,select,option,svg,script,style';
 const DECOR = ':scope>:not(.verre-halos):not(.prise):not(.taille):not(.ouv-ligne)';
 
 // Durées en ms : toute transition dure 300, effacement et voile compris dedans
-export const DUREES = { effacer: 130, ouvrir: 300, fermer: 300, voile: 120, contenu: 300, signal: 300, canaux: 300 };
+export const DUREES = { effacer: 130, ouvrir: 300, voile: 120, contenu: 300, signal: 300, canaux: 300 };
 
 export type Controle = { fini: Promise<void>; annuler: () => void };
 // `texte` : seul le texte s'écrit, avec un bref éclat blanc, sans dépli
@@ -41,13 +41,12 @@ function aLAvancement(v0: string, p: number) {
 }
 
 // Morceaux visibles de la cible hors ceux d'un autre ; sinon la cible entière
-function morceauxDe(cible: Element): HTMLElement[] {
-  const r = cible.getBoundingClientRect();
+function morceauxDe(cible: Element, r: DOMRect, h: number): HTMLElement[] {
   const morceaux = Array.from(cible.querySelectorAll<HTMLElement>(MORCEAUX)).filter((el) => {
     const porteur = el.parentElement?.closest(MORCEAUX);
     if (porteur && cible.contains(porteur)) return false;
     const b = el.getBoundingClientRect();
-    return b.width > 0 && b.height > 0 && b.bottom >= r.top && b.top <= r.bottom;
+    return b.width > 0 && b.height > 0 && b.bottom >= r.top && b.top <= r.top + h;
   });
   return morceaux.length ? morceaux : [cible as HTMLElement];
 }
@@ -67,6 +66,9 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
   // Thèmes pleins : mêmes morceaux, moments et durées, sans glyphes
   const plat = !!document.querySelector('.ov.th-plein');
   const r = cible.getBoundingClientRect();
+  // Fenêtre qui glisse : son contenu est déjà à sa hauteur finale
+  const fige = (cible as HTMLElement).dataset?.fige;
+  const h = fige ? parseFloat(fige.split(' ')[1]) : r.height;
   const anims: Animation[] = [];
   const textes: Texte[] = [];
   if (texte && plat) anims.push(cible.animate([{ opacity: ecrit ? 0 : 1 }, { opacity: ecrit ? 1 : 0 }], { duration: duree, delay: delai, easing: 'ease-out', fill: 'backwards' }));
@@ -74,10 +76,11 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
     anims.push(cible.animate([{ filter: 'drop-shadow(0 0 3px rgb(255 255 255 / .125))' }, { filter: 'none' }], { duration: duree * 2, delay: delai, easing: 'ease-out' }));
     for (const n of textesDe(cible)) textes.push({ n, v0: n.nodeValue ?? '', dernier: n.nodeValue ?? '', debut: delai, fin: delai + duree, fait: false });
   }
-  for (const el of texte ? [] : morceauxDe(cible)) {
-    const b = el.getBoundingClientRect();
+  // Mesures d'abord : une mesure après une animation recalcule toute la page
+  const mesures = (texte ? [] : morceauxDe(cible, r, h)).map((el) => ({ el, b: el.getBoundingClientRect() }));
+  for (const { el, b } of mesures) {
     // 0 au milieu de la cible, 1 à ses bords : l'écriture part du milieu
-    const ecart = r.height ? Math.min(1, Math.abs((b.top + b.height / 2 - r.top) / r.height - 0.5) * 2) : 0;
+    const ecart = h ? Math.min(1, Math.abs((b.top + b.height / 2 - r.top) / h - 0.5) * 2) : 0;
     const depart = delai + (ecrit ? ecart * 0.4 : (1 - ecart) * 0.35) * duree;
     const longueur = (ecrit ? 0.45 : 0.6) * duree;
     anims.push(
@@ -85,7 +88,8 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
         ecrit
           ? plat
             ? [{ opacity: 0, clipPath: 'inset(0 50% 0 50%)' }, { clipPath: 'inset(0 0% 0 0%)', offset: 0.4 }, { opacity: 1, clipPath: 'inset(0 0% 0 0%)' }]
-            : [{ opacity: 0, clipPath: 'inset(0 50% 0 50%)' }, { opacity: 1, offset: 0.02 }, { clipPath: 'inset(0 0% 0 0%)' }]
+            // Sans opacité : une découpe nulle le cache, sans couche par morceau
+            : [{ clipPath: 'inset(0 50% 0 50%)' }, { clipPath: 'inset(0 0% 0 0%)' }]
           : [{ opacity: 1, clipPath: 'inset(0 0% 0 0%)' }, { opacity: 0, clipPath: 'inset(0 50% 0 50%)' }],
         { duration: longueur, delay: depart, easing: ecrit ? 'cubic-bezier(.2,.7,.3,1)' : 'cubic-bezier(.5,0,.75,0)', fill: ecrit ? 'both' : 'forwards' },
       ),
@@ -100,11 +104,13 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
   const poser = (t: Texte, valeur: string) => {
     // React a réécrit ce texte : sa valeur est la bonne, on n'y touche plus
     if (t.n.nodeValue !== t.dernier) { t.fait = true; return; }
+    if (valeur === t.dernier) return;
     t.n.nodeValue = valeur;
     t.dernier = valeur;
   };
   const rendre = () => textes.forEach((t) => { if (!t.fait) { poser(t, t.v0); t.fait = true; } });
-  textes.forEach((t) => poser(t, aLAvancement(t.v0, ecrit ? 0 : 1)));
+  // Un morceau est caché par son animation : son texte attend la première image
+  if (texte) textes.forEach((t) => poser(t, aLAvancement(t.v0, ecrit ? 0 : 1)));
 
   let image = 0;
   let annule = false;
@@ -118,6 +124,8 @@ function animer(cible: Element, sens: 'ecrire' | 'effacer', { duree, delai = 0, 
         if (x.fait) continue;
         if (t >= x.fin) { poser(x, x.v0); x.fait = true; continue; }
         reste = true;
+        // Pas encore ouvert : sa découpe le cache, rien à réécrire
+        if (t < x.debut - 32) continue;
         const p = t <= x.debut ? 0 : (t - x.debut) / (x.fin - x.debut);
         poser(x, aLAvancement(x.v0, ecrit ? p : 1 - p));
       }
