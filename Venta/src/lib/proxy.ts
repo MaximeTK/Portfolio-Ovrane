@@ -28,7 +28,8 @@ function enTetes(request: Source): Record<string, string> | null {
   const secret = process.env.SERVICE_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'dev-ovrane-service');
   if (!secret) return null;
   const h = request.headers;
-  const ip = h.get('x-forwarded-for')?.split(',').at(-1)?.trim() || h.get('x-real-ip');
+  // Dernière adresse, posée par Traefik : Next ne doit être joint que par lui
+  const ip = h.get('x-forwarded-for')?.split(',').at(-1)?.trim();
   const session = request.cookies.get(SESSION_COOKIE)?.value;
   const appareil = request.cookies.get(APPAREIL_COOKIE)?.value;
   return {
@@ -86,6 +87,10 @@ export async function relayerIllusion(request: NextRequest, path: string): Promi
         const valeur = response.headers.get(nom);
         if (valeur) rendus.set(nom, valeur);
       }
+      // Document actif sans CSP de l'amont : isolé, jamais exécuté chez le site
+      if (!rendus.has('content-security-policy') && /html|xml|xsl/i.test(rendus.get('content-type') ?? '')) {
+        rendus.set('Content-Security-Policy', "sandbox; default-src 'none'");
+      }
       return new Response(response.body, { status: response.status, headers: rendus });
     } catch (error) {
       console.error(`[relai] ${path} injoignable :`, error);
@@ -107,6 +112,8 @@ export async function relayerJson(request: NextRequest, path: string, init: Forw
 
   const { session, appareil, ...corps } = data;
   const relaye = NextResponse.json(corps, { status: response.status });
+  // Compte, historique, préférences : aucun cache ne les garde
+  relaye.headers.set('Cache-Control', 'no-store');
   // Cookies httpOnly pour la session et la marque d'appareil, hors de la page
   for (const [nom, cookie] of [[SESSION_COOKIE, session], [APPAREIL_COOKIE, appareil]] as const) {
     const { jeton, expireLe } = (cookie ?? {}) as { jeton?: string; expireLe?: string };

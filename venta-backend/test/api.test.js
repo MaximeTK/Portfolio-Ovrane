@@ -9,6 +9,8 @@ import { Session } from '../src/models/Session.js';
 import { User } from '../src/models/User.js';
 import { MAX_MESSAGES } from '../src/services/utilisateurs.js';
 import { purger } from '../src/services/conservation.js';
+import { activerDeuxiemeFacteur, codeTotp, preparerDeuxiemeFacteur } from '../src/services/deuxiemeFacteur.js';
+import { Budget } from '../src/models/Budget.js';
 import { ipClient } from '../src/http.js';
 import { config } from '../src/config.js';
 import { preparerPourVoix } from '../src/services/tts.js';
@@ -273,7 +275,7 @@ test('compte : pseudo et e-mail du compte de la session, null pour un visiteur, 
   assert.deepEqual((await appeler('/api/auth/compte', { session: jeton })).json, { compte: null });
 });
 
-test('connexion et inscription : même message que le compte existe ou non, mot de passe de 8 à 128 caractères comme Illusion', async () => {
+test('connexion et inscription : même message que le compte existe ou non, mot de passe de 12 caractères dont 5 différents, 72 octets au plus', async () => {
   compte('Zoe', 'mot-de-passe-de-zoe');
   const inconnu = await appeler('/api/auth/login', { method: 'POST', body: { identifier: 'personne', password: 'mot-de-passe-de-zoe' } });
   const mauvais = await appeler('/api/auth/login', { method: 'POST', body: { identifier: 'zoe', password: 'mauvais-mot-de-passe' } });
@@ -282,13 +284,14 @@ test('connexion et inscription : même message que le compte existe ou non, mot 
 
   const inscrire = (body) => appeler('/api/auth/register', { method: 'POST',
     body: { pseudo: 'Nouveau', email: 'nouveau@exemple.fr', password: 'un-mot-de-passe-long', inviteCode: 'invitation-de-test', ...body } });
-  for (const password of ['x'.repeat(11), 'x'.repeat(129), 123456789012]) {
+  // Trop court, trop peu de caractères différents, plus de 72 octets
+  for (const password of ['abcdefghijk', 'x'.repeat(12), 'abab'.repeat(3), 'abcdé'.repeat(15), 'abcdefgh'.repeat(9) + 'i', 123456789012]) {
     assert.deepEqual((await inscrire({ password })).json, { error: ERROR_MESSAGES.passwordLength }, String(password));
   }
   assert.equal((await inscrire({ inviteCode: 'invitation-de-tesT' })).status, 403);
   assert.deepEqual((await inscrire({ pseudo: 'zoe' })).json, { error: ERROR_MESSAGES.accountTaken });
   assert.deepEqual((await inscrire({ email: 'ZOE@exemple.fr' })).json, { error: ERROR_MESSAGES.accountTaken });
-  assert.equal((await inscrire({ password: 'x'.repeat(12) })).status, 200, '12 caractères suffisent');
+  assert.equal((await inscrire({ password: 'abcdefghijkl' })).status, 200, '12 caractères différents suffisent');
 });
 
 // Resend simulé ; l'envoi suit la réponse, d'où l'attente des e-mails
@@ -826,4 +829,144 @@ test('vérification de l\'adresse : lien envoyé à l\'inscription, à usage uni
     assert.deepEqual((await appeler('/api/auth/verification', { method: 'POST', session })).json, { envoye: true });
     assert.equal((await mails(2)).length, 1);
   });
+});
+
+test('limite par compte : pseudo et e-mail comptent ensemble, un nouveau mot de passe annule les marques d\'appareil', async () => {
+  const ines = compte('Ines', 'mot-de-passe-d-ines');
+  const essai = (identifier, password, ip, appareil) => appeler('/api/auth/login', { method: 'POST', ip,
+    headers: appareil ? { 'X-Ovrane-Appareil': appareil } : {}, body: { identifier, password } });
+  const { appareil } = (await essai('ines', 'mot-de-passe-d-ines', '198.51.130.1')).json;
+  for (let i = 0; i < 10; i += 1) assert.equal((await essai(i % 2 ? 'ines' : 'ines@exemple.fr', 'mauvais-mot-de-passe', `198.51.131.${i}`)).status, 401);
+  assert.equal((await essai('ines@exemple.fr', 'mot-de-passe-d-ines', '198.51.132.1')).status, 429, 'un seul compteur pour le compte');
+  assert.equal((await essai('ines', 'mot-de-passe-d-ines', '198.51.132.2', appareil.jeton)).status, 200, 'appareil connu');
+  profil(ines.id).passwordHash = bcrypt.hashSync('nouveau-mot-d-ines', 4);
+  assert.equal((await essai('ines', 'nouveau-mot-d-ines', '198.51.132.3', appareil.jeton)).status, 429, 'marque d\'avant le changement');
+});
+
+test('connexion : deux calculs bcrypt à la fois au plus, les suivants refusés aussitôt', async () => {
+  const essai = (i) => appeler('/api/auth/login', { method: 'POST', ip: `198.51.140.${i}`, body: { identifier: `inconnu-${i}`, password: 'mauvais-mot-de-passe' } });
+  assert.deepEqual((await Promise.all([0, 1, 2, 3].map(essai))).map((r) => r.status).sort(), [401, 401, 429, 429]);
+  assert.equal((await essai(4)).status, 401, 'places rendues à la fin des réponses');
+});
+
+test('limites : une requête directe sans secret ne compte pas pour l\'IP d\'un visiteur relayé', async () => {
+  const restant = async () => Number((await appeler('/api/auth/compte', { ip: '127.0.0.1' })).headers.get('ratelimit-remaining'));
+  const avant = await restant();
+  for (let i = 0; i < 3; i += 1) assert.equal((await appeler('/api/auth/compte', { secret: null })).status, 401);
+  assert.equal(await restant(), avant - 1);
+});
+
+test('session : 180 jours au plus après sa création, même utilisée chaque jour', async () => {
+  const { id, session } = await visiteur();
+  const doc = base.sessions.find((s) => s.utilisateur === id);
+  doc.creeLe = new Date(Date.now() - 179 * UN_JOUR);
+  assert.equal((await appeler('/api/chat/history', { session })).status, 200);
+  doc.creeLe = new Date(Date.now() - 181 * UN_JOUR);
+  assert.equal((await appeler('/api/chat/history', { session })).status, 401);
+});
+
+test('plafond du jour : compteur en panne, le chat se tait et la voix passe au navigateur', async (t) => {
+  const avant = { ...config.budget };
+  Object.assign(config.budget, { chat: 5, tts: 5 });
+  t.mock.method(Budget, 'findOneAndUpdate', () => {
+    throw new Error('écriture refusée');
+  });
+  try {
+    const { session } = await visiteur();
+    const appels = appelsOpenAI.length;
+    assert.equal((await chat(session, 'Bonjour')).json.reply, ERROR_MESSAGES.budgetReached);
+    assert.equal(appelsOpenAI.length, appels, 'aucun appel payant');
+    assert.deepEqual((await appeler('/api/tts', { method: 'POST', session, body: signe('Bonjour') })).json, { useClientTTS: true, text: 'Bonjour' });
+  } finally {
+    Object.assign(config.budget, avant);
+  }
+});
+
+test('part du jour par IP : 60 voix et 60 messages, au-delà 429 quel que soit le visiteur', async () => {
+  const sessions = await Promise.all(Array.from({ length: 7 }, async () => (await visiteur()).session));
+  const ip = '198.51.160.1';
+  for (let i = 0; i < 60; i += 1) assert.equal((await appeler('/api/tts', { method: 'POST', ip, session: sessions[Math.floor(i / 25)], body: { text: 'Bonjour' } })).status, 200);
+  assert.equal((await appeler('/api/tts', { method: 'POST', ip, session: sessions[6], body: { text: 'Bonjour' } })).status, 429);
+  for (let i = 0; i < 60; i += 1) assert.equal((await appeler('/api/chat/flux', { method: 'POST', ip, session: sessions[Math.floor(i / 9)], body: { prompt: 'Bonjour' } })).status, 200);
+  assert.equal((await appeler('/api/chat/flux', { method: 'POST', ip, session: sessions[6], body: { prompt: 'Bonjour' } })).status, 429);
+  assert.equal((await appeler('/api/tts', { method: 'POST', session: sessions[6], body: { text: 'Bonjour' } })).status, 200, 'une autre IP passe');
+});
+
+test('chat en flux : la voix de Cartesia compte dans le plafond de la voix, au-delà le navigateur lit', async () => {
+  const avant = { ...config.budget };
+  const vrai = globalThis.WebSocket;
+  Object.assign(config.budget, { tts: 1 });
+  globalThis.WebSocket = FauxWebSocket;
+  config.tts.cartesiaKey = 'cle-de-test';
+  try {
+    const { session } = await visiteur();
+    const types = async () => evenements((await appeler('/api/chat/flux', { method: 'POST', session, body: { prompt: 'Bonjour' } })).bytes.toString()).map((e) => e.type);
+    FauxWebSocket.derniere = null;
+    assert.deepEqual(await types(), ['texte', 'texte', 'audio', 'fin']);
+    assert.ok(FauxWebSocket.derniere, 'Cartesia appelée sous le plafond');
+    FauxWebSocket.derniere = null;
+    assert.deepEqual(await types(), ['secours', 'texte', 'texte', 'fin']);
+    assert.equal(FauxWebSocket.derniere, null, 'aucune connexion à Cartesia au-delà');
+    assert.equal(base.budgets.find((b) => b._id === new Date().toISOString().slice(0, 10)).tts, 2);
+  } finally {
+    Object.assign(config.budget, avant);
+    base.budgets.length = 0;
+    globalThis.WebSocket = vrai;
+    config.tts.cartesiaKey = '';
+  }
+});
+
+// Octets d'une clé base32 (RFC 4648), lus comme par l'application
+const octetsBase32 = (texte) => Buffer.from([...texte].map((c) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'.indexOf(c).toString(2).padStart(5, '0'))
+  .join('').match(/.{8}/g).map((octet) => parseInt(octet, 2)));
+
+test('second facteur : activé par un premier code, puis mot de passe suivi du code, chaque code servi une fois', async () => {
+  const avant = config.illusion.secret;
+  config.illusion.secret = 'secret-illusion-de-test';
+  try {
+    const sam = compte('Sam', 'mot-de-passe-de-sam');
+    const connexion = (password) => appeler('/api/auth/login', { method: 'POST', body: { identifier: 'sam', password } });
+    const { jeton: ancienne } = (await connexion('mot-de-passe-de-sam')).json.session;
+    assert.equal(await preparerDeuxiemeFacteur('personne@exemple.fr'), null);
+    const { secret, uri } = await preparerDeuxiemeFacteur('sam@exemple.fr');
+    assert.match(secret, /^[A-Z2-7]{32}$/);
+    assert.equal(uri, `otpauth://totp/Ovrane:sam%40exemple.fr?secret=${secret}&issuer=Ovrane`);
+    assert.ok(!JSON.stringify(profil(sam.id)).includes(secret), 'jamais en clair en base');
+    assert.equal((await connexion('mot-de-passe-de-sam')).status, 200, 'en attente, rien ne change');
+
+    const cle = octetsBase32(secret);
+    const pas = Math.floor(Date.now() / 30_000);
+    assert.equal(await activerDeuxiemeFacteur('sam@exemple.fr', 'abcdef'), false);
+    assert.equal(await activerDeuxiemeFacteur('sam@exemple.fr', codeTotp(cle, pas - 5)), false, 'code périmé');
+    assert.equal(await activerDeuxiemeFacteur('sam@exemple.fr', codeTotp(cle, pas)), true);
+    assert.equal((await appeler('/api/chat/history', { session: ancienne })).status, 401, 'sessions d\'avant fermées');
+
+    assert.equal((await connexion('mot-de-passe-de-sam')).status, 401, 'mot de passe seul');
+    assert.equal((await connexion(`mot-de-passe-de-sam${codeTotp(cle, pas)}`)).status, 401, 'code servi à l\'activation');
+    assert.equal((await connexion(`mauvais-mot-de-passe${codeTotp(cle, pas + 1)}`)).status, 401);
+    const code = codeTotp(cle, pas + 1);
+    assert.equal((await connexion(`mot-de-passe-de-sam${code}`)).status, 200);
+    assert.equal((await connexion(`mot-de-passe-de-sam${code}`)).status, 401, 'servi une fois');
+    // Secret illisible sous une autre clé : connexion refusée, sans erreur
+    config.illusion.secret = 'autre-secret';
+    assert.equal((await connexion(`mot-de-passe-de-sam${codeTotp(cle, pas + 1)}`)).status, 401);
+  } finally {
+    config.illusion.secret = avant;
+  }
+});
+
+test('journal : échec de connexion, premier dépassement de limite et réinitialisation notés, sans IP', async (t) => {
+  const noe = compte('Noe', 'mot-de-passe-de-noe');
+  const avertissements = t.mock.method(console, 'warn', () => {});
+  const infos = t.mock.method(console, 'log', () => {});
+  const ip = '198.51.170.1';
+  for (let i = 0; i < 12; i += 1) await appeler('/api/auth/login', { method: 'POST', ip, body: { identifier: 'noe', password: 'mauvais-mot-de-passe' } });
+  const lien = crypto.randomBytes(32).toString('base64url');
+  base.reinitialisations.push({ _id: sha256(lien), utilisateur: noe.id, creeLe: new Date(), expireLe: new Date(Date.now() + 60_000) });
+  assert.deepEqual((await reinitialiser(lien)).json, { reinitialise: true });
+  const lignes = [...avertissements.mock.calls, ...infos.mock.calls].map((appel) => appel.arguments.join(' '));
+  assert.equal(lignes.filter((l) => l === `⚠️ [AUTH] Échec de connexion : compte ${noe.id}`).length, 10);
+  assert.equal(lignes.filter((l) => l === '⚠️ [LIMITE] POST /api/auth/login').length, 1, 'une ligne par fenêtre, pas par refus');
+  assert.ok(lignes.includes(`[AUTH] Mot de passe réinitialisé : compte ${noe.id}`));
+  assert.ok(lignes.every((l) => !l.includes(ip)));
 });

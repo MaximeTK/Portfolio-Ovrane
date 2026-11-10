@@ -9,6 +9,7 @@ import { compterVisite, profilPublic, PROFIL } from '../services/utilisateurs.js
 import { signerVoix } from '../services/voix.js';
 import { defiResolu, nouveauDefi } from '../services/defi.js';
 import { appareilDe, marquerAppareil } from '../services/appareils.js';
+import { codeValide } from '../services/deuxiemeFacteur.js';
 import { sendError, egal, limite, requireSession } from '../http.js';
 import { config } from '../config.js';
 import { ERROR_MESSAGES, MISC_MESSAGES } from '../messages.js';
@@ -19,8 +20,9 @@ const QUINZE_MINUTES = 15 * 60 * 1000;
 const HASH_FACTICE = '$2b$12$0L1gLi8C8ektlGfx8x6i3eeeWUWee6wpIA9Yn3PDcvG/i/M3lACEe';
 
 const identifiant = (valeur) => String(valeur ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-// 12 caractères au moins (CNIL 2022-100), comme Illusion
-const motDePasseValide = (motDePasse) => typeof motDePasse === 'string' && motDePasse.length >= 12 && motDePasse.length <= 128;
+// 12 caractères dont 5 différents (CNIL 2022-100) ; bcrypt ne lit que 72 octets
+const motDePasseValide = (motDePasse) => typeof motDePasse === 'string' && motDePasse.length >= 12
+  && Buffer.byteLength(motDePasse) <= 72 && new Set(motDePasse).size >= 5;
 // Longueur bornée avant la regex, quadratique sur une longue suite de points
 const emailValide = (email) => email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const sessionRecue = (req) => req.get('x-ovrane-session');
@@ -32,9 +34,9 @@ const bienvenue = (user) => ({ ...dit(MISC_MESSAGES.welcomeNew(user.name)), user
 const neuf = () => ({ visitCount: 1, lastVisit: new Date(), ipHashes: [], visitedLinks: [], preferences: {}, messageCount: 0, conversations: [] });
 
 // Nouvelle session, marque d'appareil ; celle reçue est révoquée (rotation)
-async function ouvrirSession(req, utilisateur) {
+async function ouvrirSession(req, utilisateur, passwordHash) {
   await revoquerSession(sessionRecue(req));
-  return { session: await creerSession(utilisateur), appareil: marquerAppareil(utilisateur) };
+  return { session: await creerSession(utilisateur), appareil: marquerAppareil(utilisateur, passwordHash) };
 }
 
 async function reprendreVisiteur(req, res, next) {
@@ -72,11 +74,23 @@ async function exigerDefi(req, res, next) {
 async function compteVise(req, res, next) {
   try {
     const ident = identifiant(req.body?.identifier);
-    req.compte = ident ? await User.findOne({ $or: [{ nameNormalized: ident }, { email: ident }] }, { _id: 0, id: 1, passwordHash: 1 }).lean() : null;
+    req.compte = ident ? await User.findOne({ $or: [{ nameNormalized: ident }, { email: ident }] },
+      { _id: 0, id: 1, passwordHash: 1, deuxiemeFacteur: 1 }).lean() : null;
     next();
   } catch (error) {
     next(error);
   }
+}
+
+// bcryptjs calcule sur le fil principal : deux connexions à la fois au plus
+let calculs = 0;
+function calculBorne(req, res, next) {
+  if (calculs >= 2) return sendError(res, 429, ERROR_MESSAGES.tooManyRequests);
+  calculs += 1;
+  res.on('close', () => {
+    calculs -= 1;
+  });
+  next();
 }
 
 async function creerVisiteur(req, res, next) {
@@ -92,9 +106,9 @@ async function creerVisiteur(req, res, next) {
 
 export function setupAuthRoutes(app) {
   const parIp = limite(QUINZE_MINUTES, 10);
-  // 10 échecs par identifiant, sauf depuis un appareil déjà connu du compte
-  const parIdentifiant = limite(QUINZE_MINUTES, 10, (req) => identifiant(req.body?.identifier), {
-    skip: (req) => appareilDe(req.get('x-ovrane-appareil'), req.compte?.id),
+  // 10 échecs par compte, pseudo ou e-mail, sauf depuis un appareil déjà connu
+  const parIdentifiant = limite(QUINZE_MINUTES, 10, (req) => req.compte?.id ?? identifiant(req.body?.identifier), {
+    skip: (req) => appareilDe(req.get('x-ovrane-appareil'), req.compte),
     skipSuccessfulRequests: true,
   });
 
@@ -120,7 +134,7 @@ export function setupAuthRoutes(app) {
       const id = crypto.createHash('sha256').update(`name:${nameNormalized}`).digest('hex').slice(0, 16);
       const user = { name, nameNormalized, id, email: emailNorm, passwordHash, ...neuf() };
       await User.create(user);
-      res.json({ ...bienvenue(user), ...await ouvrirSession(req, id) });
+      res.json({ ...bienvenue(user), ...await ouvrirSession(req, id, passwordHash) });
       // Après la réponse : l'adresse se prouve par le lien, avant d'ouvrir Illusion
       demanderVerification({ id, name, email: emailNorm }).catch((error) => log.error('[AUTH] vérification :', error.message));
     } catch (error) {
@@ -129,17 +143,23 @@ export function setupAuthRoutes(app) {
     }
   });
 
-  app.post('/api/auth/login', parIp, compteVise, parIdentifiant, async (req, res, next) => {
+  app.post('/api/auth/login', parIp, calculBorne, compteVise, parIdentifiant, async (req, res, next) => {
     try {
       const { identifier, password } = req.body || {};
       if (!identifier || !password) return sendError(res, 400, ERROR_MESSAGES.loginRequired);
 
       const { compte } = req;
-      const valide = await bcrypt.compare(String(password), compte?.passwordHash || HASH_FACTICE);
-      if (!compte?.passwordHash || !valide) return sendError(res, 401, ERROR_MESSAGES.invalidCredentials);
+      // Second facteur enrôlé : les six derniers caractères portent le code
+      const code = compte?.deuxiemeFacteur?.activeLe ? String(password).slice(-6) : null;
+      const motDePasse = code === null ? String(password) : String(password).slice(0, -6);
+      const valide = await bcrypt.compare(motDePasse, compte?.passwordHash || HASH_FACTICE);
+      if (!compte?.passwordHash || !valide || (code !== null && !(await codeValide(compte, code)))) {
+        log.warn('[AUTH] Échec de connexion :', compte ? `compte ${compte.id}` : 'identifiant inconnu');
+        return sendError(res, 401, ERROR_MESSAGES.invalidCredentials);
+      }
 
       const user = await compterVisite(compte.id);
-      res.json({ ...accueil(user), ...await ouvrirSession(req, user.id) });
+      res.json({ ...accueil(user), ...await ouvrirSession(req, user.id, compte.passwordHash) });
     } catch (error) {
       next(error);
     }

@@ -196,8 +196,8 @@ export const evenements = (texte) => texte.split('\n\n').filter(Boolean).map((bl
 export const SECRET = process.env.SERVICE_SECRET;
 
 let adresses = 0;
-// Requête comme Next la relaie ; `brut` rend la réponse sans lire son corps
-export async function appeler(chemin, { method = 'GET', body, session, secret = SECRET, ip = `10.0.0.${++adresses}`, headers = {}, brut = false } = {}) {
+// Requête relayée comme par Next, une IP valide chacune ; `brut` : corps non lu
+export async function appeler(chemin, { method = 'GET', body, session, secret = SECRET, ip = `10.0.${++adresses >> 8}.${adresses & 255}`, headers = {}, brut = false } = {}) {
   const res = await fetch(`${url}${chemin}`, {
     method,
     redirect: 'manual',

@@ -16,8 +16,8 @@ import { setupIllusionAppRoutes } from './routes/illusionApp.js';
 export function createApp({ openai }) {
   const app = express();
   app.disable('x-powered-by');
-  // req.ip derrière Render ; l'IP relayée par Next vient de X-Ovrane-Client-Ip
-  if (config.trustProxy) app.set('trust proxy', 1);
+  // X-Forwarded-For cru d'un proxy local ou privé seul ; Next relaie l'IP à part
+  if (config.trustProxy) app.set('trust proxy', 'loopback, uniquelocal');
   app.use(helmet({ contentSecurityPolicy: false }));
 
   // Avant la limite et le secret : la sonde de Render passe toujours

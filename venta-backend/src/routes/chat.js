@@ -52,9 +52,11 @@ export function setupChatRoutes(app, openai) {
   // Limite par session et par IP : créer d'autres visiteurs n'ouvre rien de plus
   const parSession = limite(60 * 1000, 10, (req) => req.user.id);
   const parIp = limite(60 * 60 * 1000, 120);
+  // Part du plafond du jour par IP : un seul visiteur ne l'épuise pas pour tous
+  const parJour = limite(24 * 3600 * 1000, 60);
 
   // Réponse en flux SSE : texte, audio PCM dès les premiers mots, réponse
-  app.post('/api/chat/flux', requireSession, parIp, parSession, async (req, res, next) => {
+  app.post('/api/chat/flux', requireSession, parJour, parIp, parSession, async (req, res, next) => {
     let user;
     try {
       user = await preparer(req, res);
@@ -78,7 +80,7 @@ export function setupChatRoutes(app, openai) {
       if (!res.writableFinished) arret.abort();
     });
     // La connexion à Cartesia s'ouvre pendant que le modèle réfléchit
-    const voix = ouvrirVoixFlux({ surAudio: (pcm) => envoyer('audio', { pcm }), surEchec: () => envoyer('secours', {}) });
+    const voix = await ouvrirVoixFlux({ surAudio: (pcm) => envoyer('audio', { pcm }), surEchec: () => envoyer('secours', {}) });
     if (!voix) envoyer('secours', {});
     try {
       const { prompt, isEphemeral, jeton } = req.body;

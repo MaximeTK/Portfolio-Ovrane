@@ -11,7 +11,8 @@
     "test:openai": "node --test test/openai.js",
     "eval:rag": "node scripts/eval-rag.js",
     "eval:reponses": "node scripts/eval-reponses.js",
-    "update-rag": "node scripts/update-rag.js"
+    "update-rag": "node scripts/update-rag.js",
+    "second-facteur": "node scripts/second-facteur.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

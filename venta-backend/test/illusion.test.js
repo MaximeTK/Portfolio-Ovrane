@@ -2,7 +2,7 @@
 import { base, appeler, visiteur, fermer, appelsOpenAI, REPONSE } from './simulation.js';
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { registerHooks } from 'node:module';
+import { createRequire, registerHooks } from 'node:module';
 import { isValidJeton, isRobotUserAgent } from '../src/validators.js';
 import { formatCandidatureContext, MISC_MESSAGES } from '../src/messages.js';
 import { signerVoix } from '../src/services/voix.js';
@@ -55,7 +55,9 @@ test('front : chemins des liens suivis, anciens et nouveaux, jetons valides ou n
     ['/RedirectLinkedIn/K3F9A0X2M1'.toLowerCase(), 'linkedin', JETON],
   ];
   for (const [path, cible, jeton] of cases) assert.deepEqual(parseRedirectPath(path), { cible, jeton }, path);
-  for (const path of ['/', '/orange', '/connexion', `/${JETON}`, '/redirect', '/redirectx']) assert.equal(parseRedirectPath(path), null, path);
+  for (const path of ['/', '/orange', '/connexion', `/${JETON}`, '/redirect', '/redirectx', '/nimporte/quoi-redirectcvxyz', '/xredirectcv']) {
+    assert.equal(parseRedirectPath(path), null, path);
+  }
 });
 
 test('front : destinations, anciennes inchangées, GitHub et accueil ajoutés', async () => {
@@ -68,13 +70,14 @@ test('front : destinations, anciennes inchangées, GitHub et accueil ajoutés', 
 });
 
 test('front : seules les mutations venues du site passent, et les relais JSON n\'acceptent que du JSON', async () => {
-  const { requeteDuSite, corpsJson, origineDuSite } = await front('origine.ts');
+  const { requeteDuSite, corpsJson, corpsTropGrand, origineDuSite, optionsCookie } = await front('origine.ts');
   const site = 'https://www.ovrane.net';
   const h = (entetes) => new Headers(entetes);
   assert.equal(requeteDuSite('POST', h({ 'sec-fetch-site': 'same-origin', origin: site }), site), true);
-  assert.equal(requeteDuSite('POST', h({}), site), true, 'client hors navigateur, sans session de navigateur');
+  assert.equal(requeteDuSite('POST', h({ origin: site }), site), true, 'navigateur sans Sec-Fetch-Site');
   assert.equal(requeteDuSite('GET', h({ 'sec-fetch-site': 'cross-site', origin: 'https://autre.example' }), site), true, 'une lecture passe');
-  for (const entetes of [{ 'sec-fetch-site': 'cross-site' }, { 'sec-fetch-site': 'same-site' }, { origin: 'https://autre.example' }, { origin: 'null' },
+  for (const entetes of [{}, { 'sec-fetch-site': 'same-origin' }, { 'sec-fetch-site': 'cross-site' }, { 'sec-fetch-site': 'same-site' },
+    { origin: 'https://autre.example' }, { origin: 'null' },
     { 'sec-fetch-site': 'same-origin', origin: 'https://www.ovrane.net.autre.example' }]) {
     for (const methode of ['POST', 'put', 'PATCH', 'DELETE']) assert.equal(requeteDuSite(methode, h(entetes), site), false, `${methode} ${JSON.stringify(entetes)}`);
   }
@@ -87,6 +90,63 @@ test('front : seules les mutations venues du site passent, et les relais JSON n\
   for (const type of ['text/plain', 'application/x-www-form-urlencoded', 'multipart/form-data; boundary=x', 'application/jsonp', '']) {
     assert.equal(corpsJson(h(type ? { 'content-type': type } : {})), false, type);
   }
+  // Corps annoncé de plus de 100 Ko refusé avant lecture, absent ou court accepté
+  assert.deepEqual([{}, { 'content-length': '102400' }, { 'content-length': '102401' }].map((e) => corpsTropGrand(h(e))), [false, false, true]);
+  // Cookie Secure en production même si Next croit servir en http
+  const env = process.env.NODE_ENV;
+  try {
+    process.env.NODE_ENV = 'production';
+    assert.equal(optionsCookie({ protocol: 'http:' }).secure, true);
+    process.env.NODE_ENV = 'development';
+    assert.equal(optionsCookie({ protocol: 'http:' }).secure, false);
+    assert.equal(optionsCookie({ protocol: 'https:' }).secure, true);
+  } finally {
+    process.env.NODE_ENV = env;
+  }
+});
+
+test('front : relais vers le backend, IP de Traefik seule, JSON jamais en cache, document actif isolé', async (t) => {
+  // Imports de Venta/src comme chez Next : .ts, next/server.js, server-only vide
+  const src = new URL('../../Venta/src/', import.meta.url).href;
+  const crochet = registerHooks({
+    resolve: (nom, contexte, suite) => {
+      if (nom === 'server-only') return { url: 'data:text/javascript,', shortCircuit: true };
+      if (!contexte.parentURL?.startsWith(src)) return suite(nom, contexte);
+      if (nom === 'next/server') return suite('next/server.js', contexte);
+      return suite(/^(\.\.?|@)\/[^.]+$/.test(nom) ? `${nom.replace(/^@\//, src)}.ts` : nom, contexte);
+    },
+  });
+  let relais;
+  try {
+    relais = await import(`${src}lib/proxy.ts`);
+  } finally {
+    crochet.deregister();
+  }
+  const { NextRequest } = createRequire(new URL('../../Venta/package.json', import.meta.url))('next/server');
+  const requete = (entetes = {}) => new NextRequest('https://www.ovrane.net/api/auth/compte', { headers: entetes });
+  let reponse = () => Response.json({ compte: null });
+  const envois = t.mock.method(globalThis, 'fetch', async () => reponse());
+  const ipEnvoyee = () => envois.mock.calls.at(-1).arguments[1].headers['X-Ovrane-Client-Ip'];
+
+  const json = await relais.relayerJson(requete({ 'x-forwarded-for': '198.51.100.7, 203.0.113.9' }), '/api/auth/compte');
+  assert.equal(json.headers.get('cache-control'), 'no-store');
+  assert.equal(ipEnvoyee(), '203.0.113.9', 'la dernière adresse, ajoutée par le proxy');
+  await relais.relayerJson(requete({ 'x-real-ip': '198.51.100.8' }), '/api/auth/compte');
+  assert.equal(ipEnvoyee(), undefined, 'X-Real-Ip jamais cru');
+
+  for (const [type, isole] of [['application/rss+xml', true], ['text/xsl', true], ['text/html; charset=utf-8', true], ['image/svg+xml', true],
+    ['application/json', false], ['application/pdf', false]]) {
+    reponse = () => new Response('x', { headers: { 'Content-Type': type } });
+    const relaye = await relais.relayerIllusion(requete(), '/api/illusion/app/x');
+    assert.equal(relaye.headers.get('content-security-policy'), isole ? "sandbox; default-src 'none'" : null, type);
+  }
+  reponse = () => new Response('x', { headers: { 'Content-Type': 'text/html', 'Content-Security-Policy': 'sandbox; img-src data:' } });
+  assert.equal((await relais.relayerIllusion(requete(), '/api/illusion/app/x')).headers.get('content-security-policy'), 'sandbox; img-src data:');
+});
+
+test('front : robots.txt n\'ouvre que le portfolio', async () => {
+  const { default: robots } = await front('../app/robots.ts');
+  assert.deepEqual(robots().rules, { userAgent: '*', allow: '/', disallow: ['/api/', '/illusion', '/connexion', '/redirect'] });
 });
 
 test('format du jeton identique côté front et backend', async () => {

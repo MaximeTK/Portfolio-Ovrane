@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { forward, sessionJeton } from '@/lib/proxy';
 import { INDISPONIBLE } from '@/lib/messages';
-import { corpsJson } from '@/lib/origine';
+import { corpsJson, corpsTropGrand } from '@/lib/origine';
 
 /** Chat en flux : le jeton du recruteur vient du cookie, jamais du corps */
 export async function POST(request: NextRequest) {
   if (!corpsJson(request.headers)) return NextResponse.json({ error: 'Requête invalide' }, { status: 415 });
+  if (corpsTropGrand(request.headers)) return NextResponse.json({ error: 'Requête trop grande' }, { status: 413 });
   const body = await request.json().catch(() => ({}));
   try {
     // Deux minutes : la voix d'une longue réponse finit après le dernier mot

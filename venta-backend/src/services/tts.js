@@ -1,5 +1,6 @@
 /** Voix : Cartesia, puis ElevenLabs, puis OpenAI ; null = voix du navigateur */
 import { config } from '../config.js';
+import { consommer } from './budget.js';
 import * as log from '../log.js';
 
 // Le texte reste complet ; l'audio perd code, liens et Markdown
@@ -96,9 +97,10 @@ export function preparerPourVoix(segment, etat) {
 }
 
 /** Voix en flux : mots complets en continuation d'un contexte Cartesia */
-export function ouvrirVoixFlux({ surAudio, surEchec }) {
+export async function ouvrirVoixFlux({ surAudio, surEchec }) {
   const { cartesiaKey, cartesiaVoice, cartesiaModel, navigateur } = config.tts;
-  if (!cartesiaKey || navigateur) return null;
+  // Une réponse dite compte dans le plafond de la voix, comme un passage
+  if (!cartesiaKey || navigateur || !(await consommer('tts'))) return null;
   const contexte = crypto.randomUUID();
   const ws = new WebSocket(CARTESIA_WS, { headers: { 'X-API-Key': cartesiaKey } });
   const enAttente = [];

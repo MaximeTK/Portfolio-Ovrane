@@ -13,9 +13,9 @@ const TAILLE_MAX = 21 * 1024 * 1024;
 // Seuls ces en-têtes reviennent au navigateur ; la CSP isole le HTML d'un mail
 const RENDUS = ['content-type', 'content-disposition', 'content-length', 'content-security-policy'];
 // Sur le domaine du site, un document actif sans CSP exécuterait ses scripts
-const ACTIF = /^\s*(text\/html|image\/svg\+xml|application\/xhtml\+xml|text\/xml|application\/xml)/i;
+const ACTIF = /^\s*(text\/html|text\/xsl|text\/xml|application\/xml|[a-z-]+\/[a-z0-9.-]*\+xml)\s*(;|$)/i;
 // Jamais relayés : connexion et inscription d'Illusion, canal du logiciel
-const INTERDITS = [/^POST \/api\/session\/?$/, /^[A-Z]+ \/api\/inscription\/?$/, /^[A-Z]+ \/api\/mains\/(tour|ordre)\/?$/];
+const INTERDITS = [/^POST \/api\/session\/*$/, /^[A-Z]+ \/api\/inscription\/*$/, /^[A-Z]+ \/api\/mains\/(tour|ordre)\/*$/];
 // Chemin routé comme Illusion : %2F redevient « / », encodage malformé gardé
 const decode = (chemin) => {
   try {
@@ -34,6 +34,9 @@ async function compte(req, res, next) {
     if (!session) return sendError(res, 401, ERROR_MESSAGES.sessionRequired);
     if (!user?.email) return sendError(res, 401, ERROR_MESSAGES.illusionAccountRequired);
     if (!user.emailVerifieLe) return sendError(res, 403, ERROR_MESSAGES.illusionEmailNonVerifie);
+    // Compte du serveur (en production, tout compte s'il n'est pas déclaré)
+    const exige = config.illusion.compteServeur ? user.email === config.illusion.compteServeur : config.production;
+    if (exige && !user.deuxiemeFacteur?.activeLe) return sendError(res, 403, ERROR_MESSAGES.illusionDeuxiemeFacteur);
     req.user = { id: session.utilisateur, email: user.email };
     next();
   } catch (error) {
@@ -46,7 +49,10 @@ function relayer(req, res) {
   // L'URL résout les `..` : rien ne sort de l'API d'Illusion
   const cible = new URL(`/api${req.url}`, config.illusion.url);
   if (!cible.pathname.startsWith('/api/')) return sendError(res, 404, ERROR_MESSAGES.notFound);
-  if (INTERDITS.some((motif) => motif.test(`${req.method} ${decode(cible.pathname)}`))) return sendError(res, 404, ERROR_MESSAGES.notFound);
+  const chemin = decode(cible.pathname);
+  // Ni « // » brut, ni segment « . » ou « .. » une fois décodé
+  if (cible.pathname.includes('//') || /(^|\/)\.\.?(\/|$)/.test(chemin)) return sendError(res, 404, ERROR_MESSAGES.notFound);
+  if (INTERDITS.some((motif) => motif.test(`${req.method} ${chemin}`))) return sendError(res, 404, ERROR_MESSAGES.notFound);
   if (Number(req.get('content-length')) > TAILLE_MAX) return sendError(res, 413, ERROR_MESSAGES.illusionTooLarge);
 
   // Liste blanche : ni cookie, Origin, Sec-Fetch-*, session ni en-tête du client
@@ -105,5 +111,7 @@ function relayer(req, res) {
 
 export function setupIllusionAppRoutes(app) {
   // Limite propre par IP : une page interroge Illusion toutes les 1,5 à 5 s
-  app.use('/api/illusion/app', limite(15 * 60 * 1000, config.production ? 6000 : 60000), requireService, compte, relayer);
+  const plafond = config.production ? 6000 : 60000;
+  // Le même plafond par compte : plusieurs IP ne le multiplient pas
+  app.use('/api/illusion/app', limite(15 * 60 * 1000, plafond), requireService, compte, limite(15 * 60 * 1000, plafond, (req) => req.user.id), relayer);
 }

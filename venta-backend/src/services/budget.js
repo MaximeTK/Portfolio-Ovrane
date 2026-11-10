@@ -5,7 +5,7 @@ import * as log from '../log.js';
 
 const jour = (maintenant) => maintenant.toISOString().slice(0, 10);
 
-/** Compte un appel payant (chat, tts) ; plafond 0 ou base HS : passe */
+/** Compte un appel payant (chat, tts) ; plafond 0 : passe, base HS : refusé */
 export async function consommer(type, maintenant = new Date()) {
   const plafond = config.budget[type] || 0;
   if (plafond <= 0) return true;
@@ -20,7 +20,7 @@ export async function consommer(type, maintenant = new Date()) {
     if (atteint) log.warn(`[BUDGET] Plafond ${type} atteint pour ${jour(maintenant)} (${doc?.[type]}/${plafond})`);
     return !atteint;
   } catch (error) {
-    log.error('[BUDGET] Compteur indisponible, appel laissé passer :', error.message);
-    return true;
+    log.error('[BUDGET] Compteur indisponible, appel refusé :', error.message);
+    return false;
   }
 }

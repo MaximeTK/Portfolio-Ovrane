@@ -43,6 +43,7 @@ export async function reinitialiser(jeton, motDePasse) {
   if (!compte) return false;
   await Session.deleteMany({ utilisateur: demande.utilisateur });
   oublierComptes();
+  log.info('[AUTH] Mot de passe réinitialisé : compte', demande.utilisateur);
   envoyerMail(compte.email, MAILS.motDePasseChange(compte.name));
   return true;
 }

@@ -33,6 +33,8 @@ export function ipClient(req) {
 
 // Un IPv6 dispose d'un /64 : les limites comptent ce préfixe
 function clePourLimite(req) {
+  // Sans secret, à part : une requête directe n'use pas la limite d'un visiteur
+  if (!serviceValide(req)) return `direct:${req.ip}`;
   const ip = ipClient(req) || '';
   if (!net.isIPv6(ip) || ip.includes('.')) return ip;
   const [avant, apres] = ip.split('::');
@@ -67,6 +69,11 @@ export function limite(windowMs, limit, keyGenerator = clePourLimite, options = 
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: ERROR_MESSAGES.tooManyRequests },
+    // Premier refus de la fenêtre noté, sans IP : un flot n'emplit pas le journal
+    handler: (req, res, next, { statusCode, message }) => {
+      if (req.rateLimit.used === req.rateLimit.limit + 1) log.warn(`[LIMITE] ${req.method} ${req.baseUrl || req.path}`);
+      res.status(statusCode).json(message);
+    },
     ...options,
   });
 }

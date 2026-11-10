@@ -17,8 +17,12 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  // Tout chemin inconnu est rendu : sur disque, un anonyme remplirait le VPS
-  experimental: { isrFlushToDisk: false },
+  experimental: {
+    // Tout chemin inconnu est rendu : sur disque, un anonyme remplirait le VPS
+    isrFlushToDisk: false,
+    // Corps gardé par le middleware, relais d'Illusion exclu : 100 Ko au plus
+    middlewareClientMaxBodySize: "100kb",
+  },
   async headers() {
     const communs = [
       { key: "X-Frame-Options", value: "DENY" },

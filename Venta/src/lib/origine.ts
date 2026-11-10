@@ -6,8 +6,8 @@ export function requeteDuSite(methode: string, entetes: Pick<Headers, 'get'>, or
   if (!MUTATIONS.has(methode.toUpperCase())) return true;
   const site = entetes.get('sec-fetch-site');
   if (site && site !== 'same-origin' && site !== 'none') return false;
-  const venue = entetes.get('origin');
-  return !venue || venue === origine;
+  // Origin exigé : tout navigateur actuel l'envoie avec une mutation
+  return entetes.get('origin') === origine;
 }
 
 /** Origine vue du navigateur : derrière un proxy, Next se croit local */
@@ -17,7 +17,8 @@ export const origineDuSite = ({ nextUrl, headers }: { nextUrl: Pick<URL, 'protoc
 /** Cookie du site : illisible par les scripts, valable partout */
 export const optionsCookie = (url: Pick<URL, 'protocol'>, expires?: Date) => ({
   httpOnly: true,
-  secure: url.protocol === 'https:',
+  // En production, même si le proxy tait le protocole : https seul
+  secure: process.env.NODE_ENV === 'production' || url.protocol === 'https:',
   sameSite: 'lax' as const,
   path: '/',
   ...(expires ? { expires } : {}),
@@ -25,3 +26,6 @@ export const optionsCookie = (url: Pick<URL, 'protocol'>, expires?: Date) => ({
 
 /** Corps JSON annoncé : un formulaire HTML ne sait pas l'envoyer */
 export const corpsJson = (entetes: Pick<Headers, 'get'>) => /^application\/json(;|$)/i.test(entetes.get('content-type')?.trim() ?? '');
+
+/** Corps annoncé au-delà de 100 Ko, que le backend refuserait */
+export const corpsTropGrand = (entetes: Pick<Headers, 'get'>) => Number(entetes.get('content-length') ?? 0) > 100 * 1024;

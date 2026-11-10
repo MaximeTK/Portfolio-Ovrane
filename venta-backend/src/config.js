@@ -51,6 +51,8 @@ export const config = {
   illusion: {
     url: illusionUrl,
     secret: env.ILLUSION_SERVICE_SECRET || '',
+    // E-mail du compte du serveur d'Illusion, ouvert avec un second facteur seul
+    compteServeur: (env.ILLUSION_COMPTE_SERVEUR || '').trim().toLowerCase(),
     // Sans octet d'Illusion pendant ce délai, la requête est abandonnée
     delai: 120_000,
   },

@@ -5,6 +5,8 @@ import { User } from '../models/User.js';
 
 const DUREE = 30 * 24 * 3600 * 1000;
 const UN_JOUR = 24 * 3600 * 1000;
+// Au-delà, même utilisée chaque jour, la session se rouvre par connexion
+const DUREE_MAX = 180 * UN_JOUR;
 const MEMOIRE_DUREE = 15 * 1000;
 const MEMOIRE_MAX = 1000;
 // Empreinte → lecture en cours ou compte vérifié, pour le relais qui sonde
@@ -28,7 +30,7 @@ export async function creerSession(utilisateur) {
 export async function lireSession(jeton) {
   if (!estJeton(jeton)) return null;
   const maintenant = new Date();
-  const session = await Session.findOne({ _id: empreinte(jeton), expireLe: { $gt: maintenant } }).lean();
+  const session = await Session.findOne({ _id: empreinte(jeton), expireLe: { $gt: maintenant }, creeLe: { $gt: new Date(maintenant - DUREE_MAX) } }).lean();
   if (session && maintenant - session.vuLe > UN_JOUR) {
     await Session.updateOne({ _id: session._id }, { $set: { vuLe: maintenant, expireLe: new Date(maintenant.getTime() + DUREE) } });
   }
@@ -44,7 +46,7 @@ export async function revoquerSession(jeton) {
 
 async function lireCompte(jeton) {
   const session = await lireSession(jeton);
-  const user = session && await User.findOne({ id: session.utilisateur }, { _id: 0, email: 1, emailVerifieLe: 1 }).lean();
+  const user = session && await User.findOne({ id: session.utilisateur }, { _id: 0, email: 1, emailVerifieLe: 1, 'deuxiemeFacteur.activeLe': 1 }).lean();
   return { session, user };
 }
 

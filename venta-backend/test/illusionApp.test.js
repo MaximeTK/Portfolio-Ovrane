@@ -46,6 +46,10 @@ const illusion = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       return res.end('<script>alert(1)</script>');
     }
+    if (req.url.startsWith('/api/type?')) {
+      res.writeHead(200, { 'Content-Type': new URL(req.url, 'http://illusion').searchParams.get('t') });
+      return res.end('<x/>');
+    }
     if (req.url.startsWith('/api/refus')) {
       res.writeHead(422, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ detail: [{ type: 'missing', loc: ['body', 'url'], msg: 'Field required' }] }));
@@ -180,6 +184,12 @@ test('relais Illusion : réponse en flux avec son statut, son type, son nom et s
   // Sans CSP d'Illusion, une page active ne s'exécute pas sur le domaine du site
   assert.equal((await envoyer('/api/illusion/app/page')).headers['content-security-policy'], "sandbox; default-src 'none'");
   assert.equal((await envoyer('/api/illusion/app/candidatures')).headers['content-security-policy'], undefined);
+  // Tout type XML que le navigateur rend en document, XSL compris ; le reste non
+  for (const [type, isole] of [['application/rss+xml', true], ['application/atom+xml', true], ['text/xsl', true], ['application/xaml+xml', true],
+    ['application/vnd.foo+xml; charset=utf-8', true], ['image/svg+xml', true], ['application/pdf', false], ['text/plain', false], ['application/xmlx', false]]) {
+    const res = await envoyer(`/api/illusion/app/type?t=${encodeURIComponent(type)}`);
+    assert.equal(res.headers['content-security-policy'], isole ? "sandbox; default-src 'none'" : undefined, type);
+  }
 });
 
 test('relais Illusion : 503 coupé, injoignable ou muet au-delà du délai, 502 réponse interrompue', async () => {
@@ -277,11 +287,47 @@ test('relais Illusion : déconnexion et nouveau mot de passe ferment aussitôt l
 test('relais Illusion : ni connexion, ni inscription, ni canal du logiciel de bureau ; la lecture du compte passe', async () => {
   const avant = recues.length;
   for (const [methode, chemin] of [['POST', '/api/illusion/app/session'], ['POST', '/api/illusion/app/inscription'],
-    ['GET', '/api/illusion/app/inscription'], ['POST', '/api/illusion/app/mains/tour'], ['POST', '/api/illusion/app/mains%2Fordre']]) {
+    ['GET', '/api/illusion/app/inscription'], ['POST', '/api/illusion/app/mains/tour'], ['POST', '/api/illusion/app/mains%2Fordre'],
+    ['POST', '/api/illusion/app/mains/tour//'], ['POST', '/api/illusion/app/session%2F%2F'], ['POST', '/api/illusion/app/x/..%2Fsession'],
+    ['POST', '/api/illusion/app/mains/x/..%2Ftour'], ['GET', '/api/illusion/app/x//y'], ['GET', '/api/illusion/app/x/.%2Fy']]) {
     const corps = methode === 'GET' ? {} : { entetes: { 'Content-Type': 'application/json' }, corps: '{}' };
     assert.equal((await envoyer(chemin, { methode, ...corps })).status, 404, `${methode} ${chemin}`);
   }
   assert.equal(recues.length, avant, 'rien n\'atteint Illusion');
   assert.equal((await envoyer('/api/illusion/app/session')).status, 200);
   assert.equal(recues.at(-1).url, '/api/session');
+  // Un identifiant encodé qui porte « // » (Message-ID en base64) passe tel quel
+  assert.equal((await envoyer('/api/illusion/app/mails/fil/CA%2B%2F%2Fx%40mail')).status, 200);
+  assert.equal(recues.at(-1).url, '/api/mails/fil/CA%2B%2F%2Fx%40mail');
+});
+
+test('relais Illusion : le même plafond par compte que par IP, plusieurs IP ne le multiplient pas', async () => {
+  const session = sessionNeuve('cillusion01');
+  const restant = async (ip) => Number((await envoyer('/api/illusion/app/candidatures', { session, entetes: { 'X-Ovrane-Client-Ip': ip } })).headers['ratelimit-remaining']);
+  const premier = await restant('203.0.113.71');
+  assert.equal(await restant('203.0.113.72'), premier - 1, 'compté pour le compte, IP neuve ou non');
+});
+
+test('relais Illusion : le compte du serveur s\'ouvre avec un second facteur seul ; en production, tout compte s\'il n\'est pas déclaré', async () => {
+  const serveur = base.users.find((u) => u.id === 'cillusion01');
+  base.users.push({ id: 'cautre2f', name: 'Autre', nameNormalized: 'autre2f', email: 'autre2f@exemple.test', emailVerifieLe: new Date(), visitCount: 1, conversations: [] });
+  const statut = async (utilisateur) => (await envoyer('/api/illusion/app/candidatures', { session: sessionNeuve(utilisateur) })).status;
+  config.illusion.compteServeur = 'essai@exemple.test';
+  try {
+    const avant = recues.length;
+    const refus = await envoyer('/api/illusion/app/candidatures', { session: sessionNeuve('cillusion01') });
+    assert.deepEqual([refus.status, refus.json], [403, { error: ERROR_MESSAGES.illusionDeuxiemeFacteur }]);
+    assert.equal(recues.length, avant, 'rien n\'atteint Illusion');
+    assert.equal(await statut('cautre2f'), 200, 'un autre compte n\'en a pas besoin');
+    serveur.deuxiemeFacteur = { activeLe: new Date() };
+    assert.equal(await statut('cillusion01'), 200);
+    config.illusion.compteServeur = '';
+    config.production = true;
+    assert.equal(await statut('cautre2f'), 403, 'compte du serveur non déclaré : tout compte');
+    assert.equal(await statut('cillusion01'), 200);
+  } finally {
+    config.illusion.compteServeur = '';
+    config.production = false;
+    delete serveur.deuxiemeFacteur;
+  }
 });

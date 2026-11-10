@@ -100,7 +100,7 @@ export const ERROR_MESSAGES = {
   fieldsRequired: 'Tous les champs sont requis.',
   inviteInvalid: 'Code d\'invitation invalide.',
   emailInvalid: 'Email invalide.',
-  passwordLength: 'Le mot de passe doit contenir de 12 à 128 caractères.',
+  passwordLength: 'Le mot de passe doit contenir de 12 à 72 caractères, dont 5 différents au moins.',
   pseudoInvalid: 'Pseudo invalide (lettres, chiffres, espace, tiret, underscore, max 25 caractères).',
   // Le même message que le pseudo ou l'email soit pris
   accountTaken: 'Ce pseudo ou cet email est déjà utilisé.',
@@ -122,6 +122,7 @@ export const ERROR_MESSAGES = {
   illusionNotFound: 'Candidature introuvable',
   illusionAccountRequired: 'Connectez-vous avec votre compte Ovrane pour ouvrir Illusion.',
   illusionEmailNonVerifie: 'Vérifiez d\'abord votre adresse e-mail : le lien est à demander depuis la page de connexion.',
+  illusionDeuxiemeFacteur: 'Ce compte ouvre Illusion avec un second facteur : faites-le enrôler, puis connectez-vous avec le mot de passe suivi du code à 6 chiffres.',
   illusionTooLarge: 'Fichier trop lourd : 15 Mo au plus.',
   illusionUnavailable: 'Illusion ne répond pas pour le moment. Réessayez dans un instant.',
   illusionBadGateway: 'Illusion a interrompu sa réponse. Réessayez dans un instant.',

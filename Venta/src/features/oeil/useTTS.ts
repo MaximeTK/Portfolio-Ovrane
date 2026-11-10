@@ -29,7 +29,7 @@ export type FluxVoix = { pousser: (pcm: string) => void; terminer: () => void };
 const MAX_BLOC = 900;
 
 /** Découpe en blocs de 4 phrases et MAX_BLOC caractères au plus */
-function splitTextIntoTTSBlocks(text: string): string[] {
+export function splitTextIntoTTSBlocks(text: string): string[] {
   const sentences = (text.replace(/\s+/g, ' ').trim().match(/[^.]+(?:\.)|[^.]+$/g) ?? [])
     .map((s) => s.trim())
     .filter(Boolean);

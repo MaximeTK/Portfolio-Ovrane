@@ -24,11 +24,11 @@ export function isValidJeton(value: unknown): value is string {
   return typeof value === 'string' && JETON.test(value);
 }
 
+// Mot-clé en tête d'un segment, anciens suffixes gardés ; puis /<jeton>
+const LIEN = new RegExp(`(?:^|/)redirect(${CIBLES.join('|')})(?:/(${FORMAT_JETON})(?:/|$))?`);
+
 /** Cible et jeton éventuel d'un chemin en minuscules, null hors lien suivi. */
 export function parseRedirectPath(path: string): { cible: RedirectCible; jeton: string | null } | null {
-  const cible = CIBLES.find((c) => path.includes(`redirect${c}`));
-  if (!cible) return null;
-  // Le jeton suit le mot-clé ; tout autre suffixe garde l'ancien comportement
-  const jeton = path.match(new RegExp(`redirect${cible}/(${FORMAT_JETON})(?:/|$)`))?.[1] ?? null;
-  return { cible, jeton };
+  const lien = LIEN.exec(path);
+  return lien ? { cible: lien[1] as RedirectCible, jeton: lien[2] ?? null } : null;
 }
