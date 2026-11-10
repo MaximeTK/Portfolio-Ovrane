@@ -67,6 +67,8 @@ export const config = {
     maxTours: 5,
     // Plafond de sortie par appel, raisonnement compris : borne le coût
     maxOutputTokens: Number(env.OPENAI_MAX_OUTPUT_TOKENS) || 1500,
+    // Réécriture des relances et reclassement du RAG ; vide : désactivés
+    rag: env.OPENAI_RAG_MODEL ?? 'gpt-5.4-mini',
   },
   tts: {
     // Vrai : la voix du navigateur lit tout, aucun fournisseur appelé

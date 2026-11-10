@@ -725,6 +725,11 @@ test('chat : luna, effort bas sans outils, moyen quand l\'interface est en jeu, 
   assert.deepEqual([simple.model, simple.reasoning.effort, simple.stream, 'tools' in simple], ['gpt-5.6-luna', 'low', true, false]);
   assert.deepEqual([interface_.reasoning.effort, interface_.tools?.length > 0], ['medium', true]);
   assert.equal(simple.prompt_cache_key, interface_.prompt_cache_key);
+  // Un mot accentué en tête (« écarlate », « doré ») donne aussi les outils
+  for (const prompt of ['Maintenant en écarlate', 'Un fond doré', 'Ambiance forêt']) {
+    await appeler('/api/chat/flux', { method: 'POST', session, body: { prompt } });
+    assert.ok(appelsOpenAI.at(-1).tools?.some((t) => t.name === 'getAvailableColors'), prompt);
+  }
 });
 
 test('voix en flux : texte sans code, liens ni Markdown, espaces gardés pour recoller les morceaux', () => {

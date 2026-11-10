@@ -3,7 +3,10 @@ import './env.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { decouperMarkdown } from '../src/services/rag/chunker.js';
+import { initializeRAG, reindexFolder, rechercher } from '../src/services/rag/ragSystem.js';
 import { termes, indexerBm25, bm25, listesClassees, fusionner, porteOuverte, SEUILS } from '../src/services/rag/recherche.js';
 import { SYSTEM_FIXE, buildVisitorContext } from '../src/services/chat/generer.js';
 import { ASSETS, PALETTES, executeToolCall } from '../src/services/chat/outils.js';
@@ -111,4 +114,61 @@ test('outils : nom inconnu, hérité d\'Object ou arguments illisibles refusés 
   assert.equal(JSON.parse(executeToolCall({ name: 'uiShowPicture', arguments: '{"filenames":["Invente.png"]}' }, ctx)).success, false);
   assert.equal(JSON.parse(executeToolCall({ name: 'uiShowPicture', arguments: '{"filenames":["CV.png","CV.png"]}' }, ctx)).success, true);
   assert.deepEqual(ctx.uiCommands, [{ command: 'ShowPicture', parameter: 'CV.png' }]);
+});
+
+// Faux modèle : un mot-clé par axe, réécriture et classement dictés par le test
+const MOTS = ['pico', 'hikup', 'ovrane'];
+const vecteur = (t) => {
+  const v = MOTS.map((m) => (t.toLowerCase().includes(m) ? 1 : 0));
+  const n = Math.hypot(...v);
+  return n ? [...v.map((x) => x / n), 0] : [0, 0, 0, 1];
+};
+const appels = [];
+let repondre = () => '';
+const fauxModele = {
+  embeddings: { create: async ({ input }) => ({ data: input.map((t) => ({ embedding: vecteur(t) })) }) },
+  responses: { create: async (params) => { appels.push(params); return { output_text: repondre(params) }; } },
+};
+// Numéro du candidat d'un document dans le message du reclassement
+const rangDe = (params, doc) => Number(params.input.match(new RegExp(`\\[(\\d+)\\] ${doc} >`))[1]);
+
+test('RAG : la relance est réécrite, ouvre la porte, et le modèle reclasse', async () => {
+  const dossier = fs.mkdtempSync(path.join(os.tmpdir(), 'rag-'));
+  fs.writeFileSync(path.join(dossier, 'Pico.md'), '# Pico\n\n## Interface\n\nPico range ses pictogrammes en quatre zones.');
+  fs.writeFileSync(path.join(dossier, 'Hikup.md'), '# Hikup\n\n## Carte\n\nHikup trace les randonnées sur une carte.');
+  fs.writeFileSync(path.join(dossier, 'Ovrane.md'), '# Ovrane\n\n## Voix\n\nOvrane parle avec la voix d\'Inès.');
+  initializeRAG(fauxModele);
+  assert.equal((await reindexFolder(dossier)).chunksIndexed, 3);
+
+  repondre = (params) => (params.text ? JSON.stringify({ utiles: [rangDe(params, 'Pico')] }) : 'Interface de Pico');
+  const relance = await rechercher('Et son interface ?', 'Parle-moi de Pico', 'Pico aide les personnes autistes.');
+  assert.equal(relance.requete, 'Interface de Pico');
+  assert.equal(relance.porte, true, 'la question seule ne l\'ouvre pas, sa réécriture si');
+  assert.deepEqual(relance.passages.map((p) => p.document), ['Pico']);
+  const [reecriture, classement] = appels.splice(0);
+  assert.equal(reecriture.instructions, SYSTEM_PROMPTS.ragReformulation);
+  assert.match(reecriture.input, /Visiteur : Parle-moi de Pico\nOvrane : Pico aide/);
+  assert.equal(classement.instructions, SYSTEM_PROMPTS.ragReclassement);
+  assert.match(classement.input, /^Question : Interface de Pico/);
+  assert.equal(classement.reasoning.effort, 'none');
+
+  // Le reclassement remonte un passage que la recherche avait mis plus bas
+  repondre = (params) => JSON.stringify({ utiles: [rangDe(params, 'Hikup'), rangDe(params, 'Pico')] });
+  const ordre = await rechercher('Parle-moi de Pico et de Hikup');
+  assert.deepEqual(ordre.passages.map((p) => p.document), ['Hikup', 'Pico']);
+  assert.equal(appels.splice(0).length, 1, 'sans message précédent, aucune réécriture');
+  assert.deepEqual((await rechercher('Parle-moi de Pico et de Hikup')).passages.map((p) => p.document), ['Hikup', 'Pico']);
+  assert.equal(appels.length, 0, 'première question déjà classée : aucun appel');
+
+  repondre = () => JSON.stringify({ utiles: [] });
+  assert.equal((await rechercher('Qu\'est-ce que Pico ?')).porte, false, 'aucun passage utile : porte fermée');
+
+  // Modèle en panne : ordre RRF gardé, le précédent pèse moitié
+  repondre = () => { throw new Error('indisponible'); };
+  const repli = await rechercher('Qu\'est-ce que Pico ?', 'Parle-moi de Hikup');
+  assert.equal(repli.porte, true);
+  assert.equal(repli.requete, 'Qu\'est-ce que Pico ?');
+  assert.deepEqual(repli.passages.map((p) => p.document).slice(0, 2), ['Pico', 'Hikup']);
+  appels.length = 0;
+  fs.rmSync(dossier, { recursive: true });
 });

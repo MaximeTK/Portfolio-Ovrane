@@ -28,8 +28,9 @@ Le pipeline :
 - **Connaissance séparée des consignes** : `venta-backend/rag/` ne contient que la connaissance, un Markdown par sujet (Profil, Hikup, Pico, Ovrane, Illusion) ; consignes, palettes et images vivent dans `venta-backend/prompts/` et ne polluent plus la recherche.
 - **Découpage structurel** : un passage par section `##`/`###` (redécoupé par paragraphes au-delà de ~350 tokens), préfixé de son fil d'Ariane (« Hikup > Gamification ») pour l'embedding comme pour BM25 : 129 passages.
 - **Recherche hybride en mémoire** : BM25 (sans accents ni mots vides, pluriels ramenés au singulier) et cosinus sur `text-embedding-3-small`, fusionnés par Reciprocal Rank Fusion (`Σ w/(60+rang)`), top 6.
-- **Relances sans appel au modèle** : le message précédent du visiteur est une seconde requête de poids 0,5 ; les deux embeddings partent dans un seul appel.
+- **Relances réécrites (reprompting)** : quand un message précède, `gpt-5.4-mini` (sans raisonnement) réécrit la question en requête autonome (« Et l'équipe l'a réussi ? » → « L'équipe a-t-elle réussi le Barrage Bêta ? »), pendant que la question s'embedde ; la requête réécrite compte autant que la question et peut ouvrir la porte. En panne ou au-delà de 2,5 s, le message précédent reprend son rôle de seconde requête de poids 0,5.
 - **Porte de pertinence calibrée** : le contexte n'est injecté que si le meilleur cosinus de la question atteint 0,45, ou si 60 % de ses termes sont réunis dans un même passage avec un cosinus d'au moins 0,3. La règle naïve « au moins un terme trouvé » laissait passer 5 hors-sujet sur 7.
+- **Reclassement (reranking)** : porte ouverte, les 12 meilleurs candidats de la fusion passent au même modèle, qui rend en JSON strict les numéros des passages utiles, du plus utile au moins utile ; les 6 premiers sont injectés, et une liste vide ferme la porte. En panne ou au-delà de 2,5 s, l'ordre de la fusion reste. Le classement d'une première question est gardé en mémoire (les suggestions reviennent souvent) et oublié à la réindexation.
 - **Embeddings persistés dans MongoDB** (`rag_chunks`, identifiant = sha256 du modèle et du texte préfixé) : au démarrage, seuls les passages nouveaux ou modifiés sont embeddés et les obsolètes supprimés.
 - **Prompt ordonné pour le cache d'OpenAI** : un message système 100 % fixe (~1 660 tokens), puis le contexte du visiteur, l'historique, et enfin `<contexte><source document="…" section="…">` suivi de la question. Mesuré : 1 536 tokens servis depuis le cache dès le deuxième appel.
 
@@ -46,7 +47,34 @@ Le pipeline :
 | Après : hybride + historique | 0,966 | 0,771 |
 | **Après : contexte réellement injecté (porte)** | **0,931** | **0,737** |
 
-Sur les 6 relances, le contexte injecté passe de 0 à 0,833 de recall@5 ; faux positifs de la porte : 0/7 avant comme après. Un passage à Atlas Vector Search et `$rankFusion` n'aurait de sens qu'au-delà de quelques milliers de passages : en dessous, une base distante n'ajoute que de la latence.
+Sur les 6 relances, le contexte injecté passe de 0 à 0,833 de recall@5 ; faux positifs de la porte : 0/7 avant comme après.
+
+Réécriture et reclassement (10/11/2026, mêmes 41 questions ; les 34 pertinentes, puis les 29 hors Illusion) :
+
+| Variante | recall@5 (34) | MRR@5 (34) | recall@5 (29) | MRR@5 (29) |
+|---|---|---|---|---|
+| Hybride + historique | 0,941 | 0,718 | 0,966 | 0,771 |
+| Réécrite | 0,941 | 0,718 | 0,966 | 0,771 |
+| Réécrite + reclassée | 1,000 | 0,985 | 1,000 | 0,983 |
+| Contexte injecté avant | 0,912 | 0,688 | 0,931 | 0,737 |
+| **Contexte injecté après** | **1,000** | **0,985** | **1,000** | **0,983** |
+
+La porte s'ouvre sur 34 questions pertinentes sur 34 au lieu de 33 : la relance « Et l'équipe l'a réussi ? » n'ouvrait la porte qu'une fois réécrite. Faux positifs : 0/7. Le prix est le délai, environ 1,2 s par appel quel que soit le modèle (`gpt-5.4-nano` et `gpt-4.1-mini` mesurés, à peine plus rapides) : la recherche complète passe de ~0,2 s à 1,8 s en médiane, plus pour une relance, qui enchaîne les deux appels. `OPENAI_RAG_MODEL=` (vide) coupe les deux étapes.
+
+Un passage à Atlas Vector Search et `$rankFusion` n'aurait de sens qu'au-delà de quelques milliers de passages : en dessous, une base distante n'ajoute que de la latence.
+
+### 🧪 Évaluation des réponses (promptfoo)
+`npm run eval:reponses` fait passer les 41 questions dorées par la vraie chaîne du chat (`generateResponse` : RAG, consignes, Luna), une à la fois pour des délais réalistes. Un client OpenAI enveloppé relève, sans toucher au code de production, les jetons de chaque modèle, le coût au tarif standard et le bloc `<contexte>` réellement injecté. [promptfoo](https://www.promptfoo.dev/) (MIT, dépendance de développement) note ensuite chaque réponse :
+
+- **justesse** (`llm-rubric`) : la réponse transmet-elle le fait attendu, au sens près ;
+- **fidélité** (`context-faithfulness`, seuil 0,8) : part des affirmations appuyées par le contexte injecté ;
+- **pertinence** (`answer-relevance`, seuil 0,5) : les questions qu'on déduirait de la réponse ressemblent-elles à celle posée ;
+- **hors sujet** (`llm-rubric`) : ni météo ni heure inventées, palette inconnue signalée, code donné quand on en demande ;
+- **coût** (1 centime au plus par réponse), délai du premier texte et de la réponse complète.
+
+Le juge est `gpt-5.4`, et non Luna : un modèle qui note ses propres réponses les favorise. `gpt-5.4-mini` rendait des verdicts de fidélité que promptfoo ne savait pas lire. Télémétrie et partage de promptfoo sont coupés ; le détail se lit dans `npx promptfoo view`.
+
+Passage du 10/11/2026 : 33 réussites sur 41 ; justesse 0,941, fidélité 0,893, pertinence 0,715 (34 questions) ; hors sujet 6/7. Premier texte : 2,7 s en médiane, 3,9 s au 9e décile ; réponse complète : 5,0 s. Coût d'une réponse : 0,13 centime en médiane, 4,6 centimes pour les 41 (juge non compté). Le banc a trouvé deux défauts : les mots accentués en tête (« écarlate », « doré ») ne proposaient pas les outils de palette, c'est corrigé ; `rag/Hikup.md` dit à la fois que Maxime a « activement participé à la réécriture des composants » et qu'il n'a « quasiment jamais codé ».
 
 ### 🔊 Streaming audio par chunks
 La génération de voix IA est traditionnellement lente — le modèle doit terminer de générer la réponse complète avant que l'audio démarre. Pour éliminer ce goulot d'étranglement, le système découpe la réponse en morceaux et commence à diffuser les premiers blocs audio pendant que la suite est encore générée en arrière-plan. La latence sur les longs messages a été réduite considérablement.
