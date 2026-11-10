@@ -1,19 +1,27 @@
 'use client';
 
 import './candidatures.css';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useUIStore } from '@/lib/uiStore';
 import { appeler } from '../../api';
-import { repris, useGarder } from '../../stockage';
 import { Activite } from '../../activite/Activite';
-import { useSondage } from '../../activite/sondage';
 import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin, Panneau } from '../../dock/Panneau';
 import { ongletFicheEntreprise } from '../../partage/FicheEntreprise';
-import { ETAPES, OFFRE_CHANGEE, dateUtc, jourMois, libelleSource, nomProfil, ongletAjoutCompetence, ongletFicheOffre, type DemandeAjout } from '../../partage/FicheOffre';
+import { ETAPES, OFFRE_CHANGEE, ongletAjoutCompetence, ongletFicheOffre, type DemandeAjout } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { ongletProfilIncomplet, useOngletAjout, useOngletDirect, useOngletReglages, type Incomplet } from './panneaux';
-import { MenuChoix, PaginationAller, useLignesAuto, ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
+import { PaginationAller, useEchap, useFileServeur, useGeste, useLignesAuto, type FileServeur } from '../commun';
+import { useCoches } from '../../elements/Case';
+import { MenuTenu, choixDe } from '../../elements/Menu';
+import { Action } from '../../elements/Action';
+import { Case } from '../../elements/Case';
+import { ICONES } from '../../elements/icones';
+import { ouvrable } from '../../elements/Case';
+import { ActionSupprimer } from '../../elements/Action';
+import { useAvis, type Dire } from '../../elements/Avis';
+import { ActionOnglet } from '../../elements/Groupes';
+import { dateUtc, jourMoisIso, libelleSource, nomLangue, nomMetier, nomProfil, optionsGroupe } from '../../elements/format';
 
 // Une ligne de la file telle que /candidatures la rend
 type OffreFile = {
@@ -25,13 +33,9 @@ type EtatFile = {
   comptes: Record<string, number>; groupes: { langues: Record<string, number>; metiers: Record<string, number> }; offres: OffreFile[];
 };
 type Filtres = { etape: string; metier: string; langue: string };
-const LANGUES: Record<string, string> = { fr: 'Français', en: 'Anglais', de: 'Allemand', es: 'Espagnol', it: 'Italien', pt: 'Portugais', nl: 'Néerlandais' };
 const TAILLES = [25, 50, 100];
 
-const ICONES = {
-  ...ICONES_COMMUNES,
-  reprendre: <svg {...TRAIT}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
-};
+
 
 // Une seule minuterie pour tous les chronos, lancée tant qu'il y en a un
 const abonnesHorloge = new Set<() => void>();
@@ -56,31 +60,12 @@ function Chrono({ iso }: { iso: string }) {
 
 export default function PageCandidatures({ compte, recherche }: ProprietesPage) {
   // File lue et choix gardés d'une visite à l'autre, relus en arrière-plan
-  const [file, setFile] = useState(() => repris<EtatFile | null>('candidatures:file', null));
-  const [erreurFile, setErreurFile] = useState('');
-  const [filtres, setFiltres] = useState(() => repris<Filtres>('candidatures:filtres', { etape: '', metier: '', langue: '' }));
-  const [page, setPage] = useState(() => repris('candidatures:page', 1));
-  const [taille, setTaille] = useState(() => repris<number | 'auto'>('candidatures:taille', 'auto'));
-  const [auto, setAuto] = useState(() => repris('candidatures:auto', 16));
-  useGarder('candidatures', { file, filtres, page, taille, auto });
-  const [selection, setSelection] = useState<Set<string>>(() => new Set());
+  const file = useFileServeur<EtatFile, Filtres>({ section: 'candidatures', nom: 'file', chemin: '/candidatures', filtres: { etape: '', metier: '', langue: '' }, autoDepart: 16 });
+  const { relire } = file;
   const [incomplet, setIncomplet] = useState<Incomplet | null>(null);
   const [competence, setCompetence] = useState<DemandeAjout | null>(null);
-  const [avis, setAvis] = useState<Avis>(null);
-  // L'API lit au moins 10 lignes ; en « auto », le défileur garde le surplus
-  const adresse = `/candidatures?${new URLSearchParams({ ...filtres, page: String(page), taille: String(taille === 'auto' ? Math.max(10, auto) : taille) })}`;
-  const relire = useCallback(async () => {
-    try {
-      const lu = await appeler<EtatFile>(adresse);
-      setFile(lu);
-      setErreurFile('');
-      if (lu.page > lu.pages) setPage(lu.pages);
-    } catch (e) {
-      setErreurFile(message(e));
-    }
-  }, [adresse]);
-  // File relue toutes les 5 s, et aussitôt qu'une fiche change une offre
-  useSondage(relire, 5000, true, adresse);
+  const { dire, vue: avis } = useAvis('avis-file', true, file.erreur);
+  // Une fiche qui change une offre fait relire la file aussitôt
   useEffect(() => {
     const changee = () => void relire();
     window.addEventListener(OFFRE_CHANGEE, changee);
@@ -90,11 +75,9 @@ export default function PageCandidatures({ compte, recherche }: ProprietesPage) 
   return (
     <Dock id="candidatures" principal="tableau" panneau={null}>
       <ActiviteDePage admin={compte.admin} />
-      <Tableau admin={compte.admin} direct={new URLSearchParams(recherche).get('panneau') === 'direct'} file={file} erreurFile={erreurFile} filtres={filtres} setFiltres={(f) => { setFiltres(f); setPage(1); }}
-        page={page} setPage={setPage} taille={taille} setTaille={(t) => { setTaille(t); setPage(1); }} auto={auto} setAuto={setAuto}
-        selection={selection} setSelection={setSelection} avis={avis} setAvis={setAvis} relire={relire} />
+      <Tableau admin={compte.admin} direct={new URLSearchParams(recherche).get('panneau') === 'direct'} file={file} avis={avis} dire={dire} />
       <PanneauDePage admin={compte.admin} incomplet={incomplet} setIncomplet={setIncomplet}
-        competence={competence} setCompetence={setCompetence} setAvis={setAvis} relire={relire} />
+        competence={competence} setCompetence={setCompetence} dire={dire} relire={relire} />
     </Dock>
   );
 }
@@ -105,16 +88,13 @@ function ActiviteDePage({ admin }: { admin: boolean }) {
   return <Activite surMaintenant={admin ? () => ouvrir('direct') : undefined} />;
 }
 
-type ProprietesTableau = {
-  admin: boolean; direct: boolean; file: EtatFile | null; erreurFile: string; filtres: Filtres; setFiltres: (f: Filtres) => void;
-  page: number; setPage: (p: number) => void; taille: number | 'auto'; setTaille: (t: number | 'auto') => void; auto: number; setAuto: (n: number) => void;
-  selection: Set<string>; setSelection: (s: Set<string>) => void; avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void>;
-};
+type ProprietesTableau = { admin: boolean; direct: boolean; file: FileServeur<EtatFile, Filtres>; avis: React.ReactNode; dire: Dire };
 
-function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, avis, setAvis, relire }: ProprietesTableau) {
+function Tableau({ admin, direct, file, avis, dire }: ProprietesTableau) {
+  const { lu, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, relire } = file;
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const [confirmation, setConfirmation] = useState<'supprimer' | 'vider' | null>(null);
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   const [menu, setMenu] = useState<keyof Filtres | null>(null);
   const defile = useRef<HTMLDivElement>(null);
 
@@ -130,55 +110,36 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
     });
     return () => clearTimeout(minuteur);
   }, [direct, admin, ouvrir]);
-  // Échap ferme un menu, sinon la confirmation, sinon le panneau
-  useEchap(() => {
+  // Échap ferme un menu, sinon la confirmation, sinon le panneau s'il est libre
+  useEchap((e) => {
     if (menu) setMenu(null);
     else if (confirmation) setConfirmation(null);
-    else fermer();
+    else if (!e.defaultPrevented) fermer();
   }, true);
-  useAvisBref(avis, setAvis);
-  useLignesAuto(defile, setAuto, 36, file?.offres?.length ?? 0);
+  useLignesAuto(defile, setAuto, lu?.offres?.length ?? 0);
 
-  const offres = file?.offres ?? [];
-  const toutes = offres.length > 0 && offres.every((o) => selection.has(o.cle));
-  const cocher = (cles: string[], oui: boolean) => {
-    const s = new Set(selection);
-    cles.forEach((c) => (oui ? s.add(c) : s.delete(c)));
-    setSelection(s);
-  };
+  const offres = lu?.offres ?? [];
+  const { toutes, cocher } = useCoches(selection, setSelection, offres.map((o) => o.cle));
   const ouvrirFiche = (c: string) => ouvrir('fiche-offre', c);
-  const geste = async (faire: () => Promise<string>) => {
-    setOccupe(true);
-    try {
-      setAvis({ texte: await faire() });
-    } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
-    } finally {
-      setOccupe(false);
-      setConfirmation(null);
-      await relire();
-    }
-  };
-  const supprimer = () => geste(async () => {
+  const agir = (faire: () => Promise<string>) => geste(async () => dire(await faire()), () => {
+    setConfirmation(null);
+    return relire();
+  });
+  const supprimer = () => agir(async () => {
     const cles = [...selection];
     const r = await appeler<{ offres: number; candidatures: number; fichiers: number; mails: number }>('/offres/supprimer', { methode: 'POST', corps: { cles } });
     setSelection(new Set());
     return `${r.offres} offre(s) supprimée(s) : ${r.candidatures} candidature(s), ${r.fichiers} fichier(s), ${r.mails} mail(s) détaché(s).`;
   });
-  const vider = () => geste(async () => `${(await appeler<{ efface: number }>('/candidatures/vider', { methode: 'POST' })).efface} candidature(s) effacée(s) de l'historique.`);
-  const reprendre = () => geste(async () => `${(await appeler<{ reprises: number }>('/candidatures/echecs/reprendre', { methode: 'POST' })).reprises} offre(s) rendue(s) à la file.`);
+  const vider = () => agir(async () => `${(await appeler<{ efface: number }>('/candidatures/vider', { methode: 'POST' })).efface} candidature(s) effacée(s) de l'historique.`);
+  const reprendre = () => agir(async () => `${(await appeler<{ reprises: number }>('/candidatures/echecs/reprendre', { methode: 'POST' })).reprises} offre(s) rendue(s) à la file.`);
 
-  const groupe = (valeurs: Record<string, number> | undefined, choisi: string, nom: (v: string) => string) => {
-    const tous = { ...(valeurs ?? {}) };
-    if (choisi && !(choisi in tous)) tous[choisi] = 0;
-    return Object.entries(tous).sort(([a], [b]) => Number(a === '-') - Number(b === '-') || a.localeCompare(b, 'fr')).map(([v, n]) => ({ valeur: v, nom: nom(v), compte: n }));
-  };
   const menus: { cle: keyof Filtres; lib: string; tous: string; precis?: string; options: { valeur: string; nom: string; compte: number }[] }[] = [
-    { cle: 'etape', lib: 'Étape', tous: 'Total', options: Object.entries(ETAPES).map(([v, e]) => ({ valeur: v, nom: e.nom, compte: file?.comptes[v] ?? 0 })) },
-    { cle: 'metier', lib: 'Métier', tous: 'tous', precis: 'les métiers', options: groupe(file?.groupes.metiers, filtres.metier, (v) => (v === '-' ? 'sans métier' : v)) },
-    { cle: 'langue', lib: 'Langue', tous: 'toutes', precis: 'les langues', options: groupe(file?.groupes.langues, filtres.langue, (v) => (v === '-' ? 'sans langue' : LANGUES[v] ?? v)) },
+    { cle: 'etape', lib: 'Étape', tous: 'Total', options: Object.entries(ETAPES).map(([v, e]) => ({ valeur: v, nom: e.nom, compte: lu?.comptes[v] ?? 0 })) },
+    { cle: 'metier', lib: 'Métier', tous: 'tous', precis: 'les métiers', options: optionsGroupe(lu?.groupes.metiers, filtres.metier, nomMetier) },
+    { cle: 'langue', lib: 'Langue', tous: 'toutes', precis: 'les langues', options: optionsGroupe(lu?.groupes.langues, filtres.langue, nomLangue) },
   ];
-  const pages = file?.pages ?? 1;
+  const pages = lu?.pages ?? 1;
 
   return (
     <Fenetre id="tableau" as="main" className="tableau candidatures" aria-label="Candidatures" titrePrise="Glisser pour détacher les candidatures">
@@ -186,11 +147,12 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
         {menus.map((m) => {
           const actif = filtres[m.cle];
           const choisi = m.options.find((o) => o.valeur === actif);
+          const label = `${m.lib} : ${choisi ? choisi.nom : m.tous}`;
           return (
-            <MenuChoix key={m.cle} ouvert={menu === m.cle} basculer={() => setMenu(menu === m.cle ? null : m.cle)} fermer={() => setMenu(null)}
-              actif={!!actif} label={`${m.lib} : ${choisi ? choisi.nom : m.tous}`}
-              valeur={m.cle === 'etape' && !actif ? <span>Total</span> : <span><span className="lib">{m.lib}</span>{choisi ? `${choisi.nom} · ${choisi.compte}` : m.tous}{!choisi && <span className="precis"> {m.precis}</span>}</span>}
-              options={[{ valeur: '', nom: m.cle === 'etape' ? `Total · ${file?.total ?? 0}` : m.tous[0].toUpperCase() + m.tous.slice(1), compte: -1 }, ...m.options]}
+            <MenuTenu key={m.cle} ouvert={menu === m.cle} basculer={() => setMenu(menu === m.cle ? null : m.cle)} fermer={() => setMenu(null)} classeHote="filtre-hote"
+              actif={!!actif} aria-label={label} titre={label} lib={m.cle === 'etape' && !actif ? undefined : m.lib}
+              valeur={m.cle === 'etape' && !actif ? 'Total' : <>{choisi ? `${choisi.nom} · ${choisi.compte}` : m.tous}{!choisi && <span className="precis"> {m.precis}</span>}</>}
+              choix={choixDe([{ valeur: '', nom: m.cle === 'etape' ? `Total · ${lu?.total ?? 0}` : m.tous[0].toUpperCase() + m.tous.slice(1), compte: -1 }, ...m.options])}
               courant={actif} choisir={(v) => { setFiltres({ ...filtres, [m.cle]: v }); setMenu(null); }} />
           );
         })}
@@ -198,23 +160,18 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
         <div className="actions" role="group" aria-label="Actions">
           {admin && (
             <>
-              <button type="button" className="action repli-2" title="Reprendre les échecs : les offres dont la candidature a échoué retournent dans la file" disabled={occupe} onClick={() => void reprendre()}>
-                <span className="ico">{ICONES.reprendre}</span><span className="txt">Reprendre les échecs</span><MarqueAdmin />
-              </button>
-              <button type="button" className="action repli-2" title="Vider l'historique" aria-haspopup="dialog" aria-expanded={confirmation === 'vider'} onClick={() => setConfirmation('vider')}>
-                <span className="ico">{ICONES.vider}</span><span className="txt">Vider l&apos;historique</span><MarqueAdmin />
-              </button>
+              <Action className="repli-2" icone={ICONES.reprendre} title="Reprendre les échecs : les offres dont la candidature a échoué retournent dans la file" disabled={occupe} onClick={() => void reprendre()}><span className="txt">Reprendre les échecs</span><MarqueAdmin />
+              </Action>
+              <Action className="repli-2" icone={ICONES.vider} title="Vider l'historique" aria-haspopup="dialog" aria-expanded={confirmation === 'vider'} onClick={() => setConfirmation('vider')}><span className="txt">Vider l&apos;historique</span><MarqueAdmin />
+              </Action>
             </>
           )}
-          <button type="button" className="action rouge" title={`Supprimer ${selection.size} offre(s)`} aria-haspopup="dialog" onClick={() => setConfirmation('supprimer')}>
-            <span className="ico">{ICONES.supprimer}</span><span><span className="txt">Supprimer </span>({selection.size})</span>
-          </button>
-          <button type="button" className={`action repli-1${onglet === 'reglages' ? ' allume' : ''}`} title="Réglages" aria-haspopup="dialog" aria-expanded={onglet === 'reglages'} onClick={() => ouvrir('reglages')}>
-            <span className="ico">{ICONES.reglages}</span><span className="txt">Réglages</span>
-          </button>
-          <button type="button" className="action plein" aria-haspopup="dialog" aria-expanded={onglet === 'ajout'} onClick={() => ouvrir('ajout')}>
-            Ajouter une offre<span className="ico">{ICONES.plus}</span>
-          </button>
+          <ActionSupprimer n={selection.size} title={`Supprimer ${selection.size} offre(s)`} aria-haspopup="dialog" onClick={() => setConfirmation('supprimer')} />
+          <ActionOnglet cle="reglages" className="repli-1" icone={ICONES.reglages} title="Réglages">Réglages
+          </ActionOnglet>
+          <ActionOnglet cle="ajout" allume={false} txt={false} plein iconeApres={ICONES.plus_pages}>
+            Ajouter une offre
+          </ActionOnglet>
         </div>
       </div>
       {confirmation === 'supprimer' && (
@@ -222,14 +179,14 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
           occupe={occupe} onAnnuler={() => setConfirmation(null)} onConfirmer={() => void supprimer()} />
       )}
       {confirmation === 'vider' && (
-        <Confirmer question="Vider l'historique ?" admin detail={`Ses ${file?.statistiques.total ?? 0} candidatures partent, les offres restent.`} action="Vider"
+        <Confirmer question="Vider l'historique ?" admin detail={`Ses ${lu?.statistiques.total ?? 0} candidatures partent, les offres restent.`} action="Vider"
           occupe={occupe} onAnnuler={() => setConfirmation(null)} onConfirmer={() => void vider()} />
       )}
       <div className="defile" ref={defile}>
         <table>
           <thead>
             <tr>
-              <th><input type="checkbox" className="case" aria-label="Tout sélectionner" checked={toutes} onChange={(e) => cocher(offres.map((o) => o.cle), e.target.checked)} /></th>
+              <th><Case aria-label="Tout sélectionner" checked={toutes} onChange={(e) => cocher(offres.map((o) => o.cle), e.target.checked)} /></th>
               <th>Publiée</th><th>Entreprise</th><th>Intitulé</th><th>Lieu / contrat</th><th>Profil</th><th>Source</th><th>Étape</th><th>Timer</th>
             </tr>
           </thead>
@@ -238,12 +195,11 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
               const etape = ETAPES[o.etape] ?? { nom: o.etape, classe: '' };
               const ouverte = onglet === 'fiche-offre' && objet === o.cle;
               return (
-                <tr key={o.cle} className={`${selection.has(o.cle) ? 'coche' : ''}${ouverte ? ' ouverte' : ''}`} tabIndex={0} data-ouvre="fiche-offre" data-objet={o.cle}
-                  onClick={() => ouvrirFiche(o.cle)} onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && ouvrirFiche(o.cle)}>
+                <tr key={o.cle} className={`${selection.has(o.cle) ? 'coche' : ''}${ouverte ? ' ouverte' : ''}`} {...ouvrable('fiche-offre', o.cle, () => ouvrirFiche(o.cle))}>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" className="case" aria-label={`Sélectionner ${o.entreprise_brute}`} checked={selection.has(o.cle)} onChange={(e) => cocher([o.cle], e.target.checked)} />
+                    <Case aria-label={`Sélectionner ${o.entreprise_brute}`} checked={selection.has(o.cle)} onChange={(e) => cocher([o.cle], e.target.checked)} />
                   </td>
-                  <td className="d">{jourMois(o.publiee_le)}</td>
+                  <td className="d">{jourMoisIso(o.publiee_le)}</td>
                   <td title={o.entreprise_brute}>{o.entreprise_siren
                     ? <button type="button" className="ent" title="Voir la fiche entreprise" data-ouvre="fiche-entreprise" data-objet={o.entreprise_siren} onClick={(e) => { e.stopPropagation(); ouvrir('fiche-entreprise', o.entreprise_siren!); }}>{o.entreprise_brute}</button>
                     : <span className="ent">{o.entreprise_brute || '—'}</span>}</td>
@@ -258,20 +214,16 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
                 </tr>
               );
             })}
-            {file && !offres.length && (
+            {lu && !offres.length && (
               <tr className="vide-f"><td colSpan={9}>{filtres.etape || filtres.metier || filtres.langue ? 'Aucune offre sous ces filtres.' : 'Aucune offre : la veille en apportera, ou ajoutez-en une.'}</td></tr>
             )}
           </tbody>
         </table>
       </div>
-      {(avis || erreurFile) && (
-        <p className={`avis-file${avis?.erreur || (!avis && erreurFile) ? ' erreur' : ''}`} role={avis?.erreur || (!avis && erreurFile) ? 'alert' : 'status'} onClick={() => setAvis(null)}>
-          {avis?.texte ?? erreurFile}
-        </p>
-      )}
+      {avis}
       <PaginationAller page={page} pages={pages} setPage={setPage} taille={taille} tailles={TAILLES} setTaille={setTaille} auto={auto}>
         <span className="espace" />
-        <span className="compteur">{file ? `${file.total_filtre} offre${file.total_filtre > 1 ? 's' : ''}` : ''}</span>
+        <span className="compteur">{lu ? `${lu.total_filtre} offre${lu.total_filtre > 1 ? 's' : ''}` : ''}</span>
       </PaginationAller>
     </Fenetre>
   );
@@ -279,11 +231,11 @@ function Tableau({ admin, direct, file, erreurFile, filtres, setFiltres, page, s
 
 type ProprietesPanneau = {
   admin: boolean; incomplet: Incomplet | null; setIncomplet: (i: Incomplet | null) => void; competence: DemandeAjout | null; setCompetence: (d: DemandeAjout | null) => void;
-  setAvis: (a: Avis) => void; relire: () => Promise<void>;
+  dire: Dire; relire: () => Promise<void>;
 };
 
 // Panneau : les fiches (une par fenêtre), puis chaque sous-fenêtre en onglet
-function PanneauDePage({ admin, incomplet, setIncomplet, competence, setCompetence, setAvis, relire }: ProprietesPanneau) {
+function PanneauDePage({ admin, incomplet, setIncomplet, competence, setCompetence, dire, relire }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
   // Refermé, le panneau oublie les fenêtres d'un geste
   useEffect(() => {
@@ -291,8 +243,8 @@ function PanneauDePage({ admin, incomplet, setIncomplet, competence, setCompeten
     setIncomplet(null);
     setCompetence(null);
   }, [onglet, setIncomplet, setCompetence]);
-  const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, setAvis });
-  const ajout = useOngletAjout({ admin, actif: onglet === 'ajout', setAvis, relire: () => void relire(), montrerIncomplet: (i) => { setIncomplet(i); ouvrir('profil-incomplet'); } });
+  const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, dire });
+  const ajout = useOngletAjout({ admin, actif: onglet === 'ajout', dire, relire: () => void relire(), montrerIncomplet: (i) => { setIncomplet(i); ouvrir('profil-incomplet'); } });
   const direct = useOngletDirect({ actif: admin && onglet === 'direct', ouvrirFiche: (c) => ouvrir('fiche-offre', c) });
   const elements = {
     'fiche-offre': (c: string) => ongletFicheOffre(c, {
@@ -302,7 +254,7 @@ function PanneauDePage({ admin, incomplet, setIncomplet, competence, setCompeten
     'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre: (c) => ouvrir('fiche-offre', c) }),
   };
   const onglets = [
-    ongletAjoutCompetence(competence, (texte) => { if (texte) setAvis({ texte }); if (competence) ouvrir('fiche-offre', competence.cle); setCompetence(null); }),
+    ongletAjoutCompetence(competence, (texte) => { if (texte) dire(texte); if (competence) ouvrir('fiche-offre', competence.cle); setCompetence(null); }),
     ongletProfilIncomplet(incomplet, () => { setIncomplet(null); ouvrir('ajout'); }),
     reglages,
     ajout,

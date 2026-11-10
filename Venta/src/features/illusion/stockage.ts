@@ -1,5 +1,6 @@
 // Brouillons d'Illusion de ce navigateur, par compte, effacés à la déconnexion
 import { useLayoutEffect } from 'react';
+import { retenirLocal } from '@/lib/uiStore';
 
 const PREFIXE = 'illusion:';
 // Les clés d'avant, communes à tous les comptes du navigateur
@@ -54,6 +55,31 @@ export function poserCompte(email: string) {
 
 /** La clé d'un brouillon pour le compte en cours. */
 export const cleBrouillon = (nom: string) => `${PREFIXE}${compte}:${nom}`;
+
+/** Le brouillon `nom` du compte en cours, vide s'il est absent ou illisible. */
+export function lireBrouillon<T extends object>(nom: string): Partial<T> {
+  try {
+    return JSON.parse(localStorage.getItem(cleBrouillon(nom)) ?? '{}');
+  } catch {
+    return {};
+  }
+}
+
+export const ecrireBrouillon = (nom: string, valeur: unknown) => retenirLocal(cleBrouillon(nom), JSON.stringify(valeur));
+
+// Abonnés d'un petit magasin lu par useSyncExternalStore
+export function creerAbonnes() {
+  const abonnes = new Set<() => void>();
+  return {
+    abonner: (f: () => void) => {
+      abonnes.add(f);
+      return () => {
+        abonnes.delete(f);
+      };
+    },
+    prevenir: () => abonnes.forEach((f) => f()),
+  };
+}
 
 /** Efface tous les brouillons d'Illusion de ce navigateur. */
 export function effacerBrouillons() {

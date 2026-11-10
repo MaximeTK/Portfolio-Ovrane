@@ -37,8 +37,6 @@
 .ov [data-fen=nuage]:not([data-l=l]) .legende-r .note-r{display:none}
 .ov [data-fen=nuage]:not([data-l=l]) .legende-r{gap:4px 12px}
 /* Avis d'un geste : en bas à droite, au-dessus de la légende */
-.ov [data-fen=nuage] .avis-r{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(520px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-10) / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
-.ov [data-fen=nuage] .avis-r.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
 
 /* Fiche : ce qu'on sait en tête, sujets en puces de texte, faits datés */
 .ov .rel-f .meta-f{margin-bottom:12px !important;font-size:var(--t-corps,12px);color:rgb(var(--encre) / .7)}
@@ -100,8 +98,6 @@
 .ov.trame [data-fen=nuage] .cle-r i{width:10px;height:10px;border-radius:3px}
 .ov.trame [data-fen=nuage] .note-r{font-size:.75rem;color:var(--texte-2)}
 .ov.trame [data-fen=nuage] .total-r{font-weight:500;color:var(--texte)}
-.ov.trame [data-fen=nuage] .avis-r{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;color:var(--texte)}
-.ov.trame [data-fen=nuage] .avis-r.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Fiche : texte en 14 px, faits et échanges aux teintes de la planche. */
 .ov.trame .rel-f .meta-f{font-size:.875rem;color:var(--texte-2)}
 .ov.trame .rel-f .resume-r{font-size:.875rem;line-height:1.25rem;color:var(--texte)}

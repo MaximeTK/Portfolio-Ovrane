@@ -11,6 +11,7 @@ export const MON_ESPACE: InfoPage[] = [
   { slug: 'candidatures', titre: 'Candidatures' },
   { slug: 'documents', titre: 'Documents' },
   { slug: 'mails', titre: 'Mails' },
+  { slug: 'adresses', titre: 'Adresses' },
   { slug: 'appels', titre: 'Appels' },
   { slug: 'relations', titre: 'Relations' },
   { slug: 'profil', titre: 'Profil' },

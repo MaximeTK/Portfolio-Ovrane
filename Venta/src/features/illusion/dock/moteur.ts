@@ -12,6 +12,8 @@ export type ArbreDepart = Arbre | ((zone: Zone, style: CSSStyleDeclaration) => A
 export const ECART = 16, DECROCHE = 16, SEUIL = 6, BORD = 26, MARGE = 0.3, ARMEMENT = 450, IMMOBILE = 10;
 // Glissement des fenêtres vers leur place, comme la feuille de style (0,3 s)
 export const DUREE_RANGEMENT = 300;
+// Marge d'un glissement : la fin voulue est passée quand elle sert
+export const MARGE_GLISSE = 60;
 // Une flottante s'ouvre et se ferme plus lentement, tout à la même échelle
 export const DUREE_FLOTTANTE = 500;
 export const LENTEUR_FLOTTANTE = DUREE_FLOTTANTE / DUREE_RANGEMENT;
@@ -64,6 +66,11 @@ export const PRISES = '.tete, .echos-tete, .p-tete, .outils';
 const INTERACTIF = 'a,button,input,select,textarea,label,summary,[role=button]';
 // Ce qui n'est pas le décor d'une fenêtre : son contenu
 export const CONTENU = ':scope>:not(.verre-halos,.prise,.taille,.ouv-ligne)';
+// La fin d'un glissement qui commence
+const finDeGlissement = () => performance.now() + DUREE_RANGEMENT + MARGE_GLISSE;
+// L'étendue d'un groupe de fenêtres sur un axe ; rien pour un groupe vide
+const etendue = (rs: Zone[], ligne: boolean) => (!rs.length ? 0
+  : ligne ? Math.max(...rs.map((r) => r.x + r.w)) - Math.min(...rs.map((r) => r.x)) : Math.max(...rs.map((r) => r.y + r.h)) - Math.min(...rs.map((r) => r.y)));
 // Taille d'arrivée d'une fenêtre figée, à quelques fractions de pixel près
 const cleFige = (r: { w: number; h: number }) => `${Math.round(r.w)} ${Math.round(r.h)}`;
 // Chaque enfant posé à sa mesure ; sur place, il ne suit plus la fenêtre
@@ -85,6 +92,13 @@ type Fente = { n: Partage; a: number; b: number; ta: number; tb: number; ma: num
 type Calcul = { res: Record<string, Zone>; fentes: Fente[] };
 type EtatFenetre = { flot: Zone | null; tailleFlot: Taille | null; z: string };
 // Disposition d'une page gardée pendant la session, jusqu'à la remise
+// Une flottante reprend sa place dans le rangement
+const rentrer = (f: EtatFenetre, el: HTMLElement) => {
+  f.flot = null;
+  f.z = '';
+  delete el.dataset.flot;
+  el.style.zIndex = '';
+};
 type Memoire = { racine: Arbre | null; fen: Record<string, EtatFenetre>; zMax: number; change: boolean; lien?: Lien | null };
 type Action =
   | { type: 'fente'; f: Fente; x0: number; y0: number; el: HTMLElement }
@@ -149,6 +163,11 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     return { r, L: parseFloat(s.paddingLeft), T: parseFloat(s.paddingTop), R: r.width - parseFloat(s.paddingRight), B: r.height - parseFloat(s.paddingBottom) };
   };
   type Cadre = ReturnType<typeof cadre>;
+  // Détachée, une fenêtre reprend sa dernière taille flottante, jamais sa case
+  const tailleDetachee = (id: string, r: DOMRect, c: Cadre): Taille => {
+    const m = mini(id), t = etat(id).tailleFlot || o.tailles()[id]?.flot || [r.width, r.height];
+    return [Math.max(Math.min(t[0], c.r.width - 40), m[0]), Math.max(Math.min(t[1], c.r.height - 40), m[1])];
+  };
   const zoneUtile = (c: Cadre): Zone => ({ x: c.L, y: c.T, w: c.R - c.L, h: c.B - c.T });
 
   const depart = () => {
@@ -208,8 +227,8 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       const v = restes.findIndex((x, j) => x && j > i), j = v >= 0 ? v : restes.findLastIndex((x) => x);
       if (j < 0) return;
       // L'écart rendu compte aussi, à l'échelle des parts de ce partage
-      const rs = ids(n).map((x) => base.res[x]).filter(Boolean), ligne = n.dir === 'row', s = n.parts.reduce((a, b) => a + b, 0);
-      const long = rs.length ? (ligne ? Math.max(...rs.map((r) => r.x + r.w)) - Math.min(...rs.map((r) => r.x)) : Math.max(...rs.map((r) => r.y + r.h)) - Math.min(...rs.map((r) => r.y))) : 0;
+      const s = n.parts.reduce((a, b) => a + b, 0);
+      const long = etendue(ids(n).map((x) => base.res[x]).filter(Boolean), n.dir === 'row');
       const total = long - ECART * (n.enfants.length - 1);
       n.parts[j] += n.parts[i] + (total > 0 ? (s * ECART) / total : 0);
     });
@@ -381,10 +400,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     const racine = memoire.racine;
     if (!racine || !visible(racine)) return null;
     const z = zoneUtile(cadre()), res = calculer(racine).res, unite = z.w / 4;
-    const etendue = (n: Arbre, ligne: boolean) => {
-      const rs = ids(n).map((i) => res[i]).filter(Boolean);
-      return ligne ? Math.max(...rs.map((r) => r.x + r.w)) - Math.min(...rs.map((r) => r.x)) : Math.max(...rs.map((r) => r.y + r.h)) - Math.min(...rs.map((r) => r.y));
-    };
+    const etendueDe = (n: Arbre, ligne: boolean) => etendue(ids(n).map((i) => res[i]).filter(Boolean), ligne);
     const repartir = (u: number, t: number[]) => {
       if (t.length >= u) return t.map(() => u / t.length);
       const s = t.reduce((a, b) => a + b, 0) || 1, q = t.map((v) => (v * u) / s), p = q.map((v) => Math.max(1, Math.floor(v)));
@@ -401,7 +417,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     const zones =(n: Arbre, c: number, r: number) => {
       if (feuille(n)) { if (res[n.id]) couvre[n.id] = { c, r }; return; }
       const vis = n.enfants.filter((e) => ids(e).some((i) => res[i])), ligne = n.dir === 'row';
-      const parts = repartir(ligne ? c : r, vis.map((e) => etendue(e, ligne)));
+      const parts = repartir(ligne ? c : r, vis.map((e) => etendueDe(e, ligne)));
       vis.forEach((e, i) => zones(e, ligne ? parts[i] : c, ligne ? r : parts[i]));
     };
     zones(racine, 4, 2);
@@ -495,10 +511,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     vus.forEach((id) => {
       const el = els[id], f = etat(id);
       if (f.flot && el?.hidden && !sorties.has(id)) {
-        f.flot = null;
-        f.z = '';
-        delete el.dataset.flot;
-        el.style.zIndex = '';
+        rentrer(f, el);
       }
       if (f.flot || ids(memoire.racine).includes(id)) return;
       memoire.racine = normaliser((o.elements?.(id) && placerElement(id)) || inserer(memoire.racine, { bord: true, cote: 'droite' }, id));
@@ -528,7 +541,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   const glisser = (el: HTMLElement, duree = DUREE_RANGEMENT, delai = 0, c = VIVE) => {
     el.style.transition = TRANSITION_DE(duree, delai, c);
     clearTimeout(glisses.get(el));
-    glisses.set(el, window.setTimeout(() => { el.style.transition = ''; glisses.delete(el); }, delai + duree + 60));
+    glisses.set(el, window.setTimeout(() => { el.style.transition = ''; glisses.delete(el); }, delai + duree + MARGE_GLISSE));
   };
   const dureeDe = (id: string) => (etat(id).flot ? DUREE_FLOTTANTE : DUREE_RANGEMENT);
   const poserLien = (q: number) => {
@@ -581,7 +594,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       void coq.offsetWidth;
       ov.classList.remove('sans-anim');
     }
-    if (anime && (entrees.length || sortie || Object.keys(depuis).length)) finGlisse = performance.now() + DUREE_RANGEMENT + 60;
+    if (anime && (entrees.length || sortie || Object.keys(depuis).length)) finGlisse = finDeGlissement();
     // Celle qui sort se replie vers son centre, les autres remplissent
     const elSortie = sortie ? els[sortie] : null;
     let repli: Zone | null = null;
@@ -613,7 +626,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
         el.style.transition = 'none';
         poser(el, r);
       }
-      figer([id], dureeDe(id) + 60);
+      figer([id], dureeDe(id) + MARGE_GLISSE);
       if (etat(id).flot === null) {
         entrantes.push([id, el, r]);
         continue;
@@ -667,7 +680,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       lien = { trajets, courbe: c, depart: null, images: 0 };
       poserLien(0);
       imageLien = requestAnimationFrame(tourner);
-      finGlisse = performance.now() + DUREE_RANGEMENT + 60;
+      finGlisse = finDeGlissement();
     } else {
       if (lien?.trajets.some((t) => t.mini !== 'sort' && !(base.res[t.el.dataset.fen!] && meme(base.res[t.el.dataset.fen!], t.a)))) ceder();
       appliquer(base, null, !action);
@@ -708,8 +721,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     const f = etat(id), el = els[id];
     if (!el) return;
     if (!f.flot) {
-      const c = cadre(), r = el.getBoundingClientRect(), m = mini(id), t = f.tailleFlot || o.tailles()[id]?.flot || [r.width, r.height];
-      const w = Math.max(Math.min(t[0], c.r.width - 40), m[0]), h = Math.max(Math.min(t[1], c.r.height - 40), m[1]);
+      const c = cadre(), r = el.getBoundingClientRect(), [w, h] = tailleDetachee(id, r, c);
       f.flot = { x: r.left - c.r.left + DECROCHE, y: r.top - c.r.top + DECROCHE, w, h };
       dansLEcran(f.flot, c);
       f.tailleFlot = [f.flot.w, f.flot.h];
@@ -717,10 +729,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       el.style.zIndex = f.z = String(++memoire.zMax);
       poser(el, f.flot);
     } else {
-      f.flot = null;
-      f.z = '';
-      delete el.dataset.flot;
-      el.style.zIndex = '';
+      rentrer(f, el);
     }
     changer();
     ranger(true);
@@ -801,8 +810,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       ov.classList.add('glisse-en-cours');
       if (!f.flot) {
         // Détachée : elle reprend sa dernière taille flottante, jamais celle de sa case
-        const r = a.el.getBoundingClientRect(), m = mini(a.id), t = f.tailleFlot || o.tailles()[a.id]?.flot || [r.width, r.height];
-        const w = Math.max(Math.min(t[0], c.r.width - 40), m[0]), h = Math.max(Math.min(t[1], c.r.height - 40), m[1]);
+        const r = a.el.getBoundingClientRect(), [w, h] = tailleDetachee(a.id, r, c);
         a.dx = Math.min((a.dx / r.width) * w, w - 24);
         a.dy = Math.min(a.dy, 30);
         f.flot = { x: e.clientX - c.r.left - a.dx, y: r.top - c.r.top, w, h };
@@ -870,11 +878,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     if (a.cible && a.arme) {
       // Posée sur une cible : elle glisse vers sa case, l'arbre garde le partage
       memoire.racine = normaliser(inserer(normaliser(retirer(memoire.racine, a.id)), a.cible, a.id));
-      const f = etat(a.id);
-      f.flot = null;
-      f.z = '';
-      delete a.el.dataset.flot;
-      a.el.style.zIndex = '';
+      rentrer(etat(a.id), a.el);
     }
     ranger(true);
   };
@@ -914,7 +918,7 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   if (memoire.lien) {
     lien = memoire.lien;
     memoire.lien = null;
-    finGlisse = performance.now() + DUREE_RANGEMENT + 60;
+    finGlisse = finDeGlissement();
     imageLien = requestAnimationFrame(tourner);
   }
   ranger(false);

@@ -5,6 +5,12 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { appeler, telecharger, televerser } from '../api';
 import type { Onglet } from '../dock/Panneau';
 import { aOublier } from '../stockage';
+import { Action } from '../elements/Action';
+import { Champ, ChampListe, SectionFiche } from '../elements/Champ';
+import { LibelleValeur } from '../elements/Champ';
+import { AvisBref, type Avis } from '../elements/Avis';
+import { dateUtc, dollars, dureeOuTiret, jourEtHeure, jourMoisIso, libelleSource, lienSur, message, MOTIFS, nomFichier, nomProfil } from '../elements/format';
+import { ICONES } from '../elements/icones';
 
 // Ce que rend /offres/{cle}/dossier : offre, candidature, courrier et suites
 type Offre = {
@@ -19,7 +25,7 @@ type Envoi = {
 };
 type Suivi = { cle: string; couleur: string; libelle: string; jours: number; relances: number; origine: string };
 type Courrier = { message_id: string; sens: string; recu_le: string; expediteur: string; sujet: string; tags: string[] };
-type Saisie = { question?: string; valeur?: string; source?: { sorte?: string; donnee?: string }; signalement?: string; site?: string; ligne?: string; page?: string };
+export type Saisie = { question?: string; valeur?: string; source?: { sorte?: string; donnee?: string }; signalement?: string; site?: string; ligne?: string; page?: string };
 type Attribution = { modifiable: boolean; profil_recherche: string; profil_cv: string; cv_auto: boolean; choix: { recherche: string; cvs: string[] }[] };
 type Mesures = {
   origine: { source: string; vue_sur: string[]; detectee_le: string | null };
@@ -32,7 +38,6 @@ type Dossier = {
   offre: Offre; candidature: Envoi | null; suivi: Suivi | null; mails: Courrier[]; saisies: Saisie[]; attribution: Attribution | null;
   mesures: Mesures | null; contacts: { profil_url: string; nom: string; titre: string }[]; annonce: string; annonce_a_relire: boolean;
 };
-type Avis = { texte: string; erreur?: boolean } | null;
 export type DemandeAjout = { cle: string; competence: string; profil: string };
 
 // Les étapes d'une offre, sous leur nom et leur trait de couleur
@@ -41,44 +46,31 @@ export const ETAPES: Record<string, { nom: string; classe: string }> = {
   ENVOYEE: { nom: 'Envoyée', classe: 'env' }, INADAPTEE: { nom: 'Inadaptée', classe: 'inad' }, ECHEC: { nom: 'Échec', classe: 'ech' },
   ECARTEE: { nom: 'Écartée', classe: 'eca' },
 };
-const SOURCES: Record<string, string> = {
-  france_travail: 'France Travail', apec: 'APEC', free_work: 'Free-Work', wttj: 'Welcome to the Jungle', hellowork: 'HelloWork',
-  linkedin: 'LinkedIn', adzuna: 'Adzuna', jooble: 'Jooble', careerjet: 'Careerjet', indeed: 'Indeed', ats: 'Boards employeurs',
-  manuelle: 'Ajoutée à la main', constructeur: 'Constructeur',
-};
-export const libelleSource = (s: string) => SOURCES[s] ?? (s || '—');
-// « data/developpeur-python.json » → « developpeur-python »
-export const nomProfil = (chemin: string) => (String(chemin || '').split(/[\\/]/).pop() ?? '').replace(/\.json$/i, '');
-// « 2026-10-28 » → « 28/10 »
-export const jourMois = (iso: string) => {
-  const m = /^\d{4}-(\d{2})-(\d{2})/.exec(iso ?? '');
-  return m ? `${m[2]}/${m[1]}` : '—';
-};
-// Une date d'Illusion sans fuseau est en UTC
-export const dateUtc = (texte: string) => new Date(/(Z|[+-]\d{2}:?\d{2})$/i.test(texte) ? texte : `${texte}Z`);
-const jourHeure = (texte: string | null) => {
-  if (!texte) return '—';
-  const d = dateUtc(texte);
-  return `${d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} à ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-};
 const RAISONS: Record<string, string> = {
   rattachee: 'rattachée à une fiche', creee: "fiche créée depuis l'offre", inconnue: 'employeur introuvable dans Sirene',
   a_identifier: 'employeur pas encore recherché', intermediaire: 'pas un employeur', hors_cible: 'hors cible',
 };
-const MOTIFS: Record<string, string> = {
-  offre_fermee: 'offre retirée', hors_profil: 'hors profil', captcha: 'vérification humaine', compte: 'compte / connexion',
-  depot: 'pièce refusée', page_sourde: 'page muette', boucle: 'tourne en rond', plafond_tours: 'plafond de tours', brique: 'brique muette', autre: 'autre',
-};
-const SAISIES: Record<string, string> = {
+// D'où vient une valeur saisie
+export const SOURCES_SAISIE: Record<string, string> = {
   exacte: 'de la fiche', deduite: 'déduite', inventee: 'inventée', offre: "propre à l'offre", cv: "CV de l'offre", lettre: "lettre de l'offre",
   fixe: 'case', coffre: 'coffre', modele: "écrite par l'IA", non_declaree: 'non déclarée',
 };
-const POSTES: Record<string, string> = {
-  navigation: 'Candidature (navigation)', jade: 'JADE (jugement)', lettre: 'Lettre', reponse: 'Réponses aux mails', relance: 'Relances',
-  preparation: "Préparation d'entretien", appel: "Analyse d'appel", transcription: 'Transcription des appels', cv_spontane: 'Choix du CV spontané',
+// Une valeur signalable : ni une pièce jointe ni un mot de passe
+export const signalable = (s: Saisie) => !!s.ligne && !['cv', 'lettre', 'coffre'].includes(s.source?.sorte ?? '');
+// Part en attente de vérification ; rend le message à montrer
+export async function envoyerSignalement(s: Saisie) {
+  await appeler('/signalements', { methode: 'POST', corps: { site: s.site ?? '', ligne: s.ligne ?? '', page: s.page ?? '', question: s.question ?? '', source: s.source ?? {} } });
+  return 'Signalement envoyé : il sera vérifié avant toute correction.';
+}
+// Le nom lisible de chaque poste de dépense, tel que les services le consignent
+export const POSTES: Record<string, string> = {
+  navigation: 'Candidature', jade: 'JADE (jugement)', lettre: 'Lettre', etiquettes: 'Tri des intitulés', tri: 'Tri des intitulés',
+  metiers: 'Métiers des offres', etiquette: 'Mails', reponse: 'Réponses aux mails', relance: 'Relances', preparation: "Préparation d'entretien",
+  appel: "Analyse d'appel", transcription: 'Transcription des appels', cv_spontane: 'Choix du CV spontané', relations: 'Fiches des relations', lapis: 'LAPIS',
 };
+// Dans la fiche, la candidature précise qu'elle compte la navigation
+const POSTES_FICHE: Record<string, string> = { ...POSTES, navigation: 'Candidature (navigation)' };
 const POSITIVES = ['proposition', 'rendez_vous', 'prise_information'];
-const sur = (u: string | null | undefined) => (u && /^https?:\/\//i.test(u) ? u : undefined);
 const hote = (u: string) => {
   try {
     return new URL(u).hostname.replace(/^www\./, '');
@@ -94,9 +86,8 @@ const court = (u: string) => {
     return u;
   }
 };
-const duree = (s?: number) => (!s ? '—' : s < 60 ? `${Math.round(s)} s` : `${Math.floor(s / 60)} min ${String(Math.round(s % 60)).padStart(2, '0')} s`);
-const dollars = (v: number) => `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: v > 0 && v < 0.01 ? 4 : 2 })} $`;
-const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+
 
 // Une offre a changé dans une fiche : les pages qui la listent se relisent
 export const OFFRE_CHANGEE = 'illusion:offre-changee';
@@ -145,18 +136,18 @@ export function ongletFicheOffre(
 function PiedFiche({ cle, ouvrirEntreprise }: { cle: string; ouvrirEntreprise?: (siren: string) => void }) {
   const d = useDossier(cle)?.dossier;
   if (!d) return null;
-  const o = d.offre, lien = sur(o.apply_url || o.url);
+  const o = d.offre, lien = lienSur(o.apply_url || o.url);
   // « Postuler » n'a plus de sens sur une offre déposée : l'annonce se revoit
   const deposee = d.candidature && d.candidature.statut !== 'PRETE';
   return (
     <>
       {o.entreprise_siren && ouvrirEntreprise && (
-        <button type="button" className="action gauche" aria-haspopup="dialog" data-ouvre="fiche-entreprise" data-objet={o.entreprise_siren} onClick={() => ouvrirEntreprise(o.entreprise_siren!)}>Voir la fiche entreprise</button>
+        <Action className="gauche" aria-haspopup="dialog" data-ouvre="fiche-entreprise" data-objet={o.entreprise_siren} onClick={() => ouvrirEntreprise(o.entreprise_siren!)}>Voir la fiche entreprise</Action>
       )}
       {lien && (
         <a className="action plein" href={lien} target="_blank" rel="noopener noreferrer">
           {deposee ? "Page de l'offre" : 'Postuler'}
-          <span className="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
+          <span className="ico">{ICONES.fleche}</span>
         </a>
       )}
     </>
@@ -169,7 +160,7 @@ function Bloc({ titre, compte, children }: { titre: string; compte?: React.React
       <summary>
         {titre}
         {compte !== undefined && <span className="compteur">{compte}</span>}
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        {ICONES.suite}
       </summary>
       <div>{children}</div>
     </details>
@@ -211,14 +202,14 @@ function CorpsFiche({ cle, ajouterAuProfil }: { cle: string; ajouterAuProfil?: (
     : tags.has('refus') ? { nom: 'Refus', classe: 'refus' } : tags.size ? { nom: 'Réponse reçue', classe: 't-rep' } : null;
   const etape = ETAPES[o.etape] ?? { nom: o.etape, classe: '' };
   const demander = (competence: string) => {
-    const demande = { cle, competence, profil: (envoi?.profil_candidature ?? '').split(/[\\/]/).pop() ?? '' };
+    const demande = { cle, competence, profil: nomFichier(envoi?.profil_candidature) };
     if (ajouterAuProfil) ajouterAuProfil(demande);
     else setAjout(demande);
   };
 
   return (
     <div className="fiche-offre">
-      {avis && <p className={`avis-fiche${avis.erreur ? ' erreur' : ''}`} role={avis.erreur ? 'alert' : 'status'}>{avis.texte}</p>}
+      {avis && <AvisBref {...avis} classe="avis-fiche" />}
       <div className="f-tete">
         <h3>{o.titre || 'Offre sans intitulé'}</h3>
         <p className="f-meta">
@@ -242,25 +233,24 @@ function CorpsFiche({ cle, ajouterAuProfil }: { cle: string; ajouterAuProfil?: (
       </div>
       <div className="section-f">
         <div className="grille-fiche">
-          <div><span className="lib-champ">Entreprise</span><span>{o.entreprise_brute || '—'}{o.entreprise_siren && <> <small>SIREN {o.entreprise_siren.replace(/(\d{3})(?=\d)/g, '$1 ')}</small></>}</span></div>
-          <div><span className="lib-champ">Site de l&apos;entreprise</span>{sur(o.site_entreprise) ? <a className="lien" href={sur(o.site_entreprise)} target="_blank" rel="noopener noreferrer">{hote(o.site_entreprise!)}</a> : <span>—</span>}</div>
-          <div><span className="lib-champ">Publiée le</span><span>{jourMois(o.publiee_le)}</span></div>
-          <div><span className="lib-champ">Lieu</span><span>{o.lieu || '—'}{o.dept && ` (${o.dept})`}</span></div>
-          <div><span className="lib-champ">Contrat</span><span>{o.contrat || '—'}</span></div>
-          <div><span className="lib-champ">Langue</span><span>{o.langue.toUpperCase() || '—'}</span></div>
-          <div><span className="lib-champ">Métiers</span><span>{o.metiers.join(', ') || '—'}</span></div>
-          <div><span className="lib-champ">Candidater</span>{sur(o.apply_url) ? <a className="lien" href={sur(o.apply_url)} target="_blank" rel="noopener noreferrer">{court(o.apply_url)}</a> : <span>—</span>}</div>
-          <div><span className="lib-champ">Annonce</span>{sur(o.url) ? <a className="lien" href={sur(o.url)} target="_blank" rel="noopener noreferrer">{hote(o.url)}</a> : <span>—</span>}</div>
-          <div><span className="lib-champ">Vue par la veille</span><span>{jourHeure(o.vue_le)}</span></div>
+          <LibelleValeur libelle="Entreprise"><span>{o.entreprise_brute || '—'}{o.entreprise_siren && <> <small>SIREN {o.entreprise_siren.replace(/(\d{3})(?=\d)/g, '$1 ')}</small></>}</span></LibelleValeur>
+          <LibelleValeur libelle="Site de l&apos;entreprise">{lienSur(o.site_entreprise) ? <a className="lien" href={lienSur(o.site_entreprise)} target="_blank" rel="noopener noreferrer">{hote(o.site_entreprise!)}</a> : <span>—</span>}</LibelleValeur>
+          <LibelleValeur libelle="Publiée le"><span>{jourMoisIso(o.publiee_le)}</span></LibelleValeur>
+          <LibelleValeur libelle="Lieu"><span>{o.lieu || '—'}{o.dept && ` (${o.dept})`}</span></LibelleValeur>
+          <LibelleValeur libelle="Contrat"><span>{o.contrat || '—'}</span></LibelleValeur>
+          <LibelleValeur libelle="Langue"><span>{o.langue.toUpperCase() || '—'}</span></LibelleValeur>
+          <LibelleValeur libelle="Métiers"><span>{o.metiers.join(', ') || '—'}</span></LibelleValeur>
+          <LibelleValeur libelle="Candidater">{lienSur(o.apply_url) ? <a className="lien" href={lienSur(o.apply_url)} target="_blank" rel="noopener noreferrer">{court(o.apply_url)}</a> : <span>—</span>}</LibelleValeur>
+          <LibelleValeur libelle="Annonce">{lienSur(o.url) ? <a className="lien" href={lienSur(o.url)} target="_blank" rel="noopener noreferrer">{hote(o.url)}</a> : <span>—</span>}</LibelleValeur>
+          <LibelleValeur libelle="Vue par la veille"><span>{jourEtHeure(o.vue_le)}</span></LibelleValeur>
           <div className="cle-offre"><span className="lib-champ">Clé de dédoublonnage</span><span className="mono">{o.cle}</span></div>
         </div>
       </div>
       {d.attribution?.modifiable && <Profils cle={cle} attribution={d.attribution} agir={agir} />}
       {envoi && (
-        <div className="section-f">
-          <h3>Candidature</h3>
+        <SectionFiche titre="Candidature">
           <dl className="def">
-            <dt className="lib-champ">{envoi.statut === 'POSTULEE' ? 'Envoyée le' : 'Tentée le'}</dt><dd>{jourHeure(envoi.date)}</dd>
+            <dt className="lib-champ">{envoi.statut === 'POSTULEE' ? 'Envoyée le' : 'Tentée le'}</dt><dd>{jourEtHeure(envoi.date)}</dd>
             {d.suivi && (
               <>
                 <dt className="lib-champ">Suivi</dt>
@@ -294,7 +284,7 @@ function CorpsFiche({ cle, ajouterAuProfil }: { cle: string; ajouterAuProfil?: (
               <><dt className="lib-champ">Sous-entendues</dt><dd><span className="puces">{envoi.competences_implicites.map((c) => <span key={c} className="puce implicite">{c}</span>)}</span></dd></>
             )}
           </dl>
-        </div>
+        </SectionFiche>
       )}
       {d.saisies.length > 0 && (
         <Bloc titre="Ce qui a été saisi" compte={d.saisies.length}>
@@ -303,14 +293,11 @@ function CorpsFiche({ cle, ajouterAuProfil }: { cle: string; ajouterAuProfil?: (
               <li key={n}>
                 <span className="q">{s.question || '—'}</span>
                 <span className="v">{s.valeur || '—'}</span>
-                <span className="d">{SAISIES[s.source?.sorte ?? ''] ?? s.source?.sorte}{s.source?.donnee && ` · ${s.source.donnee}`}</span>
+                <span className="d">{SOURCES_SAISIE[s.source?.sorte ?? ''] ?? s.source?.sorte}{s.source?.donnee && ` · ${s.source.donnee}`}</span>
                 {s.signalement === 'valide' ? <span className="refus">signalée fausse</span>
                   : s.signalement === 'en_attente' ? <span className="d">signalée, en attente</span>
-                    : s.ligne && !['cv', 'lettre', 'coffre'].includes(s.source?.sorte ?? '') && (
-                      <button type="button" className="lien-d" disabled={!!occupe} onClick={() => agir('signaler', async () => {
-                        await poster('/signalements', { site: s.site, ligne: s.ligne, page: s.page ?? '', question: s.question ?? '', source: s.source ?? {} });
-                        return 'Signalement envoyé : il sera vérifié avant toute correction.';
-                      })}>Signaler</button>
+                    : signalable(s) && (
+                      <button type="button" className="lien-d" disabled={!!occupe} onClick={() => agir('signaler', () => envoyerSignalement(s))}>Signaler</button>
                     )}
               </li>
             ))}
@@ -321,22 +308,22 @@ function CorpsFiche({ cle, ajouterAuProfil }: { cle: string; ajouterAuProfil?: (
       <Bloc titre="Contacts LinkedIn" compte={d.contacts.length || undefined}>
         {d.contacts.length ? (
           <ul className="liste-f">{d.contacts.map((c) => (
-            <li key={c.profil_url}>{sur(c.profil_url) ? <a className="lien" href={sur(c.profil_url)} target="_blank" rel="noopener noreferrer">{c.nom}</a> : c.nom}<span className="d">{c.titre}</span></li>
+            <li key={c.profil_url}>{lienSur(c.profil_url) ? <a className="lien" href={lienSur(c.profil_url)} target="_blank" rel="noopener noreferrer">{c.nom}</a> : c.nom}<span className="d">{c.titre}</span></li>
           ))}</ul>
         ) : <p className="texte-f">LAPIS cherche chez l&apos;employeur les personnes aux postes réglés pour LAPIS ; personne n&apos;est contacté.</p>}
-        <button type="button" className="action" disabled={occupe === 'lapis'} onClick={() => agir('lapis', async () => {
+        <Action disabled={occupe === 'lapis'} onClick={() => agir('lapis', async () => {
           const r = await poster('/lapis/contacts', { offre_cle: cle });
           return r.lancee ? 'LAPIS cherche des contacts chez cet employeur : ils apparaîtront ici.' : 'Une passe de LAPIS tourne déjà.';
-        })}>Chercher des contacts</button>
+        })}>Chercher des contacts</Action>
       </Bloc>
       {envoi?.statut === 'POSTULEE' && (
         <Bloc titre="Préparation de l'entretien">
           {envoi.preparation ? <Preparation texte={envoi.preparation} candidature={envoi.id} setAvis={setAvis} />
             : <p className="texte-f">Aucun rendez-vous proposé pour l&apos;instant : la préparation se rédige quand un mail en propose un.</p>}
-          <button type="button" className="action" disabled={occupe === 'preparer'} onClick={() => agir('preparer', async () => {
+          <Action disabled={occupe === 'preparer'} onClick={() => agir('preparer', async () => {
             await poster(`/candidatures/${envoi.id}/preparation`);
             return "Préparation de l'entretien rédigée.";
-          })}>{occupe === 'preparer' ? 'Rédaction en cours…' : envoi.preparation ? 'Refaire la préparation' : 'Préparer'}</button>
+          })}>{occupe === 'preparer' ? 'Rédaction en cours…' : envoi.preparation ? 'Refaire la préparation' : 'Préparer'}</Action>
         </Bloc>
       )}
       {d.mails.length > 0 && (
@@ -345,7 +332,7 @@ function CorpsFiche({ cle, ajouterAuProfil }: { cle: string; ajouterAuProfil?: (
             {d.mails.map((m) => (
               <li key={m.message_id}>
                 <span className="sujet">{m.sens === 'sortant' ? '↗ ' : ''}{m.sujet || '(sans objet)'}</span>
-                <span className="d">{m.expediteur.replace(/^.*<(.+)>.*$/, '$1')} · {jourMois(dateUtc(m.recu_le).toISOString())}</span>
+                <span className="d">{m.expediteur.replace(/^.*<(.+)>.*$/, '$1')} · {jourMoisIso(dateUtc(m.recu_le).toISOString())}</span>
                 <button type="button" className="lien-d" disabled={!!occupe} title="Sort tout ce fil de l'offre ; ni la relève ni « Rattacher » ne l'y remettront."
                   onClick={() => agir('detacher', async () => {
                     const r = await poster('/mails/fil/offre', { message_id: m.message_id, offre_cle: '' });
@@ -378,25 +365,17 @@ function Profils({ cle, attribution, agir }: { cle: string; attribution: Attribu
     return r.note ? `Profils enregistrés : ${r.note}.` : 'Profils enregistrés : la prochaine candidature les prendra.';
   });
   return (
-    <div className="section-f">
-      <h3>Profils</h3>
+    <SectionFiche titre="Profils">
       <div className="grille-2">
-        <div className="champ">
-          <label htmlFor={`recherche-${cle}`}>Profil de recherche</label>
-          <select id={`recherche-${cle}`} className="saisie" value={attribution.profil_recherche} onChange={(e) => changer('profil_recherche', e.target.value)}>
+        <ChampListe id={`recherche-${cle}`} libelle="Profil de recherche" value={attribution.profil_recherche} onChange={(e) => changer('profil_recherche', e.target.value)}>
             {attribution.choix.map((c) => <option key={c.recherche} value={c.recherche}>{c.recherche || '— aucun —'}</option>)}
-          </select>
-        </div>
-        <div className="champ">
-          <label htmlFor={`cv-${cle}`}>Profil de CV</label>
-          <select id={`cv-${cle}`} className="saisie" value={choisi} title="« Automatique » : la rotation du profil de recherche choisit, celui qui a le moins servi."
-            onChange={(e) => changer('profil_cv', e.target.value)}>
+          </ChampListe>
+        <ChampListe id={`cv-${cle}`} libelle="Profil de CV" value={choisi} title="« Automatique » : la rotation du profil de recherche choisit, celui qui a le moins servi." onChange={(e) => changer('profil_cv', e.target.value)}>
             <option value="">{attribution.cv_auto && attribution.profil_cv ? `Automatique · ${nomProfil(attribution.profil_cv)}` : 'Automatique'}</option>
             {tous.map((c) => <option key={c} value={c}>{nomProfil(c)}</option>)}
-          </select>
-        </div>
+          </ChampListe>
       </div>
-    </div>
+    </SectionFiche>
   );
 }
 
@@ -432,10 +411,10 @@ function BlocMesures({ m }: { m: Mesures }) {
       <dl className="def">
         <dt className="lib-champ">Jobboard d&apos;origine</dt>
         <dd>{libelleSource(m.origine.source)}{m.origine.vue_sur.length > 0 && <span className="d"> vue aussi sur {m.origine.vue_sur.map(libelleSource).join(', ')}</span>}</dd>
-        <dt className="lib-champ">Détectée le</dt><dd>{jourHeure(m.origine.detectee_le)}</dd>
+        <dt className="lib-champ">Détectée le</dt><dd>{jourEtHeure(m.origine.detectee_le)}</dd>
         {x.site && (
           <>
-            <dt className="lib-champ">Candidature</dt><dd>{duree(x.duree_s)} sur {x.site} <span className="d">workflow : {x.reglage || '—'}</span></dd>
+            <dt className="lib-champ">Candidature</dt><dd>{dureeOuTiret(x.duree_s)} sur {x.site} <span className="d">workflow : {x.reglage || '—'}</span></dd>
             <dt className="lib-champ">Modèle</dt><dd>{x.tours} tour(s), JADE {x.jade} appel(s)</dd>
             <dt className="lib-champ">Gestes</dt><dd>{x.gestes}, dont {x.rejoues} rejoué(s) sans l&apos;IA{x.conversation != null && <span className="d"> {x.conversation} % conversés</span>}</dd>
             <dt className="lib-champ">Infos utilisées</dt><dd>{x.remplis} champ(s) remplis, dont {x.remplis_ia} par l&apos;IA</dd>
@@ -445,10 +424,10 @@ function BlocMesures({ m }: { m: Mesures }) {
       </dl>
       {m.couts.length > 0 && (
         <ul className="liste-f">{m.couts.map((p) => (
-          <li key={p.poste}>{POSTES[p.poste] ?? p.poste}<span className="d">{p.appels} appel(s) · {dollars(p.cout)}</span></li>
+          <li key={p.poste}>{POSTES_FICHE[p.poste] ?? p.poste}<span className="d">{p.appels} appel(s) · {dollars(p.cout)}</span></li>
         ))}</ul>
       )}
-      {m.appels.length > 0 && <p className="texte-f">Appels : {m.appels.map((a) => `${jourHeure(a.debut)} (${duree(a.duree_s)}${a.analyse ? ', analysé' : ''})`).join(', ')}.</p>}
+      {m.appels.length > 0 && <p className="texte-f">Appels : {m.appels.map((a) => `${jourEtHeure(a.debut)} (${dureeOuTiret(a.duree_s)}${a.analyse ? ', analysé' : ''})`).join(', ')}.</p>}
     </Bloc>
   );
 }
@@ -560,22 +539,18 @@ function AjoutCompetence({ demande, fini }: { demande: DemandeAjout; fini: (text
     <form className="ajout-competence" onSubmit={ajouter} aria-label={`Ajouter « ${demande.competence} » au profil`}>
       <h3 className="titre-ajout">Ajouter « {demande.competence} » au profil</h3>
       <p className="texte-f">Dans <span className="mono">{nomProfil(demande.profil)}</span>. Écrite noir sur blanc, elle sera reconnue sur les prochaines annonces qui la demandent, et imprimée sur le CV quand elles la demandent.</p>
-      {avis && <p className={`avis-fiche${avis.erreur ? ' erreur' : ''}`} role={avis.erreur ? 'alert' : 'status'}>{avis.texte}</p>}
-      <div className="champ">
-        <label htmlFor="ajout-rubrique">Rubrique</label>
-        <select id="ajout-rubrique" className="saisie" value={rubrique} onChange={(e) => setRubrique(e.target.value)} disabled={rubriques === null}>
+      {avis && <AvisBref {...avis} classe="avis-fiche" />}
+      <ChampListe id="ajout-rubrique" libelle="Rubrique" value={rubrique} onChange={(e) => setRubrique(e.target.value)} disabled={rubriques === null}>
           <option value="">{rubriques === null ? 'Lecture du profil…' : '— laquelle ?'}</option>
           {(rubriques ?? []).map((r) => <option key={r} value={r}>{r}</option>)}
-        </select>
-      </div>
-      <div className="champ">
-        <label htmlFor="ajout-neuve">Ou une rubrique neuve</label>
+        </ChampListe>
+      <Champ pour="ajout-neuve" libelle="Ou une rubrique neuve">
         <input id="ajout-neuve" className="saisie" maxLength={80} placeholder="IA, DevOps, Données…" value={neuve} onChange={(e) => setNeuve(e.target.value)} />
         <span className="aide-champ">Remplie, elle l&apos;emporte sur la rubrique choisie.</span>
-      </div>
+      </Champ>
       <div className="actions-ajout">
-        <button type="button" className="action" onClick={() => fini()}>Annuler</button>
-        <button type="submit" className="action plein" disabled={occupe}>Ajouter<span className="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="square" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span></button>
+        <Action onClick={() => fini()}>Annuler</Action>
+        <Action plein iconeApres={ICONES.plus_pages} type="submit" disabled={occupe}>Ajouter</Action>
       </div>
     </form>
   );

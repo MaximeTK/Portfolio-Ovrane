@@ -4,11 +4,16 @@ import './relations.css';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Activite } from '../../activite/Activite';
-import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
+import { Fenetre, usePanneau } from '../../dock/Dock';
 import { AuPied, Confirmer, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
-import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
+import { useEchap, useGeste } from '../commun';
+import { Action } from '../../elements/Action';
+import { Champ, SectionFiche } from '../../elements/Champ';
+import { ICONES } from '../../elements/icones';
+import { useAvis, type Dire } from '../../elements/Avis';
+import { jourMois, message, parVirgules, quand } from '../../elements/format';
+import { PageDock } from '../../activite/PageDock';
 
 // Ce que /relations rend pour le nuage, et /relations/{numero} pour la fiche
 type Personne = { numero: number; nom: string; etiquettes?: string[]; entreprise?: string; poste?: string; echanges: number };
@@ -33,19 +38,10 @@ const CHAMPS = [
   ['linkedin', 'LinkedIn'], ['notes', 'Notes personnelles', 'long'],
 ] as const;
 type Cle = (typeof CHAMPS)[number][0];
-// Une date d'Illusion, en UTC sans fuseau écrit
-const utc = (t: string) => new Date(/(Z|[+-]\d{2}:?\d{2})$/i.test(t) ? t : `${t}Z`);
-const jour = (iso?: string) => (iso ? utc(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '');
-const quand = (iso: string) => utc(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
 const groupe = (p: Personne) => p.etiquettes?.[0] || SANS;
 const cote = (p: Personne) => 9 + Math.min(7.2, Math.sqrt(p.echanges || 0) * 4.2);
 
-const ICONES = {
-  ...ICONES_COMMUNES,
-  televerser: <svg {...TRAIT}><path d="M12 15V3M7 8l5-5 5 5M4 15v6h16v-6" /></svg>,
-  lapis: <svg {...TRAIT}><circle cx="10" cy="8" r="4" /><path d="M3 20c0-3.5 3-6 7-6" /><circle cx="17" cy="16" r="3" /><path d="m21 20-1.8-1.8" /></svg>,
-  coche: <svg {...TRAIT} strokeWidth={2.6}><path d="M5 12l5 5L20 7" /></svg>,
-};
 
 // Une grappe par première étiquette, ses personnes en spirale de tournesol
 function disposer(personnes: Personne[]) {
@@ -73,7 +69,7 @@ export default function PageRelations(_: ProprietesPage) {
   const [donnees, setDonnees] = useState(() => repris<Donnees | null>('relations:donnees', null));
   useGarder('relations', { donnees });
   const [erreur, setErreur] = useState('');
-  const [avis, setAvis] = useState<Avis>(null);
+  const { dire, vue } = useAvis('avis-r', true, erreur);
   const relire = useCallback(async () => {
     try {
       setDonnees(await appeler<Donnees>('/relations'));
@@ -88,23 +84,22 @@ export default function PageRelations(_: ProprietesPage) {
   }, [relire]);
 
   return (
-    <Dock id="relations" principal="nuage" panneau={null} fenetres={{ nuage: { mini: [470, 260], pref: [620, 400], flot: [760, 520] } }}>
-      <Activite />
-      <Nuage donnees={donnees} erreur={erreur} avis={avis} setAvis={setAvis} relire={relire} />
-      <PanneauRelations donnees={donnees} setAvis={setAvis} relire={relire} />
-    </Dock>
+    <PageDock id="relations" principal="nuage" panneau={null} fenetres={{ nuage: { mini: [470, 260], pref: [620, 400], flot: [760, 520] } }}>
+      <Nuage donnees={donnees} avis={vue} dire={dire} relire={relire} />
+      <PanneauRelations donnees={donnees} dire={dire} relire={relire} />
+    </PageDock>
   );
 }
 
-type ProprietesNuage = { donnees: Donnees | null; erreur: string; avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void> };
+type ProprietesNuage = { donnees: Donnees | null; avis: React.ReactNode; dire: Dire; relire: () => Promise<void> };
 
-function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
+function Nuage({ donnees, avis, dire, relire }: ProprietesNuage) {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   // La recherche, le zoom et le déplacement restent d'une visite à l'autre
   const [recherche, setRecherche] = useState(() => repris('relations:recherche', ''));
   const [vue, setVue] = useState(() => repris<Vue | null>('relations:vue', null));
   useGarder('relations', { recherche, vue });
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   const [cadre, setCadre] = useState({ w: LARGEUR, h: HAUTEUR });
   const [glisse, setGlisse] = useState(false);
   const zone = useRef<HTMLDivElement>(null);
@@ -120,7 +115,6 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
 
   // Échap ferme le panneau, sauf celui qu'une confirmation garde pour elle
   useEchap(fermer);
-  useAvisBref(avis, setAvis);
   // La taille du nuage : la vue garde ses proportions, sans bande vide autour
   useLayoutEffect(() => {
     const el = zone.current;
@@ -189,18 +183,11 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
     if (p && !p.bouge && p.numero !== null) ouvrirFiche(p.numero);
   };
 
-  const importer = async (lire: () => Promise<{ crees: number; completees: number; deja: number }>, nom: string) => {
-    setOccupe(true);
-    try {
-      const b = await lire();
-      setAvis({ texte: `${nom} : ${b.crees} créée(s), ${b.completees} complétée(s), ${b.deja} déjà là.` });
-      await relire();
-    } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
-    } finally {
-      setOccupe(false);
-    }
-  };
+  const importer = (lire: () => Promise<{ crees: number; completees: number; deja: number }>, nom: string) => geste(async () => {
+    const b = await lire();
+    dire(`${nom} : ${b.crees} créée(s), ${b.completees} complétée(s), ${b.deja} déjà là.`);
+    await relire();
+  });
   const eteinte = (n: number) => !!cherche && !trouvees.some((p) => p.numero === n);
   const montrees = new Set(trouvees.length <= 40 ? trouvees.map((p) => p.numero) : []);
 
@@ -212,21 +199,18 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
         </label>
         <span className="espace" />
         <div className="actions" role="group" aria-label="Actions">
-          <button type="button" className="action" title="L'export « Connections.csv » de vos données LinkedIn" disabled={occupe} onClick={() => fichier.current?.click()}>
-            <span className="ico">{ICONES.televerser}</span><span className="txt">Importer Connections.csv</span>
-          </button>
+          <Action icone={ICONES.televerser_relations} txt title="L'export « Connections.csv » de vos données LinkedIn" disabled={occupe} onClick={() => fichier.current?.click()}>Importer Connections.csv
+          </Action>
           <input ref={fichier} type="file" accept=".csv,text/csv" hidden aria-label="Fichier Connections.csv" onChange={(e) => {
             const lu = e.target.files?.[0];
             e.target.value = '';
             if (lu) void importer(async () => appeler('/relations/importer/linkedin', { methode: 'POST', corps: { csv: await lu.text() } }), 'LinkedIn');
           }} />
-          <button type="button" className="action" title="Les personnes que LAPIS a trouvées chez les employeurs visés" disabled={occupe}
-            onClick={() => void importer(() => appeler('/relations/importer/lapis', { methode: 'POST' }), 'LAPIS')}>
-            <span className="ico">{ICONES.lapis}</span><span className="txt">Importer depuis LAPIS</span>
-          </button>
-          <button type="button" className="action plein" aria-haspopup="dialog" aria-expanded={onglet === 'neuve'} onClick={() => ouvrir('neuve')}>
-            Nouvelle personne<span className="ico">{ICONES.plus}</span>
-          </button>
+          <Action icone={ICONES.contacts} txt title="Les personnes que LAPIS a trouvées chez les employeurs visés" disabled={occupe} onClick={() => void importer(() => appeler('/relations/importer/lapis', { methode: 'POST' }), 'LAPIS')}>Importer depuis LAPIS
+          </Action>
+          <Action plein iconeApres={ICONES.plus_pages} aria-haspopup="dialog" aria-expanded={onglet === 'neuve'} onClick={() => ouvrir('neuve')}>
+            Nouvelle personne
+          </Action>
         </div>
       </div>
       {cherche && (
@@ -285,11 +269,7 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
           </svg>
         )}
       </div>
-      {(avis || erreur) && (
-        <p className={`avis-r${avis?.erreur || (!avis && erreur) ? ' erreur' : ''}`} role={avis?.erreur || (!avis && erreur) ? 'alert' : 'status'} onClick={() => setAvis(null)}>
-          {avis?.texte ?? erreur}
-        </p>
-      )}
+      {avis}
       <div className="legende-r">
         <span className="total-r">{personnes.length} personne{personnes.length > 1 ? 's' : ''}</span>
         {groupes.map((g) => <span key={g.nom} className="cle-r"><i style={{ '--t': g.teinte } as React.CSSProperties} />{g.nom}<span className="compteur">{g.nombre}</span></span>)}
@@ -300,26 +280,19 @@ function Nuage({ donnees, erreur, avis, setAvis, relire }: ProprietesNuage) {
   );
 }
 
-type ProprietesPanneau = { donnees: Donnees | null; setAvis: (a: Avis) => void; relire: () => Promise<void> };
+type ProprietesPanneau = { donnees: Donnees | null; dire: Dire; relire: () => Promise<void> };
 
 // Panneau : une fiche par personne ouverte, ou une fiche vierge à créer
-function PanneauRelations({ donnees, setAvis, relire }: ProprietesPanneau) {
+function PanneauRelations({ donnees, dire, relire }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
-  const [occupe, setOccupe] = useState(false);
-  const creer = async (champs: Record<string, unknown>) => {
-    setOccupe(true);
-    try {
-      const lu = await appeler<Fiche>('/relations', { methode: 'POST', corps: champs });
-      setAvis({ texte: `Fiche de ${lu.nom} créée.` });
-      // Le nuage relu d'abord : la fiche s'ouvre sur une personne qu'il connaît
-      await relire();
-      ouvrir('fiche', String(lu.numero));
-    } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
-    } finally {
-      setOccupe(false);
-    }
-  };
+  const { occupe, geste } = useGeste((t) => dire(t, true));
+  const creer = (champs: Record<string, unknown>) => geste(async () => {
+    const lu = await appeler<Fiche>('/relations', { methode: 'POST', corps: champs });
+    dire(`Fiche de ${lu.nom} créée.`);
+    // Le nuage relu d'abord : la fiche s'ouvre sur une personne qu'il connaît
+    await relire();
+    ouvrir('fiche', String(lu.numero));
+  });
 
   const elements: Elements = {
     fiche: (n) => {
@@ -327,7 +300,7 @@ function PanneauRelations({ donnees, setAvis, relire }: ProprietesPanneau) {
       // Sortie du nuage (supprimée), sa fiche ne se montre plus
       return donnees && !personne ? null : {
         cle: 'fiche', titre: `Fiche · ${personne?.nom ?? ''}`,
-        corps: <FicheRelation numero={Number(n)} donnees={donnees} setAvis={setAvis} relire={relire} />, pied: true,
+        corps: <FicheRelation numero={Number(n)} donnees={donnees} dire={dire} relire={relire} />, pied: true,
       };
     },
   };
@@ -336,18 +309,18 @@ function PanneauRelations({ donnees, setAvis, relire }: ProprietesPanneau) {
     corps: <Formulaire id="relation-neuve" fiche={null} envoyer={(c) => void creer(c)} />,
     pied: (
       <>
-        <button type="button" className="action" onClick={fermer}>Annuler</button>
-        <button type="submit" form="relation-neuve" className="action plein" disabled={occupe}>Créer la fiche<span className="ico">{ICONES.coche}</span></button>
+        <Action onClick={fermer}>Annuler</Action>
+        <Action plein iconeApres={ICONES.coche} type="submit" form="relation-neuve" disabled={occupe}>Créer la fiche</Action>
       </>
     ),
   }] : [];
   return <Panneau elements={elements} onglets={onglets} />;
 }
 
-type ProprietesFicheRelation = { numero: number; donnees: Donnees | null; setAvis: (a: Avis) => void; relire: () => Promise<void> };
+type ProprietesFicheRelation = { numero: number; donnees: Donnees | null; dire: Dire; relire: () => Promise<void> };
 
 // Fiche d'une personne, une par fenêtre, avec son propre pied
-function FicheRelation({ numero, donnees, setAvis, relire }: ProprietesFicheRelation) {
+function FicheRelation({ numero, donnees, dire, relire }: ProprietesFicheRelation) {
   const { ouvrir, fermer } = usePanneau();
   const [fiche, setFiche] = useState(() => repris<Fiche | null>(`relations:fiche-${numero}`, null));
   const [erreur, setErreur] = useState('');
@@ -376,10 +349,10 @@ function FicheRelation({ numero, donnees, setAvis, relire }: ProprietesFicheRela
     try {
       setFiche(await faire());
       await relire();
-      if (texte) setAvis({ texte });
+      if (texte) dire(texte);
       return true;
     } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
+      dire(message(e), true);
       return false;
     } finally {
       setOccupe(false);
@@ -389,11 +362,11 @@ function FicheRelation({ numero, donnees, setAvis, relire }: ProprietesFicheRela
     setOccupe(true);
     try {
       await appeler(`/relations/${numero}`, { methode: 'DELETE' });
-      setAvis({ texte: `Fiche de ${fiche?.nom ?? ''} supprimée.` });
+      dire(`Fiche de ${fiche?.nom ?? ''} supprimée.`);
       fermer();
       await relire();
     } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
+      dire(message(e), true);
     } finally {
       setOccupe(false);
       setConfirmer(false);
@@ -408,13 +381,12 @@ function FicheRelation({ numero, donnees, setAvis, relire }: ProprietesFicheRela
         <Confirmer question={`Supprimer la fiche de ${fiche.nom} ?`} detail="Ses liens et ses échanges propres sont effacés." action="Supprimer"
           occupe={occupe} onAnnuler={() => setConfirmer(false)} onConfirmer={() => void supprimer()} />
       )}
-      <CorpsFiche fiche={fiche} donnees={donnees} appels={appels} occupe={occupe} setAvis={setAvis} geste={geste} formulaire={formulaire}
+      <CorpsFiche fiche={fiche} donnees={donnees} appels={appels} occupe={occupe} dire={dire} geste={geste} formulaire={formulaire}
         ouvrirFiche={(n) => ouvrir('fiche', String(n))} />
       <AuPied>
-        <button type="button" className="action rouge gauche" aria-haspopup="dialog" onClick={() => setConfirmer(true)}>
-          <span className="ico">{ICONES.supprimer}</span>Supprimer la fiche
-        </button>
-        <button type="submit" form={formulaire} className="action plein" disabled={occupe}>Enregistrer la fiche<span className="ico">{ICONES.coche}</span></button>
+        <Action className="gauche" rouge icone={ICONES.supprimer} aria-haspopup="dialog" onClick={() => setConfirmer(true)}>Supprimer la fiche
+        </Action>
+        <Action plein iconeApres={ICONES.coche} type="submit" form={formulaire} disabled={occupe}>Enregistrer la fiche</Action>
       </AuPied>
     </>
   );
@@ -432,15 +404,15 @@ function Formulaire({ id, fiche, envoyer }: { id: string; fiche: Fiche | null; e
     const attributs = { id: `${id}-${cle}`, className: 'saisie', value: valeurs[cle],
       onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setValeurs((v) => ({ ...v, [cle]: e.target.value })) };
     return (
-      <div className="champ"><label htmlFor={`${id}-${cle}`}>{libelle}</label>
+      <Champ pour={`${id}-${cle}`} libelle={libelle}>
         {genre === 'long' ? <textarea rows={2} {...attributs} /> : <input {...attributs} placeholder={genre === 'liste' ? 'séparées par des virgules' : undefined} />}
-      </div>
+      </Champ>
     );
   };
   return (
     <form id={id} className="section-f" aria-label={fiche ? `Fiche de ${fiche.nom}` : 'Nouvelle personne'} onSubmit={(e) => {
       e.preventDefault();
-      envoyer(Object.fromEntries(CHAMPS.map(([cle, , genre]) => [cle, genre === 'liste' ? valeurs[cle].split(',').map((v) => v.trim()).filter(Boolean) : valeurs[cle].trim()])));
+      envoyer(Object.fromEntries(CHAMPS.map(([cle, , genre]) => [cle, genre === 'liste' ? parVirgules(valeurs[cle]) : valeurs[cle].trim()])));
     }}>
       <div className="grille-2">{champ('nom')}{champ('etiquettes')}</div>
       <div className="grille-2">{champ('entreprise')}{champ('poste')}</div>
@@ -453,12 +425,12 @@ function Formulaire({ id, fiche, envoyer }: { id: string; fiche: Fiche | null; e
 }
 
 type ProprietesFiche = {
-  fiche: Fiche; donnees: Donnees | null; appels: AppelCourt[]; occupe: boolean; setAvis: (a: Avis) => void;
+  fiche: Fiche; donnees: Donnees | null; appels: AppelCourt[]; occupe: boolean; dire: Dire;
   geste: (faire: () => Promise<Fiche>, texte?: string) => Promise<boolean>; formulaire: string; ouvrirFiche: (n: number) => void;
 };
 
 // `formulaire` : l'id propre à la fenêtre, que son pied vise
-function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, formulaire, ouvrirFiche }: ProprietesFiche) {
+function CorpsFiche({ fiche, donnees, appels, occupe, dire, geste, formulaire, ouvrirFiche }: ProprietesFiche) {
   const [vers, setVers] = useState('');
   const [nature, setNature] = useState('');
   const [note, setNote] = useState('');
@@ -469,7 +441,7 @@ function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, formulaire
   const relier = async () => {
     const cible = autres.find((p) => p.nom === vers.trim());
     if (!cible) {
-      setAvis({ texte: 'Choisissez une personne de la liste.', erreur: true });
+      dire('Choisissez une personne de la liste.', true);
       return;
     }
     if (await geste(() => appeler<Fiche>(`${chemin}/liens`, { methode: 'POST', corps: { vers: cible.numero, nature } }), `${fiche.nom} et ${cible.nom} sont reliés.`)) {
@@ -479,7 +451,7 @@ function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, formulaire
   };
   const noter = async () => {
     if (!note.trim()) {
-      setAvis({ texte: 'La note est vide.', erreur: true });
+      dire('La note est vide.', true);
       return;
     }
     setNoteEnCours(true);
@@ -493,17 +465,17 @@ function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, formulaire
     <div className="rel-f">
       <p className="meta-f">{[fiche.etiquettes.join(', '), fiche.poste, fiche.entreprise].filter(Boolean).join(' · ') || 'Aucune étiquette, entreprise ni poste.'}</p>
       {savoir ? (
-        <div className="section-f"><h3>Ce qu&apos;on sait</h3>
+        <SectionFiche titre="Ce qu&apos;on sait">
           {fiche.resume && <p className="resume-r">{fiche.resume}</p>}
           {fiche.sujets.length > 0 && <p className="sujets-r"><span className="lib-champ">Sujets en cours</span>{fiche.sujets.join(' · ')}</p>}
           {fiche.faits.length > 0 && (
-            <ul className="faits-r">{fiche.faits.map((f, i) => <li key={i}>{f.texte}{f.genre && <small>{f.genre} du {jour(f.date)}</small>}</li>)}</ul>
+            <ul className="faits-r">{fiche.faits.map((f, i) => <li key={i}>{f.texte}{f.genre && <small>{f.genre} du {jourMois(f.date, '')}</small>}</li>)}</ul>
           )}
-        </div>
+        </SectionFiche>
       ) : null}
       <Formulaire key={`${fiche.numero}-${JSON.stringify(CHAMPS.map(([c]) => fiche[c]))}`} id={formulaire} fiche={fiche}
         envoyer={(c) => void geste(() => appeler<Fiche>(chemin, { methode: 'PUT', corps: c }), 'Fiche enregistrée.')} />
-      <div className="section-f"><h3>Liens</h3>
+      <SectionFiche titre="Liens">
         {fiche.liens.length ? (
           <ul className="liste-f">
             {fiche.liens.map((l) => (
@@ -520,34 +492,33 @@ function CorpsFiche({ fiche, donnees, appels, occupe, setAvis, geste, formulaire
           <input className="saisie" list={`${formulaire}-noms`} placeholder="Relier à…" aria-label="Relier à" value={vers} onChange={(e) => setVers(e.target.value)} />
           <datalist id={`${formulaire}-noms`}>{autres.map((p) => <option key={p.numero} value={p.nom} />)}</datalist>
           <input className="saisie" placeholder="ami, collègue, frère…" aria-label="Nature du lien" value={nature} onChange={(e) => setNature(e.target.value)} />
-          <button type="submit" className="action" disabled={occupe}>Relier</button>
+          <Action type="submit" disabled={occupe}>Relier</Action>
         </form>
-      </div>
-      <div className="section-f"><h3>Échanges</h3>
+      </SectionFiche>
+      <SectionFiche titre="Échanges">
         <div className="rangee-r deux">
           <textarea className="saisie" rows={2} placeholder="Une note : ce qu'elle vous a dit, ce qu'elle devient…" aria-label="Note" value={note} onChange={(e) => setNote(e.target.value)} />
-          <button type="button" className="action" disabled={occupe} onClick={() => void noter()}>{noteEnCours ? 'La fiche se met à jour…' : 'Ajouter la note'}</button>
+          <Action disabled={occupe} onClick={() => void noter()}>{noteEnCours ? 'La fiche se met à jour…' : 'Ajouter la note'}</Action>
         </div>
         {appels.length > 0 && (
           <div className="rangee-r deux">
             <select className="saisie" aria-label="Appel à ranger" value={choixAppel} onChange={(e) => setAppel(e.target.value)}>
               {appels.map((a) => <option key={a.id} value={a.id}>{a.titre || 'Appel'} — {quand(a.debut)}</option>)}
             </select>
-            <button type="button" className="action" disabled={occupe}
-              onClick={() => void geste(() => appeler<Fiche>(`${chemin}/appels/${choixAppel}`, { methode: 'POST' }), 'Appel rangé dans la fiche.')}>Ranger cet appel ici</button>
+            <Action disabled={occupe} onClick={() => void geste(() => appeler<Fiche>(`${chemin}/appels/${choixAppel}`, { methode: 'POST' }), 'Appel rangé dans la fiche.')}>Ranger cet appel ici</Action>
           </div>
         )}
         {fiche.echanges.length ? (
           <ol className="chrono-r">
             {fiche.echanges.map((e) => (
               <li key={e.numero}>
-                <time>{jour(e.date)}</time><span className="genre">{e.genre}</span>
+                <time>{jourMois(e.date, '')}</time><span className="genre">{e.genre}</span>
                 {e.genre === 'note' ? <span className="texte-r">{e.contenu}</span> : <details><summary>{e.titre}</summary><p>{e.contenu}</p></details>}
               </li>
             ))}
           </ol>
         ) : <p className="texte-f">Aucun échange : ajoutez une note, ou rangez un appel.</p>}
-      </div>
+      </SectionFiche>
     </div>
   );
 }

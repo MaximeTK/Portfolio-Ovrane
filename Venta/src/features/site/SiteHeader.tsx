@@ -1,13 +1,15 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useUIStore } from '@/lib/uiStore';
+import { horsAccueil, useUIStore } from '@/lib/uiStore';
+import { TRAIT_ROND, etatLueur } from './elements';
 
 // Canaux d'Illusion, chargés pour un compte qui y a accès
 const EnteteIllusion = dynamic(() => import('@/features/illusion/ossature/Entete').then((m) => m.Entete));
 
 // Hauteur et marge haute du header : l'œil vise son centre en montant
 export const CENTRE_HEADER_PX = 16 + 44 / 2;
+const BOUTON_ENTETE = 'pointer-events-auto inline-flex min-h-11 min-w-11 items-center justify-center';
 
 function Onglet({ page, label }: { page: string; label: string }) {
   const actif = useUIStore((s) => s.page === page);
@@ -18,9 +20,7 @@ function Onglet({ page, label }: { page: string; label: string }) {
       type="button"
       onClick={() => setPage(page)}
       aria-current={actif ? 'page' : undefined}
-      className={`pointer-events-auto inline-flex min-h-11 min-w-11 items-center justify-center px-1 font-[family-name:var(--font-roboto)] text-xs font-medium transition-[color,filter] duration-500 sm:px-3.5 sm:text-sm ${
-        actif ? 'text-white drop-shadow-[0_0_3px_#fff]' : 'text-white/60 hover:text-white'
-      }`}
+      className={`${BOUTON_ENTETE} px-1 font-[family-name:var(--font-roboto)] text-xs font-medium sm:px-3.5 sm:text-sm ${etatLueur(actif)}`}
     >
       {label}
     </button>
@@ -28,7 +28,7 @@ function Onglet({ page, label }: { page: string; label: string }) {
 }
 
 const ICONE_REGLAGES = (
-  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg {...TRAIT_ROND} className="h-5 w-5" strokeWidth={1.8}>
     <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" />
     <circle cx="16" cy="6" r="2" />
     <circle cx="10" cy="12" r="2" />
@@ -37,7 +37,7 @@ const ICONE_REGLAGES = (
 );
 
 const ICONE_COMPTE = (
-  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg {...TRAIT_ROND} className="h-5 w-5" strokeWidth={1.8}>
     <circle cx="12" cy="8" r="4" />
     <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
   </svg>
@@ -57,9 +57,7 @@ function IconeCoin({ page, label, icone }: { page: string; label: string; icone:
       aria-current={actif ? 'page' : undefined}
       aria-label={label}
       title={label}
-      className={`pointer-events-auto inline-flex min-h-11 min-w-11 items-center justify-center transition-[color,filter] duration-500 ${
-        actif ? 'text-white drop-shadow-[0_0_3px_#fff]' : 'text-white/60 hover:text-white'
-      }`}
+      className={`${BOUTON_ENTETE} ${etatLueur(actif)}`}
     >
       {icone}
     </button>
@@ -69,7 +67,7 @@ function IconeCoin({ page, label, icone }: { page: string; label: string; icone:
 export function SiteHeader() {
   const awake = useUIStore((s) => s.appState === 'awake');
   // L'emplacement central s'ouvre dès que l'œil quitte le centre de l'écran
-  const ouvert = useUIStore((s) => s.page !== null || s.viewMode === 'messaging');
+  const ouvert = useUIStore(horsAccueil);
   const compteIllusion = useUIStore((s) => s.compteIllusion);
   const illusion = useUIStore((s) => s.cote === 'illusion');
 

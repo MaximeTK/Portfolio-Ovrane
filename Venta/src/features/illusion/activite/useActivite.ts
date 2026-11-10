@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { appeler } from '../api';
 import { cleBrouillon } from '../stockage';
 import { useSondage } from './sondage';
+import { heure, MOTIFS } from '../elements/format';
 
 // Données de l'Activité, lues sur /vues/activite d'Illusion
 export type Sorte = 'envoi' | 'reponse' | 'entretien' | 'relance' | 'offres' | 'afaire';
@@ -30,11 +31,6 @@ export type ReponseActivite = { bilan: Record<Sorte, number>; fil: Evenement[]; 
 
 const VIDE: DonneesActivite = { bilan: { envoi: 0, reponse: 0, entretien: 0, relance: 0, offres: 0, afaire: 0 }, fil: [], enCours: null };
 
-// Les motifs d'un dossier resté à la main, nommés comme dans l'ancien dashboard
-const MOTIFS: Record<string, string> = {
-  offre_fermee: 'offre retirée', hors_profil: 'hors profil', captcha: 'vérification humaine', compte: 'compte / connexion',
-  depot: 'pièce refusée', page_sourde: 'page muette', boucle: 'tourne en rond', plafond_tours: 'plafond de tours', brique: 'brique muette',
-};
 // Ce que fait la candidature menée, selon sa phase dans Code Candidature
 const PHASES: Record<string, string> = { offre: "l'annonce se lit", acces: "l'accès au formulaire s'ouvre", formulaire: 'le formulaire se remplit' };
 
@@ -53,7 +49,7 @@ export function phrase(e: Evenement): string {
 const phraseEnCours = (c: ReponseActivite['en_cours']) =>
   c ? `${c.entreprise || 'Une candidature'}, ${PHASES[c.phase] ?? 'la candidature avance'}` : null;
 
-export const heure = (d: Date) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
 
 // Minuit à l'heure du poste, `jours` jours plus tôt
 function debutDuJour(jours = 0) {

@@ -4,30 +4,26 @@ import './profil.css';
 import { useCallback, useEffect, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
+import { Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer, Panneau, type Onglet } from '../../dock/Panneau';
-import { Activite } from '../../activite/Activite';
+
 import type { ProprietesPage } from '../liste';
-import { FORMES_CHAMP, SECTIONS_DE_CHAMP, libelleDonnee, titreProfil, type ChampSchema } from './champs';
+import { libelleDonnee, titreProfil, type ChampSchema } from './champs';
 import { EditeurProfil, useEditeur, type EtatProfil, type Profil } from './editeur';
 import { useUIStore } from '@/lib/uiStore';
-import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
+import { useEchap, useGeste } from '../commun';
+import { Action } from '../../elements/Action';
+import { ICONES } from '../../elements/icones';
+import { useAvis, type Dire } from '../../elements/Avis';
+import { message, nomFichier } from '../../elements/format';
+import { CHAMP_VIERGE, ChampsDuProfil, champVersEnvoi, useFormChamp } from './FormChampProfil';
+import { PageDock } from '../../activite/PageDock';
 
 type ProfilDispo = { nom: string; chemin: string };
 type Manque = { cle: string; libelle: string };
 type Demandee = { cle: string; libelles?: string[]; sites?: string[] };
-type Dire = (texte: string, erreur?: boolean) => void;
 
-const nomFichier = (chemin: string) => chemin.split(/[\\/]/).pop() ?? chemin;
 const SANS_ETAT: EtatProfil = { manquants: [], a_completer: [] };
-const ICONES = {
-  compte: <svg {...TRAIT}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>,
-  ...ICONES_COMMUNES,
-  dupliquer: <svg {...TRAIT}><rect x="8" y="8" width="12" height="12" /><path d="M16 8V4H4v12h4" /></svg>,
-  fleche: <svg {...TRAIT}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
-  plus: <svg {...TRAIT}><path d="M12 5v14M5 12h14" /></svg>,
-};
-const ico = (i: React.ReactNode) => <span className="ico">{i}</span>;
 // Le constructeur refuse un profil sans expérience : la carte le dit
 const neuve = (): Profil => ({ experiences: [{}] });
 
@@ -35,11 +31,10 @@ export default function PageProfil({ compte, recherche }: ProprietesPage) {
   const params = new URLSearchParams(recherche);
   const depart = compte.admin && params.get('champ') !== null ? 'champ' : params.get('nouveau') ? 'nouveau' : null;
   return (
-    <Dock id="profil" principal="profils" panneau={depart}
+    <PageDock id="profil" principal="profils" panneau={depart}
       fenetres={{ profils: { mini: [520, 300], pref: [760, 420], flot: [900, 600] }, panneau: { flot: [480, 640] } }}>
-      <Activite />
       <Profils admin={compte.admin} depart={depart} fiche={params.get('fiche')} champ={params.get('champ')} libelle={params.get('libelle')} />
-    </Dock>
+    </PageDock>
   );
 }
 
@@ -57,15 +52,12 @@ function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; dep
   const [origine, setOrigine] = useState(() => repris<Profil>('profil:origine', {}));
   const [etat, setEtat] = useState(() => repris<EtatProfil>('profil:etat', SANS_ETAT));
   useGarder('profil', { profils, incomplets, schema, choisi, origine, etat });
-  const [avis, setAvis] = useState<Avis>(null);
+  const { dire, vue } = useAvis('avis', true);
   const [confirmation, setConfirmation] = useState<'supprimer' | 'dupliquer' | null>(null);
   const [nomCopie, setNomCopie] = useState('');
   const [bandeauFerme, setBandeauFerme] = useState(false);
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   const editeur = useEditeur(origine, schema);
-  const dire = useCallback<Dire>((texte, erreur = false) => setAvis({ texte, erreur }), []);
-
-  useAvisBref(avis, setAvis);
 
   const relireListe = useCallback(async () => {
     const [liste, inc, sch] = await Promise.all([
@@ -113,8 +105,8 @@ function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; dep
     else if (onglet) fermer();
   });
 
-  const enregistrer = async () => {
-    setOccupe(true);
+  // Son préfixe reste ici : les trois gestes partagent un seul `echec`
+  const enregistrer = () => geste(async () => {
     try {
       const r = await appeler<{ workflows: number }>(`/profils-candidature/${encodeURIComponent(choisi)}`,
         { methode: 'PUT', corps: { contenu: JSON.stringify(editeur.lire(), null, 2) } });
@@ -125,32 +117,24 @@ function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; dep
     } catch (e) {
       dire(`Enregistrement refusé : ${message(e)}`, true);
     }
-    setOccupe(false);
-  };
+  });
 
-  const supprimer = async () => {
-    setOccupe(true);
-    try {
-      await appeler(`/profils-candidature/${encodeURIComponent(choisi)}`, { methode: 'DELETE' });
-      dire(`${choisi} supprimé.`);
-      setConfirmation(null);
-      const liste = await relireListe();
-      if (liste[0]) await ouvrirProfil(liste[0].nom);
-      else {
-        setChoisi('');
-        setOrigine({});
-      }
-    } catch (e) {
-      dire(message(e), true);
+  const supprimer = () => geste(async () => {
+    await appeler(`/profils-candidature/${encodeURIComponent(choisi)}`, { methode: 'DELETE' });
+    dire(`${choisi} supprimé.`);
+    setConfirmation(null);
+    const liste = await relireListe();
+    if (liste[0]) await ouvrirProfil(liste[0].nom);
+    else {
+      setChoisi('');
+      setOrigine({});
     }
-    setOccupe(false);
-  };
+  });
 
   // Copie à son propre titre et identifiant : le serveur refuse un titre pris
-  const dupliquer = async () => {
+  const dupliquer = () => {
     if (!nomCopie.trim()) return dire('Donnez un nom à la copie.', true);
-    setOccupe(true);
-    try {
+    return geste(async () => {
       const copie = await appeler<ProfilDispo & { workflows: number }>(`/profils-candidature/${encodeURIComponent(choisi)}/dupliquer`,
         { methode: 'POST', corps: { nom: nomCopie.trim() } });
       dire(`${copie.nom} créé depuis ${choisi}${copie.workflows ? ` — ${copie.workflows} réponse(s) du workflow des sites reprise(s)` : ''}.`);
@@ -158,10 +142,7 @@ function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; dep
       setConfirmation(null);
       await relireListe();
       await ouvrirProfil(copie.nom);
-    } catch (e) {
-      dire(message(e), true);
-    }
-    setOccupe(false);
+    });
   };
 
   // Donnée déduite par JADE rangée dans le profil, qui se rouvre à jour
@@ -210,9 +191,9 @@ function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; dep
               <p className="aide-champ">La veille continue de récolter ses offres ; elles partiront une fois le profil complété.</p>
             </div>
             <footer className="f-pied">
-              <button type="button" className="action" onClick={() => setBandeauFerme(true)}>Fermer</button>
+              <Action onClick={() => setBandeauFerme(true)}>Fermer</Action>
               {aCompleter.slice(0, 2).map(([nom]) => (
-                <button key={nom} type="button" className="action plein" onClick={() => ouvrirProfil(nom)}>Compléter {titreProfil(nom)}{ico(ICONES.fleche)}</button>
+                <Action iconeApres={ICONES.fleche} plein key={nom} onClick={() => ouvrirProfil(nom)}>Compléter {titreProfil(nom)}</Action>
               ))}
             </footer>
           </div>
@@ -220,13 +201,12 @@ function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; dep
         <div className="outils">
           <p className="titre-page"><span className="etiquette">Profils de candidature</span><span className="compteur">{profils?.length ?? ''}</span></p>
           <span className="espace" />
-          <button type="button" className="action" title="Pseudo, e-mail et déconnexion" onClick={() => useUIStore.getState().setPage('connexion')}>{ico(ICONES.compte)}<span className="txt">Compte</span></button>
+          <Action icone={ICONES.compte} txt title="Pseudo, e-mail et déconnexion" onClick={() => useUIStore.getState().setPage('connexion')}>Compte</Action>
           {choisi && (
             <div className="actions" role="group" aria-label="Actions du profil">
-              <button type="button" className="action rouge" title="Supprimer le profil" onClick={() => setConfirmation('supprimer')}>{ico(ICONES.supprimer)}<span className="txt">Supprimer le profil</span></button>
-              <button type="button" className="action" title="Une copie à son propre nom et à son propre identifiant, réponses du workflow des sites comprises."
-                onClick={() => setConfirmation('dupliquer')}>{ico(ICONES.dupliquer)}<span className="txt">Dupliquer</span></button>
-              <button type="button" className="action plein" disabled={occupe} onClick={enregistrer}><span className="txt">Enregistrer</span>{ico(ICONES.fleche)}</button>
+              <Action icone={ICONES.supprimer} txt rouge title="Supprimer le profil" onClick={() => setConfirmation('supprimer')}>Supprimer le profil</Action>
+              <Action icone={ICONES.dupliquer} txt title="Une copie à son propre nom et à son propre identifiant, réponses du workflow des sites comprises." onClick={() => setConfirmation('dupliquer')}>Dupliquer</Action>
+              <Action iconeApres={ICONES.fleche} txt plein disabled={occupe} onClick={enregistrer}>Enregistrer</Action>
             </div>
           )}
         </div>
@@ -240,8 +220,8 @@ function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; dep
             <label htmlFor="dup-nom" className="lib-champ">Nom de la copie</label>
             <input id="dup-nom" className="saisie" type="text" placeholder="Dev" value={nomCopie} autoFocus onChange={(e) => setNomCopie(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !occupe && dupliquer()} />
-            <button type="button" className="action" onClick={() => setConfirmation(null)}>Annuler</button>
-            <button type="button" className="action plein" disabled={occupe} onClick={dupliquer}>Dupliquer{ico(ICONES.fleche)}</button>
+            <Action onClick={() => setConfirmation(null)}>Annuler</Action>
+            <Action iconeApres={ICONES.fleche} plein disabled={occupe} onClick={dupliquer}>Dupliquer</Action>
           </div>
         )}
         <div className="corps-p">
@@ -257,7 +237,7 @@ function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; dep
               </button>
             ))}
             <button type="button" className={`profil neuf${onglet === 'nouveau' ? ' allume' : ''}`} title="Créer un profil de candidature" onClick={() => ouvrir('nouveau')}>
-              Nouveau profil{ico(ICONES.plus)}
+              Nouveau profil<span className="ico">{ICONES.plus}</span>
             </button>
           </div>
           {choisi ? (
@@ -268,7 +248,7 @@ function Profils({ admin, depart, fiche, champ, libelle }: { admin: boolean; dep
             </section>
           )}
         </div>
-        {avis && <p className={`avis${avis.erreur ? ' erreur' : ''}`} role={avis.erreur ? 'alert' : 'status'} onClick={() => setAvis(null)}>{avis.texte}</p>}
+        {vue}
       </Fenetre>
       <Panneau onglets={onglets} />
     </>
@@ -280,16 +260,15 @@ function useNouveau({ schema, dire, apres }: { schema: ChampSchema[]; dire: Dire
   const { fermer } = usePanneau();
   const [origine, setOrigine] = useState(neuve);
   const [nom, setNom] = useState('');
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   const editeur = useEditeur(origine, schema);
   const vider = () => {
     setOrigine(neuve());
     setNom('');
   };
-  const creer = async () => {
+  const creer = () => {
     if (!nom.trim()) return dire('Donnez un nom au profil.', true);
-    setOccupe(true);
-    try {
+    return geste(async () => {
       // Seule la création attribue l'identifiant qui rend le nom unique
       const cree = await appeler<ProfilDispo>('/profils-candidature', { methode: 'POST', corps: { nom: nom.trim() } });
       await appeler(`/profils-candidature/${encodeURIComponent(cree.nom)}`, { methode: 'PUT', corps: { contenu: JSON.stringify(editeur.lire(), null, 2) } });
@@ -297,20 +276,17 @@ function useNouveau({ schema, dire, apres }: { schema: ChampSchema[]; dire: Dire
       vider();
       fermer();
       await apres(cree.nom);
-    } catch (e) {
-      dire(message(e), true);
-    }
-    setOccupe(false);
+    });
   };
   return {
     corps: <EditeurProfil key={editeur.saisie.gen} e={editeur} nom="" nomNeuf={nom} setNomNeuf={setNom} etat={SANS_ETAT} ouvertes={['identite']} prefixe="neuf" />,
     pied: (
       <>
-        <button type="button" className="action" onClick={() => {
+        <Action onClick={() => {
           vider();
           fermer();
-        }}>Annuler</button>
-        <button type="button" className="action plein" disabled={occupe} onClick={creer}>Créer le profil{ico(ICONES.fleche)}</button>
+        }}>Annuler</Action>
+        <Action iconeApres={ICONES.fleche} plein disabled={occupe} onClick={creer}>Créer le profil</Action>
       </>
     ),
   };
@@ -321,10 +297,9 @@ function useNouveauChamp({ admin, champ, libelle, schema, dire, apres }: {
   admin: boolean; champ: string | null; libelle: string | null; schema: ChampSchema[]; dire: Dire; apres: () => Promise<void>;
 }) {
   const { onglet, fermer } = usePanneau();
-  const vierge = { cle: '', libelle: '', section: 'identite', type: 'text', choix: '', obligatoire: true };
-  const [f, setF] = useState({ ...vierge, cle: champ ?? '', libelle: libelle ?? '' });
+  const { f, setF, poser } = useFormChamp(() => ({ ...CHAMP_VIERGE, cle: champ ?? '', libelle: libelle ?? '' }));
   const [sites, setSites] = useState<string[]>([]);
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   // Une donnée demandée par les formulaires donne son libellé et ses sites
   useEffect(() => {
     if (!admin || onglet !== 'champ' || !f.cle.trim()) return setSites([]);
@@ -340,54 +315,25 @@ function useNouveauChamp({ admin, champ, libelle, schema, dire, apres }: {
       vivant = false;
     };
   }, [admin, onglet, f.cle]);
-  const valider = async () => {
-    setOccupe(true);
-    try {
-      const fait = await appeler<{ libelle: string }>('/schema-profil', { methode: 'POST', corps: {
-        cle: f.cle.trim(), libelle: f.libelle.trim(), section: f.section, type: f.type, obligatoire: f.obligatoire,
-        choix: f.choix.split(',').map((c) => c.trim()).filter(Boolean) } });
-      dire(`« ${fait.libelle} » ajouté au profil de tous.`);
-      setF(vierge);
-      fermer();
-      await apres();
-    } catch (e) {
-      dire(message(e), true);
-    }
-    setOccupe(false);
-  };
-  const poser = (cle: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setF((v) => ({ ...v, [cle]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value }));
+  const valider = () => geste(async () => {
+    const fait = await appeler<{ libelle: string }>('/schema-profil', { methode: 'POST', corps: champVersEnvoi(f) });
+    dire(`« ${fait.libelle} » ajouté au profil de tous.`);
+    setF(CHAMP_VIERGE);
+    fermer();
+    await apres();
+  });
   const entree = (e: React.KeyboardEvent) => e.key === 'Enter' && !occupe && valider();
   return {
     corps: (
       <div className="champ-profil">
         <p className="texte-f">Une clé déjà au profil le rend obligatoire ; une nouvelle l&apos;y ajoute pour tous.</p>
-        <div className="grille-2">
-          <div className="champ"><label htmlFor="cp-cle">Clé</label>
-            <input id="cp-cle" className="saisie" type="text" list="cp-cles" autoComplete="off" value={f.cle} onChange={poser('cle')} onKeyDown={entree} />
-            <datalist id="cp-cles">{schema.map((c) => <option key={c.cle} value={c.cle}>{c.libelle}</option>)}</datalist>
-          </div>
-          <div className="champ"><label htmlFor="cp-lib">Libellé</label><input id="cp-lib" className="saisie" type="text" value={f.libelle} onChange={poser('libelle')} onKeyDown={entree} /></div>
-        </div>
-        <div className="grille-2">
-          <div className="champ"><label htmlFor="cp-sec">Section</label>
-            <select id="cp-sec" className="saisie" value={f.section} onChange={poser('section')}>{Object.entries(SECTIONS_DE_CHAMP).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
-          </div>
-          <div className="champ"><label htmlFor="cp-forme">Forme</label>
-            <select id="cp-forme" className="saisie" value={f.type} onChange={poser('type')}>{Object.entries(FORMES_CHAMP).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
-          </div>
-        </div>
-        <div className="champ"><label htmlFor="cp-choix">Choix</label>
-          <input id="cp-choix" className="saisie" type="text" value={f.choix} onChange={poser('choix')} onKeyDown={entree} />
-          <p className="aide-champ">Séparés par des virgules.{sites.length > 0 && ` Demandée par ${sites.join(', ')}, depuis Workflows · Vérification.`}</p>
-        </div>
-        <label className="inter">Obligatoire<input type="checkbox" checked={f.obligatoire} onChange={poser('obligatoire')} /></label>
+        <ChampsDuProfil f={f} poser={poser} entree={entree} cles={schema} aideChoix={<>Séparés par des virgules.{sites.length > 0 && ` Demandée par ${sites.join(', ')}, depuis Workflows · Vérification.`}</>} />
       </div>
     ),
     pied: (
       <>
-        <button type="button" className="action" onClick={fermer}>Annuler</button>
-        <button type="button" className="action plein" disabled={occupe} onClick={valider}>Valider{ico(ICONES.fleche)}</button>
+        <Action onClick={fermer}>Annuler</Action>
+        <Action iconeApres={ICONES.fleche} plein disabled={occupe} onClick={valider}>Valider</Action>
       </>
     ),
   };

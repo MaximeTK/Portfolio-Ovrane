@@ -4,15 +4,27 @@ import './parametres-serveur.css';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Activite } from '../../activite/Activite';
-import { Dock, Fenetre, usePanneau, useVues } from '../../dock/Dock';
+
+import { Fenetre, usePanneau, useVues } from '../../dock/Dock';
 import { AuPied, Confirmer, Panneau, type Onglet } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
 import {
   CorpsEffacer, FormModele, MenuFournisseur, NEUF, Voyant, nomCourt, totalApercu, versBrouillon,
   type Apercu, type Brouillon, type Essai, type Fournisseur, type Modele,
 } from './panneaux';
-import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
+import { useEchap } from '../commun';
+import { useFormParametres } from '../reglages/useFormParametres';
+import { Action } from '../../elements/Action';
+import { Case, ouvrable, useCoches } from '../../elements/Case';
+import { Champ, ChampListe } from '../../elements/Champ';
+import { ICONES } from '../../elements/icones';
+import { ActionSupprimer } from '../../elements/Action';
+import { SaisieSecrete } from '../../elements/Champ';
+import { useAvis } from '../../elements/Avis';
+import { TitreGroupe } from '../../elements/Menu';
+import { avecAbsent, heure, message, optionsModele } from '../../elements/format';
+import { ActionOnglet, CorpsGroupes, PiedGroupe, Rubrique, RubriqueOnglet } from '../../elements/Groupes';
+import { PageDock } from '../../activite/PageDock';
 
 type Parametres = Record<string, unknown> & { modeles: Modele[]; fournisseurs: Record<string, Fournisseur> };
 type Champ = { cle: string; libelle: string; sorte: 'nombre' | 'texte' | 'secret' | 'choix'; aide?: string; choix?: string[]; min?: number };
@@ -59,22 +71,16 @@ const versEnvoi = (b: Brouillon) => ({
   prix_entree: decimal(b.prix_entree), prix_cache: decimal(b.prix_cache), prix_ecriture: decimal(b.prix_ecriture), prix_sortie: decimal(b.prix_sortie),
   ...(b.cle.trim() || b.effacerCle ? { cle_api: b.cle.trim() } : {}),
 });
-const heure = () => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-const ICONES = {
-  ...ICONES_COMMUNES,
-  valider: <svg {...TRAIT}><path d="m5 12 5 5 9-10" /></svg>,
-  effacer: <svg {...TRAIT}><path d="M4 6h16M6 6l1 14h10l1-14M9 10l6 6M15 10l-6 6" /></svg>,
-};
-const ico = (i: React.ReactNode) => <span className="ico">{i}</span>;
+
+
 
 export default function PageParametresServeur(_: ProprietesPage) {
   return (
-    <Dock id="parametres-serveur" principal="serveur" panneau={null}
+    <PageDock id="parametres-serveur" principal="serveur" panneau={null}
       fenetres={{ serveur: { mini: [560, 420], pref: [780, 480], flot: [920, 620] }, panneau: { flot: [460, 620] } }}>
-      <Activite />
       <Serveur />
-    </Dock>
+    </PageDock>
   );
 }
 
@@ -82,10 +88,10 @@ function Serveur() {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const { fermerVue } = useVues();
   // Paramètres, groupe, filtre et derniers essais gardés d'une visite à l'autre.
-  const [lus, setLus] = useState(() => repris<Parametres | null>('parametres-serveur:lus', null));
   const [erreurLecture, setErreurLecture] = useState('');
-  const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
-  const [secrets, setSecrets] = useState<Record<string, { saisie: string; effacer: boolean }>>({});
+  const { lus, setLus, valeurs, setValeurs, poser, changes, corps, secret, reprendre } = useFormParametres({
+    depart: repris<Parametres | null>('parametres-serveur:lus', null), champs: CHAMPS, surErreur: setErreurLecture,
+  });
   const [groupe, setGroupe] = useState(() => repris('parametres-serveur:groupe', 'modeles'));
   const [filtre, setFiltre] = useState(() => repris('parametres-serveur:filtre', ''));
   const [selection, setSelection] = useState<Set<string>>(new Set());
@@ -98,18 +104,8 @@ function Serveur() {
   const [apercu, setApercu] = useState<Apercu | null>(null);
   const [erreurApercu, setErreurApercu] = useState('');
   const [enregistre, setEnregistre] = useState('');
-  const [avis, setAvis] = useState<Avis>(null);
+  const { dire, vue } = useAvis('avis', true);
   const [occupe, setOccupe] = useState(false);
-  const dire = useCallback((texte: string, erreur = false) => setAvis({ texte, erreur }), []);
-
-  useEffect(() => {
-    appeler<Parametres>('/parametres').then((p) => {
-      setLus(p);
-      setValeurs(p);
-    }).catch((e) => setErreurLecture(message(e)));
-  }, []);
-
-  useAvisBref(avis, setAvis);
 
   // Ce que l'effacement emporterait, compté à chaque ouverture de son onglet
   const compter = useCallback(() => {
@@ -129,21 +125,12 @@ function Serveur() {
     else if (onglet) fermer();
   });
 
-  // Ce qui partira : chaque champ dans sa forme, secrets retapés ou effacés.
-  const envoi = (c: Champ): unknown => (c.sorte === 'nombre' ? (valeurs[c.cle] === '' ? 0 : Number(valeurs[c.cle])) : valeurs[c.cle]);
-  const changes = lus ? CHAMPS.filter((c) => (c.sorte === 'secret' ? !!(secrets[c.cle]?.saisie || secrets[c.cle]?.effacer) : envoi(c) !== lus[c.cle])) : [];
-
   const enregistrer = async () => {
     if (!changes.length || occupe) return;
     setOccupe(true);
     try {
-      const r = await appeler<Parametres>('/parametres', {
-        methode: 'PUT', corps: Object.fromEntries(changes.map((c) => [c.cle, c.sorte === 'secret' ? secrets[c.cle].saisie.trim() : envoi(c)])),
-      });
-      setLus(r);
-      setValeurs(r);
-      setSecrets({});
-      setEnregistre(heure());
+      reprendre(await appeler<Parametres>('/parametres', { methode: 'PUT', corps: corps() }));
+      setEnregistre(heure(new Date()));
       dire('Paramètres du serveur enregistrés.');
     } catch (e) {
       dire(`Enregistrement refusé : ${message(e)}`, true);
@@ -158,7 +145,7 @@ function Serveur() {
       const r = await appeler<Parametres>('/parametres', { methode: 'PUT', corps: { modeles } });
       setLus(r);
       setValeurs((v) => ({ ...r, ...Object.fromEntries(changes.filter((c) => c.sorte !== 'secret').map((c) => [c.cle, v[c.cle]])) }));
-      setEnregistre(heure());
+      setEnregistre(heure(new Date()));
       setSelection(new Set());
       dire(texte);
       return true;
@@ -190,6 +177,7 @@ function Serveur() {
   const fournisseurs = lus?.fournisseurs ?? {};
   const visibles = modeles.filter((m) => !filtre || m.fournisseur === filtre);
   const coches = visibles.filter((m) => selection.has(m.nom));
+  const { toutes, cocher } = useCoches(selection, setSelection, visibles.map((m) => m.nom));
   const briquesDe = (noms: string[]) => BRIQUES.filter(([cle]) => noms.includes(String(valeurs[cle] ?? ''))).map(([, lib]) => lib);
 
   const ajouter = () => {
@@ -222,10 +210,10 @@ function Serveur() {
     corps: <div className="serveur-f"><CorpsEffacer apercu={apercu} erreur={erreurApercu} /></div>,
     pied: total ? (
       <>
-        <button type="button" className="action" onClick={fermer}>Annuler</button>
-        <button type="button" className="action rouge" disabled={occupe} onClick={toutEffacer}>{ico(ICONES.effacer)}Tout effacer</button>
+        <Action onClick={fermer}>Annuler</Action>
+        <Action icone={ICONES.vider} rouge disabled={occupe} onClick={toutEffacer}>Tout effacer</Action>
       </>
-    ) : <button type="button" className="action" onClick={fermer}>Fermer</button>,
+    ) : <Action onClick={fermer}>Fermer</Action>,
   };
   // Le formulaire pose ses boutons dans le pied par <AuPied>
   const onglets: Onglet[] = [{ cle: 'ajout', titre: 'Ajouter', label: 'Ajouter un modèle', corps: <EditionModele key={ajout} ancien={null} depart={NEUF} {...edition} />, pied: true }, ongletEffacer];
@@ -244,40 +232,25 @@ function Serveur() {
 
   const g = GROUPES.find((x) => x.cle === groupe)!;
   const parFournisseur = [...new Set(modeles.map((m) => m.fournisseur))];
-  const secret = (c: Champ) => {
-    const s = secrets[c.cle] ?? { saisie: '', effacer: false };
-    const pose = !!lus?.[c.cle];
-    return (
-      <span className="secret">
-        <input id={`ps-${c.cle}`} className="saisie" type="password" autoComplete="new-password" value={s.saisie}
-          placeholder={s.effacer ? "effacée à l'enregistrement" : pose ? 'enregistrée' : 'non renseignée'}
-          onChange={(e) => setSecrets((x) => ({ ...x, [c.cle]: { saisie: e.target.value, effacer: false } }))} />
-        {pose && !s.effacer && !s.saisie && (
-          <button type="button" className="effacer" title="Retire ce secret du coffre à l'enregistrement." onClick={() => setSecrets((x) => ({ ...x, [c.cle]: { saisie: '', effacer: true } }))}>Effacer</button>
-        )}
-      </span>
-    );
-  };
   const controle = (c: Champ) => (
-    <div key={c.cle} className="champ">
-      <label htmlFor={`ps-${c.cle}`}>{c.libelle}</label>
-      {c.sorte === 'secret' ? secret(c) : c.sorte === 'choix' ? (
-        <select id={`ps-${c.cle}`} className="saisie" value={String(valeurs[c.cle] ?? '')} onChange={(e) => setValeurs((v) => ({ ...v, [c.cle]: e.target.value }))}>
+    <Champ pour={`ps-${c.cle}`} libelle={c.libelle} key={c.cle}>
+      {c.sorte === 'secret' ? <SaisieSecrete id={`ps-${c.cle}`} pose={!!lus?.[c.cle]} {...secret(c.cle)} /> : c.sorte === 'choix' ? (
+        <select id={`ps-${c.cle}`} className="saisie" value={String(valeurs[c.cle] ?? '')} onChange={(e) => poser(c.cle, e.target.value)}>
           {(c.choix ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       ) : (
         <input id={`ps-${c.cle}`} className="saisie" type={c.sorte === 'nombre' ? 'number' : 'text'} min={c.min} inputMode={c.sorte === 'nombre' ? 'numeric' : undefined}
-          value={String(valeurs[c.cle] ?? '')} onChange={(e) => setValeurs((v) => ({ ...v, [c.cle]: c.sorte === 'nombre' && e.target.value !== '' ? Number(e.target.value) : e.target.value }))} />
+          value={String(valeurs[c.cle] ?? '')} onChange={(e) => poser(c.cle, c.sorte === 'nombre' && e.target.value !== '' ? Number(e.target.value) : e.target.value)} />
       )}
       {c.aide && <p className="aide-champ">{c.aide}</p>}
-    </div>
+    </Champ>
   );
 
   return (
     <>
       <Fenetre id="serveur" className="tableau" aria-label="Paramètres serveur" titrePrise="Glisser pour détacher les paramètres du serveur">
         <div className="outils">
-          <p className="filtre titre-groupe"><span><span className="lib">Groupe</span>{g.titre}</span></p>
+          <TitreGroupe titre={g.titre} />
           {groupe === 'modeles' && (
             <MenuFournisseur valeur={`${filtre ? nomCourt(fournisseurs, filtre) : 'tous'} · ${visibles.length}`} courant={filtre} choisir={(f) => {
               setFiltre(f);
@@ -288,13 +261,11 @@ function Serveur() {
           {groupe === 'modeles' && (
             <div className="actions" role="group" aria-label="Actions des modèles">
               {coches.length > 0 && (
-                <button type="button" className="action rouge" title={`Supprimer ${coches.length} modèle(s)`} onClick={() => setConfirmation(true)}>
-                  {ico(ICONES.supprimer)}<span><span className="txt">Supprimer </span>({coches.length})</span>
-                </button>
+                <ActionSupprimer n={coches.length} title={`Supprimer ${coches.length} modèle(s)`} onClick={() => setConfirmation(true)} />
               )}
-              <button type="button" className={`action plein${onglet === 'ajout' ? ' allume' : ''}`} aria-haspopup="dialog" onClick={ajouter}>
-                <span className="txt">Ajouter un modèle</span>{ico(ICONES.plus)}
-              </button>
+              <ActionOnglet cle="ajout" iconeApres={ICONES.plus_pages} plein onClick={ajouter}>
+                Ajouter un modèle
+              </ActionOnglet>
             </div>
           )}
         </div>
@@ -302,15 +273,12 @@ function Serveur() {
           <Confirmer question={`Supprimer ${coches.length} modèle(s) ?`} occupe={occupe} action="Supprimer" onAnnuler={() => setConfirmation(false)} onConfirmer={supprimer}
             detail={`Leurs clés quittent le coffre.${briquesDe(coches.map((m) => m.nom)).length ? ` Sans modèle ensuite : ${briquesDe(coches.map((m) => m.nom)).join(', ')}.` : ''}`} />
         )}
-        <div className="corps-groupes">
-          <nav className="groupes" aria-label="Groupes">
+        <CorpsGroupes nav={<>
             {GROUPES.map((x) => (
-              <button key={x.cle} type="button" className={`rubrique${x.cle === groupe ? ' actif' : ''}`} aria-current={x.cle === groupe ? 'page' : undefined}
-                onClick={() => setGroupe(x.cle)}>{x.titre}</button>
+              <Rubrique key={x.cle} actif={x.cle === groupe} onClick={() => setGroupe(x.cle)}>{x.titre}</Rubrique>
             ))}
-            <button type="button" className={`rubrique danger${onglet === 'effacer' ? ' allume' : ''}`} aria-expanded={onglet === 'effacer'} aria-haspopup="dialog"
-              onClick={() => (onglet === 'effacer' ? fermer() : ouvrir('effacer'))}>Réinitialiser</button>
-          </nav>
+            <RubriqueOnglet cle="effacer" className="danger" aria-haspopup="dialog">Réinitialiser</RubriqueOnglet>
+        </>}>
           <form className="groupe-contenu" onSubmit={(e) => {
             e.preventDefault();
             void enregistrer();
@@ -323,39 +291,27 @@ function Serveur() {
                     <table className="tab-modeles">
                       <thead>
                         <tr>
-                          <th><input type="checkbox" className="case" aria-label="Tout sélectionner" checked={visibles.length > 0 && coches.length === visibles.length}
-                            onChange={(e) => setSelection(new Set(e.target.checked ? visibles.map((m) => m.nom) : []))} /></th>
+                          <th><Case aria-label="Tout sélectionner" checked={toutes} onChange={(e) => setSelection(new Set(e.target.checked ? visibles.map((m) => m.nom) : []))} /></th>
                           <th>Nom</th><th>Fournisseur</th><th>Modèle</th><th>Tokens max</th><th>$/M entrée</th><th title="lu en cache · écrit en cache">$/M cache</th>
                           <th>$/M sortie</th><th>Clé secrète</th><th aria-label="Dernier test" /><th aria-label="Tester" />
                         </tr>
                       </thead>
                       <tbody>
                         {visibles.map((m) => (
-                          <tr key={m.nom} tabIndex={0} title={`Modifier « ${m.nom} »`} data-ouvre="modele" data-objet={m.nom}
-                            className={`${selection.has(m.nom) ? 'coche' : ''}${onglet === 'modele' && objet === m.nom ? ' ouverte' : ''}`}
-                            onClick={() => ouvrir('modele', m.nom)} onKeyDown={(e) => {
-                              if (e.key !== 'Enter' || e.target !== e.currentTarget) return;
-                              e.preventDefault();
-                              ouvrir('modele', m.nom);
-                            }}>
+                          <tr key={m.nom} title={`Modifier « ${m.nom} »`} {...ouvrable('modele', m.nom, () => ouvrir('modele', m.nom))}
+                            className={`${selection.has(m.nom) ? 'coche' : ''}${onglet === 'modele' && objet === m.nom ? ' ouverte' : ''}`}>
                             <td onClick={(e) => e.stopPropagation()}>
-                              <input type="checkbox" className="case" aria-label={`Sélectionner ${m.nom}`} checked={selection.has(m.nom)} onChange={() => setSelection((s) => {
-                                const n = new Set(s);
-                                if (!n.delete(m.nom)) n.add(m.nom);
-                                return n;
-                              })} />
+                              <Case aria-label={`Sélectionner ${m.nom}`} checked={selection.has(m.nom)} onChange={(e) => cocher([m.nom], e.target.checked)} />
                             </td>
                             <td><b>{m.nom}</b></td><td className="d">{nomCourt(fournisseurs, m.fournisseur)}</td><td>{m.modele || '—'}</td>
                             <td className="num">{m.max_tokens ? m.max_tokens.toLocaleString('fr-FR') : '—'}</td><td className="num">{m.prix_entree}</td>
                             <td className="num" title="lu en cache · écrit en cache">{`${m.prix_cache} · ${m.prix_ecriture}`}</td><td className="num">{m.prix_sortie}</td>
                             <td className={`d${m.cle_api ? '' : ' vide'}`}>{m.cle_api ? 'enregistrée' : 'non renseignée'}</td>
                             <td><Voyant essai={essais[m.nom]} /></td>
-                            <td><button type="button" className="action" disabled={essais[m.nom]?.etat === 'encours'} aria-label={`Tester ${m.nom}`}
-                              title="Un appel minuscule avec ce qui est saisi : seul un modèle qui appelle les outils a sa place dans Illusion."
-                              onClick={(e) => {
+                            <td><Action disabled={essais[m.nom]?.etat === 'encours'} aria-label={`Tester ${m.nom}`} title="Un appel minuscule avec ce qui est saisi : seul un modèle qui appelle les outils a sa place dans Illusion." onClick={(e) => {
                                 e.stopPropagation();
                                 void tester(sansCle(m), (essai) => setEssais((x) => ({ ...x, [m.nom]: essai })));
-                              }}>Tester</button></td>
+                              }}>Tester</Action></td>
                           </tr>
                         ))}
                         {!visibles.length && <tr className="vide-s"><td colSpan={11}>Aucun modèle{filtre ? ' de ce fournisseur' : ''} : « Ajouter un modèle » en pose un.</td></tr>}
@@ -367,15 +323,11 @@ function Serveur() {
                     <div className="grille-4">
                       {BRIQUES.map(([cle, libelle, vide]) => {
                         const v = String(valeurs[cle] ?? '');
-                        const options: [string, string][] = [['', vide], ...modeles.map((m): [string, string] => [m.nom, m.nom])];
-                        if (v && !options.some(([o]) => o === v)) options.push([v, `${v} (absent du catalogue)`]);
+                        const options = avecAbsent(optionsModele(modeles, vide, false), v);
                         return (
-                          <div key={cle} className="champ">
-                            <label htmlFor={`ps-${cle}`}>{libelle}</label>
-                            <select id={`ps-${cle}`} className="saisie" value={v} onChange={(e) => setValeurs((x) => ({ ...x, [cle]: e.target.value }))}>
+                          <ChampListe id={`ps-${cle}`} libelle={libelle} key={cle} value={v} onChange={(e) => poser(cle, e.target.value)}>
                               {options.map(([o, l]) => <option key={o} value={o}>{l}</option>)}
-                            </select>
-                          </div>
+                            </ChampListe>
                         );
                       })}
                     </div>
@@ -387,15 +339,10 @@ function Serveur() {
                   <div className="form-colonnes">{g.champs.map(controle)}</div>
                 </div>
               )}
-            <div className="pied-groupe">
-              <span className="etat-changes">{changes.length
-                ? `${changes.length} changement${changes.length > 1 ? 's' : ''} non enregistré${changes.length > 1 ? 's' : ''} : ${changes.slice(0, 3).map((c) => c.libelle).join(', ')}${changes.length > 3 ? '…' : ''}`
-                : enregistre ? `Enregistré à ${enregistre}` : ''}</span>
-              <button type="submit" className="action plein" disabled={!changes.length || occupe}>Enregistrer{ico(ICONES.valider)}</button>
-            </div>
+            <PiedGroupe libelles={changes.map((c) => c.libelle)} repos={enregistre ? `Enregistré à ${enregistre}` : ''} type="submit" disabled={!changes.length || occupe} />
           </form>
-        </div>
-        {avis && <p className={`avis${avis.erreur ? ' erreur' : ''}`} role={avis.erreur ? 'alert' : 'status'} onClick={() => setAvis(null)}>{avis.texte}</p>}
+        </CorpsGroupes>
+        {vue}
       </Fenetre>
       <Panneau elements={elements} onglets={onglets} />
     </>
@@ -428,10 +375,9 @@ function EditionModele({ ancien, depart, essai: essaiLu, modeles, fournisseurs, 
       <FormModele id={id} brouillon={brouillon} poser={setBrouillon} fournisseurs={fournisseurs} erreur={erreur} valider={valider}
         autres={modeles.map((m) => m.nom).filter((n) => n !== ancien && n !== brouillon.nom.trim())} />
       <AuPied>
-          <button type="button" className="action gauche tester-f" disabled={essai?.etat === 'encours'} title="Un appel minuscule avec ce qui est saisi : seul un modèle qui appelle les outils a sa place dans Illusion."
-            onClick={() => tester(versEnvoi(brouillon), setEssai)}><Voyant essai={essai} />Tester</button>
-          <button type="button" className="action" onClick={fermer}>Annuler</button>
-          <button type="submit" form={id} className="action plein" disabled={occupe}>{ancien === null ? 'Ajouter' : 'Enregistrer'}{ico(ancien === null ? ICONES.plus : ICONES.valider)}</button>
+          <Action className="gauche tester-f" disabled={essai?.etat === 'encours'} title="Un appel minuscule avec ce qui est saisi : seul un modèle qui appelle les outils a sa place dans Illusion." onClick={() => tester(versEnvoi(brouillon), setEssai)}><Voyant essai={essai} />Tester</Action>
+          <Action onClick={fermer}>Annuler</Action>
+          <Action iconeApres={ancien === null ? ICONES.plus_pages : ICONES.valider_metriques} plein type="submit" form={id} disabled={occupe}>{ancien === null ? 'Ajouter' : 'Enregistrer'}</Action>
       </AuPied>
     </div>
   );

@@ -5,14 +5,26 @@ import { LienIllusion } from '../../partage/LienIllusion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler, televerser } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
+import { Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
-import { Activite } from '../../activite/Activite';
+
 import { useSondage } from '../../activite/sondage';
 import type { ProprietesPage } from '../liste';
-import { useOngletApparence } from './apparence';
-import { FILTRES, SITE_GLOBAL, TableComptes, lignesDe, ongletTester, useOngletAjout, versEnvoi, type Essai, type Identifiant, type Ligne } from './comptes';
-import { MenuColonne, ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, type Avis } from '../commun';
+import { FENETRES_REGLAGES, useOngletApparence } from './apparence';
+import { FILTRES, TableComptes, lignesDe, ongletTester, useOngletAjout, versEnvoi, type Essai, type Identifiant, type Ligne } from './comptes';
+import { useEchap, useGeste } from '../commun';
+import { FONDS } from '../documents/commun';
+import { egal, useFormParametres } from './useFormParametres';
+import { MenuFiltre, TitreGroupe } from '../../elements/Menu';
+import { Action } from '../../elements/Action';
+import { Champ, Interrupteur, SectionFiche } from '../../elements/Champ';
+import { ICONES } from '../../elements/icones';
+import { ActionSupprimer } from '../../elements/Action';
+import { SaisieSecrete } from '../../elements/Champ';
+import { useAvis } from '../../elements/Avis';
+import { avecAbsent, message, optionsModele } from '../../elements/format';
+import { ActionOnglet, CorpsGroupes, PiedGroupe, Rubrique, RubriqueOnglet } from '../../elements/Groupes';
+import { PageDock } from '../../activite/PageDock';
 
 type Parametres = Record<string, unknown> & { modeles: { nom: string; modele?: string }[]; identifiants: Identifiant[] };
 type Sorte = 'inter' | 'nombre' | 'texte' | 'liste' | 'secret' | 'choix' | 'modele' | 'texte_long' | 'couleurs';
@@ -22,18 +34,7 @@ type Groupe = { cle: string; titre: string; aide?: string; sections?: Section[] 
 type Piece = { nom: string; taille: number };
 type Confirmation = { sorte: 'sites' } | { sorte: 'piece'; nom: string } | null;
 
-const egal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-const decouper = (v: unknown) => String(v ?? '').split(',').map((x) => x.trim()).filter(Boolean);
 const poids = (o: number) => (o < 1024 ? `${o} o` : `${(o / 1024).toFixed(1).replace('.', ',')} Ko`);
-const ICONES = {
-  ...ICONES_COMMUNES,
-  plus: <svg {...TRAIT}><path d="M12 5v14M5 12h14" /></svg>,
-  valider: <svg {...TRAIT}><path d="m5 12 5 5 9-10" /></svg>,
-  chevron: <svg {...TRAIT} className="chevron"><path d="m6 9 6 6 6-6" /></svg>,
-  televerser: <svg {...TRAIT}><path d="M12 16V4M6 10l6-6 6 6M4 20h16" /></svg>,
-};
-const ico = (i: React.ReactNode) => <span className="ico">{i}</span>;
-const FONDS: [string, string][] = [['', 'Aléatoire'], ...['aplat', 'degrade', 'photo', 'photo-teintee', 'blanc'].map((f): [string, string] => [f, f])];
 
 // Réglages du compte par groupe ; « Modèle » et ceux du serveur sont à l'admin.
 const GROUPES: Groupe[] = [
@@ -89,7 +90,7 @@ const GROUPES: Groupe[] = [
     aide: 'Ce qui vaut pour tous les CV et toutes les lettres de ce compte. Laissé vide, le constructeur décide : le tirage fait que deux CV ne se ressemblent pas.',
     sections: [
       { titre: 'CV', champs: [
-        { cle: 'constructeur_fond', libelle: 'Fond imposé', sorte: 'choix', choix: FONDS, aide: '« Aléatoire » : un tirage différent à chaque CV.' },
+        { cle: 'constructeur_fond', libelle: 'Fond imposé', sorte: 'choix', choix: FONDS.map((f): [string, string] => [f, f || 'Aléatoire']), aide: '« Aléatoire » : un tirage différent à chaque CV.' },
         { cle: 'constructeur_palette', libelle: 'Palette imposée', sorte: 'couleurs', aide: "Quatre couleurs au plus. Vide : la palette vient de l'identité de l'entreprise." },
       ] },
       { titre: 'Lettre', pieces: true, champs: [
@@ -102,24 +103,32 @@ const GROUPES: Groupe[] = [
 
 export default function PageReglages({ compte }: ProprietesPage) {
   return (
-    <Dock id="reglages" principal="reglages" panneau={null}
-      fenetres={{ reglages: { mini: [540, 320], pref: [780, 420], flot: [900, 600] }, panneau: { flot: [440, 600] } }}>
-      <Activite />
+    <PageDock id="reglages" principal="reglages" panneau={null} fenetres={FENETRES_REGLAGES}>
       <Reglages admin={compte.admin} />
-    </Dock>
+    </PageDock>
   );
 }
 
 function Reglages({ admin }: { admin: boolean }) {
   const { onglet, ouvrir, fermer } = usePanneau();
   // Réglages, groupe, filtre, tests et pièces gardés d'une visite à l'autre.
-  const [lus, setLus] = useState(() => repris<Parametres | null>('reglages:lus', null));
-  const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
-  const [secrets, setSecrets] = useState<Record<string, { saisie: string; effacer: boolean }>>({});
-  const [lignes, setLignes] = useState<Ligne[]>(() => (lus ? lignesDe(lus.identifiants ?? []) : []));
+  const depart = repris<Parametres | null>('reglages:lus', null);
+  const { dire, vue } = useAvis('avis', true);
+  const [lignes, setLignes] = useState<Ligne[]>(() => (depart ? lignesDe(depart.identifiants ?? []) : []));
+  const [selection, setSelection] = useState<Set<number>>(new Set());
+  const surErreur = useCallback((e: string) => {
+    if (e) dire(e, true);
+  }, [dire]);
+  const champsVus = GROUPES.flatMap((g) => (g.sections ?? []).filter((s) => admin || !s.admin).flatMap((s) => s.champs.filter((c) => admin || !c.admin)));
+  const { lus, valeurs, poser: poserValeur, changes, corps, secret, reprendre } = useFormParametres({
+    depart, champs: champsVus, surErreur,
+    surLu: (p) => {
+      setLignes(lignesDe(p.identifiants ?? []));
+      setSelection(new Set());
+    },
+  });
   const [groupe, setGroupe] = useState(() => repris('reglages:groupe', 'comptes'));
   const [filtre, setFiltre] = useState(() => repris('reglages:filtre', 'tous'));
-  const [selection, setSelection] = useState<Set<number>>(new Set());
   const [essais, setEssais] = useState(() => repris<Record<string, Essai>>('reglages:essais', {}));
   const [testEnCours, setTestEnCours] = useState(() => repris('reglages:testEnCours', ''));
   const [teste, setTeste] = useState(() => repris('reglages:teste', ''));
@@ -127,23 +136,8 @@ function Reglages({ admin }: { admin: boolean }) {
   useGarder('reglages', { lus, groupe, filtre, essais, testEnCours, teste, pieces });
   const [renomme, setRenomme] = useState<{ nom: string; nouveau: string } | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
-  const [avis, setAvis] = useState<Avis>(null);
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(`Enregistrement refusé : ${t}`, true));
   const fichiers = useRef<HTMLInputElement>(null);
-  const dire = useCallback((texte: string, erreur = false) => setAvis({ texte, erreur }), []);
-
-  useAvisBref(avis, setAvis);
-
-  const poserLus = useCallback((p: Parametres) => {
-    setLus(p);
-    setValeurs(p);
-    setSecrets({});
-    setLignes(lignesDe(p.identifiants ?? []));
-    setSelection(new Set());
-  }, []);
-  useEffect(() => {
-    appeler<Parametres>('/parametres').then(poserLus).catch((e) => dire(message(e), true));
-  }, [poserLus, dire]);
 
   // Verdicts des tests suivis toutes les 2 s tant qu'un test tourne.
   const lireTests = useCallback(async () => {
@@ -184,34 +178,21 @@ function Reglages({ admin }: { admin: boolean }) {
     else if (onglet) fermer();
   });
 
-  // Ce qui partira : chaque champ dans sa forme, secrets retapés ou effacés.
-  const champsVus = GROUPES.flatMap((g) => (g.sections ?? []).filter((s) => admin || !s.admin).flatMap((s) => s.champs.filter((c) => admin || !c.admin)));
-  const envoi = (c: Champ): unknown => {
-    const v = valeurs[c.cle];
-    if (c.sorte === 'liste') return Array.isArray(v) ? v : decouper(v);
-    if (c.sorte === 'nombre') return v === '' ? 0 : Number(v);
-    return v;
-  };
-  const changes = lus ? champsVus.filter((c) => (c.sorte === 'secret' ? !!(secrets[c.cle]?.saisie || secrets[c.cle]?.effacer) : !egal(envoi(c), lus[c.cle]))) : [];
   const comptesChanges = lus !== null && !egal(versEnvoi(lignes), versEnvoi(lignesDe(lus.identifiants ?? [])));
   const libelles = [...(comptesChanges ? ['Comptes des plateformes'] : []), ...changes.map((c) => c.libelle)];
 
-  const enregistrer = async (voulues = lignes) => {
-    const corps: Record<string, unknown> = Object.fromEntries(changes.map((c) => [c.cle, c.sorte === 'secret' ? secrets[c.cle].saisie : envoi(c)]));
-    if (lus && !egal(versEnvoi(voulues), versEnvoi(lignesDe(lus.identifiants ?? [])))) corps.identifiants = versEnvoi(voulues);
-    if (!Object.keys(corps).length) return;
-    setOccupe(true);
-    try {
-      const r = await appeler<Parametres & { rejeu_bannis?: { ecartees?: number }; rejeu_mails?: number }>('/parametres', { methode: 'PUT', corps });
-      poserLus(r);
+  const enregistrer = (voulues = lignes) => {
+    const envoi = corps();
+    if (lus && !egal(versEnvoi(voulues), versEnvoi(lignesDe(lus.identifiants ?? [])))) envoi.identifiants = versEnvoi(voulues);
+    if (!Object.keys(envoi).length) return;
+    return geste(async () => {
+      const r = await appeler<Parametres & { rejeu_bannis?: { ecartees?: number }; rejeu_mails?: number }>('/parametres', { methode: 'PUT', corps: envoi });
+      reprendre(r);
       setConfirmation(null);
       // Mots bannis rejoués sur le stock : on le dit, sinon des offres disparaissent.
       const bannis = r.rejeu_bannis?.ecartees ? ` — mots bannis rejoués : ${r.rejeu_bannis.ecartees} offre(s) sortie(s) de la file` : '';
       dire(`Réglages enregistrés${bannis || ' — les lots les reprennent aussitôt'}.`);
-    } catch (e) {
-      dire(`Enregistrement refusé : ${message(e)}`, true);
-    }
-    setOccupe(false);
+    });
   };
 
   const pieceGeste = async (geste: () => Promise<unknown>, texte: string) => {
@@ -233,11 +214,11 @@ function Reglages({ admin }: { admin: boolean }) {
 
   const controle = (c: Champ) => {
     const marque = c.admin && <MarqueAdmin />;
-    const poser = (v: unknown) => setValeurs((x) => ({ ...x, [c.cle]: v }));
+    const poser = (v: unknown) => poserValeur(c.cle, v);
     const v = valeurs[c.cle];
     const id = `rg-${c.cle}`;
     if (c.sorte === 'inter') {
-      return <label key={c.cle} className="inter" title={c.aide}><span>{c.libelle}{marque}</span><input type="checkbox" checked={!!v} onChange={(e) => poser(e.target.checked)} /></label>;
+      return <Interrupteur key={c.cle} libelle={<>{c.libelle}{marque}</>} title={c.aide} checked={!!v} onChange={(e) => poser(e.target.checked)} />;
     }
     if (c.sorte === 'nombre') {
       return (
@@ -248,21 +229,9 @@ function Reglages({ admin }: { admin: boolean }) {
     }
     let saisie: React.ReactNode;
     if (c.sorte === 'secret') {
-      const s = secrets[c.cle] ?? { saisie: '', effacer: false };
-      saisie = (
-        <span className="secret">
-          <input id={id} className="saisie" type="password" autoComplete="new-password" value={s.saisie}
-            placeholder={s.effacer ? "effacée à l'enregistrement" : v ? 'enregistrée' : 'non renseignée'}
-            onChange={(e) => setSecrets((x) => ({ ...x, [c.cle]: { saisie: e.target.value, effacer: false } }))} />
-          {!!v && !s.effacer && !s.saisie && (
-            <button type="button" className="effacer" title="Retire ce secret du coffre à l'enregistrement." onClick={() => setSecrets((x) => ({ ...x, [c.cle]: { saisie: '', effacer: true } }))}>Effacer</button>
-          )}
-        </span>
-      );
+      saisie = <SaisieSecrete id={id} pose={!!v} {...secret(c.cle)} />;
     } else if (c.sorte === 'choix' || c.sorte === 'modele') {
-      const options: [string, string][] = c.sorte === 'choix' ? c.choix ?? []
-        : [['', c.vide ?? 'Aucun'], ...(lus?.modeles ?? []).map((m): [string, string] => [m.nom, m.modele ? `${m.nom} · ${m.modele}` : m.nom])];
-      if (v && !options.some(([o]) => o === v)) options.push([String(v), `${String(v)} (absent du catalogue)`]);
+      const options = avecAbsent(c.sorte === 'choix' ? c.choix ?? [] : optionsModele(lus?.modeles ?? [], c.vide ?? 'Aucun'), String(v ?? ''));
       saisie = <select id={id} className="saisie" value={String(v ?? '')} onChange={(e) => poser(e.target.value)}>{options.map(([o, l]) => <option key={o} value={o}>{l}</option>)}</select>;
     } else if (c.sorte === 'texte_long') {
       saisie = <textarea id={id} className="saisie" rows={3} value={String(v ?? '')} onChange={(e) => poser(e.target.value)} />;
@@ -277,24 +246,22 @@ function Reglages({ admin }: { admin: boolean }) {
               <button type="button" title="Retirer cette couleur" aria-label={`Retirer la couleur ${n + 1}`} onClick={() => poser(couleurs.filter((_, i) => i !== n))}>×</button>
             </span>
           ))}
-          {couleurs.length < 4 && <button type="button" className="action" onClick={() => poser([...couleurs, '#000091'])}>{ico(ICONES.plus)}Couleur</button>}
+          {couleurs.length < 4 && <Action icone={ICONES.plus} onClick={() => poser([...couleurs, '#000091'])}>Couleur</Action>}
         </div>
       );
     } else {
       saisie = <input id={id} className="saisie" type="text" value={c.sorte === 'liste' && Array.isArray(v) ? v.join(', ') : String(v ?? '')} onChange={(e) => poser(e.target.value)} />;
     }
     return (
-      <div key={c.cle} className="champ">
-        {c.sorte === 'couleurs' ? <span className="lib-champ">{c.libelle}</span> : <label htmlFor={id} title={c.aide}>{c.libelle}{marque}</label>}
+      <Champ key={c.cle} pour={id} groupe={c.sorte === 'couleurs'} titre={c.sorte === 'couleurs' ? undefined : c.aide} libelle={<>{c.libelle}{c.sorte !== 'couleurs' && marque}</>}
+        aide={c.sorte === 'liste' || c.sorte === 'texte_long' || c.sorte === 'couleurs' ? c.aide : undefined}>
         {saisie}
-        {(c.sorte === 'liste' || c.sorte === 'texte_long' || c.sorte === 'couleurs') && c.aide && <p className="aide-champ">{c.aide}</p>}
-      </div>
+      </Champ>
     );
   };
 
   const piecesLettre = (
-    <div className="champ pieces">
-      <span className="lib-champ">Fichiers de renfort</span>
+    <Champ groupe libelle="Fichiers de renfort" aide="Fichiers texte joints aux notes de chaque lettre : un carnet de projet, un README, des chiffres. Chacun est titré de son nom pour que le modèle cite sa source." className="pieces">
       <ul className="liste-f fichiers">
         {pieces === null && <li className="d">Lecture des pièces…</li>}
         {pieces?.length === 0 && <li className="d">Aucun fichier.</li>}
@@ -318,7 +285,7 @@ function Reglages({ admin }: { admin: boolean }) {
           </li>
         ))}
       </ul>
-      <button type="button" className="action" onClick={() => fichiers.current?.click()}>{ico(ICONES.televerser)}Téléverser…</button>
+      <Action icone={ICONES.televerser} onClick={() => fichiers.current?.click()}>Téléverser…</Action>
       <input ref={fichiers} type="file" accept=".md,.txt,.json,.csv,text/*" multiple hidden aria-label="Fichiers de renfort à téléverser"
         onChange={async (e) => {
           const choisis = [...(e.target.files ?? [])];
@@ -328,12 +295,11 @@ function Reglages({ admin }: { admin: boolean }) {
             await pieceGeste(async () => appeler('/pieces-lettre', { methode: 'POST', corps: await televerser(f) }), `${f.name} téléversé.`);
           }
         }} />
-      <p className="aide-champ">Fichiers texte joints aux notes de chaque lettre : un carnet de projet, un README, des chiffres. Chacun est titré de son nom pour que le modèle cite sa source.</p>
-    </div>
+    </Champ>
   );
 
   const g = GROUPES.find((x) => x.cle === groupe)!;
-  const coches = lignes.filter((l) => selection.has(l.uid) && l.site !== SITE_GLOBAL);
+  const coches = lignes.filter((l) => selection.has(l.uid));
   const garde = FILTRES.find((f) => f.cle === filtre)!;
   const ligneTestee = lignes.find((l) => l.site === teste);
   const apparence = useOngletApparence({ actif: onglet === 'apparence', fermer, dire });
@@ -346,9 +312,9 @@ function Reglages({ admin }: { admin: boolean }) {
     <>
       <Fenetre id="reglages" className={`reglages-page${onglet ? ' resserre' : ''}`} titrePrise="Glisser pour détacher les réglages">
         <div className="outils">
-          <p className="filtre titre-groupe"><span><span className="lib">Groupe</span>{g.titre}</span></p>
+          <TitreGroupe titre={g.titre} />
           {groupe === 'comptes' && (
-            <MenuColonne lib="État" titre="État des comptes" classeMenu=" menu-etat" icone={ICONES.chevron} valeur={`${garde.libelle} · ${lignes.filter((l) => garde.garde(l, essais[l.site])).length}`}
+            <MenuFiltre lib="État" titre="État des comptes" classeMenu="menu-etat" icone={ICONES.chevron_reglages} valeur={`${garde.libelle} · ${lignes.filter((l) => garde.garde(l, essais[l.site])).length}`}
               choix={FILTRES.map((f) => ({ cle: f.cle, libelle: f.libelle, n: lignes.filter((l) => f.garde(l, essais[l.site])).length }))}
               courant={filtre} actif={filtre !== 'tous'} choisir={setFiltre} />
           )}
@@ -356,13 +322,11 @@ function Reglages({ admin }: { admin: boolean }) {
           {groupe === 'comptes' && (
             <div className="actions" role="group" aria-label="Actions des comptes">
               {coches.length > 0 && (
-                <button type="button" className="action rouge" title={`Supprimer ${coches.length} site(s)`} onClick={() => setConfirmation({ sorte: 'sites' })}>
-                  {ico(ICONES.supprimer)}<span><span className="txt">Supprimer </span>({coches.length})</span>
-                </button>
+                <ActionSupprimer n={coches.length} title={`Supprimer ${coches.length} site(s)`} onClick={() => setConfirmation({ sorte: 'sites' })} />
               )}
-              <button type="button" className={`action plein${onglet === 'ajout' ? ' allume' : ''}`} aria-haspopup="dialog" onClick={() => ouvrir('ajout')}>
-                <span className="txt">Ajouter un site</span>{ico(ICONES.plus)}
-              </button>
+              <ActionOnglet cle="ajout" iconeApres={ICONES.plus} plein>
+                Ajouter un site
+              </ActionOnglet>
             </div>
           )}
         </div>
@@ -378,23 +342,20 @@ function Reglages({ admin }: { admin: boolean }) {
               void pieceGeste(() => appeler(`/pieces-lettre/${encodeURIComponent(nom)}`, { methode: 'DELETE' }), `${nom} supprimé.`);
             }} />
         )}
-        <div className="corps-groupes">
-          <nav className="groupes" aria-label="Groupes">
-            <button type="button" className={`rubrique${onglet === 'apparence' ? ' allume' : ''}`} aria-expanded={onglet === 'apparence'}
-              onClick={() => (onglet === 'apparence' ? fermer() : ouvrir('apparence'))}>Apparence</button>
+        <CorpsGroupes nav={<>
+            <RubriqueOnglet cle="apparence">Apparence</RubriqueOnglet>
             {GROUPES.slice(0, 1).map((x) => <BoutonGroupe key={x.cle} g={x} courant={groupe} choisir={setGroupe} />)}
             <LienIllusion vers="mails" className="rubrique" title="Les réglages des mails vivent sur la page Mails">Mails</LienIllusion>
             {GROUPES.slice(1).map((x) => <BoutonGroupe key={x.cle} g={x} courant={groupe} choisir={setGroupe} />)}
-          </nav>
+        </>}>
           <div className="groupe-contenu">
             {!lus ? <p className="aide-groupe">Lecture des réglages…</p> : groupe === 'comptes' ? (
               <div className="defile">
                 <TableComptes lignes={lignes} setLignes={setLignes} essais={essais} filtre={filtre} selection={selection} setSelection={setSelection}
                   teste={onglet === 'tester' ? teste : null} tester={tester} />
                 <div className="sous-tab">
-                  <label className="inter">Créer un compte si l&apos;ATS l&apos;exige<input type="checkbox" checked={!!valeurs.candidature_inscription}
-                    onChange={(e) => setValeurs((x) => ({ ...x, candidature_inscription: e.target.checked }))} /></label>
-                  <p className="aide-champ">Coupé, la candidature s&apos;arrête devant l&apos;écran d&apos;inscription : le dossier reste à finir à la main. La ligne « * » prête son identifiant partout ; l&apos;ordre des lignes, changé par ⠿, est celui des essais.</p>
+                  <Interrupteur libelle="Créer un compte si l&apos;ATS l&apos;exige" checked={!!valeurs.candidature_inscription} onChange={(e) => poserValeur('candidature_inscription', e.target.checked)} />
+                  <p className="aide-champ">Coupé, la candidature s&apos;arrête devant l&apos;écran d&apos;inscription : le dossier reste à finir à la main. L&apos;ordre des lignes, changé par ⠿, est celui des essais.</p>
                 </div>
               </div>
             ) : (
@@ -403,23 +364,19 @@ function Reglages({ admin }: { admin: boolean }) {
                 <div className="form-colonnes">
                   {(g.sections ?? []).filter((s) => admin || !s.admin).map((s) => (
                     <div key={s.titre} className="colonne-f">
-                      <div className="section-f">
-                        <h3>{s.titre}{s.admin && <MarqueAdmin />}</h3>
+                      <SectionFiche titre={<>{s.titre}{s.admin && <MarqueAdmin />}</>}>
                         {s.champs.filter((c) => admin || !c.admin).map(controle)}
                         {s.pieces && piecesLettre}
-                      </div>
+                      </SectionFiche>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            <div className="pied-groupe">
-              <span className="etat-changes">{libelles.length ? `${libelles.length} changement${libelles.length > 1 ? 's' : ''} non enregistré${libelles.length > 1 ? 's' : ''} : ${libelles.slice(0, 3).join(', ')}${libelles.length > 3 ? '…' : ''}` : ''}</span>
-              <button type="button" className="action plein" disabled={!libelles.length || occupe} onClick={() => enregistrer()}>Enregistrer{ico(ICONES.valider)}</button>
-            </div>
+            <PiedGroupe libelles={libelles} disabled={!libelles.length || occupe} onClick={() => enregistrer()} />
           </div>
-        </div>
-        {avis && <p className={`avis${avis.erreur ? ' erreur' : ''}`} role={avis.erreur ? 'alert' : 'status'} onClick={() => setAvis(null)}>{avis.texte}</p>}
+        </CorpsGroupes>
+        {vue}
       </Fenetre>
       <Panneau onglets={onglets} />
     </>
@@ -427,6 +384,6 @@ function Reglages({ admin }: { admin: boolean }) {
 }
 
 function BoutonGroupe({ g, courant, choisir }: { g: Groupe; courant: string; choisir: (c: string) => void }) {
-  return <button type="button" className={`rubrique${g.cle === courant ? ' actif' : ''}`} aria-current={g.cle === courant ? 'page' : undefined} onClick={() => choisir(g.cle)}>{g.titre}</button>;
+  return <Rubrique actif={g.cle === courant} onClick={() => choisir(g.cle)}>{g.titre}</Rubrique>;
 }
 

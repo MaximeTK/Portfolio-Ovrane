@@ -5,28 +5,22 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import './commun.css';
 import { appeler, televerser } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { ICONES_COMMUNES, TRAIT, message, useMenu } from '../commun';
+
+import { MenuFiltre as Filtre } from '../../elements/Menu';
+import { useAvis as useAvisCommun, type Dire } from '../../elements/Avis';
+import { Action } from '../../elements/Action';
+import { ICONES } from '../../elements/icones';
+import { message } from '../../elements/format';
 
 // Partagé par Documents et Constructeur : icônes, menus, couleurs, fichiers
 
 // Les fichiers servis tels quels passent par le même relais que appeler()
 export const RELAIS = '/api/illusion/app';
 
-export const ICONES = {
-  ...ICONES_COMMUNES,
-  oeil: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" /><circle cx="12" cy="12" r="3" /></svg>,
-  suite: <svg {...TRAIT}><path d="m6 9 6 6 6-6" /></svg>,
-  exporter: <svg {...TRAIT}><path d="M12 15V4M7 9l5-5 5 5M5 20h14" /></svg>,
-  telecharger: <svg {...TRAIT}><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>,
-  reprendre: <svg {...TRAIT}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
-  image: <svg {...TRAIT}><rect x="3" y="5" width="18" height="14" /><path d="m3 16 5-5 4 4 3-3 6 6" /></svg>,
-  fleche: <svg {...TRAIT}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
-  envoyer: <svg {...TRAIT}><path d="M4 12h12M12 6l6 6-6 6M20 4v16" /></svg>,
-  coche: <svg {...TRAIT} strokeWidth={2.6}><path d="m5 12 5 5 9-10" /></svg>,
-  crayon: <svg {...TRAIT}><path d="M4 20h4L19 9l-4-4L4 16z" /></svg>,
-  croix: <svg {...TRAIT}><path d="M6 6l12 12M18 6 6 18" /></svg>,
-  arret: <svg {...TRAIT}><path d="M7 7h10v10H7z" fill="currentColor" /></svg>,
-};
+
+
+// Les fonds d'un CV ; le vide se nomme à chaque appel
+export const FONDS = ['', 'aplat', 'degrade', 'photo', 'photo-teintee', 'blanc'];
 
 // « 4,2 Ko », « 860 Ko », « 1,4 Mo » : une décimale sous 10, aucune au-delà
 export function poids(octets: number) {
@@ -37,50 +31,18 @@ export function poids(octets: number) {
 }
 
 // Avis d'un geste, plus long pour une erreur ; un clic le ferme
-export type Dire = (texte: string, erreur?: boolean) => void;
-export function useAvis() {
-  const [avis, setAvis] = useState<{ texte: string; erreur: boolean; n: number } | null>(null);
-  const dire = useCallback<Dire>((texte, erreur = false) => setAvis((a) => ({ texte, erreur, n: (a?.n ?? 0) + 1 })), []);
-  useEffect(() => {
-    if (!avis) return;
-    const t = window.setTimeout(() => setAvis(null), avis.erreur ? 6000 : 3500);
-    return () => window.clearTimeout(t);
-  }, [avis]);
-  const vue = avis ? (
-    <p key={avis.n} className={`avis-doc${avis.erreur ? ' erreur' : ''}`} role={avis.erreur ? 'alert' : 'status'} onClick={() => setAvis(null)}>{avis.texte}</p>
-  ) : null;
-  return { dire, vue };
-}
+export const useAvis = () => useAvisCommun('avis-doc', true);
 
 // Menu de filtre : choix courant allumé, un clic ailleurs ou Échap le ferme
 export type Choix = { cle: string; libelle: string };
 export function MenuFiltre({ lib, valeur, actif, choix, courant, choisir, titre, children }: {
   lib?: string; valeur: string; actif: boolean; choix?: Choix[]; courant?: string; choisir?: (cle: string) => void; titre?: string; children?: React.ReactNode;
 }) {
-  const { ouvert, setOuvert, hote } = useMenu(true);
   return (
-    <div ref={hote} className="menu-hote filtre-doc">
-      <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} title={titre}
-        aria-label={`${lib ?? 'Type'} : ${titre ?? valeur}`} onClick={() => setOuvert((o) => !o)}>
-        <span>{lib && <span className="lib">{lib}</span>}{valeur}</span>
-        {ICONES.chevron}
-      </button>
-      {ouvert && (
-        <div className="menu verre" role="listbox" aria-label={lib ?? 'Type'}>
-          <span className="verre-halos" aria-hidden="true" />
-          {choix?.map((c) => (
-            <button key={c.cle} type="button" role="option" aria-selected={c.cle === courant} className={`menu-option${c.cle === courant ? ' actif' : ''}`}
-              onClick={() => {
-                choisir?.(c.cle);
-                setOuvert(false);
-              }}>
-              {c.libelle}
-            </button>
-          ))}
-          {children}
-        </div>
-      )}
-    </div>
+    <Filtre arreter classeHote="filtre-doc" lib={lib} titre={lib ?? 'Type'} valeur={valeur} actif={actif} choix={choix} courant={courant} choisir={choisir} icone={ICONES.chevron}
+      title={titre} aria-label={`${lib ?? 'Type'} : ${titre ?? valeur}`}>
+      {children}
+    </Filtre>
   );
 }
 
@@ -106,7 +68,7 @@ export function Couleurs({ valeurs, changer, libelle, grand }: { valeurs: string
           {grand ? (
             <button type="button" className="ajout-c" onClick={() => nouvelle.current?.click()}>+ Couleur</button>
           ) : (
-            <button type="button" className="action" onClick={() => nouvelle.current?.click()}><span className="ico">{ICONES.plus}</span>Couleur</button>
+            <Action icone={ICONES.plus_pages} onClick={() => nouvelle.current?.click()}>Couleur</Action>
           )}
         </>
       )}
@@ -224,8 +186,8 @@ export function ListeFichiers({ route, accept, apercu, compact, sorte, portee, g
                   <input id={`ren-${sorte}`} className="saisie" value={nouveau} autoFocus onChange={(e) => setNouveau(e.target.value)} />
                   <p className="aide-champ">{sorte} · {poids(f.taille)} · {portee}.</p>
                   <div className="ren-pied">
-                    <button type="button" className="action" onClick={() => setRenomme(null)}>Annuler</button>
-                    <button type="submit" className="action plein">Renommer<span className="ico">{ICONES.coche}</span></button>
+                    <Action onClick={() => setRenomme(null)}>Annuler</Action>
+                    <Action plein iconeApres={ICONES.valider} type="submit">Renommer</Action>
                   </div>
                 </form>
               </li>
@@ -245,7 +207,7 @@ export function ListeFichiers({ route, accept, apercu, compact, sorte, portee, g
                   {vignette}
                   <span className="nf"><b title={f.nom}>{f.nom}</b><small>{poids(f.taille)}</small></span>
                   <button type="button" className="bt" title="Renommer" aria-label={`Renommer ${f.nom}`} onClick={() => ouvrir(f)}>{ICONES.crayon}</button>
-                  <button type="button" className="bt sup" title="Supprimer" aria-label={`Supprimer ${f.nom}`} onClick={() => aSupprimer(f)}>{ICONES.croix}</button>
+                  <button type="button" className="bt sup" title="Supprimer" aria-label={`Supprimer ${f.nom}`} onClick={() => aSupprimer(f)}>{ICONES.croix_documents}</button>
                 </>
               )}
             </li>
@@ -258,9 +220,9 @@ export function ListeFichiers({ route, accept, apercu, compact, sorte, portee, g
           if (liste?.length) await gestion.envoyer(liste);
           e.target.value = '';
         }} />
-      <button type="button" className={`action${compact ? '' : ' plein'} televerser`} onClick={() => choix.current?.click()}>
-        {compact && <span className="ico">{ICONES.exporter}</span>}Téléverser…{!compact && <span className="ico">{ICONES.plus}</span>}
-      </button>
+      <Action className={`${compact ? '' : ' plein'} televerser`} onClick={() => choix.current?.click()}>
+        {compact && <span className="ico">{ICONES.exporter}</span>}Téléverser…{!compact && <span className="ico">{ICONES.plus_pages}</span>}
+      </Action>
     </>
   );
 }

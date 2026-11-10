@@ -1,30 +1,28 @@
 'use client';
 
 import './fiches.css';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
-import { cleBrouillon, repris, useGarder } from '../../stockage';
+import { ecrireBrouillon, lireBrouillon, repris, useGarder } from '../../stockage';
 import { useSondage } from '../../activite/sondage';
-import { Fenetre, usePanneau, useVues, type ArbreDepart } from '../../dock/Dock';
+import { Dock, Fenetre, usePanneau, useVues, type ArbreDepart } from '../../dock/Dock';
+import { useAvis, type Avis, type Dire } from '../../elements/Avis';
 import { ECART } from '../../dock/moteur';
 import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
-import {
-  CANAUX, ETATS, Etape, Marques, dateHeure, libelleEtat, lienSur, messageDe, ongletDejaAudite, ongletFicheEntreprise, sansProtocole, useFicheEntreprise,
-  useQuestionsFiche,
-} from '../../partage/FicheEntreprise';
+import { CANAUX, ConfirmerQuestion, ETATS, Etape, FLECHE, Marques, libelleEtat, ongletDejaAudite, ongletFicheEntreprise, sansProtocole, useFicheEntreprise, useQuestionsFiche } from '../../partage/FicheEntreprise';
 import { ongletFicheOffre } from '../../partage/FicheOffre';
-import { ICONES_COMMUNES, TRAIT, duree, useEchap, useMenu } from '../commun';
+import { PaginationAller, duree, useEchap, useLignesAuto, usePagination } from '../commun';
+import { MenuFiltre, useClicDehors } from '../../elements/Menu';
+import { useCoches } from '../../elements/Case';
+import { Action } from '../../elements/Action';
+import { Case } from '../../elements/Case';
+import { Champ, Interrupteur, ChampSaisie, SectionFiche, LibelleValeur, OptionsModele } from '../../elements/Champ';
+import { ICONES } from '../../elements/icones';
+import { ouvrable } from '../../elements/Case';
+import { lienSur, message, parVirgules, quand } from '../../elements/format';
+import { PageDock } from '../../activite/PageDock';
 
-export const ICONES = {
-  ...ICONES_COMMUNES,
-  importer: <svg {...TRAIT}><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M4 21h16" /></svg>,
-  reparer: <svg {...TRAIT}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z" /></svg>,
-  executer: <svg {...TRAIT}><path d="M7 4v16l13-8z" /></svg>,
-  actualiser: <svg {...TRAIT}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
-  croix: <svg {...TRAIT} strokeWidth={2.4}><path d="M6 6l12 12M18 6 6 18" /></svg>,
-};
 const BARRES = <span className="barres vivant" aria-hidden="true"><i /><i /><i /><i /></span>;
-export const FLECHE = <span className="ico">{ICONES.fleche}</span>;
 
 // Fiches et panneau partagent leur rangée : l'Activité garde sa largeur
 export const arbreFiches = (panneau: (largeurEcran: number) => number | null): ArbreDepart => (zone, style) => {
@@ -32,20 +30,6 @@ export const arbreFiches = (panneau: (largeurEcran: number) => number | null): A
   const reste = zone.w - 228 - ECART;
   return { dir: 'row', enfants: [{ id: 'activite' }, { dir: 'row', enfants: [{ id: 'fiches' }, { id: 'panneau' }], parts: [Math.max(reste - lp - ECART, 470), lp] }], parts: [228, reste] };
 };
-
-export type Avis = { texte: string; erreur: boolean } | null;
-// Avis du dernier geste, plus long pour une erreur
-export function useAvis() {
-  const [avis, setAvis] = useState<Avis>(null);
-  const minuteur = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const dire = useCallback((texte: string, erreur = false) => {
-    setAvis({ texte, erreur });
-    clearTimeout(minuteur.current);
-    minuteur.current = setTimeout(() => setAvis(null), erreur ? 6000 : 3500);
-  }, []);
-  return { avis, dire };
-}
-export type Dire = (texte: string, erreur?: boolean) => void;
 
 // Briques qui tournent au nom du compte, relues toutes les 5 s
 export function useBriques(section: string) {
@@ -66,29 +50,9 @@ export function useBriques(section: string) {
 export type Confirmation = { question: string; detail?: React.ReactNode; action: string; faire: () => Promise<void> } | null;
 
 type Choix = { valeur: string; libelle: string; compte?: number };
-function MenuFiltre({ lib, affiche, choix, valeur, choisir }: { lib: string; affiche: string; choix: Choix[]; valeur: string; choisir: (v: string) => void }) {
-  const { ouvert, setOuvert, hote } = useMenu();
-  return (
-    <div ref={hote} className="menu-hote">
-      <button type="button" className={`filtre${valeur ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
-        <span><span className="lib">{lib}</span>{affiche}</span>{ICONES.chevron}
-      </button>
-      {ouvert && (
-        <div className="menu verre" role="listbox" aria-label={lib}>
-          <span className="verre-halos" aria-hidden="true" />
-          {choix.map((c) => (
-            <button key={c.valeur} type="button" role="option" aria-selected={c.valeur === valeur} className={`menu-option${c.valeur === valeur ? ' actif' : ''}`}
-              onClick={() => {
-                choisir(c.valeur);
-                setOuvert(false);
-              }}>
-              {c.libelle}{c.compte !== undefined && <span className="compte">{c.compte.toLocaleString('fr-FR')}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+function FiltreFiches({ lib, affiche, choix, valeur, choisir }: { lib: string; affiche: string; choix: Choix[]; valeur: string; choisir: (v: string) => void }) {
+  return <MenuFiltre lib={lib} valeur={affiche} actif={!!valeur} courant={valeur} choisir={choisir} icone={ICONES.chevron}
+    choix={choix.map((c) => ({ cle: c.valeur, libelle: c.libelle, fin: c.compte !== undefined && <span className="compte">{c.compte.toLocaleString('fr-FR')}</span> }))} />;
 }
 
 type Ligne = {
@@ -98,16 +62,6 @@ type Ligne = {
 type ReponseFiches = { page: number; taille: number; total_filtre: number; pages: number; total: number; comptes: Record<string, number>; lignes: Ligne[] };
 
 // Pages montrées : les bords, la courante et ses voisines
-function numeros(page: number, pages: number): (number | null)[] {
-  const vus = [...new Set([1, 2, 3, page - 1, page, page + 1, pages - 2, pages - 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
-  const sortie: (number | null)[] = [];
-  vus.forEach((n, i) => {
-    if (i && n - vus[i - 1] > 1 && !sortie.includes(null)) sortie.push(null);
-    sortie.push(n);
-  });
-  return sortie;
-}
-
 type ProprietesTableau = {
   // La section qui monte le tableau garde ses choix et ses fiches sous son nom
   section: string;
@@ -134,13 +88,10 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
   const [canal, setCanal] = useState(() => repris(`${garde}:canal`, ''));
   const [saisie, setSaisie] = useState(() => repris(`${garde}:saisie`, ''));
   const [cherche, setCherche] = useState(() => repris(`${garde}:cherche`, ''));
-  const [page, setPage] = useState(() => repris(`${garde}:page`, 1));
-  const [taille, setTaille] = useState(() => repris<number | 'auto'>(`${garde}:taille`, 'auto'));
-  const [auto, setAuto] = useState(() => repris(`${garde}:auto`, 16));
+  const { page, setPage, taille, setTaille, auto, setAuto } = usePagination(garde, 16);
   const [donnees, setDonnees] = useState(() => repris<ReponseFiches | null>(`${garde}:donnees`, null));
-  useGarder(garde, { etat, canal, saisie, cherche, page, taille, auto, donnees });
+  useGarder(garde, { etat, canal, saisie, cherche, donnees });
   const [erreur, setErreur] = useState('');
-  const [occupe, setOccupe] = useState(false);
   const defile = useRef<HTMLDivElement>(null);
   const rang = useRef(0);
   const parPage = taille === 'auto' ? auto : taille;
@@ -156,19 +107,7 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
   }, [saisie, cherche]);
 
   // « auto » : lignes selon la hauteur de la fenêtre, dix au moins
-  const mesurer = useCallback(() => {
-    const el = defile.current;
-    if (!el) return;
-    const tete = el.querySelector('thead')?.getBoundingClientRect().height ?? 34;
-    const ligne = el.querySelector('tbody tr:not(.vide-tableau)')?.getBoundingClientRect().height || parseFloat(getComputedStyle(el).getPropertyValue('--ligne')) || 36;
-    setAuto(Math.max(10, Math.floor((el.clientHeight - tete) / ligne)));
-  }, []);
-  useLayoutEffect(() => {
-    if (!defile.current) return;
-    const observateur = new ResizeObserver(mesurer);
-    observateur.observe(defile.current);
-    return () => observateur.disconnect();
-  }, [mesurer]);
+  useLignesAuto(defile, setAuto, donnees, 10);
 
   const adresse = `/vues/collecte/fiches?${new URLSearchParams({ q: cherche, etat, tags: canal, page: String(page), taille: String(parPage) })}`;
   const lire = useCallback(async () => {
@@ -180,7 +119,7 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
       setErreur('');
       if (page > vu.pages) setPage(vu.pages);
     } catch (e) {
-      if (n === rang.current) setErreur(messageDe(e));
+      if (n === rang.current) setErreur(message(e));
     }
   }, [adresse, page]);
   useSondage(lire, 8000, true, `${adresse}|${version}|${versionFiche}`);
@@ -190,29 +129,22 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
     if (!confirmation && !question && onglet) fermer();
   });
 
-  useLayoutEffect(mesurer, [donnees, mesurer]);
   const lignes = donnees?.lignes ?? [];
   const comptes = donnees?.comptes ?? {};
-  const toutes = lignes.length > 0 && lignes.every((l) => selection.has(l.siren));
-  const cocher = (sirens: string[], oui: boolean) => {
-    const s = new Set(selection);
-    sirens.forEach((x) => (oui ? s.add(x) : s.delete(x)));
-    choisir(s);
-  };
+  const { toutes, cocher } = useCoches(selection, choisir, lignes.map((l) => l.siren));
   const choixEtat: Choix[] = [{ valeur: '', libelle: 'Total', compte: donnees?.total ?? 0 }, ...ETATS.map((e) => ({ valeur: e.code, libelle: e.libelle, compte: comptes[e.code] ?? 0 }))];
   const etatChoisi = choixEtat.find((c) => c.valeur === etat) ?? choixEtat[0];
   const pages = donnees?.pages ?? 1;
-  const [aller, setAller] = useState('');
 
   return (
     <Fenetre id="fiches" as="div" className="tableau" aria-label={titre} titrePrise={`Glisser pour détacher ${titre.toLowerCase()}`}>
       <div className="outils">
-        <MenuFiltre lib="État" affiche={`${etatChoisi.libelle} · ${(etatChoisi.compte ?? 0).toLocaleString('fr-FR')}`} choix={choixEtat} valeur={etat}
+        <FiltreFiches lib="État" affiche={`${etatChoisi.libelle} · ${(etatChoisi.compte ?? 0).toLocaleString('fr-FR')}`} choix={choixEtat} valeur={etat}
           choisir={(v) => {
             setEtat(v);
             setPage(1);
           }} />
-        <MenuFiltre lib="Canaux" affiche={canal || 'tous'} valeur={canal} choix={[{ valeur: '', libelle: 'tous' }, ...CANAUX.map((c) => ({ valeur: c.nom, libelle: c.nom }))]}
+        <FiltreFiches lib="Canaux" affiche={canal || 'tous'} valeur={canal} choix={[{ valeur: '', libelle: 'tous' }, ...CANAUX.map((c) => ({ valeur: c.nom, libelle: c.nom }))]}
           choisir={(v) => {
             setCanal(v);
             setPage(1);
@@ -225,38 +157,25 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
         <div className="actions" role="group" aria-label="Actions">{actions}</div>
       </div>
       {confirmation ? (
-        <Confirmer question={confirmation.question} detail={confirmation.detail} action={confirmation.action} occupe={occupe} onAnnuler={annuler}
+        <Confirmer question={confirmation.question} detail={confirmation.detail} action={confirmation.action} onAnnuler={annuler}
           onConfirmer={async () => {
-            setOccupe(true);
             await confirmation.faire();
-            setOccupe(false);
             annuler();
           }} />
-      ) : question && (
-        <Confirmer question={question.question} detail={question.detail} action={question.action} occupe={occupe}
-          onAnnuler={() => useFicheEntreprise.setState({ question: null })}
-          onConfirmer={async () => {
-            setOccupe(true);
-            await question.faire(fermer);
-            setOccupe(false);
-            useFicheEntreprise.setState({ question: null });
-          }} />
-      )}
+      ) : question && <ConfirmerQuestion question={question} fermer={fermer} />}
       <div className="defile" ref={defile}>
         <table className="fiches">
           <thead>
             <tr>
-              <th><input type="checkbox" className="case" aria-label="Tout sélectionner" checked={toutes} onChange={(e) => cocher(lignes.map((l) => l.siren), e.target.checked)} /></th>
+              <th><Case aria-label="Tout sélectionner" checked={toutes} onChange={(e) => cocher(lignes.map((l) => l.siren), e.target.checked)} /></th>
               <th>Entreprise</th><th>Secteur</th><th>Localisation</th><th>Effectif</th><th>Site</th><th>Email</th><th>Téléphone</th><th>Offres</th><th>Canaux</th><th>État</th>
             </tr>
           </thead>
           <tbody>
             {lignes.map((l) => (
-              <tr key={l.siren} className={[selection.has(l.siren) && 'coche', l.siren === objet && onglet === 'fiche-entreprise' && 'ouverte'].filter(Boolean).join(' ') || undefined}
-                tabIndex={0} data-ouvre="fiche-entreprise" data-objet={l.siren}
-                onClick={() => ouvrir('fiche-entreprise', l.siren)} onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && ouvrir('fiche-entreprise', l.siren)}>
+              <tr key={l.siren} className={[selection.has(l.siren) && 'coche', l.siren === objet && onglet === 'fiche-entreprise' && 'ouverte'].filter(Boolean).join(' ') || undefined} {...ouvrable('fiche-entreprise', l.siren, () => ouvrir('fiche-entreprise', l.siren))}>
                 <td onClick={(e) => e.stopPropagation()}>
-                  <input type="checkbox" className="case" aria-label={`Sélectionner ${l.nom}`} checked={selection.has(l.siren)} onChange={(e) => cocher([l.siren], e.target.checked)} />
+                  <Case aria-label={`Sélectionner ${l.nom}`} checked={selection.has(l.siren)} onChange={(e) => cocher([l.siren], e.target.checked)} />
                 </td>
                 <td className="ent2"><a href={`#${l.siren}`} className="ent" title={l.nom} onClick={(e) => e.preventDefault()}>{l.nom}</a><span className="siren">{l.siren}</span></td>
                 <td className={l.secteur ? 'd' : 'vide'} title={l.secteur ?? undefined}>{l.secteur ?? '—'}</td>
@@ -281,34 +200,14 @@ export function TableauFiches({ section, titre, actions, confirmation, annuler, 
           </tbody>
         </table>
       </div>
-      <div className="pagination">
-        <select aria-label="Lignes par page" value={String(taille)} onChange={(e) => {
-          setTaille(e.target.value === 'auto' ? 'auto' : Number(e.target.value));
-          setPage(1);
-        }}>
-          <option value="auto">auto ({auto})</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-        </select>
-        <nav className="pages" aria-label="Pages">
-          <button type="button" className="pl" disabled={page <= 1} aria-label="Page précédente" onClick={() => setPage(page - 1)}>‹</button>
-          {numeros(page, pages).map((n) => n === null ? (
-            <input key="aller" type="text" className="aller" inputMode="numeric" placeholder="…" size={3} aria-label="Aller à la page" value={aller}
-              onChange={(e) => setAller(e.target.value.replace(/\D/g, ''))}
-              onKeyDown={(e) => {
-                if (e.key !== 'Enter' || !aller) return;
-                setPage(Math.min(Math.max(1, Number(aller)), pages));
-                setAller('');
-              }} />
-          ) : (
-            <button key={n} type="button" className={`pl${n === page ? ' actif' : ''}`} aria-current={n === page ? 'page' : undefined} onClick={() => setPage(n)}>{n}</button>
-          ))}
-          <button type="button" className="pl" disabled={page >= pages} aria-label="Page suivante" onClick={() => setPage(page + 1)}>›</button>
-        </nav>
+      <PaginationAller page={page} pages={pages} setPage={setPage} taille={taille} tailles={[25, 50]} auto={auto} setTaille={(t) => {
+        setTaille(t);
+        setPage(1);
+      }}>
         {avis ? <span className={`note-bas avis${avis.erreur ? ' erreur' : ''}`} role="status">{avis.texte}</span>
           : erreur && lignes.length ? <span className="note-bas erreur" role="status">{erreur}</span>
           : note && <span className="note-bas">{note}</span>}
-      </div>
+      </PaginationAller>
     </Fenetre>
   );
 }
@@ -331,6 +230,29 @@ export function PanneauFiches({ avant = [], apres = [] }: { avant?: Onglet[]; ap
   return <Panneau elements={elements} onglets={onglets.filter((o) => !parGeste || OUVERTS_PAR_UN_GESTE.has(o.cle) || o.cle === onglet)} />;
 }
 
+// État commun d'une page de fiches : avis, sélection, confirmation, relecture
+export function useEtatFiches() {
+  const { avis, dire } = useAvis();
+  const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [confirmation, setConfirmation] = useState<Confirmation>(null);
+  const [version, setVersion] = useState(0);
+  const relire = useCallback(() => setVersion((v) => v + 1), []);
+  return { avis, dire, selection, setSelection, confirmation, setConfirmation, version, relire };
+}
+
+// Page de fiches : Activité, tableau, panneau ; la page donne gestes et onglets
+export function PageFiches({ section, etat, arbre, fenetres, panneau, note, actions, avant, apres }: Pick<React.ComponentProps<typeof Dock>, 'arbre' | 'fenetres' | 'panneau'> & Pick<React.ComponentProps<typeof PanneauFiches>, 'avant' | 'apres'> & {
+  section: string; etat: ReturnType<typeof useEtatFiches>; note?: React.ReactNode; actions: React.ReactNode;
+}) {
+  return (
+    <PageDock id={section} principal="fiches" arbre={arbre} fenetres={{ fiches: { mini: [470, 220] }, ...fenetres }} panneau={panneau}>
+      <TableauFiches section={section} titre="Fiches entreprises" avis={etat.avis} note={note} version={etat.version} selection={etat.selection} choisir={etat.setSelection}
+        confirmation={etat.confirmation} annuler={() => etat.setConfirmation(null)} actions={actions} />
+      <PanneauFiches avant={avant} apres={apres} />
+    </PageDock>
+  );
+}
+
 export type Lot = { brique: string; famille: string; libelle: string; aide: string; icone: React.ReactNode; plein?: boolean };
 
 // Lots bloqués par famille ; un clic arrête, deux abandonnent la fiche
@@ -347,7 +269,7 @@ export function Lots({ lots, actives, selection, dire, relire, demander }: {
         : r.occupee_par ? `« ${r.occupee_par} » tourne déjà : les temps de l'audit écrivent la même fiche et attendent leur tour.`
         : `Brique ${lot.brique} déjà en cours.`, !r.lancee);
     } catch (e) {
-      dire(messageDe(e), true);
+      dire(message(e), true);
     }
     relire();
   };
@@ -356,16 +278,15 @@ export function Lots({ lots, actives, selection, dire, relire, demander }: {
       const r = await appeler<{ arretee: boolean; force: boolean }>(`/briques/${lot.brique}/arreter`, { methode: 'POST' });
       dire(!r.arretee ? 'Aucun lot en cours.' : r.force ? 'Arrêt forcé — la fiche en cours est abandonnée.' : "Arrêt demandé — la fiche en cours se termine. Recliquer l'abandonne.", !r.arretee);
     } catch (e) {
-      dire(messageDe(e), true);
+      dire(message(e), true);
     }
     relire();
   };
   return lots.map((lot) => {
     if (actives.has(lot.brique)) {
       return (
-        <button key={lot.brique} type="button" className="action encours" aria-pressed="true" title={`${lot.aide}. En marche — cliquer pour arrêter.`} onClick={() => arreter(lot)}>
-          <span className="ico">{BARRES}</span><span className="txt">{lot.libelle}</span><span className="etat-a">en cours</span>
-        </button>
+        <Action className="encours" icone={BARRES} key={lot.brique} aria-pressed="true" title={`${lot.aide}. En marche — cliquer pour arrêter.`} onClick={() => arreter(lot)}><span className="txt">{lot.libelle}</span><span className="etat-a">en cours</span>
+        </Action>
       );
     }
     const bloque = occupees.has(lot.famille);
@@ -376,25 +297,14 @@ export function Lots({ lots, actives, selection, dire, relire, demander }: {
       question: `Lancer la brique « ${lot.brique} » sur toutes les fiches éligibles ?`, detail: `${lot.aide}.`, action: 'Lancer', faire: () => lancer(lot),
     }));
     return lot.plein ? (
-      <button key={lot.brique} type="button" className="action plein" disabled={bloque} title={titre} onClick={clic}>
+      <Action plein key={lot.brique} disabled={bloque} title={titre} onClick={clic}>
         <span className="txt">{lot.libelle}</span><span className="nb-sel">&nbsp;{n}</span>{FLECHE}
-      </button>
+      </Action>
     ) : (
-      <button key={lot.brique} type="button" className="action" disabled={bloque} title={titre} onClick={clic}>
-        <span className="ico">{lot.icone}</span><span className="txt">{lot.libelle}</span><span className="nb-sel">&nbsp;{n}</span>
-      </button>
+      <Action icone={lot.icone} key={lot.brique} disabled={bloque} title={titre} onClick={clic}><span className="txt">{lot.libelle}</span><span className="nb-sel">&nbsp;{n}</span>
+      </Action>
     );
   });
-}
-
-// Action de la rangée qui ouvre un onglet du panneau, allumée tant qu'il l'est
-export function ActionOnglet({ cle, libelle, icone, titre }: { cle: string; libelle: string; icone: React.ReactNode; titre?: string }) {
-  const { onglet, ouvrir } = usePanneau();
-  return (
-    <button type="button" className={`action${onglet === cle ? ' allume' : ''}`} aria-haspopup="dialog" aria-expanded={onglet === cle} title={titre ?? libelle} onClick={() => ouvrir(cle)}>
-      <span className="ico">{icone}</span><span className="txt">{libelle}</span>
-    </button>
-  );
 }
 
 /* Réglages globaux d'une brique ; « Enregistrer » éteint sans changement */
@@ -406,7 +316,7 @@ export type ChampReglage = {
 type Parametres = Record<string, unknown> & { modeles?: { nom: string }[] };
 // Une liste se tape en texte et ne redevient liste qu'à l'envoi
 const versSaisie = (champ: ChampReglage, valeur: unknown) => (champ.type === 'liste' ? ((valeur as string[] | undefined) ?? []).join(', ') : valeur);
-const versReglage = (champ: ChampReglage, valeur: unknown) => (champ.type === 'liste' ? String(valeur ?? '').split(',').map((v) => v.trim()).filter(Boolean) : valeur);
+const versReglage = (champ: ChampReglage, valeur: unknown) => (champ.type === 'liste' ? parVirgules(String(valeur ?? '')) : valeur);
 
 export function useReglages(section: string, champs: ChampReglage[], dire: Dire, apres?: () => void) {
   const [parametres, setParametres] = useState(() => repris<Parametres | null>(`${section}:reglages:parametres`, null));
@@ -418,7 +328,7 @@ export function useReglages(section: string, champs: ChampReglage[], dire: Dire,
     appeler<Parametres>('/parametres').then((p) => {
       setParametres(p);
       setValeurs(depuis(p));
-    }).catch((e) => dire(messageDe(e), true));
+    }).catch((e) => dire(message(e), true));
   }, [depuis, dire]);
   const change = !!parametres && JSON.stringify(champs.map((c) => versReglage(c, valeurs[c.cle]))) !== JSON.stringify(champs.map((c) => parametres[c.cle]));
   return {
@@ -433,7 +343,7 @@ export function useReglages(section: string, champs: ChampReglage[], dire: Dire,
         dire('Réglages enregistrés — les lots les reprennent aussitôt.');
         apres?.();
       } catch (e) {
-        dire(`Enregistrement refusé : ${messageDe(e)}`, true);
+        dire(`Enregistrement refusé : ${message(e)}`, true);
       }
     },
   };
@@ -445,7 +355,8 @@ function Catalogue({ id, nom, codes, poser }: { id: string; nom: string; codes: 
   const [libelles, setLibelles] = useState<Record<string, string>>({});
   const [question, setQuestion] = useState('');
   const [trouves, setTrouves] = useState<{ code: string; libelle: string }[]>([]);
-  const hote = useRef<HTMLDivElement>(null);
+  const refermer = useCallback(() => setTrouves([]), []);
+  const hote = useClicDehors(trouves.length > 0, refermer);
   const rang = useRef(0);
   useEffect(() => {
     const manquants = codes.filter((c) => !(c in libelles));
@@ -454,12 +365,6 @@ function Catalogue({ id, nom, codes, poser }: { id: string; nom: string; codes: 
       .then((lus) => setLibelles((l) => ({ ...l, ...Object.fromEntries(manquants.map((c) => [c, lus.find((e) => e.code === c)?.libelle ?? ''])) })))
       .catch(() => undefined);
   }, [codes, libelles, nom]);
-  useEffect(() => {
-    if (!trouves.length) return;
-    const dehors = (e: PointerEvent) => !hote.current?.contains(e.target as Node) && setTrouves([]);
-    document.addEventListener('pointerdown', dehors);
-    return () => document.removeEventListener('pointerdown', dehors);
-  }, [trouves.length]);
   const proposer = async (q: string) => {
     setQuestion(q);
     // Les réponses arrivent dans le désordre : seule la dernière compte
@@ -513,22 +418,21 @@ function ChampReglageVue({ champ, r }: { champ: ChampReglage; r: Reglages }) {
   const v = r.valeurs[champ.cle];
   const libelle = <>{champ.libelle}{champ.admin && <MarqueAdmin />}</>;
   if (champ.type === 'booleen') {
-    return <label className="inter" title={champ.aide}><span>{libelle}</span><input type="checkbox" checked={!!v} onChange={(e) => r.poser(champ.cle, e.target.checked)} /></label>;
+    return <Interrupteur libelle={libelle} title={champ.aide} checked={!!v} onChange={(e) => r.poser(champ.cle, e.target.checked)} />;
   }
   return (
-    <div className="champ">
-      <label htmlFor={id} title={champ.aide}>{libelle}</label>
+    <Champ pour={id} titre={champ.aide} libelle={libelle}>
       {champ.type === 'catalogue' ? <Catalogue id={id} nom={champ.catalogue!} codes={(v as string[] | undefined) ?? []} poser={(codes) => r.poser(champ.cle, codes)} />
         : champ.type === 'modele' ? (
           <select id={id} className="saisie" value={String(v ?? '')} onChange={(e) => r.poser(champ.cle, e.target.value)}>
-            {['', ...(r.parametres?.modeles ?? []).map((m) => m.nom)].map((nom) => <option key={nom} value={nom}>{nom || 'Aucun'}</option>)}
+            <OptionsModele modeles={r.parametres?.modeles ?? []} vide="Aucun" valeur={String(v ?? '')} detail={false} />
           </select>
         ) : (
           <input id={id} className="saisie" type={champ.type === 'nombre' ? 'number' : 'text'} placeholder={champ.exemple} value={String(v ?? '')}
             onChange={(e) => r.poser(champ.cle, champ.type === 'nombre' ? parseInt(e.target.value, 10) || 0 : e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && r.change && r.enregistrer()} />
         )}
-    </div>
+    </Champ>
   );
 }
 
@@ -554,11 +458,11 @@ export function PiedReglages({ r }: { r: Reglages }) {
   const { fermer } = usePanneau();
   return (
     <>
-      <button type="button" className="action gauche" onClick={() => {
+      <Action className="gauche" onClick={() => {
         r.annuler();
         fermer();
-      }}>Annuler</button>
-      <button type="button" className="action plein" disabled={!r.change} title={r.change ? 'Écrit ces valeurs dans les réglages du pipeline : les lots les reprendront.' : 'Rien n’a changé.'} onClick={r.enregistrer}>Enregistrer{FLECHE}</button>
+      }}>Annuler</Action>
+      <Action plein disabled={!r.change} title={r.change ? 'Écrit ces valeurs dans les réglages du pipeline : les lots les reprendront.' : 'Rien n’a changé.'} onClick={r.enregistrer}>Enregistrer{FLECHE}</Action>
     </>
   );
 }
@@ -580,16 +484,9 @@ const CONTROLES: Record<string, (v: string) => string> = {
   siren: (v) => (/^\d{9}$/.test(v) ? '' : 'le SIREN compte 9 chiffres'),
 };
 const LIBELLES_FICHE: Record<string, string> = { url: 'Site officiel', nom: 'Entreprise', siren: 'SIREN' };
-const lireRetenues = (nom: string): Valeurs => {
-  try {
-    return JSON.parse(localStorage.getItem(cleBrouillon(`atelier:${nom}`)) ?? '{}');
-  } catch {
-    return {};
-  }
-};
 // Ce qui avait été tapé la dernière fois, sinon ce que le serveur propose
 const valeursDe = (nom: string, b: BriqueAtelier): Valeurs => {
-  const retenues = lireRetenues(nom);
+  const retenues = lireBrouillon<Valeurs>(`atelier:${nom}`);
   return Object.fromEntries(b.arguments.filter((a) => !a.parametre).map((a) => [a.cle, (retenues[a.cle] ?? a.valeur ?? '') as string | boolean]));
 };
 
@@ -613,19 +510,14 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
       setEtat(b.etat);
       setValeurs((v) => (Object.keys(v).length ? v : valeursDe(nom, b)));
     } catch (e) {
-      dire(messageDe(e), true);
+      dire(message(e), true);
     }
   }, [nom, dire]);
   useEffect(() => {
     charger();
   }, [charger]);
   useEffect(() => {
-    if (!Object.keys(valeurs).length) return;
-    try {
-      localStorage.setItem(cleBrouillon(`atelier:${nom}`), JSON.stringify(valeurs));
-    } catch {
-      // Navigation privée ou stockage plein : rien n'est retenu
-    }
+    if (Object.keys(valeurs).length) ecrireBrouillon(`atelier:${nom}`, valeurs);
   }, [nom, valeurs]);
 
   const ecrireParser = async (g: { valeurs: Valeurs }) => {
@@ -634,7 +526,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
       dire(`${r.nom} (${r.siren}) : fiche ${r.creee ? 'créée' : 'mise à jour'}, état ${libelleEtat(r.etat)}.`);
       relireTable();
     } catch (e) {
-      dire(messageDe(e), true);
+      dire(message(e), true);
     }
   };
   const ecrireAudit = async (siren: string) => {
@@ -644,7 +536,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
       setProduit((p) => p && { ...p, garde: 'Audit rangé sur la fiche.' });
       relireTable();
     } catch (e) {
-      dire(messageDe(e), true);
+      dire(message(e), true);
     }
   };
   // Ce que l'audit vient de produire, et ce que la base porte en face
@@ -657,7 +549,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
       setProduit({ ...vu, test: g.test, garde: '' });
       if (!g.test && !vu.base) ecrireAudit(vu.fiche.siren);
     } catch (e) {
-      dire(messageDe(e), true);
+      dire(message(e), true);
     }
   };
 
@@ -687,7 +579,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
       dire(r.lancee ? (test ? 'Test lancé — rien ne sera écrit en base.' : 'Lancé — le résultat sera écrit sur la fiche à la fin.')
         : `Brique ${nom} déjà lancée depuis ici : attendez-la, ou arrêtez-la.`, !r.lancee);
     } catch (e) {
-      dire(messageDe(e), true);
+      dire(message(e), true);
     }
     lire();
   };
@@ -706,7 +598,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
         const r = await appeler<{ arretee: boolean }>(`/atelier/${nom}/arreter`, { methode: 'POST' });
         dire(r.arretee ? "Brique tuée — ce qu'elle avait dit reste affiché." : 'Aucun lancement en cours.', !r.arretee);
       } catch (e) {
-        dire(messageDe(e), true);
+        dire(message(e), true);
       }
       return lire();
     }
@@ -738,7 +630,7 @@ export function useAtelier(nom: 'parser' | 'audit', dire: Dire, relireTable: () 
       setValeurs(v);
       return partir(v);
     } catch (e) {
-      dire(messageDe(e), true);
+      dire(message(e), true);
     }
   };
 
@@ -790,7 +682,7 @@ function Rapport({ rapport }: { rapport: Record<string, unknown> }) {
   return (
     <ul className="liste-f">
       {lignes.map(([cle, v]) => (
-        <li key={cle}><span className="lib-champ">{libelleRapport(cle)}</span><span className={`d${Array.isArray(v) && v.some((x) => x && typeof x === 'object') && cle !== 'emails' ? ' pile' : ''}`}><ValeurRapport cle={cle} v={v} /></span></li>
+        <LibelleValeur key={cle} as="li" libelle={libelleRapport(cle)}><span className={`d${Array.isArray(v) && v.some((x) => x && typeof x === 'object') && cle !== 'emails' ? ' pile' : ''}`}><ValeurRapport cle={cle} v={v} /></span></LibelleValeur>
       ))}
     </ul>
   );
@@ -800,12 +692,7 @@ function ChampAtelier({ a, at }: { a: Argument; at: Atelier }) {
   const { ouvrir } = usePanneau();
   const id = `at-${at.nom}-${a.cle}`;
   return (
-    <div className="champ">
-      <label htmlFor={id} title={a.aide}>{a.libelle}{a.requis && <abbr title="Obligatoire"> *</abbr>}</label>
-      <input id={id} className="saisie" type={a.cle === 'url' || a.cle === 'site' ? 'url' : 'text'} placeholder={a.exemple} value={String(at.valeurs[a.cle] ?? '')}
-        onChange={(e) => at.poser(a.cle, e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && (at.etat?.en_cours || !at.motifs.length) && at.executer(ouvrir)} />
-    </div>
+    <ChampSaisie id={id} titre={a.aide} libelle={<>{a.libelle}{a.requis && <abbr title="Obligatoire"> *</abbr>}</>} type={a.cle === 'url' || a.cle === 'site' ? 'url' : 'text'} placeholder={a.exemple} value={String(at.valeurs[a.cle] ?? '')} onChange={(e) => at.poser(a.cle, e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (at.etat?.en_cours || !at.motifs.length) && at.executer(ouvrir)} />
   );
 }
 
@@ -824,15 +711,13 @@ export function CorpsAtelier({ at }: { at: Atelier }) {
         <div className="grille-2">{textes.filter((a) => a !== premier).map((a) => <ChampAtelier key={a.cle} a={a} at={at} />)}</div>
         <div className="grille-2 inters">
           {args.filter((a) => a.type === 'booleen' && !a.separe).map((a) => (
-            <label key={a.cle} className="inter" title={a.aide}><span>{a.libelle}</span><input type="checkbox" checked={!!at.valeurs[a.cle]} onChange={(e) => at.poser(a.cle, e.target.checked)} /></label>
+            <Interrupteur key={a.cle} libelle={a.libelle} title={a.aide} checked={!!at.valeurs[a.cle]} onChange={(e) => at.poser(a.cle, e.target.checked)} />
           ))}
-          <label className="inter" title={at.nom === 'parser'
+          <Interrupteur libelle={<>Mode test<MarqueAdmin /></>} title={at.nom === 'parser'
             ? "Coché : la brique tourne, son résultat s'affiche ici, et rien n'est écrit en base. Décoché : à la fin, le résultat est écrit sur la fiche."
-            : "Coché : la brique tourne, sa sortie s'affiche ici, et rien n'est écrit en base. Décoché : le lancement passe par le pipeline et le résultat est conservé."}>
-            <span>Mode test<MarqueAdmin /></span><input type="checkbox" checked={at.test} onChange={(e) => at.setTest(e.target.checked)} />
-          </label>
+            : "Coché : la brique tourne, sa sortie s'affiche ici, et rien n'est écrit en base. Décoché : le lancement passe par le pipeline et le résultat est conservé."} checked={at.test} onChange={(e) => at.setTest(e.target.checked)} />
           {args.filter((a) => a.type === 'booleen' && a.separe).map((a) => (
-            <label key={a.cle} className="inter" title={a.aide}><span>{a.libelle}<MarqueAdmin /></span><input type="checkbox" checked={!!at.valeurs[a.cle]} onChange={(e) => at.poser(a.cle, e.target.checked)} /></label>
+            <Interrupteur key={a.cle} libelle={<>{a.libelle}<MarqueAdmin /></>} title={a.aide} checked={!!at.valeurs[a.cle]} onChange={(e) => at.poser(a.cle, e.target.checked)} />
           ))}
         </div>
       </div>
@@ -847,12 +732,12 @@ export function CorpsAtelier({ at }: { at: Atelier }) {
           {p ? (
             <>
               <p className="note-f">{p.garde || (p.base
-                ? `${p.test ? 'Mode test : rien n’est écrit. ' : ''}La fiche ${p.fiche.nom} porte déjà ${p.base.prealable ? 'une collecte brute' : 'une analyse complète'}, du ${dateHeure(p.base.quand)} ; ce lancement a produit ${p.produit_prealable ? 'une collecte brute' : 'une analyse complète'}.`
+                ? `${p.test ? 'Mode test : rien n’est écrit. ' : ''}La fiche ${p.fiche.nom} porte déjà ${p.base.prealable ? 'une collecte brute' : 'une analyse complète'}, du ${quand(p.base.quand)} ; ce lancement a produit ${p.produit_prealable ? 'une collecte brute' : 'une analyse complète'}.`
                 : `Mode test : rien n'est écrit. La fiche ${p.fiche.nom} n'a encore aucun audit en base.`)}</p>
               {!p.test && p.base && !p.garde && (
                 <div className="gestes-f">
-                  <button type="button" className="action" onClick={() => at.setProduit({ ...p, garde: "La fiche garde ce qu'elle avait : ce résultat reste affiché, et rien n'est écrit." })}>Garder celle de la fiche</button>
-                  <button type="button" className="action" onClick={() => at.ecrireAudit(p.fiche.siren)}>Remplacer par ce résultat</button>
+                  <Action onClick={() => at.setProduit({ ...p, garde: "La fiche garde ce qu'elle avait : ce résultat reste affiché, et rien n'est écrit." })}>Garder celle de la fiche</Action>
+                  <Action onClick={() => at.ecrireAudit(p.fiche.siren)}>Remplacer par ce résultat</Action>
                 </div>
               )}
               <Rapport rapport={p.produit} />
@@ -869,8 +754,7 @@ export function PiedAtelier({ at }: { at: Atelier }) {
   const enCours = !!at.etat?.en_cours;
   // Une brique qui tourne s'arrête toujours : seul le lancement se grise
   return (
-    <button type="button" className="action plein" disabled={!enCours && at.motifs.length > 0} title={!enCours && at.motifs.length ? `Impossible de lancer : ${at.motifs.join(' ; ')}.` : undefined}
-      onClick={() => at.executer(ouvrir)}>{enCours ? 'Arrêter' : 'Exécuter'}<span className="ico">{enCours ? ICONES.croix : ICONES.executer}</span></button>
+    <Action plein iconeApres={enCours ? ICONES.croix : ICONES.executer} disabled={!enCours && at.motifs.length > 0} title={!enCours && at.motifs.length ? `Impossible de lancer : ${at.motifs.join(' ; ')}.` : undefined} onClick={() => at.executer(ouvrir)}>{enCours ? 'Arrêter' : 'Exécuter'}</Action>
   );
 }
 
@@ -882,11 +766,11 @@ export function CorpsDejaBase({ at }: { at: Atelier }) {
     <div className="pf">
       <p className="texte-f"><b>{d.fiche.nom}</b> ({d.fiche.siren}) est déjà dans le pipeline, à l&apos;état {libelleEtat(d.fiche.etat)}. Ce que porte sa fiche ne correspond pas à ce qui est saisi : le parser lira ce que vous choisissez ici.</p>
       {d.reprises.length > 0 && (
-        <div className="section-f"><h3>Repris de la fiche</h3>
-          <ul className="liste-f">{d.reprises.map((r) => <li key={r.champ}><span className="lib-champ">{LIBELLES_FICHE[r.champ] ?? r.champ}</span><span className="d">{r.fiche}</span></li>)}</ul>
-        </div>
+        <SectionFiche titre="Repris de la fiche">
+          <ul className="liste-f">{d.reprises.map((r) => <LibelleValeur key={r.champ} as="li" libelle={LIBELLES_FICHE[r.champ] ?? r.champ} d>{r.fiche}</LibelleValeur>)}</ul>
+        </SectionFiche>
       )}
-      <div className="section-f"><h3>Ce qui diffère — à trancher</h3>
+      <SectionFiche titre="Ce qui diffère — à trancher">
         {d.divergences.map((v) => (
           <div key={v.champ}>
             <p className="lib-champ arb">{LIBELLES_FICHE[v.champ] ?? v.champ}</p>
@@ -901,7 +785,7 @@ export function CorpsDejaBase({ at }: { at: Atelier }) {
             </div>
           </div>
         ))}
-      </div>
+      </SectionFiche>
     </div>
   );
 }
@@ -910,11 +794,11 @@ export function PiedDejaBase({ at }: { at: Atelier }) {
   const { ouvrir } = usePanneau();
   return (
     <>
-      <button type="button" className="action" onClick={() => {
+      <Action onClick={() => {
         ouvrir('executer');
         at.setDejaBase(null);
-      }}>Annuler</button>
-      <button type="button" className="action plein" onClick={() => at.trancher(ouvrir)}>Lancer le parser{FLECHE}</button>
+      }}>Annuler</Action>
+      <Action plein onClick={() => at.trancher(ouvrir)}>Lancer le parser{FLECHE}</Action>
     </>
   );
 }

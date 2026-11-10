@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useUIStore } from '@/lib/uiStore';
+import { TRAIT_ROND } from '@/features/site/elements';
 
 const MAX_LENGTH = 5000;
 const PLACEHOLDER = 'Posez-moi une question';
@@ -132,7 +133,7 @@ export function InputArea({ onSubmit, triggerWave, isLoading = false, tipsEnable
             title={sonCoupe ? 'Rétablir la voix' : 'Couper la voix'}
             className={`absolute right-8 p-1 rounded-md text-white/70 transition-colors hover:text-white ${isSingleLine ? 'top-1/2 -translate-y-1/2' : 'bottom-2'}`}
           >
-            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg {...TRAIT_ROND} className="w-5 h-5" strokeWidth={2}>
               <path d="M11 5 6 9H2v6h4l5 4V5z" />
               {sonCoupe ? <path d="m22 9-6 6M16 9l6 6" /> : <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14" />}
             </svg>

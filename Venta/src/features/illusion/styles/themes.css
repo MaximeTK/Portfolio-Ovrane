@@ -286,8 +286,8 @@ body:has(.ov.th-plein:not(.ov-barre)) header .coin-site button[aria-current=page
 .ov.trame *::-webkit-scrollbar-thumb{background:rgb(var(--encre) / .28)}
 .ov.trame *::-webkit-scrollbar-thumb:hover{background:rgb(var(--encre) / .5)}
 .ov.th-plein *::-webkit-scrollbar-thumb{border-radius:3px}
-.ov.trame [data-fen] :is(.f-corps,.fil-actions,.defile-appel,.veille-corps,.arbre-defile,.groupes,.journal-f)::-webkit-scrollbar{display:block}
-@supports not selector(::-webkit-scrollbar){.ov.trame [data-fen] :is(.f-corps,.fil-actions,.defile-appel,.veille-corps,.arbre-defile,.groupes,.journal-f){scrollbar-width:thin;scrollbar-color:rgb(var(--encre) / .28) transparent}}
+.ov.trame [data-fen] :is(.f-corps,.fil-actions,.defile-appel,.veille-corps,.arbre-defile,.groupes)::-webkit-scrollbar{display:block}
+@supports not selector(::-webkit-scrollbar){.ov.trame [data-fen] :is(.f-corps,.fil-actions,.defile-appel,.veille-corps,.arbre-defile,.groupes){scrollbar-width:thin;scrollbar-color:rgb(var(--encre) / .28) transparent}}
 /* Le corps d'une fenêtre étroite ne défile qu'en hauteur. */
 .ov.trame .f-corps{overflow-x:hidden;overflow-y:auto}
 .ov.trame .f-corps>*{min-width:0;max-width:100%}

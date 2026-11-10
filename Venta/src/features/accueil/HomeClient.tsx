@@ -4,12 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAudioVisualization } from '@/features/oeil/useAudioVisualization';
 import { useTTS, type FluxVoix } from '@/features/oeil/useTTS';
-import { HexagonalAnimation, type HexagonalAnimationHandle } from '@/features/oeil/HexagonalAnimation';
+import { HexagonalAnimation, type AnimationOeil, type HexagonalAnimationHandle } from '@/features/oeil/HexagonalAnimation';
 import { useChatController } from '@/features/chat/useChatController';
 import { InputArea } from '@/features/chat/InputArea';
 import { SiteHeader } from '@/features/site/SiteHeader';
 import { PageView } from '@/features/site/PageView';
-import { useUIStore, CLE_FLOU, CLE_SON, CLE_VERRE } from '@/lib/uiStore';
+import { horsAccueil, useUIStore, CLE_FLOU, CLE_SON, CLE_VERRE, FLOU_MAX, VERRE_MAX } from '@/lib/uiStore';
 import { CHAT_UI } from '@/lib/messages';
 import { IntroSequence } from './IntroSequence';
 
@@ -27,7 +27,7 @@ type ReponseEnFlux = { texte: string; final: string | null; voix: FluxVoix | nul
 
 export default function HomeClient() {
   const [scrollTrigger, setScrollTrigger] = useState(0);
-  const [currentAnimation, setCurrentAnimation] = useState<'standby' | 'thinking' | 'speak'>('standby');
+  const [currentAnimation, setCurrentAnimation] = useState<AnimationOeil>('standby');
   const [lastProcessedTranscript, setLastProcessedTranscript] = useState('');
   const [messagingOpened, setMessagingOpened] = useState(false);
   const [messagingHint, setMessagingHint] = useState(false);
@@ -50,7 +50,7 @@ export default function HomeClient() {
   const page = useUIStore((state) => state.page);
   const aDesFenetres = useUIStore((state) => state.windows.length > 0);
   // Si les canaux d'Illusion sont montrés, l'œil leur laisse sa place
-  const oeilEfface = useUIStore((state) => state.cote === 'illusion' && (state.page !== null || state.viewMode === 'messaging'));
+  const oeilEfface = useUIStore((state) => state.cote === 'illusion' && horsAccueil(state));
   const isAppLocked = useUIStore((state) => state.isAppLocked);
   const sonCoupe = useUIStore((state) => state.sonCoupe);
   const inputVisible = appState === 'awake' && !isAppLocked && !page;
@@ -68,9 +68,9 @@ export default function HomeClient() {
     try {
       if (localStorage.getItem(CLE_SON) === '1') useUIStore.setState({ sonCoupe: true });
       const verre = localStorage.getItem(CLE_VERRE);
-      if (verre !== null && Number(verre) >= 0 && Number(verre) <= 0.9) useUIStore.getState().reglerVerre(Number(verre));
+      if (verre !== null && Number(verre) >= 0 && Number(verre) <= VERRE_MAX) useUIStore.getState().reglerVerre(Number(verre));
       const flou = localStorage.getItem(CLE_FLOU);
-      if (flou !== null && Number(flou) >= 0 && Number(flou) <= 40) useUIStore.getState().reglerFlou(Number(flou));
+      if (flou !== null && Number(flou) >= 0 && Number(flou) <= FLOU_MAX) useUIStore.getState().reglerFlou(Number(flou));
     } catch {
       // Stockage bloqué : réglages par défaut
     }
@@ -89,7 +89,7 @@ export default function HomeClient() {
   // L'astuce reste 20 s, et disparaît dès que la messagerie ou une page s'ouvre
   useEffect(() => {
     if (!messagingHint) return;
-    if (viewMode === 'messaging' || page) {
+    if (horsAccueil({ page, viewMode })) {
       setMessagingHint(false);
       return;
     }
@@ -119,6 +119,11 @@ export default function HomeClient() {
     setMessagingHint(true);
   }, []);
 
+  // L'accueil reçu réveille l'œil, s'il ne l'est pas déjà
+  const reveiller = useCallback(() => {
+    if (useUIStore.getState().appState === 'processing') setAppState('awake');
+  }, [setAppState]);
+
   // Chaque réponse : fenêtre et voix au tableau de bord, fenêtre seule ailleurs
   useEffect(() => {
     if (status !== 'idle' || !currentTranscript || currentTranscript === lastProcessedTranscript) return;
@@ -133,12 +138,12 @@ export default function HomeClient() {
     };
     const onEnd = () => setCurrentAnimation('standby');
 
-    if (viewMode === 'messaging' || page) {
+    if (horsAccueil({ page, viewMode })) {
       stopTTS();
       openWindow();
       onEnd();
       // Arrivée sur une page : l'accueil reçu réveille l'œil sans attendre
-      if (!isAnswer && useUIStore.getState().appState === 'processing') setAppState('awake');
+      if (!isAnswer) reveiller();
       return;
     }
 
@@ -155,7 +160,7 @@ export default function HomeClient() {
       openWindow();
       montrerAstuce();
       setCurrentAnimation('speak');
-      if (useUIStore.getState().appState === 'processing') setAppState('awake');
+      reveiller();
     };
 
     // Voix coupée : fenêtre, astuce et réveil arrivent aussitôt, sans son
@@ -167,14 +172,14 @@ export default function HomeClient() {
 
     // L'accueil réveille l'œil tout de suite ; sa voix suit quand elle est prête
     if (!isAnswer) {
-      if (useUIStore.getState().appState === 'processing') setAppState('awake');
+      reveiller();
       if (estRechargement()) return onEnd();
     }
 
     const staticUrl = currentTTS?.isStaticFile ? currentTTS.staticUrl : undefined;
     if (staticUrl) speakWithUrl(staticUrl, setupAudioVisualization, onEnd, onStart);
     else speakWithQueue(currentTranscript, setupAudioVisualization, onEnd, onStart, currentVoix);
-  }, [status, currentTranscript, lastProcessedTranscript, currentTTS, currentVoix, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addWindow, setWindowContent, montrerAstuce, setAppState, viewMode, page, sonCoupe]);
+  }, [status, currentTranscript, lastProcessedTranscript, currentTTS, currentVoix, speakWithQueue, speakWithUrl, stopTTS, setupAudioVisualization, addWindow, setWindowContent, montrerAstuce, reveiller, viewMode, page, sonCoupe]);
 
   const handleSubmit = (text: string) => {
     // La réponse prend plus de temps que le module de ses fenêtres
@@ -200,7 +205,7 @@ export default function HomeClient() {
       },
       audio: (pcm) => {
         const ui = useUIStore.getState();
-        if (reponse.secours || ui.sonCoupe || ui.viewMode === 'messaging' || ui.page || reponseRef.current !== reponse) return;
+        if (reponse.secours || ui.sonCoupe || horsAccueil(ui) || reponseRef.current !== reponse) return;
         reponse.voix ??= ouvrirFlux(() => setCurrentAnimation('standby'), auPremierSon);
         reponse.voix.pousser(pcm);
       },

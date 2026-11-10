@@ -5,9 +5,15 @@ import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useUIStore, type Fenetre } from '@/lib/uiStore';
+import { estImageSite, sansExtension, urlAsset } from '@/lib/images';
 
 // Zoom de 1 à 50/31 : une image passe de 31 à 50 vh sur son petit côté
 const MAX_ZOOM = 50 / 31;
+
+// Un bouton de la barre de fenêtre
+function BoutonFenetre(props: React.ComponentProps<'button'>) {
+  return <button type="button" className="glass-morphisme-btn-window" {...props} />;
+}
 
 /** Fenêtre en verre : Markdown ou image, déplaçable, zoomable, repliable */
 const Window = memo(function Window({ fenetre }: { fenetre: Fenetre }) {
@@ -31,7 +37,7 @@ const Window = memo(function Window({ fenetre }: { fenetre: Fenetre }) {
         components={{
           // Seules les images du site s'affichent dans une réponse
           img: ({ src, alt }) =>
-            typeof src === 'string' && src.startsWith('/assets/') ? (
+            estImageSite(src) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={src} alt={alt ?? ''} />
             ) : null,
@@ -96,19 +102,19 @@ const Window = memo(function Window({ fenetre }: { fenetre: Fenetre }) {
             {title}
           </div>
           <div className="glass-morphisme-titlebar-buttons">
-            <button type="button" className="glass-morphisme-btn-window" aria-label="Réduire la taille" onClick={() => setZoom((z) => Math.max(1, z - 0.1))}>−</button>
-            <button type="button" className="glass-morphisme-btn-window" aria-label="Agrandir" onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z + 0.1))}>+</button>
-            <button type="button" className="glass-morphisme-btn-window" aria-label={isMinimized ? 'Déplier' : 'Replier'} onClick={handleMinimize}>
+            <BoutonFenetre aria-label="Réduire la taille" onClick={() => setZoom((z) => Math.max(1, z - 0.1))}>−</BoutonFenetre>
+            <BoutonFenetre aria-label="Agrandir" onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z + 0.1))}>+</BoutonFenetre>
+            <BoutonFenetre aria-label={isMinimized ? 'Déplier' : 'Replier'} onClick={handleMinimize}>
               {isMinimized ? '−' : '_'}
-            </button>
-            <button type="button" className="glass-morphisme-btn-window" aria-label="Fermer la fenêtre" onClick={() => closeWindow(fenetre.id)}>✕</button>
+            </BoutonFenetre>
+            <BoutonFenetre aria-label="Fermer la fenêtre" onClick={() => closeWindow(fenetre.id)}>✕</BoutonFenetre>
           </div>
         </header>
         <div className="glass-morphisme-content-area">
           {fenetre.kind === 'image' ? (
             <Image
-              src={`/assets/${encodeURIComponent(fenetre.content)}`}
-              alt={fenetre.content.replace(/\.[^.]+$/, '')}
+              src={urlAsset(fenetre.content)}
+              alt={sansExtension(fenetre.content)}
               width={0}
               height={0}
               sizes="640px"

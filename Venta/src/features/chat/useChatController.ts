@@ -6,9 +6,10 @@ import { useBackgroundStore } from '@/features/fond/backgroundStore';
 import { useUIStore } from '@/lib/uiStore';
 import { CHAT_UI, INDISPONIBLE } from '@/lib/messages';
 import { resoudreDefi } from '@/lib/defi';
+import { estCommandeImage } from '@/lib/images';
+import { lireJson, posterJson } from '@/lib/reseau';
 
 const HISTORY_LIMIT = 20;
-const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 /** Réponse du chat ou de l'arrivée ; activeUserId ne sert qu'à l'affichage */
 interface Reponse {
@@ -59,8 +60,7 @@ async function* lireEvenements(corps: ReadableStream<Uint8Array>) {
 }
 
 async function fetchHistory(skip: number): Promise<Message[]> {
-  const res = await fetch(`/api/chat/history?limit=${HISTORY_LIMIT}&skip=${skip}`);
-  const data = res.ok ? await res.json() : null;
+  const data = await lireJson<{ history?: unknown }>(`/api/chat/history?limit=${HISTORY_LIMIT}&skip=${skip}`);
   if (!Array.isArray(data?.history)) return [];
   return (data.history as HistoryItem[])
     .filter((h) => (h.role === 'user' || h.role === 'assistant') && typeof h.content === 'string')
@@ -80,6 +80,14 @@ export function useChatController() {
   const [historySkip, setHistorySkip] = useState(0);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
 
+  // Une réponse attendue : ce qui reste de la précédente s'efface
+  const preparerReponse = useCallback(() => {
+    setStatus('streaming');
+    setCurrentTranscript('');
+    setCurrentTTS(null);
+    setCurrentVoix(null);
+  }, []);
+
   // Réponse du chat ou de l'arrivée : profil, commandes, puis texte à dire
   const applyResponse = useCallback((data: Reponse, text: string) => {
     const ui = useUIStore.getState();
@@ -95,7 +103,7 @@ export function useChatController() {
       setHistorySkip(0);
       setHasMoreMessages(false);
       const { origin, pathname, search } = window.location;
-      fetch('/api/tracking/visit', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ link: `${origin}${pathname}${search}` }) })
+      posterJson('/api/tracking/visit', { link: `${origin}${pathname}${search}` })
         .catch((err) => console.error('[suivi] visite :', err));
       if (data.userProfile?.isNewUser) {
         fond.resetBackground();
@@ -119,7 +127,7 @@ export function useChatController() {
     for (const { command, parameter } of data.commands ?? []) {
       const nom = command.toLowerCase();
       if (nom === 'setbackground') fond.setBackground(parameter);
-      if (nom === 'showpicture' || nom === 'showimage') {
+      if (estCommandeImage(command)) {
         const decalage = 100 + 50 * images++;
         ui.addWindow('image', parameter, { x: decalage, y: decalage });
       }
@@ -140,15 +148,12 @@ export function useChatController() {
     if (!prompt.trim() || status === 'streaming') return;
     setMessages((prev) => [...prev, createMessage('user', prompt)]);
     setHistorySkip((n) => n + 1);
-    setStatus('streaming');
-    setCurrentTranscript('');
-    setCurrentTTS(null);
-    setCurrentVoix(null);
+    preparerReponse();
 
     // Texte et voix arrivent en cours d'écriture ; la réponse complète clôt le flux
     let data: Reponse = {};
     try {
-      const res = await fetch('/api/chat/flux', { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ prompt }) });
+      const res = await posterJson('/api/chat/flux', { prompt });
       if (res.ok && res.body && res.headers.get('Content-Type')?.startsWith('text/event-stream')) {
         let complet = '';
         for await (const { type, donnees } of lireEvenements(res.body)) {
@@ -170,14 +175,11 @@ export function useChatController() {
     if (text) setHistorySkip((n) => n + 1);
     // Réponse vide ou en erreur : message lisible, dit, puis retour au repos
     applyResponse(data, text || INDISPONIBLE);
-  }, [status, applyResponse]);
+  }, [status, applyResponse, preparerReponse]);
 
   const sendAuth = useCallback(async (mode: 'register' | 'login' | 'visitor', body: Record<string, string>, welcome?: Promise<TexteSigne | null>) => {
-    setStatus('streaming');
-    setCurrentTranscript('');
-    setCurrentTTS(null);
-    setCurrentVoix(null);
-    const envoyer = (corps: Record<string, string>) => fetch(`/api/auth/${mode}`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(corps) })
+    preparerReponse();
+    const envoyer = (corps: Record<string, string>) => posterJson(`/api/auth/${mode}`, corps)
       .catch((err) => {
         console.error(`[auth] ${mode} :`, err);
         return null;
@@ -198,7 +200,7 @@ export function useChatController() {
     // L'accueil du recruteur, s'il est fourni, remplace celui du backend
     const recruteur = await welcome;
     applyResponse(recruteur ? { ...data, reply: recruteur.texte, voix: recruteur.voix } : data, recruteur?.texte || data.reply || '');
-  }, [applyResponse]);
+  }, [applyResponse, preparerReponse]);
 
   const loadMoreMessages = useCallback(async () => {
     if (!hasMoreMessages) return;
@@ -226,3 +228,5 @@ export function useChatController() {
     hasMoreMessages,
   };
 }
+
+export type EnvoiAuth = ReturnType<typeof useChatController>['sendAuth'];

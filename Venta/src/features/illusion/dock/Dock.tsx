@@ -2,9 +2,10 @@
 
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DUREES, ecrire, effacer, mouvementReduit, voiler, type Controle } from '../partage/glyphes';
+import { Verre } from '@/features/fenetres/Verre';
 import { quitterSection } from '../api';
 import { aOublier } from '../stockage';
-import { DUREE_FLOTTANTE, DUREE_RANGEMENT, ECART, LENTEUR_FLOTTANTE, PRISES, CONTENU, installerDock, poserFige, type ArbreDepart, type DefFenetre, type Moteur, type OptionsRangement, type Repli, type Zone } from './moteur';
+import { DUREE_FLOTTANTE, DUREE_RANGEMENT, ECART, LENTEUR_FLOTTANTE, MARGE_GLISSE, PRISES, CONTENU, installerDock, poserFige, type ArbreDepart, type DefFenetre, type Moteur, type OptionsRangement, type Repli, type Zone } from './moteur';
 export type { ArbreDepart } from './moteur';
 
 // Tailles minimales, bande de bord d'écran et premier détachement des fenêtres
@@ -265,7 +266,7 @@ export function Dock({ id, principal = 'principal', arbre, fenetres, prises = PR
     if (ov && enPassage.current && !mouvementReduit()) {
       lancerApresPeinture(ov, () => {
         enPassage.current = false;
-        window.setTimeout(m.degeler, DUREE_RANGEMENT + 60);
+        window.setTimeout(m.degeler, DUREE_RANGEMENT + MARGE_GLISSE);
       });
     }
     return () => {
@@ -489,6 +490,8 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
 
   useLayoutEffect(() => {
     const e = enCours.current;
+    // Rouverte dans la mise à jour où elle se cache : l'état lu doit être le bon
+    cacheeVue.current = cachee;
     if (hidden) {
       if (cacheeVue.current || e.sortie !== 'non') return;
       if (mouvementReduit()) {
@@ -507,7 +510,7 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
           plus(tour, () => {
             e.sortie = 'non';
             setCachee(true);
-          }, (flot ? DUREE_FLOTTANTE : DUREE_RANGEMENT) + 60);
+          }, (flot ? DUREE_FLOTTANTE : DUREE_RANGEMENT) + MARGE_GLISSE);
         };
         replier();
       });
@@ -524,7 +527,7 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
     const replie = e.sortie === 'replie';
     arreter();
     if (replie) ranger(true, { entrees: [id] });
-  }, [hidden, id, ranger, quandPose, prevue, arreter, plus]);
+  }, [hidden, cachee, id, ranger, quandPose, prevue, arreter, plus]);
 
   // Montrée : rangée avant d'être peinte ; retirée : rangée une fois sortie
   useLayoutEffect(() => {
@@ -557,8 +560,7 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
 
   const aidePrise = `${titrePrise ?? 'Glisser pour détacher'} · clic : détacher ou remettre en place`;
   return (
-    <Balise ref={poserEl} data-fen={id} data-passage={passage} data-fermee={hidden || undefined} className={`verre${className ? ' ' + className : ''}`} hidden={cachee} {...reste}>
-      <span className="verre-halos" aria-hidden="true" />
+    <Verre as={Balise} ref={poserEl} data-fen={id} data-passage={passage} data-fermee={hidden || undefined} className={className} hidden={cachee} {...reste}>
       <button type="button" className="prise" title={aidePrise} aria-label={aidePrise}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" /></svg>
       </button>
@@ -569,6 +571,6 @@ export function Fenetre({ id, as: Balise = 'section', className, titrePrise = 'G
       {/* Ouverture : deux lignes nées au milieu, qui s'écartent en haut et en bas */}
       <span className="ouv-ligne" aria-hidden="true" />
       <span className="ouv-ligne" aria-hidden="true" />
-    </Balise>
+    </Verre>
   );
 }

@@ -58,7 +58,6 @@
 .ov .fiche-ent .lien-f{font-size:var(--t-corps,12px);text-decoration:underline;text-decoration-color:rgb(var(--encre) / .3);text-underline-offset:3px}
 /* Avis et question posés dans la fiche faute de rangée d'outils */
 .ov .fiche-ent .avis-f{margin:0 0 12px !important;padding-left:10px;border-left:2px solid rgb(var(--encre) / .5);font-size:var(--t-corps,12px);line-height:1.45;color:rgb(var(--encre) / .85)}
-.ov .fiche-ent .avis-f.erreur{border-color:rgb(var(--rouge-3));color:rgb(var(--rouge))}
 .ov .fiche-ent .question-f{margin-bottom:14px;padding:10px 12px;border-left:2px solid rgb(var(--rouge-3));background:rgb(var(--rouge-3) / .08)}
 .ov .fiche-ent .question-f .confirmer{height:auto;flex-wrap:wrap;justify-content:flex-end;gap:8px 20px;margin:0;padding:0;border:0;background:none;white-space:normal}
 .ov .fiche-ent .question-f .confirmer p{flex:1 1 100%;overflow:visible;line-height:1.45}
@@ -101,8 +100,6 @@
   .ov.trame .fiche-ent .offres-f :is(.o-date,.o-lieu){font-size:.875rem;line-height:1.25rem}
 }
 /* Avis, question et note : surfaces teintées à la place du trait à gauche. */
-.ov.trame .fiche-ent .avis-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--neutre-doux);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.trame .fiche-ent .avis-f.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 .ov.trame .fiche-ent .question-f{padding:12px 16px;border-left:0;border-radius:12px;background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 .ov.trame .fiche-ent .note-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--surface-basse);font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
 .ov.trame .pied-fiche{gap:4px}

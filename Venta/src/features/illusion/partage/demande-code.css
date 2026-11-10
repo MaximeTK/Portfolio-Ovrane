@@ -1,0 +1,10 @@
+/* Bandeau d'un code attendu, posé sur la scène : aucune fenêtre ne bouge. */
+.ov .demande-code{position:absolute;left:16px;right:16px;bottom:16px;z-index:50;max-width:760px;margin:0 auto;padding:12px 14px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-14) / .94)}
+.ov .demande-code .demande-champs{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr) auto;align-items:end;gap:12px}
+.ov .demande-code .champ{margin-bottom:0}
+.ov .demande-code .erreur{margin-top:8px;color:rgb(var(--rouge-2))}
+@media (max-width:640px){.ov .demande-code .demande-champs{grid-template-columns:minmax(0,1fr)}}
+
+/* Thèmes : surface et ombre de la charte, mêmes place et dimensions. */
+.ov.trame .demande-code{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);color:var(--texte)}
+.ov.trame .demande-code .erreur{color:var(--erreur)}

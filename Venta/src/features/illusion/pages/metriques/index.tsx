@@ -4,17 +4,23 @@ import './metriques.css';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Activite } from '../../activite/Activite';
-import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
+
+import { Fenetre, usePanneau } from '../../dock/Dock';
 import { Panneau, type Onglet } from '../../dock/Panneau';
 import { ongletFicheEntreprise } from '../../partage/FicheEntreprise';
-import { libelleSource, ongletFicheOffre } from '../../partage/FicheOffre';
+import { ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import {
   CorpsAppels, CorpsCouts, CorpsCv, CorpsFantomes, CorpsJobboards, CorpsLiens, CorpsMetiers, CorpsPartage, CorpsWinrate, CorpsWorkflows,
-  dollars, jourMoisIso, jours, nombre, nomPoste, pourcent, winrate, type Fantome, type PageMetriques, type Suivi,
+  dollars, jours, nombre, nomPoste, pourcent, winrate, type Fantome, type PageMetriques, type Suivi,
 } from './panneaux';
-import { ICONES_COMMUNES, TRAIT, message, useAvisBref, type Avis } from '../commun';
+import { useEchap } from '../commun';
+import { BoutonFiltre, Menu } from '../../elements/Menu';
+import { Action } from '../../elements/Action';
+import { ICONES } from '../../elements/icones';
+import { useAvis } from '../../elements/Avis';
+import { jourMoisIso, libelleSource, message } from '../../elements/format';
+import { PageDock } from '../../activite/PageDock';
 
 type Periode = { debut: string; fin: string };
 
@@ -36,8 +42,8 @@ const arrondi = (v: number) => {
 };
 const centimes = (v: number) => `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`;
 
-const DOSSIER = <svg {...TRAIT}><path d="M3 6h6l2 2h10v11H3z" /><path d="M3 11h18" /></svg>;
-const VALIDER = <svg {...TRAIT}><path d="m5 12 5 5 9-10" /></svg>;
+
+
 
 // Détails ouverts par leur carte : un par fenêtre, chacun lu par son nom
 const DETAILS: Record<string, string> = {
@@ -47,11 +53,10 @@ const DETAILS: Record<string, string> = {
 
 export default function PageMetriques(_: ProprietesPage) {
   return (
-    <Dock id="metriques" principal="metriques" panneau={null}
+    <PageDock id="metriques" principal="metriques" panneau={null}
       fenetres={{ metriques: { mini: [560, 420], pref: [760, 480], flot: [920, 620] }, panneau: { flot: [480, 600] } }}>
-      <Activite />
       <Metriques />
-    </Dock>
+    </PageDock>
   );
 }
 
@@ -94,7 +99,7 @@ function Metriques() {
   const [fantomes, setFantomes] = useState(() => repris<Fantome[] | null>('metriques:fantomes', null));
   const [erreurFantomes, setErreurFantomes] = useState('');
   useGarder('metriques', { periode, raccourci, page, suivi, fantomes });
-  const [avis, setAvis] = useState<Avis>(null);
+  const { dire, vue } = useAvis('avis', true, page && erreur ? `Métriques illisibles. ${erreur}` : '');
   const [range, setRange] = useState(false);
   const boutonDebut = useRef<HTMLButtonElement>(null);
   const boutonFin = useRef<HTMLButtonElement>(null);
@@ -145,28 +150,21 @@ function Metriques() {
     };
   }, []);
 
-  useAvisBref(avis, setAvis);
-
   // Échap ferme le choix d'une date, sinon le panneau
+  useEchap((e) => {
+    if (menuDate) {
+      e.preventDefault();
+      setMenuDate(null);
+    } else if (onglet) fermer();
+  });
   useEffect(() => {
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (menuDate) {
-        e.preventDefault();
-        setMenuDate(null);
-      } else if (onglet) fermer();
-    };
     const dehors = (e: PointerEvent) => {
       const cible = e.target as Node;
       if (menuDate && !menu.current?.contains(cible) && !bouton.current?.contains(cible)) setMenuDate(null);
     };
-    document.addEventListener('keydown', echap);
     document.addEventListener('pointerdown', dehors);
-    return () => {
-      document.removeEventListener('keydown', echap);
-      document.removeEventListener('pointerdown', dehors);
-    };
-  }, [menuDate, onglet, fermer, bouton]);
+    return () => document.removeEventListener('pointerdown', dehors);
+  }, [menuDate, bouton]);
 
   const raccourcir = (j: number) => {
     const p = plage(j);
@@ -177,7 +175,7 @@ function Metriques() {
   };
   const afficher = () => {
     if (brouillon.debut && brouillon.fin && brouillon.debut > brouillon.fin) {
-      setAvis({ texte: 'La date de début vient après la date de fin.', erreur: true });
+      dire('La date de début vient après la date de fin.', true);
       return;
     }
     setMenuDate(null);
@@ -188,10 +186,10 @@ function Metriques() {
     setRange(true);
     try {
       const r = await appeler<{ envoyes: number }>('/ovrane/synchroniser', { methode: 'POST' });
-      setAvis({ texte: `Base partagée : ${r.envoyes} dossier(s) rangé(s).` });
+      dire(`Base partagée : ${r.envoyes} dossier(s) rangé(s).`);
       setVersion((v) => v + 1);
     } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
+      dire(message(e), true);
     }
     setRange(false);
   };
@@ -208,21 +206,19 @@ function Metriques() {
   const elements = {
     detail: (d: string): Onglet | null => (DETAILS[d] ? {
       cle: 'detail', titre: DETAILS[d], corps: corps[d] ?? <p className="texte-f">Lecture des métriques…</p>,
-      pied: <button type="button" className="action" onClick={fermer}>Fermer</button>,
+      pied: <Action onClick={fermer}>Fermer</Action>,
     } : null),
     'fiche-offre': (c: string) => ongletFicheOffre(c, { ouvrirEntreprise: voirEntreprise }),
     'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre: voirOffre }),
   };
 
   const choixDate = (quoi: 'debut' | 'fin', lib: string) => (
-    <button ref={quoi === 'debut' ? boutonDebut : boutonFin} type="button" className={`filtre${menuDate === quoi ? ' actif' : ''}`}
+    <BoutonFiltre ref={quoi === 'debut' ? boutonDebut : boutonFin} lib={lib} valeur={enClair(periode[quoi])} actif={menuDate === quoi}
       aria-haspopup="dialog" aria-expanded={menuDate === quoi} aria-label={`${lib} ${enClair(periode[quoi])} : choisir la date`}
       onClick={() => {
         setBrouillon(periode);
         setMenuDate((m) => (m === quoi ? null : quoi));
-      }}>
-      <span><span className="lib">{lib}</span>{enClair(periode[quoi])}</span>{ICONES_COMMUNES.chevron}
-    </button>
+      }} />
   );
 
   return (
@@ -238,16 +234,13 @@ function Metriques() {
           </span>
           <span className="espace" />
           <div className="actions" role="group" aria-label="Actions">
-            <button type="button" className="action" disabled={range} onClick={ranger}
-              title="Range dans la base partagée les dossiers qu'elle n'a pas encore ; fait aussi chaque jour et à l'ouverture de la page.">
-              <span className="ico">{DOSSIER}</span><span className="txt">Ranger les dossiers</span>
-            </button>
+            <Action icone={ICONES.dossier} txt disabled={range} onClick={ranger} title="Range dans la base partagée les dossiers qu'elle n'a pas encore ; fait aussi chaque jour et à l'ouverture de la page.">Ranger les dossiers
+            </Action>
           </div>
         </div>
         {menuDate && (
-          <div ref={menu} className="menu verre menu-periode" role="dialog" aria-label={menuDate === 'debut' ? 'Date de début' : 'Date de fin'}
+          <Menu ref={menu} className="menu-periode" role="dialog" aria-label={menuDate === 'debut' ? 'Date de début' : 'Date de fin'}
             style={{ left: Math.max(14, (bouton.current?.offsetLeft ?? 14) - 12) }}>
-            <span className="verre-halos" aria-hidden="true" />
             <form onSubmit={(e) => {
               e.preventDefault();
               afficher();
@@ -255,17 +248,13 @@ function Metriques() {
               <label className="lib-champ" htmlFor="metriques-date">{menuDate === 'debut' ? 'Du' : 'Au'}</label>
               <input id="metriques-date" type="date" className="saisie" autoFocus value={brouillon[menuDate]}
                 onChange={(e) => setBrouillon((b) => ({ ...b, [menuDate]: e.target.value }))} />
-              <button type="submit" className="action plein" title="Les dates se choisissent d'abord : le calcul ne part qu'ici.">Afficher<span className="ico">{VALIDER}</span></button>
+              <Action plein iconeApres={ICONES.valider_metriques} type="submit" title="Les dates se choisissent d'abord : le calcul ne part qu'ici.">Afficher</Action>
             </form>
-          </div>
+          </Menu>
         )}
         {page ? <Tableau page={page} suivi={suivi} erreurSuivi={erreurSuivi} ouvert={onglet === 'detail' ? objet : null} ouvrir={ouvrirDetail} />
           : <p className={`attente-m${erreur ? ' erreur' : ''}`} role={erreur ? 'alert' : 'status'}>{erreur ? `Métriques illisibles. ${erreur}` : 'Lecture des métriques…'}</p>}
-        {(avis || (page && erreur)) && (
-          <p className={`avis${avis?.erreur || !avis ? ' erreur' : ''}`} role={avis && !avis.erreur ? 'status' : 'alert'} onClick={() => setAvis(null)}>
-            {avis?.texte ?? `Métriques illisibles. ${erreur}`}
-          </p>
-        )}
+        {vue}
       </Fenetre>
       <Panneau elements={elements} onglets={[]} />
     </>

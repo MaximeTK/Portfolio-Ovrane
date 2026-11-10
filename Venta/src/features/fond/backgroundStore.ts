@@ -1,4 +1,5 @@
 /** Fond de l'application : palette demandée à l'IA ou reprise du profil */
+import { lireJson, posterJson } from '@/lib/reseau';
 import { create } from 'zustand';
 import { COLOR_PALETTES, type ColorPalette } from './colorPalettes';
 
@@ -48,19 +49,14 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
     const palette = resolvePalette(paletteId);
     if (!palette) return;
     set({ currentPalette: palette });
-    fetch('/api/preferences', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preference: 'backgroundColor', value: palette.id }),
-    }).catch(() => {});
+    posterJson('/api/preferences', { preference: 'backgroundColor', value: palette.id }).catch(() => {});
   },
 
   resetBackground: () => set({ currentPalette: COLOR_PALETTES.default }),
 
   // Préférence du profil de la session, sinon le fond par défaut
   loadPreference: async () => {
-    const data = await fetch('/api/preferences', { signal: AbortSignal.timeout(5000) })
-      .then((res) => (res.ok ? res.json() : null))
+    const data = await lireJson<{ preferences?: { backgroundColor?: unknown } }>('/api/preferences', { signal: AbortSignal.timeout(5000) })
       .catch(() => null);
     const id = data?.preferences?.backgroundColor;
     set({ currentPalette: (typeof id === 'string' && resolvePalette(id)) || COLOR_PALETTES.default });

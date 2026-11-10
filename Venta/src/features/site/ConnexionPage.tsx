@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { ETIQUETTE, Verre } from './ProjectPage';
-import type { useChatController } from '@/features/chat/useChatController';
+import { ETIQUETTE, Info, PageSite } from './elements';
+import { Verre } from '@/features/fenetres/Verre';
+import type { EnvoiAuth } from '@/features/chat/useChatController';
 import { PAGE_DEPART } from '@/features/illusion/pages/liste';
+import { ouvrirIllusion } from '@/features/illusion/partage/LienIllusion';
 import { effacerBrouillons } from '@/features/illusion/stockage';
 import { INDISPONIBLE } from '@/lib/messages';
-import { useUIStore } from '@/lib/uiStore';
+import { lireJson, posterJson } from '@/lib/reseau';
 
 type Mode = 'login' | 'register' | 'oubli' | 'reinit';
 type Compte = { pseudo: string; email: string; emailVerifie?: boolean };
@@ -15,10 +17,11 @@ const VIDES = { identifier: '', pseudo: '', email: '', password: '', inviteCode:
 const TITRES: Record<Mode, string> = { login: 'Connexion', register: 'Créer un compte', oubli: 'Mot de passe oublié', reinit: 'Nouveau mot de passe' };
 const BOUTONS: Record<Mode, string> = { login: 'Se connecter', register: 'Créer le compte', oubli: 'Envoyer le lien', reinit: 'Changer le mot de passe' };
 const LIEN = 'text-sm text-white/70 underline decoration-white/30 underline-offset-4 transition hover:text-white hover:decoration-white';
+const BOUTON_PLEIN = 'w-full rounded-xl bg-white py-3 text-sm font-semibold text-[#0a0a0e] transition hover:bg-white/85 disabled:opacity-50';
 
 // POST JSON vers le relai ; l'erreur du backend devient celle de l'action
 async function poster(chemin: string, corps: object = {}) {
-  const res = await fetch(chemin, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }).catch(() => null);
+  const res = await posterJson(chemin, corps).catch(() => null);
   const data = await res?.json().catch(() => null);
   if (!res?.ok) throw new Error(data?.error || INDISPONIBLE);
 }
@@ -41,7 +44,7 @@ function Champ({ label, aide, ...input }: { label: string; aide?: string } & Rea
 }
 
 interface ConnexionPageProps {
-  sendAuth: ReturnType<typeof useChatController>['sendAuth'];
+  sendAuth: EnvoiAuth;
   // Change à chaque connexion, inscription ou déconnexion : le compte est relu
   utilisateur: string | null;
   // Jeton du lien « mot de passe oublié », oublié une fois utilisé ou abandonné
@@ -64,8 +67,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
 
   useEffect(() => {
     let actif = true;
-    fetch('/api/auth/compte')
-      .then((res) => (res.ok ? res.json() : null))
+    lireJson<{ compte?: Compte | null }>('/api/auth/compte')
       .then((data) => actif && setCompte(data?.compte ?? null))
       .catch(() => actif && setCompte(null));
     return () => {
@@ -174,9 +176,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
   );
 
   return (
-    <article aria-labelledby="compte-titre" className="mx-auto max-w-md px-4 pb-24 pt-28 font-sans text-white">
-      <p className={ETIQUETTE}>Compte Ovrane</p>
-      <h1 id="compte-titre" className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">{titre}</h1>
+    <PageSite id="compte-titre" etiquette="Compte Ovrane" titre={titre} etroite classeTitre="md:text-4xl">
       <p className="mt-3 leading-relaxed text-white/70">
         {mode === 'oubli'
           ? 'Indiquez l’adresse de votre compte : vous recevrez un lien pour choisir un nouveau mot de passe.'
@@ -188,14 +188,8 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
       {compte && !formulaire && (
         <Verre as="section" aria-label="Votre compte" className="mt-8 space-y-6 p-6">
           <dl className="space-y-4">
-            <div>
-              <dt className={ETIQUETTE}>Pseudo</dt>
-              <dd className="mt-1">{compte.pseudo}</dd>
-            </div>
-            <div>
-              <dt className={ETIQUETTE}>E-mail</dt>
-              <dd className="mt-1 break-all">{compte.email}</dd>
-            </div>
+            <Info libelle="Pseudo">{compte.pseudo}</Info>
+            <Info libelle="E-mail" classeValeur="break-all">{compte.email}</Info>
           </dl>
           {compte.emailVerifie === false && (
             <div className="space-y-3 rounded-xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm leading-relaxed text-amber-100">
@@ -206,8 +200,8 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
           <button
             type="button"
             disabled={compte.emailVerifie === false}
-            onClick={() => useUIStore.getState().setPage(`illusion/${PAGE_DEPART}`)}
-            className="block w-full rounded-xl bg-white py-3 text-center text-sm font-semibold text-black transition hover:bg-white/85 disabled:opacity-40"
+            onClick={() => ouvrirIllusion(PAGE_DEPART)}
+            className={BOUTON_PLEIN}
           >
             Ouvrir Illusion
           </button>
@@ -270,7 +264,7 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
             <button
               type="submit"
               disabled={envoi}
-              className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-[#0a0a0e] transition hover:bg-white/85 disabled:opacity-50"
+              className={BOUTON_PLEIN}
             >
               {envoi ? '…' : BOUTONS[mode]}
             </button>
@@ -283,6 +277,6 @@ export function ConnexionPage({ sendAuth, utilisateur, reinit, finirReinit }: Co
           </div>
         </Verre>
       )}
-    </article>
+    </PageSite>
   );
 }

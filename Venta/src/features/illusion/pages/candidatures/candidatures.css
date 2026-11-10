@@ -55,8 +55,6 @@
 .ov [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils .actions{gap:12px}
 
 /* L'avis d'un geste : en bas à droite de la fenêtre, un clic le ferme. */
-.ov .candidatures .avis-file{position:absolute;right:14px;bottom:52px;z-index:3;max-width:min(560px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-10) / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
-.ov .candidatures .avis-file.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
 .ov .candidatures .pagination .trou{min-width:16px;text-align:center;line-height:28px}
 .ov .candidatures .pagination .compteur{white-space:nowrap}
 
@@ -146,7 +144,6 @@
 .ov.trame [data-fen].candidatures:is([data-l=s],[data-l=xs]) .outils .action.plein{padding:0 8px}
 /* L'avis : une barre pleine au-dessus de la pagination, inversée. */
 .ov.trame .candidatures .avis-file{bottom:68px;padding:10px 16px;border-left:0;border-radius:8px;background:var(--texte);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--surface)}
-.ov.trame .candidatures .avis-file.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 .ov.trame .candidatures .pagination .trou{line-height:44px}
 /* Panneau : onglets jointifs, fichier lisible, En direct sans chasse fixe. */
 .ov.trame:has([data-fen=tableau].candidatures) [data-fen=panneau] .p-onglets{column-gap:0}

@@ -1,5 +1,7 @@
 'use client';
 
+import { CONTENU, DUREE_RANGEMENT } from '../dock/moteur';
+
 // Un morceau se déplie ou se replie depuis son milieu, son texte s'écrit
 const GLYPHES = '#$%&*+<=>?@/|^~0123456789ABCDEFX';
 const LETTRE = /[\p{L}\p{N}]/u;
@@ -10,11 +12,8 @@ const MORCEAUX =
   '.f-corps>:not(.section-f):not(.f-tete):not(.bloc-f),.detail-appel>*,.echos-tete>*,.tuiles-sortes>*,.fil-actions>li,.tete>*';
 // Textes jamais touchés : la valeur d'un champ et les dessins
 const HORS = 'textarea,select,option,svg,script,style';
-// Décor d'une fenêtre, laissé en place pendant qu'elle se déplie
-const DECOR = ':scope>:not(.verre-halos):not(.prise):not(.taille):not(.ouv-ligne)';
-
 // Durées en ms : toute transition dure 300, effacement et voile compris dedans
-export const DUREES = { effacer: 130, ouvrir: 300, voile: 120, contenu: 300, signal: 300, canaux: 300 };
+export const DUREES = { effacer: 130, ouvrir: DUREE_RANGEMENT, voile: 120, contenu: DUREE_RANGEMENT, signal: DUREE_RANGEMENT, canaux: DUREE_RANGEMENT };
 
 export type Controle = { fini: Promise<void>; annuler: () => void };
 // `texte` : seul le texte s'écrit, avec un bref éclat blanc, sans dépli
@@ -155,7 +154,7 @@ export const effacer = (cible: Element, options: Options) => animer(cible, 'effa
 // Contenu caché le temps qu'une fenêtre se déplie, avant d'être écrit
 export function voiler(fenetre: Element, duree: number): Controle {
   if (mouvementReduit()) return RIEN;
-  const anims = Array.from(fenetre.querySelectorAll<HTMLElement>(DECOR)).map((el) =>
+  const anims = Array.from(fenetre.querySelectorAll<HTMLElement>(CONTENU)).map((el) =>
     el.animate([{ opacity: 0 }, { opacity: 0 }], { duration: duree }),
   );
   return { fini: Promise.all(anims.map((a) => a.finished.catch(() => {}))).then(() => {}), annuler: () => anims.forEach((a) => a.cancel()) };

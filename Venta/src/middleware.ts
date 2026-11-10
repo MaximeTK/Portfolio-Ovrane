@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest, NextFetchEvent } from 'next/server';
 import { forward } from '@/lib/proxy';
 import { JETON_COOKIE, REDIRECT_TARGETS, parseRedirectPath } from '@/lib/redirections';
-import { origineDuSite, requeteDuSite } from '@/lib/origine';
+import { origineDuSite, requeteDuSite, optionsCookie } from '@/lib/origine';
 
 export function middleware(request: NextRequest, event: NextFetchEvent) {
   const url = request.nextUrl;
@@ -32,12 +32,7 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   const response = NextResponse.redirect(new URL(target, request.url));
   // Le jeton suit la session : le chat et l'accueil le relisent côté serveur
   if (link.cible === 'portfolio' && link.jeton) {
-    response.cookies.set(JETON_COOKIE, link.jeton, {
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: url.protocol === 'https:',
-    });
+    response.cookies.set(JETON_COOKIE, link.jeton, optionsCookie(url));
   }
   return response;
 }

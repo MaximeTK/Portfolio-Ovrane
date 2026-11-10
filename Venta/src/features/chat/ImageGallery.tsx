@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { TRAIT_ROND } from '@/features/site/elements';
+import { sansExtension } from '@/lib/images';
 
 interface ImageGalleryProps {
   images: string[];
@@ -12,10 +14,29 @@ const MIN_SWIPE_DISTANCE = 50;
 // Nom lisible d'une image : fichier décodé, sans extension
 function getImageName(url: string) {
   try {
-    return decodeURIComponent(url.split('/').pop() ?? '').replace(/\.[^/.]+$/, '');
+    return sansExtension(decodeURIComponent(url.split('/').pop() ?? ''));
   } catch {
     return '';
   }
+}
+
+// Flèche d'un côté de la galerie, masquée sur mobile où l'on glisse
+function Fleche({ sens, aller }: { sens: -1 | 1; aller: (delta: number) => void }) {
+  return (
+    <button
+      type="button"
+      className={`hidden md:flex absolute ${sens < 0 ? 'left-4 md:left-8' : 'right-4 md:right-8'} z-[110] bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 text-white rounded-full p-4 transition-all hover:scale-110`}
+      onClick={(e) => {
+        e.stopPropagation();
+        aller(sens);
+      }}
+      aria-label={sens < 0 ? 'Image précédente' : 'Image suivante'}
+    >
+      <svg {...TRAIT_ROND} width={24} height={24} strokeWidth={3}>
+        <polyline points={sens < 0 ? '15 18 9 12 15 6' : '9 18 15 12 9 6'} />
+      </svg>
+    </button>
+  );
 }
 
 export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProps) {
@@ -77,7 +98,7 @@ export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProp
                 className="bg-black/60 hover:bg-black/80 backdrop-blur-md text-white px-5 py-2.5 rounded-full text-sm font-medium border border-white/10 flex items-center gap-2 transition-colors shadow-lg"
                 onClick={(e) => e.stopPropagation()}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg {...TRAIT_ROND} width={18} height={18} strokeWidth={2}>
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
@@ -111,7 +132,7 @@ export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProp
           onClick={onClose}
           aria-label="Fermer"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg {...TRAIT_ROND} width={24} height={24} strokeWidth={2.5}>
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -132,35 +153,10 @@ export function ImageGallery({ images, initialIndex, onClose }: ImageGalleryProp
             </span>
           </div>
 
-          {/* Flèches, masquées sur mobile où l'on glisse */}
           {images.length > 1 && (
             <>
-              <button
-                type="button"
-                className="hidden md:flex absolute left-4 md:left-8 z-[110] bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 text-white rounded-full p-4 transition-all hover:scale-110"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goTo(-1);
-                }}
-                aria-label="Image précédente"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                className="hidden md:flex absolute right-4 md:right-8 z-[110] bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 text-white rounded-full p-4 transition-all hover:scale-110"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goTo(1);
-                }}
-                aria-label="Image suivante"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
+              <Fleche sens={-1} aller={goTo} />
+              <Fleche sens={1} aller={goTo} />
             </>
           )}
 

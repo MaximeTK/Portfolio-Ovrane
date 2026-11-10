@@ -5,11 +5,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { appeler } from '../api';
 import { Fenetre } from '../dock/Dock';
-import { CROIX, MarqueAdmin } from '../dock/Panneau';
+import { BoutonFermer, MarqueAdmin } from '../dock/Panneau';
+import { Verre } from '@/features/fenetres/Verre';
 import { DUREES, ecrire, type Controle } from '../partage/glyphes';
 import { ouvrirIllusion } from '../partage/LienIllusion';
 import { useSondage } from './sondage';
-import { adresseActivite, heure, nomDuJour, phrase, useActivite, type DonneesActivite, type Evenement, type ReponseActivite, type Sorte } from './useActivite';
+import { adresseActivite, nomDuJour, phrase, useActivite, type DonneesActivite, type Evenement, type ReponseActivite, type Sorte } from './useActivite';
+import { heure, message } from '../elements/format';
 
 const TRAIT = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', viewBox: '0 0 24 24', 'aria-hidden': true } as const;
 
@@ -164,19 +166,25 @@ function Flottante({ titre, admin, fermer, children }: { titre: string; admin?: 
       x: Math.min(Math.max(m.clientX - dx - o.left, 0), o.width - r.width),
       y: Math.min(Math.max(m.clientY - dy - o.top, 0), o.height - 40),
     });
+    const lacher = () => {
+      window.removeEventListener('pointermove', bouger);
+      window.removeEventListener('pointerup', lacher);
+      window.removeEventListener('pointercancel', lacher);
+    };
     window.addEventListener('pointermove', bouger);
-    window.addEventListener('pointerup', () => window.removeEventListener('pointermove', bouger), { once: true });
+    window.addEventListener('pointerup', lacher);
+    window.addEventListener('pointercancel', lacher);
   };
   if (!hote) return null;
   return createPortal(
-    <section ref={boite} className="flottante activite-flottante" role="dialog" aria-label={titre} style={pos ? { left: pos.x, top: pos.y, right: 'auto' } : undefined}>
+    <Verre as="section" ref={boite} className="flottante activite-flottante" role="dialog" aria-label={titre} style={pos ? { left: pos.x, top: pos.y, right: 'auto' } : undefined}>
       <header className="f-barre" onPointerDown={saisir}>
         <span className="f-poignee" aria-hidden="true" />
         <h2 className="f-titre">{titre}{admin && <MarqueAdmin />}</h2>
-        <button type="button" className="f-btn" title="Fermer" aria-label={`Fermer ${titre}`} onClick={fermer}>{CROIX}</button>
+        <BoutonFermer titre="Fermer" label={`Fermer ${titre}`} onClick={fermer} />
       </header>
       <div className="f-corps">{children}</div>
-    </section>,
+    </Verre>,
     hote,
   );
 }
@@ -192,7 +200,7 @@ function Historique({ fermer }: { fermer: () => void }) {
       setLu((await appeler<ReponseActivite>(adresseActivite(jours, 500))).fil);
       setErreur('');
     } catch (e) {
-      setErreur((e as Error).message);
+      setErreur(message(e));
     }
   }, 5000, true, jours);
   const comptes = Object.fromEntries(SORTES.map((s) => [s.sorte, 0])) as Record<Sorte, number>;
@@ -243,7 +251,7 @@ function Journal({ fermer }: { fermer: () => void }) {
       setLignes((await appeler<{ journal: string[] }>('/pipeline')).journal);
       setErreur('');
     } catch (e) {
-      setErreur((e as Error).message);
+      setErreur(message(e));
     }
   }, 5000);
   return (

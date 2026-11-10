@@ -4,16 +4,21 @@ import '../offres/offres.css';
 import './veille.css';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { appeler } from '../../api';
-import { repris, useGarder } from '../../stockage';
-import { Activite } from '../../activite/Activite';
-import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
+import { Menu, OptionMenu } from '../../elements/Menu';
+
+import { Fenetre, usePanneau } from '../../dock/Dock';
 import { AuPied, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
-import {
-  ICONES, SOURCES, dateDe, enregistrerReglages, heure, jourMois, libelleSource, useAvis, useEtatVeille, useGestesStock, useProfilsVeille,
-  type Cycle, type Jobboard, type Parametres,
-} from '../offres/commun';
-import { message, useEchap } from '../commun';
+import { surEntree, useEtatVeille, useGestesStock, useParametresVeille, useProfilsVeille, type Cycle, type Jobboard, type Parametres } from '../offres/commun';
+import { useEchap } from '../commun';
+import { Action } from '../../elements/Action';
+import { useAvis } from '../../elements/Avis';
+import { ouvrable } from '../../elements/Case';
+import { Champ, Interrupteur, ChampSaisie, ChampListe, OptionsModele, SectionFiche } from '../../elements/Champ';
+import { ActionOnglet } from '../../elements/Groupes';
+import { ICONES } from '../../elements/icones';
+import { PLATEFORMES, dateUtc, heure, jourMoisIso, libelleSource, message } from '../../elements/format';
+import { PageDock } from '../../activite/PageDock';
 
 // Clés de chaque plateforme, valables pour toutes les veilles.
 type Champ = { cle: string; libelle: string; nombre?: boolean };
@@ -41,7 +46,7 @@ function voyant(nom: string, cycle: Cycle): [string, string] {
   if (passage.statut >= 400) return ['jaune', `réponse HTTP ${passage.statut}`];
   if (!passage.vues) {
     const derniere = cycle.dernieres_offres?.[nom];
-    return ['violette', derniere ? `aucune offre depuis le ${jourMois(derniere)}` : 'a répondu, aucune offre encore vue'];
+    return ['violette', derniere ? `aucune offre depuis le ${jourMoisIso(derniere)}` : 'a répondu, aucune offre encore vue'];
   }
   const lues = passage.lues ?? 0;
   return ['verte', `HTTP ${passage.statut} · ${lues} retenue${lues > 1 ? 's' : ''}`];
@@ -59,10 +64,9 @@ function etatCles(nom: string, p: Parametres | null) {
 
 export default function PageVeille(_: ProprietesPage) {
   return (
-    <Dock id="veille" principal="veille" panneau="plateforme">
-      <Activite />
+    <PageDock id="veille" principal="veille" panneau="plateforme">
       <Veille />
-    </Dock>
+    </PageDock>
   );
 }
 
@@ -71,9 +75,6 @@ function Veille() {
   const { dire, vue: avis } = useAvis();
   const [etat, relire] = useEtatVeille(dire);
   const gestes = useGestesStock(etat, relire, dire, () => {});
-  // Réglages gardés d'une visite à l'autre, comme l'état de la veille.
-  const [parametres, setParametres] = useState(() => repris<Parametres | null>('veille:parametres', null));
-  useGarder('veille', { parametres });
   // L'onglet « Nouveau jobboard », de « Ajouter un jobboard » jusqu'à l'ajout
   const [ajoutJb, setAjoutJb] = useState(false);
 
@@ -82,14 +83,7 @@ function Veille() {
     if (onglet === 'plateforme' && objet === null) ouvrir('plateforme', 'france_travail');
   }, [onglet, objet, ouvrir]);
 
-  useEffect(() => {
-    appeler<Parametres>('/parametres').then(setParametres, (e) => dire(message(e), true));
-  }, [dire]);
-  const enregistrer = useCallback(async (modifs: Partial<Parametres>) => {
-    const r = await enregistrerReglages(modifs, dire);
-    if (r) setParametres(r);
-    return !!r;
-  }, [dire]);
+  const { parametres, enregistrer } = useParametresVeille('veille', dire);
   const veilles = useProfilsVeille(parametres, enregistrer);
   const reglages = useReglages(parametres, enregistrer);
 
@@ -122,7 +116,7 @@ function Veille() {
   const basculerJobboard = (rang: number, actif: boolean) => enregistrer({ jobboards: (parametres?.jobboards ?? []).map((j, i) => (i === rang ? { ...j, actif } : j)) });
 
   const cycle = etat?.cycle ?? {};
-  const date = cycle.date ? dateDe(cycle.date) : null;
+  const date = cycle.date ? dateUtc(cycle.date) : null;
   const retenues = (cycle.passages ?? []).reduce((n, p) => n + (p.lues ?? 0), 0);
   const prochain = etat?.prochain_dans != null ? heure(new Date(Date.now() + etat.prochain_dans * 1000)) : '';
   const enCours = !!etat?.en_cours;
@@ -170,21 +164,17 @@ function Veille() {
           </span>
           <span className="espace" />
           <div className="actions" role="group" aria-label="Actions">
-            <button type="button" className="action repli-2" title={gestes.titreTri} onClick={gestes.etiquettes}>
-              <span className="ico">{ICONES.etiquettes}</span><span className="txt">{gestes.libelleTri}</span>
-            </button>
-            <button type="button" className="action alerte repli-2" title="Efface le stock d'offres. Les fiches entreprises restent." aria-haspopup="dialog" aria-expanded={confirmer} onClick={gestes.ouvrirVider}>
-              <span className="ico">{ICONES.vider}</span><span className="txt">Vider les offres</span>
-            </button>
-            <button type="button" className={`action repli-1${onglet === 'veilles' ? ' allume' : ''}`} title="Profils de veille" aria-haspopup="dialog" aria-expanded={onglet === 'veilles'} onClick={() => ouvrir('veilles')}>
-              <span className="ico">{ICONES.veilles}</span><span className="txt">Profils de veille</span>
-            </button>
-            <button type="button" className={`action repli-1${onglet === 'reglages' ? ' allume' : ''}`} title="Réglages" aria-haspopup="dialog" aria-expanded={onglet === 'reglages'} onClick={() => ouvrir('reglages')}>
-              <span className="ico">{ICONES.reglages}</span><span className="txt">Réglages</span>
-            </button>
-            <button type="button" className="action plein" title="Démarrer / Arrêter la veille" disabled={!etat} onClick={basculer}>
-              <span className="txt">{etat?.rotation_armee ? 'Arrêter la veille' : 'Démarrer la veille'}</span><span className="ico">{etat?.rotation_armee ? ICONES.arret : ICONES.marche}</span>
-            </button>
+            <Action className="repli-2" icone={ICONES.tag} txt title={gestes.titreTri} onClick={gestes.etiquettes}>{gestes.libelleTri}
+            </Action>
+            <Action className="alerte repli-2" icone={ICONES.vider} txt title="Efface le stock d'offres. Les fiches entreprises restent." aria-haspopup="dialog" aria-expanded={confirmer} onClick={gestes.ouvrirVider}>Vider les offres
+            </Action>
+            <ActionOnglet cle="veilles" className="repli-1" icone={ICONES.veilles} title="Profils de veille">Profils de veille
+            </ActionOnglet>
+            <ActionOnglet cle="reglages" className="repli-1" icone={ICONES.reglages} title="Réglages">Réglages
+            </ActionOnglet>
+            <Action plein iconeApres={etat?.rotation_armee ? ICONES.arret : ICONES.marche} txt title="Démarrer / Arrêter la veille" disabled={!etat} onClick={basculer}>
+              {etat?.rotation_armee ? 'Arrêter la veille' : 'Démarrer la veille'}
+            </Action>
           </div>
         </div>
         {gestes.barre}
@@ -203,10 +193,10 @@ function Veille() {
           <section className="bloc-v" aria-label="Plateformes">
             <div className="bloc-tete">
               <h3 className="etiquette">Plateformes</h3>
-              <span className="compteur">{Object.keys(SOURCES).length} sources{date ? ` · dernier cycle ${heure(date)} · ${retenues} offres` : ' · aucun cycle encore'}</span>
+              <span className="compteur">{Object.keys(PLATEFORMES).length} sources{date ? ` · dernier cycle ${heure(date)} · ${retenues} offres` : ' · aucun cycle encore'}</span>
             </div>
             <div className="grille-pf">
-              {Object.keys(SOURCES).map((nom) => {
+              {Object.keys(PLATEFORMES).map((nom) => {
                 const [teinte, motif] = voyant(nom, cycle);
                 const passage = cycle.passages?.find((p) => p.source === nom);
                 const muet = teinte === 'muette' || motif.startsWith('clés manquantes');
@@ -228,20 +218,18 @@ function Veille() {
             <div className="bloc-tete">
               <h3 className="etiquette">Jobboards fouillés</h3>
               <div className="actions">
-                <button type="button" className={`action${onglet === 'ajout-jobboard' ? ' allume' : ''}`} aria-haspopup="dialog" onClick={() => {
+                <Action allume={onglet === 'ajout-jobboard'} icone={ICONES.plus_pages} aria-haspopup="dialog" onClick={() => {
                   setAjoutJb(true);
                   ouvrir('ajout-jobboard');
-                }}><span className="ico">{ICONES.plus}</span>Ajouter un jobboard</button>
-                <button type="button" className="action" title="Fouille maintenant les jobboards enregistrés, avec les recherches des profils actifs." onClick={recolter}><span className="ico">{ICONES.fleche}</span>Récolter maintenant</button>
+                }}>Ajouter un jobboard</Action>
+                <Action icone={ICONES.fleche_pages} title="Fouille maintenant les jobboards enregistrés, avec les recherches des profils actifs." onClick={recolter}>Récolter maintenant</Action>
               </div>
             </div>
             <ul className="jobboards-l">
               {jobboards.map((j, i) => (
                 <li
-                  key={`${j.url}-${i}`} className={`${j.actif ? '' : 'eteint'}${onglet === 'jobboard' && objet === j.url ? ' actif' : ''}`} tabIndex={0}
-                  aria-label={`Jobboard ${j.nom || j.url} : ouvrir`} data-ouvre="jobboard" data-objet={j.url}
-                  onClick={() => ouvrir('jobboard', j.url)}
-                  onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && ouvrir('jobboard', j.url)}
+                  key={`${j.url}-${i}`} className={`${j.actif ? '' : 'eteint'}${onglet === 'jobboard' && objet === j.url ? ' actif' : ''}`}
+                  aria-label={`Jobboard ${j.nom || j.url} : ouvrir`} {...ouvrable('jobboard', j.url, () => ouvrir('jobboard', j.url))}
                 >
                   <b>{j.nom || 'Sans nom'}{j.siren && <span className="tag-f">fiche</span>}</b>
                   <span className="d" title={j.url}>{j.url.replace(/^https?:\/\/(www\.)?/i, '')}</span>
@@ -281,8 +269,8 @@ function Plateforme({ nom, parametres, cycle, enregistrer }: { nom: string; para
   const sauver = () => change && enregistrer(modifs);
   const secret = champs.length > 1 ? 'Clés' : 'Clé';
   return (
-    <div onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLElement).matches('input') && sauver()}>
-      <div className="voyant-l"><i className={`voyant v-${teinte}`} /><span>{motif}</span>{cycle.date && <span className="d">dernier cycle {heure(dateDe(cycle.date))}</span>}</div>
+    <div onKeyDown={surEntree(sauver, 'input')}>
+      <div className="voyant-l"><i className={`voyant v-${teinte}`} /><span>{motif}</span>{cycle.date && <span className="d">dernier cycle {heure(dateUtc(cycle.date))}</span>}</div>
       {champs.length ? (
         <div className="section-f">
           <div className={champs.length > 1 ? 'grille-2' : undefined}>
@@ -290,8 +278,7 @@ function Plateforme({ nom, parametres, cycle, enregistrer }: { nom: string; para
               const enregistree = parametres?.[c.cle] === true;
               const efface = effaces.includes(c.cle);
               return (
-                <div key={c.cle} className="champ">
-                  <label htmlFor={`${id}-${c.cle}`}>{c.libelle}</label>
+                <Champ pour={`${id}-${c.cle}`} libelle={c.libelle} key={c.cle}>
                   {c.nombre ? (
                     <input id={`${id}-${c.cle}`} className="saisie" type="number" min={0} value={saisies[c.cle] ?? String(parametres?.[c.cle] ?? '')} onChange={(e) => setSaisies((s) => ({ ...s, [c.cle]: e.target.value }))} />
                   ) : (
@@ -307,7 +294,7 @@ function Plateforme({ nom, parametres, cycle, enregistrer }: { nom: string; para
                       )}
                     </span>
                   )}
-                </div>
+                </Champ>
               );
             })}
           </div>
@@ -316,7 +303,7 @@ function Plateforme({ nom, parametres, cycle, enregistrer }: { nom: string; para
       ) : (
         <p className="texte-f">{libelleSource(nom)} se lit sans clé : chaque profil de veille dit s&apos;il l&apos;interroge.</p>
       )}
-      <AuPied><button type="button" className="action plein" disabled={!change} onClick={sauver}>Enregistrer<span className="ico">{ICONES.fleche}</span></button></AuPied>
+      <AuPied><Action plein iconeApres={ICONES.fleche_pages} disabled={!change} onClick={sauver}>Enregistrer</Action></AuPied>
     </div>
   );
 }
@@ -344,40 +331,33 @@ function useReglages(parametres: Parametres | null, enregistrer: (m: Partial<Par
   const modeles = parametres?.modeles ?? [];
   const cycle = parseInt(form.jobboards_periode_heures, 10) || 0;
   const corps = (
-    <div onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLElement).matches('input:not([type=search])') && sauver()}>
+    <div onKeyDown={surEntree(sauver, 'input:not([type=search])')}>
       <div className="section-f">
-        <div className="champ">
-          <label htmlFor="ve-dep" title="Ceux des profils de recherche qui n'en donnent pas ; vide : toute la France.">Départements</label>
+        <Champ pour="ve-dep" titre="Ceux des profils de recherche qui n'en donnent pas ; vide : toute la France." libelle="Départements">
           <Catalogue id="ve-dep" codes={form.departements} changer={(departements) => setForm((f) => ({ ...f, departements }))} />
-        </div>
+        </Champ>
         <div className="grille-2 bas">
-          <div className="champ"><label htmlFor="ve-rot" title="Un cycle toutes les N minutes tant que le serveur tourne : il mène chaque veille active, l'une après l'autre. 0 : uniquement à la demande.">Rotation automatique (min)</label><input id="ve-rot" className="saisie" type="number" min={0} {...champ('veille_periode_minutes')} /></div>
-          <div className="champ"><label htmlFor="ve-to">Timeout (s)</label><input id="ve-to" className="saisie" type="number" min={60} {...champ('veille_timeout_secondes')} /></div>
-          <div className="champ"><label htmlFor="ve-socle" title="Une offre publiée avant cette date entre en base et reste consultable, mais ne va jamais dans la file. Vide : tout ce qui arrive est postulable.">Écouter à partir du</label><input id="ve-socle" className="saisie" type="date" {...champ('veille_socle_avant')} /></div>
-          <div className="champ">
-            <label htmlFor="ve-mod" title="Il pose en coulisse la famille de métier de chaque recherche et de chaque offre de la liste globale, puis juge si un intitulé correspond à une recherche.">Étiquettes — modèle<MarqueAdmin /></label>
-            <select id="ve-mod" className="saisie" {...champ('veille_tri_modele')}>
-              <option value="">Aucun</option>
-              {modeles.map((m) => <option key={m.nom} value={m.nom}>{m.nom}{m.modele ? ` · ${m.modele}` : ''}</option>)}
-              {form.veille_tri_modele && !modeles.some((m) => m.nom === form.veille_tri_modele) && <option value={form.veille_tri_modele}>{form.veille_tri_modele}</option>}
-            </select>
-          </div>
+          <ChampSaisie id="ve-rot" titre="Un cycle toutes les N minutes tant que le serveur tourne : il mène chaque veille active, l'une après l'autre. 0 : uniquement à la demande." libelle="Rotation automatique (min)" type="number" min={0} {...champ('veille_periode_minutes')} />
+          <ChampSaisie id="ve-to" libelle="Timeout (s)" type="number" min={60} {...champ('veille_timeout_secondes')} />
+          <ChampSaisie id="ve-socle" titre="Une offre publiée avant cette date entre en base et reste consultable, mais ne va jamais dans la file. Vide : tout ce qui arrive est postulable." libelle="Écouter à partir du" type="date" {...champ('veille_socle_avant')} />
+          <ChampListe id="ve-mod" titre="Il pose en coulisse la famille de métier de chaque recherche et de chaque offre de la liste globale, puis juge si un intitulé correspond à une recherche." libelle={<>Étiquettes — modèle<MarqueAdmin /></>} {...champ('veille_tri_modele')}>
+              <OptionsModele modeles={modeles} vide="Aucun" valeur={form.veille_tri_modele} />
+            </ChampListe>
         </div>
       </div>
-      <div className="section-f">
-        <h3>Jobboards</h3>
+      <SectionFiche titre="Jobboards">
         <div className="grille-2 bas">
-          <div className="champ"><label htmlFor="ve-h">Départ du cycle des jobboards</label><input id="ve-h" className="saisie" type="time" {...champ('jobboards_heure')} /></div>
-          <div className="champ"><label htmlFor="ve-cy">Cycle (heures)</label><input id="ve-cy" className="saisie" type="number" min={0} {...champ('jobboards_periode_heures')} /></div>
+          <ChampSaisie id="ve-h" libelle="Départ du cycle des jobboards" type="time" {...champ('jobboards_heure')} />
+          <ChampSaisie id="ve-cy" libelle="Cycle (heures)" type="number" min={0} {...champ('jobboards_periode_heures')} />
         </div>
         <p className="aide-champ">{cycle ? `À l'heure locale du PC : le cycle part à ${form.jobboards_heure || '—'} puis toutes les ${cycle} h, écoute armée.` : 'Cycle coupé : seulement par « Récolter maintenant ».'}</p>
-      </div>
+      </SectionFiche>
     </div>
   );
   const pied = (
     <>
-      <button type="button" className="action gauche" disabled={!change} onClick={reprendre}>Annuler</button>
-      <button type="button" className="action plein" disabled={!change} onClick={sauver}>Enregistrer<span className="ico">{ICONES.fleche}</span></button>
+      <Action className="gauche" disabled={!change} onClick={reprendre}>Annuler</Action>
+      <Action plein iconeApres={ICONES.fleche_pages} disabled={!change} onClick={sauver}>Enregistrer</Action>
     </>
   );
   return { corps, pied };
@@ -433,14 +413,13 @@ function Catalogue({ id, codes, changer }: { id: string; codes: string[]; change
         />
       </div>
       {trouves.length > 0 && (
-        <div id={`${id}-liste`} className="menu verre" role="listbox" aria-label="Départements trouvés">
-          <span className="verre-halos" aria-hidden="true" />
+        <Menu id={`${id}-liste`} role="listbox" aria-label="Départements trouvés">
           {trouves.map((e) => (
-            <button key={e.code} type="button" role="option" aria-selected={codes.includes(e.code)} className={`menu-option${codes.includes(e.code) ? ' actif' : ''}`} onClick={() => prendre(e)}>
+            <OptionMenu key={e.code} actif={codes.includes(e.code)} onClick={() => prendre(e)}>
               <b>{e.code}</b>{e.libelle}
-            </button>
+            </OptionMenu>
           ))}
-        </div>
+        </Menu>
       )}
     </div>
   );
@@ -469,15 +448,15 @@ function EditionJobboard({ origine, liste, enregistrer, ajoute }: { origine: Job
     if (await enregistrer({ jobboards: liste.filter((_, i) => i !== rang) })) fermer();
   };
   return (
-    <div className="section-f" onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLElement).matches('input:not([type=checkbox])') && sauver()}>
-      <div className="champ"><label htmlFor={`${id}-url`}>URL</label><input id={`${id}-url`} className="saisie" type="url" placeholder="https://…/offres" value={form.url} onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} /></div>
-      <div className="champ"><label htmlFor={`${id}-nom`}>Nom</label><input id={`${id}-nom`} className="saisie" placeholder={form.siren ? 'fiche' : 'Nom'} value={form.nom} onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))} /></div>
-      <label className="inter" title="Coché : récolté à chaque cycle de veille (un jobboard comme JobTeaser). Décoché : par le cycle des jobboards, à son heure (la page carrières d'un employeur).">Pendant la veille<input type="checkbox" checked={form.veille} onChange={(e) => setForm((f) => ({ ...f, veille: e.target.checked }))} /></label>
-      <label className="inter" title="Décoché, le jobboard reste dans la liste sans être fouillé.">Récolté<input type="checkbox" checked={form.actif} onChange={(e) => setForm((f) => ({ ...f, actif: e.target.checked }))} /></label>
+    <div className="section-f" onKeyDown={surEntree(sauver, 'input:not([type=checkbox])')}>
+      <ChampSaisie id={`${id}-url`} libelle="URL" type="url" placeholder="https://…/offres" value={form.url} onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} />
+      <ChampSaisie id={`${id}-nom`} libelle="Nom" placeholder={form.siren ? 'fiche' : 'Nom'} value={form.nom} onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))} />
+      <Interrupteur libelle="Pendant la veille" title="Coché : récolté à chaque cycle de veille (un jobboard comme JobTeaser). Décoché : par le cycle des jobboards, à son heure (la page carrières d'un employeur)." checked={form.veille} onChange={(e) => setForm((f) => ({ ...f, veille: e.target.checked }))} />
+      <Interrupteur libelle="Récolté" title="Décoché, le jobboard reste dans la liste sans être fouillé." checked={form.actif} onChange={(e) => setForm((f) => ({ ...f, actif: e.target.checked }))} />
       <p className="aide-champ">Chaque recherche des profils actifs y est menée, navigateur piloté ; la première récolte apprend la recette du site avec le modèle, les suivantes la rejouent sans lui.</p>
       <AuPied>
-          {origine && <button type="button" className="action rouge gauche" onClick={retirer}><span className="ico">{ICONES.vider}</span>Retirer</button>}
-          <button type="button" className="action plein" disabled={!change || !form.url.trim()} onClick={sauver}>Enregistrer<span className="ico">{ICONES.fleche}</span></button>
+          {origine && <Action className="gauche" rouge icone={ICONES.vider} onClick={retirer}>Retirer</Action>}
+          <Action plein iconeApres={ICONES.fleche_pages} disabled={!change || !form.url.trim()} onClick={sauver}>Enregistrer</Action>
       </AuPied>
     </div>
   );

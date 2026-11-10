@@ -7,6 +7,11 @@ import type { DonneesActivite } from '@/features/illusion/activite/useActivite';
 import { useApparence, type Matiere } from '@/features/illusion/apparence';
 import { Dock, Fenetre, usePanneau } from '@/features/illusion/dock/Dock';
 import { Confirmer, Panneau } from '@/features/illusion/dock/Panneau';
+import { Action } from '../../features/illusion/elements/Action';
+import { Case } from '../../features/illusion/elements/Case';
+import { Champ, Interrupteur } from '../../features/illusion/elements/Champ';
+import { ICONES } from '../../features/illusion/elements/icones';
+import { LibelleValeur } from '../../features/illusion/elements/Champ';
 
 // Matière demandée par l'adresse du banc, posée avant la première peinture
 export function ReglerMatiere({ matiere }: { matiere?: Matiere }) {
@@ -75,7 +80,7 @@ const LIGNES: Ligne[] = [
 ];
 
 const CARRE = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', 'aria-hidden': true } as const;
-const CHEVRON = <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
+
 const BAS = <svg {...CARRE}><path d="m6 9 6 6 6-6" /></svg>;
 const FLECHE = <span className="ico"><svg {...CARRE}><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>;
 
@@ -90,23 +95,23 @@ function Tableau() {
   return (
     <Fenetre id="tableau" as="div" className="tableau" titrePrise="Glisser pour détacher les Candidatures">
       <div className="outils">
-        <button type="button" className="filtre" aria-haspopup="listbox" aria-label="Étape : Total"><span>Total</span>{CHEVRON}</button>
-        <button type="button" className="filtre actif" aria-haspopup="listbox"><span><span className="lib">Métier</span>Développement · 150</span>{CHEVRON}</button>
-        <button type="button" className="filtre" aria-haspopup="listbox"><span><span className="lib">Langue</span>toutes</span>{CHEVRON}</button>
+        <button type="button" className="filtre" aria-haspopup="listbox" aria-label="Étape : Total"><span>Total</span>{ICONES.chevron}</button>
+        <button type="button" className="filtre actif" aria-haspopup="listbox"><span><span className="lib">Métier</span>Développement · 150</span>{ICONES.chevron}</button>
+        <button type="button" className="filtre" aria-haspopup="listbox"><span><span className="lib">Langue</span>toutes</span>{ICONES.chevron}</button>
         <span className="espace" />
         <div className="actions" role="group" aria-label="Actions">
-          <button type="button" className="action rouge" title={`Supprimer ${n} offres`} onClick={() => setConfirmer(true)}>
+          <Action rouge title={`Supprimer ${n} offres`} onClick={() => setConfirmer(true)}>
             <span className="ico"><svg {...CARRE} strokeLinejoin="miter"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg></span>
             <span><span className="txt">Supprimer </span>({n})</span>
-          </button>
-          <button type="button" className={`action${onglet === 'reglages' ? ' allume' : ''}`} title="Réglages" onClick={() => ouvrir('reglages')}>
+          </Action>
+          <Action allume={onglet === 'reglages'} title="Réglages" onClick={() => ouvrir('reglages')}>
             <span className="ico"><svg {...CARRE} strokeLinejoin="miter"><polygon points="22.3,10.2 22.3,13.8 19.4,13.8 18.5,15.9 20.6,18.0 18.0,20.6 15.9,18.5 13.8,19.4 13.8,22.3 10.2,22.3 10.2,19.4 8.1,18.5 6.0,20.6 3.4,18.0 5.5,15.9 4.6,13.8 1.7,13.8 1.7,10.2 4.6,10.2 5.5,8.1 3.4,6.0 6.0,3.4 8.1,5.5 10.2,4.6 10.2,1.7 13.8,1.7 13.8,4.6 15.9,5.5 18.0,3.4 20.6,6.0 18.5,8.1 19.4,10.2" /><circle cx="12" cy="12" r="3" /></svg></span>
             <span className="txt">Réglages</span>
-          </button>
-          <button type="button" className="action plein" onClick={() => ouvrir('ajout')}>
+          </Action>
+          <Action plein onClick={() => ouvrir('ajout')}>
             <span className="txt">Ajouter une offre</span>
             <span className="ico"><svg {...CARRE} strokeWidth={2.6} strokeLinejoin="miter"><path d="M12 5v14M5 12h14" /></svg></span>
-          </button>
+          </Action>
         </div>
       </div>
       {confirmer && (
@@ -125,7 +130,7 @@ function Tableau() {
         <table>
           <thead>
             <tr>
-              <th><input type="checkbox" className="case" aria-label="Tout sélectionner" checked={n === LIGNES.length} onChange={() => setCoches(n === LIGNES.length ? [] : LIGNES.map((_, i) => i))} /></th>
+              <th><Case aria-label="Tout sélectionner" checked={n === LIGNES.length} onChange={() => setCoches(n === LIGNES.length ? [] : LIGNES.map((_, i) => i))} /></th>
               <th>Publiée</th><th>Entreprise</th><th>Intitulé</th><th>Lieu / contrat</th><th>Profil</th><th>Source</th><th>Étape</th><th>Timer</th>
             </tr>
           </thead>
@@ -140,7 +145,7 @@ function Tableau() {
                   ouvrir('fiche');
                 }}
               >
-                <td><input type="checkbox" className="case" aria-label={`Sélectionner ${ent}`} checked={coches.includes(i)} onChange={() => cocher(i)} /></td>
+                <td><Case aria-label={`Sélectionner ${ent}`} checked={coches.includes(i)} onChange={() => cocher(i)} /></td>
                 <td className="d">{publiee}</td>
                 <td><a href="#" className="ent">{ent}</a></td>
                 <td>{intitule}</td>
@@ -180,15 +185,15 @@ const FICHE = (
     </div>
     <div className="section-f">
       <div className="grille-fiche">
-        <div><span className="lib-champ">Entreprise</span><span>ALTEN <small>SIREN 412 078 316</small></span></div>
-        <div><span className="lib-champ">Site de l&apos;entreprise</span><a href="#" className="lien">alten.fr</a></div>
-        <div><span className="lib-champ">Publiée le</span><span>21/10</span></div>
-        <div><span className="lib-champ">Lieu</span><span>Toulouse (31)</span></div>
-        <div><span className="lib-champ">Contrat</span><span>CDI</span></div>
-        <div><span className="lib-champ">Langue</span><span>FR</span></div>
-        <div><span className="lib-champ">Métiers</span><span>Développement, Back-end</span></div>
-        <div><span className="lib-champ">Candidater</span><a href="#" className="lien">alten.fr/candidater</a></div>
-        <div><span className="lib-champ">Annonce</span><a href="#" className="lien">welcometothejungle.com</a></div>
+        <LibelleValeur libelle="Entreprise"><span>ALTEN <small>SIREN 412 078 316</small></span></LibelleValeur>
+        <LibelleValeur libelle="Site de l&apos;entreprise"><a href="#" className="lien">alten.fr</a></LibelleValeur>
+        <LibelleValeur libelle="Publiée le"><span>21/10</span></LibelleValeur>
+        <LibelleValeur libelle="Lieu"><span>Toulouse (31)</span></LibelleValeur>
+        <LibelleValeur libelle="Contrat"><span>CDI</span></LibelleValeur>
+        <LibelleValeur libelle="Langue"><span>FR</span></LibelleValeur>
+        <LibelleValeur libelle="Métiers"><span>Développement, Back-end</span></LibelleValeur>
+        <LibelleValeur libelle="Candidater"><a href="#" className="lien">alten.fr/candidater</a></LibelleValeur>
+        <LibelleValeur libelle="Annonce"><a href="#" className="lien">welcometothejungle.com</a></LibelleValeur>
       </div>
     </div>
     <div className="section-f">
@@ -206,7 +211,7 @@ const FICHE = (
         <dt className="lib-champ">Sous-entendues</dt><dd><span className="puces">{['Git', 'Tests unitaires', 'Anglais technique'].map((c) => <span key={c} className="puce implicite">{c}</span>)}</span></dd>
       </dl>
     </div>
-    <details className="bloc-f"><summary>Préparation de l&apos;entretien{BAS}</summary><div><p className="texte-f">Aucun rendez-vous proposé pour l&apos;instant : la préparation se rédige quand un mail en propose un.</p><button type="button" className="action">Préparer</button></div></details>
+    <details className="bloc-f"><summary>Préparation de l&apos;entretien{BAS}</summary><div><p className="texte-f">Aucun rendez-vous proposé pour l&apos;instant : la préparation se rédige quand un mail en propose un.</p><Action>Préparer</Action></div></details>
     <details className="bloc-f"><summary>Courrier<span className="compteur">2</span>{BAS}</summary><div><ul className="liste-f"><li>Votre candidature chez ALTEN<span className="d">rh@exemple.fr · 22/10</span></li><li>Échange téléphonique<span className="d">rh@exemple.fr · 25/10</span></li></ul></div></details>
     <details className="bloc-f"><summary>L&apos;annonce{BAS}</summary><div><p className="texte-f">Au sein de notre centre de Toulouse, vous concevez et maintenez des services back-end en Python pour des clients de l&apos;aéronautique : API REST, traitements de données, tests et mise en production.</p></div></details>
   </>
@@ -217,26 +222,26 @@ const REGLAGES = (
     <label className="reglage">Candidatures par lancement<input className="saisie" type="number" defaultValue={5} /></label>
     <label className="reglage">Candidatures en même temps<input className="saisie" type="number" defaultValue={2} /></label>
     <label className="reglage">Timeout (s)<input className="saisie" type="number" defaultValue={600} /></label>
-    <label className="inter">Créer un compte si l&apos;ATS l&apos;exige<input type="checkbox" defaultChecked /></label>
-    <label className="inter">Rejouer le chemin appris<input type="checkbox" defaultChecked /></label>
-    <label className="inter">Créer la fiche entreprise<input type="checkbox" defaultChecked /></label>
+    <Interrupteur libelle="Créer un compte si l&apos;ATS l&apos;exige" defaultChecked />
+    <Interrupteur libelle="Rejouer le chemin appris" defaultChecked />
+    <Interrupteur libelle="Créer la fiche entreprise" defaultChecked />
   </div>
 );
 
 const AJOUT = (
   <>
     <div className="section-f">
-      <div className="champ"><label htmlFor="aj-url">Adresse de l&apos;offre</label><input id="aj-url" className="saisie" type="url" placeholder="https://…" defaultValue="https://alten.fr/offres/2210" /></div>
+      <Champ pour="aj-url" libelle="Adresse de l&apos;offre"><input id="aj-url" className="saisie" type="url" placeholder="https://…" defaultValue="https://alten.fr/offres/2210" /></Champ>
       <div className="grille-2">
-        <div className="champ"><label htmlFor="aj-ent">Entreprise</label><input id="aj-ent" className="saisie" defaultValue="ALTEN" /></div>
-        <div className="champ"><label htmlFor="aj-int">Intitulé</label><input id="aj-int" className="saisie" defaultValue="Développeur Python" /></div>
+        <Champ pour="aj-ent" libelle="Entreprise"><input id="aj-ent" className="saisie" defaultValue="ALTEN" /></Champ>
+        <Champ pour="aj-int" libelle="Intitulé"><input id="aj-int" className="saisie" defaultValue="Développeur Python" /></Champ>
       </div>
-      <div className="champ"><label htmlFor="aj-prof">Profil du candidat</label><select id="aj-prof" className="saisie"><option>developpeur-python</option><option>fullstack-js</option><option>backend-en</option></select></div>
+      <Champ pour="aj-prof" libelle="Profil du candidat"><select id="aj-prof" className="saisie"><option>developpeur-python</option><option>fullstack-js</option><option>backend-en</option></select></Champ>
     </div>
     <div className="section-f">
       <h3>Options</h3>
-      <label className="inter">Candidature spontanée<input type="checkbox" /></label>
-      <label className="inter">Postuler sans tri<input type="checkbox" /></label>
+      <Interrupteur libelle="Candidature spontanée" />
+      <Interrupteur libelle="Postuler sans tri" />
     </div>
   </>
 );
@@ -251,10 +256,10 @@ export function Planche() {
         onglets={[
           {
             cle: 'fiche', titre: 'Fiche · ALTEN', label: 'Fiche offre · ALTEN', corps: FICHE,
-            pied: <><button type="button" className="action gauche" aria-haspopup="dialog">Voir la fiche entreprise</button><a href="#" className="action plein">Page de l&apos;offre{FLECHE}</a></>,
+            pied: <><Action className="gauche" aria-haspopup="dialog">Voir la fiche entreprise</Action><a href="#" className="action plein">Page de l&apos;offre{FLECHE}</a></>,
           },
-          { cle: 'reglages', titre: 'Réglages', label: 'Réglages · Candidatures', corps: REGLAGES, pied: <><button type="button" className="action">Annuler</button><button type="button" className="action plein">Enregistrer{FLECHE}</button></> },
-          { cle: 'ajout', titre: 'Ajouter', label: 'Ajouter une offre', corps: AJOUT, pied: <><button type="button" className="action">Ajouter à la file</button><button type="button" className="action plein">Postuler maintenant{FLECHE}</button></> },
+          { cle: 'reglages', titre: 'Réglages', label: 'Réglages · Candidatures', corps: REGLAGES, pied: <><Action>Annuler</Action><Action plein>Enregistrer{FLECHE}</Action></> },
+          { cle: 'ajout', titre: 'Ajouter', label: 'Ajouter une offre', corps: AJOUT, pied: <><Action>Ajouter à la file</Action><Action plein>Postuler maintenant{FLECHE}</Action></> },
         ]}
       />
     </Dock>

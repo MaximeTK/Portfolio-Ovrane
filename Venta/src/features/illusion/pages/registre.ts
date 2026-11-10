@@ -5,6 +5,7 @@ import Offres from './offres';
 import Candidatures from './candidatures';
 import Documents from './documents';
 import Mails from './mails';
+import Adresses from './adresses';
 import Appels from './appels';
 import Relations from './relations';
 import Profil from './profil';
@@ -17,6 +18,7 @@ export const REGISTRE: Record<string, ComponentType<ProprietesPage>> = {
   candidatures: Candidatures,
   documents: Documents,
   mails: Mails,
+  adresses: Adresses,
   appels: Appels,
   relations: Relations,
   profil: Profil,

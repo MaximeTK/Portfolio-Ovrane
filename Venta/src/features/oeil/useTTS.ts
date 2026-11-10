@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import pLimit from 'p-limit';
-import { startLevelLoop } from './useAudioVisualization';
+import { posterJson } from '@/lib/reseau';
+import { creerAnalyseur, creerContexteAudio, startLevelLoop } from './useAudioVisualization';
 
 type SetupVisualizationFn = (audio: HTMLAudioElement, callback: (level: number) => void) => void;
 
@@ -28,7 +29,7 @@ export type FluxVoix = { pousser: (pcm: string) => void; terminer: () => void };
 const MAX_BLOC = 900;
 
 /** Découpe en blocs de 4 phrases et MAX_BLOC caractères au plus */
-export function splitTextIntoTTSBlocks(text: string): string[] {
+function splitTextIntoTTSBlocks(text: string): string[] {
   const sentences = (text.replace(/\s+/g, ' ').trim().match(/[^.]+(?:\.)|[^.]+$/g) ?? [])
     .map((s) => s.trim())
     .filter(Boolean);
@@ -47,12 +48,7 @@ export function splitTextIntoTTSBlocks(text: string): string[] {
 
 // Le passage part avec le texte entier et sa signature
 async function fetchChunk(text: string, source: string, voix: string, signal: AbortSignal, enFlux: boolean): Promise<PreparedChunk> {
-  const response = await fetch('/api/tts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, source, voix }),
-    signal,
-  });
+  const response = await posterJson('/api/tts', { text, source, voix }, { signal });
   const isAudio = response.ok && response.headers.get('Content-Type')?.startsWith('audio/');
   if (isAudio && enFlux && response.body) return { type: 'stream', body: response.body };
   const blob = isAudio ? await response.blob() : null;
@@ -68,6 +64,19 @@ export function useTTS() {
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const currentAudioUrlRef = useRef<string | null>(null);
   const fluxRef = useRef<{ couper: () => void } | null>(null);
+
+  const noterNiveau = useCallback((level: number) => {
+    audioLevelRef.current = level;
+  }, []);
+  const debuterVoix = useCallback((onStart?: () => void) => {
+    onStart?.();
+    setIsSpeaking(true);
+  }, []);
+  const finirVoix = useCallback((onEnd?: () => void) => {
+    audioLevelRef.current = 0;
+    setIsSpeaking(false);
+    onEnd?.();
+  }, []);
 
   const stop = useCallback(() => {
     // Invalide la file et les requêtes en cours
@@ -87,9 +96,8 @@ export function useTTS() {
     if (currentAudioUrlRef.current) URL.revokeObjectURL(currentAudioUrlRef.current);
     currentAudioUrlRef.current = null;
 
-    audioLevelRef.current = 0;
-    setIsSpeaking(false);
-  }, []);
+    finirVoix();
+  }, [finirVoix]);
 
   // Démontage de l'accueil : la voix et la file en cours s'arrêtent
   useEffect(() => stop, [stop]);
@@ -106,32 +114,22 @@ export function useTTS() {
     const runId = activeRunIdRef.current;
     const audio = new Audio(url);
     currentAudioRef.current = audio;
-    setupVisualization(audio, (level) => {
-      audioLevelRef.current = level;
-    });
+    setupVisualization(audio, noterNiveau);
     const fin = () => {
-      if (activeRunIdRef.current !== runId) return;
-      audioLevelRef.current = 0;
-      setIsSpeaking(false);
-      onEnd();
+      if (activeRunIdRef.current === runId) finirVoix(onEnd);
     };
-    audio.onplay = () => {
-      onStart?.();
-      setIsSpeaking(true);
-    };
+    audio.onplay = () => debuterVoix(onStart);
     audio.onended = fin;
     audio.onerror = fin;
     audio.play().catch(fin);
-  }, [stop]);
+  }, [stop, noterNiveau, debuterVoix, finirVoix]);
 
   // Lecteur d'une adresse provisoire : sa fin libère l'adresse et rend la main
   const preparerLecture = useCallback((audioUrl: string, setupVisualization: SetupVisualizationFn, resolve: () => void) => {
     const audio = new Audio(audioUrl);
     currentAudioRef.current = audio;
     currentAudioUrlRef.current = audioUrl;
-    setupVisualization(audio, (level) => {
-      audioLevelRef.current = level;
-    });
+    setupVisualization(audio, noterNiveau);
     const fin = () => {
       audioLevelRef.current = 0;
       URL.revokeObjectURL(audioUrl);
@@ -142,7 +140,7 @@ export function useTTS() {
     audio.onended = fin;
     audio.onerror = fin;
     return { audio, fin };
-  }, []);
+  }, [noterNiveau]);
 
   const playAudioQueued = useCallback((audioBlob: Blob, setupVisualization: SetupVisualizationFn, runId: number) =>
     new Promise<void>((resolve) => {
@@ -187,15 +185,10 @@ export function useTTS() {
   const ouvrirFlux = useCallback((onEnd: () => void, onStart?: () => void): FluxVoix => {
     stop();
     const runId = activeRunIdRef.current;
-    const Contexte = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    const contexte = new Contexte();
-    const analyseur = contexte.createAnalyser();
-    analyseur.fftSize = 1024;
-    analyseur.smoothingTimeConstant = 0.85;
+    const contexte = creerContexteAudio();
+    const analyseur = creerAnalyseur(contexte);
     analyseur.connect(contexte.destination);
-    const arreterNiveau = startLevelLoop(analyseur, (level) => {
-      audioLevelRef.current = level;
-    });
+    const arreterNiveau = startLevelLoop(analyseur, noterNiveau);
     const sources = new Set<AudioBufferSourceNode>();
     let suite = 0;
     let demarre = false;
@@ -215,10 +208,7 @@ export function useTTS() {
     fluxRef.current = poignee;
     const finir = () => {
       poignee.couper();
-      if (activeRunIdRef.current !== runId) return;
-      audioLevelRef.current = 0;
-      setIsSpeaking(false);
-      onEnd();
+      if (activeRunIdRef.current === runId) finirVoix(onEnd);
     };
     contexte.resume().catch(() => undefined);
 
@@ -246,9 +236,7 @@ export function useTTS() {
           demarre = true;
           // Le texte et l'animation partent avec le premier son, pas avant
           setTimeout(() => {
-            if (clos) return;
-            onStart?.();
-            setIsSpeaking(true);
+            if (!clos) debuterVoix(onStart);
           }, (debut - contexte.currentTime) * 1000);
         }
       },
@@ -257,7 +245,7 @@ export function useTTS() {
         if (sources.size === 0) finir();
       },
     };
-  }, [stop]);
+  }, [stop, noterNiveau, debuterVoix, finirVoix]);
 
   const speakBrowserQueued = useCallback((text: string, runId: number) =>
     new Promise<void>((resolve) => {
@@ -314,8 +302,7 @@ export function useTTS() {
     // En flux la voix part aux premiers octets ; sinon, deux blocs prêts avant
     await Promise.all(pending.slice(0, enFlux ? 1 : 2));
     if (isStale()) return;
-    onStart?.();
-    setIsSpeaking(true);
+    debuterVoix(onStart);
 
     for (const promise of pending) {
       const chunk = await promise;
@@ -329,11 +316,8 @@ export function useTTS() {
       }
     }
 
-    if (isStale()) return;
-    audioLevelRef.current = 0;
-    setIsSpeaking(false);
-    onEnd();
-  }, [playAudioQueued, playStreamQueued, speakBrowserQueued, stop]);
+    if (!isStale()) finirVoix(onEnd);
+  }, [playAudioQueued, playStreamQueued, speakBrowserQueued, stop, debuterVoix, finirVoix]);
 
   return { isSpeaking, getAudioLevel, stop, speakWithUrl, speakWithQueue, ouvrirFlux };
 }

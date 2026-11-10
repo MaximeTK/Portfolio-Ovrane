@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { appeler } from '../../api';
 import { aOublier } from '../../stockage';
-import type { Avis } from '../commun';
+import type { Avis } from '../../elements/Avis';
 
 // RUBY en direct : l'audio ne quitte le navigateur que vers AssemblyAI.
 

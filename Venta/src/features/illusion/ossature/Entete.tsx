@@ -2,12 +2,13 @@
 
 import '../styles/illusion.css';
 import '../styles/themes.css';
-import { useEffect, useRef, useState } from 'react';
-import { useUIStore } from '@/lib/uiStore';
+import { useEffect, useRef } from 'react';
+import { useUIStore, partiesIllusion } from '@/lib/uiStore';
 import { classesTheme, useApparence } from '../apparence';
 import type { Compte } from '../api';
 import { DUREES, ecrire } from '../partage/glyphes';
 import { LienIllusion } from '../partage/LienIllusion';
+import { Menu, useMenu } from '../elements/Menu';
 import { ADMINISTRATION } from '../pages/liste';
 
 const TRAIT = { className: 'icone', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const;
@@ -28,7 +29,7 @@ type ProprietesEntete = { compte: Compte; visible: boolean };
 
 // Canaux d'Illusion dans l'en-tête du site, à la place de ceux d'Ovrane
 export function Entete({ compte, visible }: ProprietesEntete) {
-  const page = useUIStore((s) => (s.page?.startsWith('illusion/') ? s.page.slice(9).split('?')[0] : null));
+  const page = useUIStore((s) => partiesIllusion(s.page)?.slug ?? null);
   const matiere = useApparence((s) => s.matiere);
   const theme = useApparence((s) => s.theme);
   // Les fenêtres ne bougent pas au passage ; seuls les noms des canaux s'écrivent
@@ -87,26 +88,8 @@ export function Entete({ compte, visible }: ProprietesEntete) {
 
 // Menu des pages d'administration, au bout de droite pour un compte admin
 function MenuAdministration({ page }: { page: string | null }) {
-  const [ouvert, setOuvert] = useState(false);
-  const hote = useRef<HTMLDivElement>(null);
+  const { ouvert, setOuvert, fermer, hote } = useMenu();
   const actif = ADMINISTRATION.some((p) => p.slug === page);
-
-  // Un clic ailleurs ou Échap le referme
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (!hote.current?.contains(e.target as Node)) setOuvert(false);
-    };
-    const echap = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOuvert(false);
-    };
-    document.addEventListener('pointerdown', dehors);
-    document.addEventListener('keydown', echap);
-    return () => {
-      document.removeEventListener('pointerdown', dehors);
-      document.removeEventListener('keydown', echap);
-    };
-  }, [ouvert]);
 
   return (
     <div ref={hote} className="menu-hote">
@@ -115,8 +98,7 @@ function MenuAdministration({ page }: { page: string | null }) {
         <svg className="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
       </button>
       {ouvert && (
-        <div className="menu verre" role="menu" aria-label="Administration">
-          <span className="verre-halos" aria-hidden="true" />
+        <Menu role="menu" aria-label="Administration">
           {ADMINISTRATION.map((p) => (
             <LienIllusion
               key={p.slug}
@@ -124,13 +106,13 @@ function MenuAdministration({ page }: { page: string | null }) {
               vers={p.slug}
               className={`menu-option${page === p.slug ? ' actif' : ''}`}
               aria-current={page === p.slug ? 'page' : undefined}
-              onClick={() => setOuvert(false)}
+              onClick={fermer}
             >
               {ICONES_ADMIN[p.slug]}
               {p.titre}
             </LienIllusion>
           ))}
-        </div>
+        </Menu>
       )}
     </div>
   );

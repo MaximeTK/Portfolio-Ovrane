@@ -3,12 +3,17 @@
 import '../pages/collecte/fiche-entreprise.css';
 import { useEffect, useId, useState } from 'react';
 import { create } from 'zustand';
-import { useUIStore } from '@/lib/uiStore';
-import { appeler, ErreurIllusion, lireCompte } from '../api';
+import { useUIStore, partiesIllusion } from '@/lib/uiStore';
+import { appeler, lireCompte } from '../api';
 import { usePanneau } from '../dock/Dock';
 import { Confirmer, MarqueAdmin, type Onglet } from '../dock/Panneau';
 import { estAdmin } from '../pages/liste';
 import { aOublier } from '../stockage';
+import { Action } from '../elements/Action';
+import { jourMois, lienSur, message, quand } from '../elements/format';
+import { ICONES } from '../elements/icones';
+import { ChampSaisie, Interrupteur, LibelleValeur, SectionFiche } from '../elements/Champ';
+import { dureeAvis } from '../elements/Avis';
 
 // L'étape d'une fiche : son nom et la couleur de son trait
 export const ETATS: { code: string; libelle: string; classe: string }[] = [
@@ -27,7 +32,7 @@ export const CANAUX: { nom: string; icone: React.ReactNode }[] = [
   { nom: 'Spontanée', icone: <svg {...TRAIT}><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4z" /></svg> },
   { nom: 'Jobboard', icone: <svg {...TRAIT}><rect x="3" y="7" width="18" height="13" /><path d="M9 7V4h6v3M3 13h18" /></svg> },
 ];
-const FLECHE = <span className="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="square" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>;
+export const FLECHE = <span className="ico">{ICONES.fleche_pages}</span>;
 
 export function Marques({ tags }: { tags: string[] }) {
   return (
@@ -44,22 +49,8 @@ export function Etape({ etat }: { etat: string }) {
   return <span className={`eo${e?.classe ? ' ' + e.classe : ''}`}>{e?.libelle ?? etat}</span>;
 }
 
-// Une date du serveur sans fuseau est en UTC
-const enDate = (iso: string) => new Date(/Z|[+-]\d\d:\d\d$/.test(iso) || iso.length <= 10 ? iso : iso + 'Z');
-const dateCourte = (iso?: string | null) => (iso ? enDate(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '—');
-export const dateHeure = (iso?: string | null) =>
-  iso ? `${dateCourte(iso)} ${enDate(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : '—';
-// Seules les adresses web s'ouvrent
-export function lienSur(url?: string | null) {
-  try {
-    const u = new URL(url ?? '');
-    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : undefined;
-  } catch {
-    return undefined;
-  }
-}
 export const sansProtocole = (url?: string | null) => (url ?? '').replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '');
-export const messageDe = (e: unknown) => (e instanceof ErreurIllusion ? e.message : e instanceof Error ? e.message : String(e));
+
 
 type Detail = {
   siren: string; nom: string; secteur: string | null; localisation: string | null; effectif: string | null; dirigeant: string | null;
@@ -106,7 +97,7 @@ const minuteursAvis = new Map<string, ReturnType<typeof setTimeout>>();
 function dire(siren: string, texte: string, erreur = false) {
   poserFiche(siren, { avis: { texte, erreur } });
   clearTimeout(minuteursAvis.get(siren));
-  minuteursAvis.set(siren, setTimeout(() => poserFiche(siren, { avis: null }), erreur ? 6000 : 3500));
+  minuteursAvis.set(siren, setTimeout(() => poserFiche(siren, { avis: null }), dureeAvis(erreur)));
 }
 
 async function charger(siren: string) {
@@ -121,7 +112,7 @@ async function charger(siren: string) {
     ]);
     poserFiche(siren, { donnees: { e, historique, blocs, offres, jobboard: (parametres.jobboards ?? []).some((j) => j.siren === siren) }, notes: e.notes ?? '', erreur: '' });
   } catch (erreur) {
-    poserFiche(siren, { erreur: messageDe(erreur) });
+    poserFiche(siren, { erreur: message(erreur) });
   }
 }
 
@@ -132,7 +123,7 @@ async function geste(siren: string, faire: () => Promise<string>) {
     poser((s) => ({ version: s.version + 1 }));
     await charger(siren);
   } catch (erreur) {
-    dire(siren, messageDe(erreur), true);
+    dire(siren, message(erreur), true);
   }
 }
 
@@ -143,7 +134,7 @@ async function lancerPhase(siren: string, brique: string) {
     const r = await appeler<{ lancee: boolean }>(`/entreprises/${siren}/briques/${brique}`, { methode: 'POST' });
     dire(siren, r.lancee ? `${NOMS_PHASES[brique]} lancé sur cette fiche — le résultat apparaît ici une fois terminé.` : `${NOMS_PHASES[brique]} déjà en cours.`, !r.lancee);
   } catch (erreur) {
-    dire(siren, messageDe(erreur), true);
+    dire(siren, message(erreur), true);
   }
 }
 
@@ -155,7 +146,7 @@ async function nouvelAudit(e: Detail, ouvrir: (cle: string) => void, dejaEnOngle
     poser({ deja: { ...vu.base, siren: e.siren, nom: e.nom, retour: 'fiche-entreprise', lancer: () => lancerPhase(e.siren, 'audit-complet') } });
     if (dejaEnOnglet) ouvrir('deja-audit');
   } catch (erreur) {
-    dire(e.siren, messageDe(erreur), true);
+    dire(e.siren, message(erreur), true);
   }
 }
 
@@ -180,12 +171,12 @@ async function demanderSuppression(e: Detail) {
             return { version: s.version + 1, fiches };
           });
         } catch (erreur) {
-          dire(e.siren, messageDe(erreur), true);
+          dire(e.siren, message(erreur), true);
         }
       },
     } });
   } catch (erreur) {
-    dire(e.siren, messageDe(erreur), true);
+    dire(e.siren, message(erreur), true);
   }
 }
 
@@ -206,7 +197,7 @@ function useAdmin() {
 
 // Page d'administration : gestes au pied comme sur Audit ; sinon section ADMIN
 function usePageAdmin() {
-  return useUIStore((s) => estAdmin(s.page?.startsWith('illusion/') ? s.page.slice(9).split('?')[0] : ''));
+  return useUIStore((s) => estAdmin(partiesIllusion(s.page)?.slug ?? ''));
 }
 
 function TitreFiche({ siren }: { siren: string | null }) {
@@ -214,29 +205,25 @@ function TitreFiche({ siren }: { siren: string | null }) {
   return <>{nom ? `Entreprise · ${nom}` : 'Entreprise'}</>;
 }
 
+// Une question de fiche confirmée, en rangée de page ou en tête de fiche
+export function ConfirmerQuestion({ question, fermer }: { question: Question; fermer: () => void }) {
+  return (
+    <Confirmer question={question.question} detail={question.detail} action={question.action}
+      onAnnuler={() => poser({ question: null })}
+      onConfirmer={async () => {
+        await question.faire(fermer);
+        poser({ question: null });
+      }} />
+  );
+}
+
 // Questions de la fiche en tête de celle qui les pose, sans page qui les prenne
 function QuestionEnTete({ siren }: { siren: string }) {
   const question = useFicheEntreprise((s) => s.question);
   const hotes = useFicheEntreprise((s) => s.hotes);
   const { fermer } = usePanneau();
-  const [occupe, setOccupe] = useState(false);
   if (!question || hotes > 0 || (question.siren && question.siren !== siren)) return null;
-  return (
-    <div className="question-f">
-      <Confirmer question={question.question} detail={question.detail} action={question.action} occupe={occupe}
-        onAnnuler={() => poser({ question: null })}
-        onConfirmer={async () => {
-          setOccupe(true);
-          await question.faire(fermer);
-          setOccupe(false);
-          poser({ question: null });
-        }} />
-    </div>
-  );
-}
-
-function Champ({ libelle, children }: { libelle: string; children: React.ReactNode }) {
-  return <li><span className="lib-champ">{libelle}</span>{children}</li>;
+  return <div className="question-f"><ConfirmerQuestion question={question} fermer={fermer} /></div>;
 }
 
 function Lien({ url }: { url: string | null }) {
@@ -289,15 +276,10 @@ function Corriger({ e }: { e: Detail }) {
       <summary className="lib-champ">Corriger la fiche</summary>
       <div className="grille-2">
         {CHAMPS_CORRIGES.map((c) => (
-          <div key={c.cle} className="champ">
-            <label htmlFor={`${id}-${c.cle}`}>{c.libelle}</label>
-            <input id={`${id}-${c.cle}`} className="saisie" type="text" value={saisis[c.cle]} placeholder={c.exemple}
-              onChange={(ev) => setSaisis((s) => ({ ...s, [c.cle]: ev.target.value }))}
-              onKeyDown={(ev) => ev.key === 'Enter' && enregistrer()} />
-          </div>
+          <ChampSaisie id={`${id}-${c.cle}`} libelle={c.libelle} key={c.cle} type="text" value={saisis[c.cle]} placeholder={c.exemple} onChange={(ev) => setSaisis((s) => ({ ...s, [c.cle]: ev.target.value }))} onKeyDown={(ev) => ev.key === 'Enter' && enregistrer()} />
         ))}
       </div>
-      <div className="geste-f"><button type="button" className="action" onClick={enregistrer}>Enregistrer la fiche</button></div>
+      <div className="geste-f"><Action onClick={enregistrer}>Enregistrer la fiche</Action></div>
     </details>
   );
 }
@@ -307,8 +289,7 @@ function GestesAdmin({ e, dejaEnOnglet }: { e: Detail; dejaEnOnglet: boolean }) 
   const { ouvrir } = usePanneau();
   return (
     <>
-      <button type="button" className="action" title="Retour à zéro complet (historique conservé)"
-        onClick={() => poser({ question: {
+      <Action title="Retour à zéro complet (historique conservé)" onClick={() => poser({ question: {
           siren: e.siren,
           question: `Remettre ${e.nom} à zéro ?`,
           detail: "Elle repart en Collecter : site, mail, téléphone et résultats des briques effacés ; l'historique est conservé.",
@@ -317,13 +298,13 @@ function GestesAdmin({ e, dejaEnOnglet }: { e: Detail; dejaEnOnglet: boolean }) 
             await appeler(`/entreprises/${e.siren}/reset`, { methode: 'POST' });
             return 'Fiche remise à zéro.';
           }),
-        } })}>Reset</button>
-      <button type="button" className="action" onClick={() => lancerPhase(e.siren, 'parser')}>Lancer le parser</button>
+        } })}>Reset</Action>
+      <Action onClick={() => lancerPhase(e.siren, 'parser')}>Lancer le parser</Action>
       {/* L'audit a deux temps : une fiche entre les deux complète le brut */}
       {e.audit_brut_le && !e.audit_net_le && (
-        <button type="button" className="action" title="Analyse le brut DÉJÀ collecté, sans le recollecter." onClick={() => lancerPhase(e.siren, 'audit')}>Compléter l&apos;audit</button>
+        <Action title="Analyse le brut DÉJÀ collecté, sans le recollecter." onClick={() => lancerPhase(e.siren, 'audit')}>Compléter l&apos;audit</Action>
       )}
-      <button type="button" className="action plein" title="Refait la collecte ET l'analyse : un brut neuf et sa mise en forme." onClick={() => nouvelAudit(e, ouvrir, dejaEnOnglet)}>Nouvel audit{FLECHE}</button>
+      <Action plein title="Refait la collecte ET l'analyse : un brut neuf et sa mise en forme." onClick={() => nouvelAudit(e, ouvrir, dejaEnOnglet)}>Nouvel audit{FLECHE}</Action>
     </>
   );
 }
@@ -366,37 +347,34 @@ function CorpsFiche({ siren, ouvrirOffre, dejaEnOnglet }: { siren: string | null
         <Etape etat={e.etat} />
         <Marques tags={e.tags} />
         <span className="siren">{e.siren}</span>
-        {(e.audit_net_le || e.audit_brut_le) && <span className="d">{e.audit_net_le ? `audit net du ${dateCourte(e.audit_net_le)}` : `audit brut du ${dateCourte(e.audit_brut_le)}`}</span>}
+        {(e.audit_net_le || e.audit_brut_le) && <span className="d">{e.audit_net_le ? `audit net du ${jourMois(e.audit_net_le)}` : `audit brut du ${jourMois(e.audit_brut_le)}`}</span>}
       </div>
       <div className="fiche-2">
         <ul className="liste-f">
-          <Champ libelle="Dirigeant"><span className="d">{e.dirigeant ?? '—'}</span></Champ>
-          <Champ libelle="Secteur"><span className="d">{e.secteur ?? '—'}</span></Champ>
-          <Champ libelle="Activité"><span className="d">{activite ?? '—'}</span></Champ>
-          <Champ libelle="Site"><Lien url={e.site} /></Champ>
-          <Champ libelle="Email"><span className="d">{e.email ?? '—'}</span></Champ>
-          <Champ libelle="MX valide"><span className="d">{e.mx_valide == null ? '—' : e.mx_valide ? 'oui' : 'non'}</span></Champ>
-          {autres.length > 0 && <Champ libelle="Autres emails"><span className="d">{autres.join(' · ')}</span></Champ>}
-          <Champ libelle="Formulaire"><Lien url={e.formulaire_url} /></Champ>
-          <Champ libelle="Offres">
-            <span className="d">{lienSur(e.offres_url) ? <a href={lienSur(e.offres_url)} target="_blank" rel="noopener noreferrer" title={`Page d'offres : ${e.offres_url}`}>{nb}</a> : nb}</span>
-          </Champ>
+          <LibelleValeur as="li" libelle="Dirigeant" d>{e.dirigeant ?? '—'}</LibelleValeur>
+          <LibelleValeur as="li" libelle="Secteur" d>{e.secteur ?? '—'}</LibelleValeur>
+          <LibelleValeur as="li" libelle="Activité" d>{activite ?? '—'}</LibelleValeur>
+          <LibelleValeur as="li" libelle="Site"><Lien url={e.site} /></LibelleValeur>
+          <LibelleValeur as="li" libelle="Email" d>{e.email ?? '—'}</LibelleValeur>
+          <LibelleValeur as="li" libelle="MX valide" d>{e.mx_valide == null ? '—' : e.mx_valide ? 'oui' : 'non'}</LibelleValeur>
+          {autres.length > 0 && <LibelleValeur as="li" libelle="Autres emails" d>{autres.join(' · ')}</LibelleValeur>}
+          <LibelleValeur as="li" libelle="Formulaire"><Lien url={e.formulaire_url} /></LibelleValeur>
+          <LibelleValeur as="li" libelle="Offres" d>
+            {lienSur(e.offres_url) ? <a href={lienSur(e.offres_url)} target="_blank" rel="noopener noreferrer" title={`Page d'offres : ${e.offres_url}`}>{nb}</a> : nb}
+          </LibelleValeur>
           {(e.offres_url || e.site) && (
             <li>
-              <label className="inter large" title="Le cycle des jobboards fouille cette page à son heure, avec les recherches des profils actifs, et ses offres rejoignent la file.">
-                Récoltée avec les jobboards
-                <input type="checkbox" checked={donnees.jobboard} onChange={(ev) => {
+              <Interrupteur libelle="Récoltée avec les jobboards" className="large" title="Le cycle des jobboards fouille cette page à son heure, avec les recherches des profils actifs, et ses offres rejoignent la file." checked={donnees.jobboard} onChange={(ev) => {
                   const suivi = ev.target.checked;
                   geste(e.siren, async () => {
                     const r = await appeler<{ url: string }>(`/entreprises/${e.siren}/jobboard?suivi=${suivi}`, { methode: 'POST' });
                     return suivi ? `${r.url} rejoint les jobboards : le cycle des jobboards la fouillera.` : 'Fiche retirée des jobboards.';
                   });
                 }} />
-              </label>
             </li>
           )}
-          <Champ libelle="Implantations"><span className="d pile">{lieux.length ? lieux.map((l) => <span key={l}>{l}</span>) : '—'}</span></Champ>
-          {couleurs.length > 0 && <Champ libelle="Couleurs"><span className="d"><span className="couleurs">{couleurs.map((c) => <i key={c} style={{ background: c }} title={c} />)}</span></span></Champ>}
+          <LibelleValeur as="li" libelle="Implantations"><span className="d pile">{lieux.length ? lieux.map((l) => <span key={l}>{l}</span>) : '—'}</span></LibelleValeur>
+          {couleurs.length > 0 && <LibelleValeur as="li" libelle="Couleurs" d><span className="couleurs">{couleurs.map((c) => <i key={c} style={{ background: c }} title={c} />)}</span></LibelleValeur>}
         </ul>
         {(sections.length > 0 || audit?.ok === false) && (
           <div className="audit-f">
@@ -409,40 +387,36 @@ function CorpsFiche({ siren, ouvrirOffre, dejaEnOnglet }: { siren: string | null
         <details className="section-f cmd"><summary className="lib-champ">Commande du parser</summary><code>{parser.commande}</code></details>
       )}
       {offres.length > 0 && (
-        <div className="section-f">
-          <h3>Offres<span className="compteur">{offres.length}</span></h3>
+        <SectionFiche titre={<>Offres<span className="compteur">{offres.length}</span></>}>
           <ul className="liste-f offres-f">
             {offres.map((o) => (
               <li key={o.cle} data-ouvre={ouvrirOffre ? 'fiche-offre' : undefined} data-objet={ouvrirOffre ? o.cle : undefined} onClick={() => ouvrirOffre?.(o.cle)}>
-                <span className="o-date">{o.publiee_le ? dateCourte(o.publiee_le) : '—'}</span>
+                <span className="o-date">{jourMois(o.publiee_le)}</span>
                 <span className="o-titre" title={o.titre}>{ouvrirOffre ? <a href={`#${o.cle}`} onClick={(ev) => ev.preventDefault()}>{o.titre}</a> : o.titre}</span>
                 <span className="o-lieu">{[o.lieu, o.contrat].filter(Boolean).join(' · ')}</span>
                 {lienSur(o.apply_url || o.url) ? <a className="lien-f" href={lienSur(o.apply_url || o.url)} target="_blank" rel="noopener noreferrer" onClick={(ev) => ev.stopPropagation()}>postuler</a> : <span />}
               </li>
             ))}
           </ul>
-        </div>
+        </SectionFiche>
       )}
-      <div className="section-f">
-        <h3>Historique</h3>
+      <SectionFiche titre="Historique">
         <ul className="liste-f">
-          {chronologie.length ? chronologie.map((c, i) => <li key={i}><span className="lib-champ">{dateHeure(c.date)}</span><span className="d">{c.texte}</span></li>) : <li><span className="d">Aucun événement.</span></li>}
+          {chronologie.length ? chronologie.map((c, i) => <LibelleValeur key={i} as="li" libelle={quand(c.date)} d>{c.texte}</LibelleValeur>) : <li><span className="d">Aucun événement.</span></li>}
         </ul>
-      </div>
-      <div className="section-f">
-        <h3>Notes</h3>
+      </SectionFiche>
+      <SectionFiche titre="Notes">
         <textarea className="saisie" aria-label="Notes" value={notes} onChange={(ev) => poserFiche(e.siren, { notes: ev.target.value })} />
         {pageAdmin && <div className="geste-f"><BoutonNotes siren={e.siren} /></div>}
-      </div>
+      </SectionFiche>
       {admin && <Corriger e={e} />}
       {admin && !pageAdmin && (
-        <div className="section-f">
-          <h3>Administration<MarqueAdmin /></h3>
+        <SectionFiche titre={<>Administration<MarqueAdmin /></>}>
           <div className="geste-f">
-            <button type="button" className="action rouge" onClick={() => demanderSuppression(e)}>Supprimer</button>
+            <Action rouge onClick={() => demanderSuppression(e)}>Supprimer</Action>
             <GestesAdmin e={e} dejaEnOnglet={dejaEnOnglet} />
           </div>
-        </div>
+        </SectionFiche>
       )}
     </div>
   );
@@ -454,7 +428,7 @@ function BoutonNotes({ siren, plein }: { siren: string; plein?: boolean }) {
     await appeler(`/entreprises/${siren}/notes`, { methode: 'POST', corps: { notes } });
     return 'Notes enregistrées.';
   });
-  return <button type="button" className={`action${plein ? ' plein' : ''}`} onClick={enregistrer}>Enregistrer les notes{plein && FLECHE}</button>;
+  return <Action plein={plein} onClick={enregistrer}>Enregistrer les notes{plein && FLECHE}</Action>;
 }
 
 function PiedFiche({ siren, dejaEnOnglet }: { siren: string | null; dejaEnOnglet: boolean }) {
@@ -466,18 +440,18 @@ function PiedFiche({ siren, dejaEnOnglet }: { siren: string | null; dejaEnOnglet
   const auPied = pageAdmin && admin;
   // Écarter ne regarde que ce compte ; le même bouton le défait
   const ecarter = e.etat === 'ECARTEE'
-    ? <button type="button" className={`action${auPied ? '' : ' gauche'}`} onClick={() => geste(siren, async () => {
+    ? <Action className={`${auPied ? '' : ' gauche'}`} onClick={() => geste(siren, async () => {
         const r = await appeler<{ etat: string }>(`/entreprises/${siren}/integrer`, { methode: 'POST' });
         return `Réintégrée : retour en ${libelleEtat(r.etat)}.`;
-      })}>Intégrer</button>
-    : <button type="button" className={`action${auPied ? '' : ' gauche'}`} onClick={() => geste(siren, async () => {
+      })}>Intégrer</Action>
+    : <Action className={`${auPied ? '' : ' gauche'}`} onClick={() => geste(siren, async () => {
         await appeler(`/entreprises/${siren}/etat`, { methode: 'POST', corps: { nouvel_etat: 'ECARTEE' } });
         return 'Fiche écartée.';
-      })}>Écarter</button>;
+      })}>Écarter</Action>;
   if (!auPied) return <div className="pied-fiche">{ecarter}<BoutonNotes siren={siren} plein /></div>;
   return (
     <div className="pied-fiche">
-      <button type="button" className="action rouge gauche" title="Retire l'entreprise de tes fiches : ce qui n'existait que pour toi part avec elle" onClick={() => demanderSuppression(e)}>Supprimer</button>
+      <Action className="gauche" rouge title="Retire l'entreprise de tes fiches : ce qui n'existait que pour toi part avec elle" onClick={() => demanderSuppression(e)}>Supprimer</Action>
       {ecarter}
       <GestesAdmin e={e} dejaEnOnglet={dejaEnOnglet} />
     </div>
@@ -489,7 +463,7 @@ function CorpsDeja() {
   if (!deja) return <p className="texte-f">Aucun audit à relancer.</p>;
   return (
     <>
-      <p className="texte-f"><b>{deja.nom}</b> porte déjà {deja.prealable ? 'une collecte brute' : 'une analyse complète'}, du {dateCourte(deja.quand)}.</p>
+      <p className="texte-f"><b>{deja.nom}</b> porte déjà {deja.prealable ? 'une collecte brute' : 'une analyse complète'}, du {jourMois(deja.quand)}.</p>
       <p className="note-f">{deja.resume || '—'}</p>
       <p className="texte-f">Relancer refait l&apos;analyse et la repaie. Lire celle qui existe ne coûte rien.</p>
     </>
@@ -506,12 +480,12 @@ function PiedDeja() {
   };
   return (
     <>
-      <button type="button" className="action" onClick={() => quitter(deja.retour)}>Annuler</button>
-      <button type="button" className="action" onClick={() => quitter('fiche-entreprise', deja.siren)}>Voir l&apos;audit</button>
-      <button type="button" className="action plein" onClick={async () => {
+      <Action onClick={() => quitter(deja.retour)}>Annuler</Action>
+      <Action onClick={() => quitter('fiche-entreprise', deja.siren)}>Voir l&apos;audit</Action>
+      <Action plein onClick={async () => {
         await deja.lancer();
         quitter(deja.retour);
-      }}>Lancer quand même{FLECHE}</button>
+      }}>Lancer quand même{FLECHE}</Action>
     </>
   );
 }

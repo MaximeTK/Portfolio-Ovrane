@@ -2,32 +2,55 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../api';
+import { repris, useGarder } from '../stockage';
+import { message } from '../elements/format';
+import { useSondage } from '../activite/sondage';
 
-// Ce que les pages partagent : erreurs, avis, Échap, menus, pagination
-export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+// Ce que les pages partagent : erreurs, avis, Échap, pagination
+
 export const duree = (s: number) => (!s ? "à l'instant" : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`);
 
-// Le trait des icônes, et celles que plusieurs pages montrent
-export const TRAIT = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true } as const;
-export const ICONES_COMMUNES = {
-  chevron: <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>,
-  plus: <svg {...TRAIT} strokeWidth={2.6}><path d="M12 5v14M5 12h14" /></svg>,
-  fleche: <svg {...TRAIT} strokeWidth={2.6}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
-  supprimer: <svg {...TRAIT}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>,
-  reglages: <svg {...TRAIT}><polygon points="22.3,10.2 22.3,13.8 19.4,13.8 18.5,15.9 20.6,18.0 18.0,20.6 15.9,18.5 13.8,19.4 13.8,22.3 10.2,22.3 10.2,19.4 8.1,18.5 6.0,20.6 3.4,18.0 5.5,15.9 4.6,13.8 1.7,13.8 1.7,10.2 4.6,10.2 5.5,8.1 3.4,6.0 6.0,3.4 8.1,5.5 10.2,4.6 10.2,1.7 13.8,1.7 13.8,4.6 15.9,5.5 18.0,3.4 20.6,6.0 18.5,8.1 19.4,10.2" /><circle cx="12" cy="12" r="3" /></svg>,
-  loupe: <svg {...TRAIT}><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>,
-  vider: <svg {...TRAIT}><path d="M4 6h16M6 6l1 14h10l1-14M9 10l6 6M15 10l-6 6" /></svg>,
-  jouer: <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>,
-};
+// Un geste à la fois : son échec part dans `echec`, `apres` suit toujours
+export function useGeste(echec: (texte: string) => void) {
+  const [occupe, setOccupe] = useState(false);
+  const geste = async (faire: () => Promise<unknown>, apres?: () => unknown) => {
+    setOccupe(true);
+    try {
+      await faire();
+    } catch (e) {
+      echec(message(e));
+    } finally {
+      setOccupe(false);
+      await apres?.();
+    }
+  };
+  return { occupe, geste };
+}
 
-export type Avis = { texte: string; erreur?: boolean } | null;
-// Un avis se lit 3,5 s, une erreur 8 s
-export function useAvisBref(avis: Avis, setAvis: (a: null) => void) {
+// Ce qu'une adresse rend, repris d'une visite à l'autre et relu par `relire`
+export function useLecture<T>(section: string, nom: string, adresse: string, apres?: (lu: T) => void) {
+  const [lu, setLu] = useState(() => repris<T | null>(`${section}:${nom}`, null));
+  const [erreur, setErreur] = useState('');
+  useGarder(section, { [nom]: lu });
+  const suite = useRef(apres);
   useEffect(() => {
-    if (!avis) return;
-    const t = setTimeout(() => setAvis(null), avis.erreur ? 8000 : 3500);
-    return () => clearTimeout(t);
-  }, [avis, setAvis]);
+    suite.current = apres;
+  });
+  // Une réponse dépassée par une lecture plus récente ne compte plus
+  const derniere = useRef(0);
+  const relire = useCallback(async () => {
+    const n = ++derniere.current;
+    try {
+      const neuf = await appeler<T>(adresse);
+      if (n !== derniere.current) return;
+      setLu(neuf);
+      setErreur('');
+      suite.current?.(neuf);
+    } catch (e) {
+      if (n === derniere.current) setErreur(message(e));
+    }
+  }, [adresse]);
+  return { lu, setLu, erreur, relire };
 }
 
 // Échap à la page, sauf si déjà pris ; `toujours` l'écoute quand même
@@ -65,119 +88,48 @@ export function useParametresOuverts<P>(actif: boolean, prendre: (p: P) => void,
   }, [actif, setErreur]);
 }
 
-// Tant que le menu est ouvert, un clic hors de son hôte le ferme
-export function useClicDehors(ouvert: boolean, fermer: () => void) {
-  const hote = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (!hote.current?.contains(e.target as Node)) fermer();
-    };
-    document.addEventListener('pointerdown', dehors);
-    return () => document.removeEventListener('pointerdown', dehors);
-  }, [ouvert, fermer]);
-  return hote;
-}
-
-// Menu autonome : Échap le ferme avant la page ; `arreter` la laisse sourde
-export function useMenu(arreter = false) {
-  const [ouvert, setOuvert] = useState(false);
-  const fermer = useCallback(() => setOuvert(false), []);
-  const hote = useClicDehors(ouvert, fermer);
-  useEffect(() => {
-    if (!ouvert) return;
-    const echap = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      if (arreter) e.stopPropagation();
-      fermer();
-    };
-    document.addEventListener('keydown', echap, true);
-    return () => document.removeEventListener('keydown', echap, true);
-  }, [ouvert, arreter, fermer]);
-  return { ouvert, setOuvert, hote };
-}
-
-// Un filtre et son menu en colonne : clic ailleurs ou Échap le referme
-export function MenuColonne({ lib, titre = lib, valeur, actif, choix, courant, choisir, classeHote = '', classeMenu = '', icone = ICONES_COMMUNES.chevron }: {
-  lib: string; titre?: string; valeur: string; actif: boolean; choix: { cle: string; libelle: string; n?: number }[]; courant: string; choisir: (cle: string) => void;
-  classeHote?: string; classeMenu?: string; icone?: React.ReactNode;
-}) {
-  const { ouvert, setOuvert, hote } = useMenu();
-  return (
-    <div ref={hote} className={`menu-hote${classeHote}`}>
-      <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
-        <span><span className="lib">{lib}</span>{valeur}</span>{icone}
-      </button>
-      {ouvert && (
-        <div className={`menu verre${classeMenu}`} role="listbox" aria-label={titre}>
-          <span className="verre-halos" aria-hidden="true" />
-          {choix.map((c) => (
-            <button key={c.cle} type="button" role="option" aria-selected={c.cle === courant} className={`menu-option${c.cle === courant ? ' actif' : ''}`}
-              onClick={() => {
-                choisir(c.cle);
-                setOuvert(false);
-              }}>
-              {c.libelle}{c.n !== undefined && <span className="compteur">{c.n}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Un filtre en texte seul et son menu, tenus par la page
-export function MenuChoix({ ouvert, basculer, fermer, actif, label, titre = label, valeur, options, courant, choisir }: {
-  ouvert: boolean; basculer: () => void; fermer: () => void; actif: boolean; label: string; titre?: string; valeur: React.ReactNode;
-  options: { valeur: string; nom: string; compte: number }[]; courant: string; choisir: (v: string) => void;
-}) {
-  const hote = useClicDehors(ouvert, fermer);
-  return (
-    <div ref={hote} className="menu-hote filtre-hote">
-      <button type="button" className={`filtre${actif ? ' actif' : ''}`} aria-haspopup="listbox" aria-expanded={ouvert} aria-label={label} onClick={basculer}>
-        {valeur}{ICONES_COMMUNES.chevron}
-      </button>
-      {ouvert && (
-        <div className="menu verre" role="listbox" aria-label={titre}>
-          <span className="verre-halos" aria-hidden="true" />
-          {options.map((o) => (
-            <button key={o.valeur || 'tous'} type="button" role="option" aria-selected={o.valeur === courant} className={`menu-option${o.valeur === courant ? ' actif' : ''}`} onClick={() => choisir(o.valeur)}>
-              {o.nom}{o.compte >= 0 && <span className="compteur">{o.compte}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// « auto » : autant de lignes que le défileur en montre entières
-export function useLignesAuto(defile: React.RefObject<HTMLElement | null>, setAuto: (n: number) => void, ligneDefaut: number, cle?: unknown) {
+// « auto » : les lignes que le défileur montre ; sans ligne lue, --ligne
+export function useLignesAuto(defile: React.RefObject<HTMLElement | null>, setAuto: (n: number) => void, cle?: unknown, min = 1) {
   useLayoutEffect(() => {
     const zone = defile.current;
     if (!zone) return;
     const mesurer = () => {
       const tete = zone.querySelector('thead')?.getBoundingClientRect().height ?? 34;
-      const ligne = zone.querySelector('tbody tr')?.getBoundingClientRect().height || ligneDefaut;
-      setAuto(Math.max(1, Math.floor((zone.clientHeight - tete) / ligne)));
+      const ligne = zone.querySelector('tbody tr:not(.vide-tableau)')?.getBoundingClientRect().height || parseFloat(getComputedStyle(zone).getPropertyValue('--ligne')) || 36;
+      setAuto(Math.max(min, Math.floor((zone.clientHeight - tete) / ligne)));
     };
     // Sa première annonce vient après la pose des fenêtres, en une seule mesure
     const observateur = new ResizeObserver(mesurer);
     observateur.observe(zone);
     return () => observateur.disconnect();
-  }, [defile, setAuto, ligneDefaut, cle]);
+  }, [defile, setAuto, cle, min]);
+}
+
+// Page, lignes par page et « auto », repris d'une visite à l'autre
+export function usePagination(cle: string, autoDepart: number) {
+  const [page, setPage] = useState(() => repris(`${cle}:page`, 1));
+  const [taille, setTaille] = useState(() => repris<number | 'auto'>(`${cle}:taille`, 'auto'));
+  const [auto, setAuto] = useState(() => repris(`${cle}:auto`, autoDepart));
+  useGarder(cle, { page, taille, auto });
+  return { page, setPage, taille, setTaille, auto, setAuto };
+}
+
+// La tranche d'une liste lue en entier : pages, page courante, lignes montrées
+export function decouper<T>(liste: T[], page: number, taille: number | 'auto', auto: number) {
+  const parPage = taille === 'auto' ? auto : taille;
+  const pages = Math.max(1, Math.ceil(liste.length / parPage));
+  const courante = Math.min(page, pages);
+  return { pages, courante, visibles: liste.slice((courante - 1) * parPage, courante * parPage) };
 }
 
 // Taille de page et numéros proches du début, de la page et de la fin
-export function PaginationAller({ page, pages, setPage, taille, tailles, setTaille, auto, children }: {
-  page: number; pages: number; setPage: (p: number) => void; taille: number | 'auto'; tailles: number[]; setTaille: (t: number | 'auto') => void; auto: number; children?: React.ReactNode;
+export function PaginationAller({ page, pages, setPage, taille, tailles, setTaille, auto, libelle = 'Lignes par page', children }: {
+  page: number; pages: number; setPage: (p: number) => void; taille: number | 'auto'; tailles: number[]; setTaille: (t: number | 'auto') => void; auto: number; libelle?: string; children?: React.ReactNode;
 }) {
   const [aller, setAller] = useState('');
   const numeros = [...new Set([1, 2, 3, page - 1, page, page + 1, pages - 2, pages - 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
   const allerA = () => {
-    const n = Number(aller);
-    if (Number.isInteger(n) && n >= 1 && n <= pages) setPage(n);
+    if (aller) setPage(Math.min(Math.max(1, Number(aller)), pages));
     setAller('');
   };
   // Le premier trou devient le champ « … », les suivants un simple « … »
@@ -195,7 +147,7 @@ export function PaginationAller({ page, pages, setPage, taille, tailles, setTail
   });
   return (
     <div className="pagination">
-      <select aria-label="Lignes par page" value={String(taille)} onChange={(e) => setTaille(e.target.value === 'auto' ? 'auto' : Number(e.target.value))}>
+      <select aria-label={libelle} value={String(taille)} onChange={(e) => setTaille(e.target.value === 'auto' ? 'auto' : Number(e.target.value))}>
         <option value="auto">auto ({auto})</option>
         {tailles.map((t) => <option key={t} value={t}>{t}</option>)}
       </select>
@@ -208,3 +160,31 @@ export function PaginationAller({ page, pages, setPage, taille, tailles, setTail
     </div>
   );
 }
+
+// Une file lue page par page, relue toutes les 5 s, avec filtres et sélection
+export function useFileServeur<E extends { page: number; pages: number }, F extends Record<string, string>>({ section, nom, chemin, filtres: depart, autoDepart }: {
+  section: string; nom: string; chemin: string; filtres: F; autoDepart: number;
+}) {
+  const [filtres, poserFiltres] = useState(() => repris<F>(`${section}:filtres`, depart));
+  const { page, setPage, taille, setTaille, auto, setAuto } = usePagination(section, autoDepart);
+  useGarder(section, { filtres });
+  const [selection, setSelection] = useState<Set<string>>(() => new Set());
+  // L'API lit au moins 10 lignes ; en « auto », le défileur garde le surplus
+  const adresse = `${chemin}?${new URLSearchParams({ ...filtres, page: String(page), taille: String(taille === 'auto' ? Math.max(10, auto) : taille) })}`;
+  const { lu, erreur, relire } = useLecture<E>(section, nom, adresse, (l) => {
+    if (l.page > l.pages) setPage(l.pages);
+  });
+  useSondage(relire, 5000, true, adresse);
+  return {
+    lu, erreur, relire, filtres, page, setPage, taille, auto, setAuto, selection, setSelection,
+    setFiltres: (f: F) => {
+      poserFiltres(f);
+      setPage(1);
+    },
+    setTaille: (t: number | 'auto') => {
+      setTaille(t);
+      setPage(1);
+    },
+  };
+}
+export type FileServeur<E extends { page: number; pages: number }, F extends Record<string, string>> = ReturnType<typeof useFileServeur<E, F>>;

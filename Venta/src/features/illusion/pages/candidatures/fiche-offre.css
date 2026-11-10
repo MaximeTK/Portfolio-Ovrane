@@ -39,8 +39,6 @@
 .ov .actions-ajout{display:flex;justify-content:flex-end;gap:22px;margin-top:6px}
 
 /* Thèmes plats : avis teintés, textes seconds lisibles, suivi par jetons. */
-.ov.trame .avis-fiche{padding:8px 12px;border-left:0;border-radius:8px;background:var(--neutre-doux);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.trame .avis-fiche.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 .ov.trame .fiche-offre .f-meta .lien-d{font-size:.875rem}
 .ov.trame .fiche-offre .refus,.ov.trame .saisies-f .refus{color:var(--erreur)}
 .ov.trame .fiche-offre .cle-offre .mono{font-size:.75rem;color:var(--texte-2)}

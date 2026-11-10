@@ -17,8 +17,11 @@ const CIBLES: RedirectCible[] = ['cvdesign', 'cv', 'linkedin', 'github', 'portfo
 export const JETON_COOKIE = 'ovrane_jeton';
 
 /** Jeton d'une candidature : 10 caractères [a-z0-9], chemin en minuscules */
+const FORMAT_JETON = '[a-z0-9]{10}';
+const JETON = new RegExp(`^${FORMAT_JETON}$`);
+
 export function isValidJeton(value: unknown): value is string {
-  return typeof value === 'string' && /^[a-z0-9]{10}$/.test(value);
+  return typeof value === 'string' && JETON.test(value);
 }
 
 /** Cible et jeton éventuel d'un chemin en minuscules, null hors lien suivi. */
@@ -26,6 +29,6 @@ export function parseRedirectPath(path: string): { cible: RedirectCible; jeton: 
   const cible = CIBLES.find((c) => path.includes(`redirect${c}`));
   if (!cible) return null;
   // Le jeton suit le mot-clé ; tout autre suffixe garde l'ancien comportement
-  const jeton = path.match(new RegExp(`redirect${cible}/([a-z0-9]{10})(?:/|$)`))?.[1] ?? null;
+  const jeton = path.match(new RegExp(`redirect${cible}/(${FORMAT_JETON})(?:/|$)`))?.[1] ?? null;
   return { cible, jeton };
 }

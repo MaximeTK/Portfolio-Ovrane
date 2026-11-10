@@ -1,6 +1,7 @@
 'use client';
 
-import { ETIQUETTE, Verre, allerA } from './ProjectPage';
+import { ETIQUETTE, Info, PageSite, allerA } from './elements';
+import { Verre } from '@/features/fenetres/Verre';
 
 const CONTACT = 'maxime.thiong-kay@proton.me';
 const MAJ = '30 octobre 2026';
@@ -69,35 +70,38 @@ const DESTINATAIRES = [
 
 const LIEN = 'underline decoration-white/40 underline-offset-2 hover:decoration-white';
 const TEXTE = 'max-w-[68ch] leading-relaxed text-white/80';
+const MAIL = <a className={LIEN} href={`mailto:${CONTACT}`}>{CONTACT}</a>;
+
+// Une rubrique de la page : son ancre, son titre, son contenu
+function RubriqueLegale({ id, titre, children }: { id: string; titre: string; children: React.ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-24 border-t border-white/10 py-10">
+      <h2 className="text-2xl font-semibold tracking-tight">{titre}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Code({ children }: { children: React.ReactNode }) {
+  return <code className="rounded bg-white/10 px-1 text-[0.9em]">{children}</code>;
+}
 
 export function LegalPage() {
   return (
-      <article aria-labelledby="legal-titre" className="mx-auto max-w-4xl px-4 pb-24 pt-28 font-sans text-white md:px-8">
-        <p className={ETIQUETTE}>Annexe · mise à jour le {MAJ}</p>
-        <h1 id="legal-titre" className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">Informations légales</h1>
+      <PageSite id="legal-titre" etiquette={<>Annexe · mise à jour le {MAJ}</>} titre="Informations légales">
         <p className={`mt-4 ${TEXTE}`}>Qui édite ce site, ce qu&apos;il garde de votre visite, et comment le faire effacer.</p>
 
-        <nav aria-label="Sommaire" className="mt-8 flex flex-wrap gap-2">
+        <nav aria-label="Sommaire" className="mb-10 mt-8 flex flex-wrap gap-2">
           {SECTIONS.map((s) => (
             <button key={s.id} type="button" onClick={() => allerA(`legal-${s.id}`)} className="rounded-full border border-white/15 bg-black/30 px-3 py-1.5 text-xs text-white/75 transition hover:border-white/40 hover:text-white">{s.titre}</button>
           ))}
         </nav>
 
-        <section id="legal-mentions" className="scroll-mt-24 border-t border-white/10 py-10 mt-10">
-          <h2 className="text-2xl font-semibold tracking-tight">Mentions légales</h2>
+        <RubriqueLegale id="legal-mentions" titre="Mentions légales">
           <dl className="mt-6 grid gap-6 sm:grid-cols-2">
-            <div>
-              <dt className={ETIQUETTE}>Éditeur</dt>
-              <dd className="mt-1 text-white/85">Maxime Thiong-kay, particulier. Site personnel édité à titre non professionnel.</dd>
-            </div>
-            <div>
-              <dt className={ETIQUETTE}>Directeur de la publication</dt>
-              <dd className="mt-1 text-white/85">Maxime Thiong-kay</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className={ETIQUETTE}>Contact</dt>
-              <dd className="mt-1 text-white/85"><a className={LIEN} href={`mailto:${CONTACT}`}>{CONTACT}</a></dd>
-            </div>
+            <Info libelle="Éditeur" classeValeur="text-white/85">Maxime Thiong-kay, particulier. Site personnel édité à titre non professionnel.</Info>
+            <Info libelle="Directeur de la publication" classeValeur="text-white/85">Maxime Thiong-kay</Info>
+            <Info libelle="Contact" className="sm:col-span-2" classeValeur="text-white/85">{MAIL}</Info>
           </dl>
           <h3 className={`${ETIQUETTE} mt-8`}>Hébergement</h3>
           <ul className="mt-3 grid gap-3 md:grid-cols-3">
@@ -110,12 +114,11 @@ export function LegalPage() {
               </Verre>
             ))}
           </ul>
-        </section>
+        </RubriqueLegale>
 
-        <section id="legal-donnees" className="scroll-mt-24 border-t border-white/10 py-10">
-          <h2 className="text-2xl font-semibold tracking-tight">Données personnelles</h2>
+        <RubriqueLegale id="legal-donnees" titre="Données personnelles">
           <p className={`mt-4 ${TEXTE}`}>
-            Le responsable du traitement est Maxime Thiong-kay (<a className={LIEN} href={`mailto:${CONTACT}`}>{CONTACT}</a>).
+            Le responsable du traitement est Maxime Thiong-kay ({MAIL}).
             Aucune donnée n&apos;est vendue ni utilisée pour de la publicité.
           </p>
           <div className="mt-6 space-y-3">
@@ -123,10 +126,10 @@ export function LegalPage() {
               <Verre as="article" key={t.titre} className="p-5">
                 <h3 className="font-semibold text-white">{t.titre}</h3>
                 <dl className="mt-3 grid gap-x-6 gap-y-3 text-sm leading-relaxed sm:grid-cols-2">
-                  <div className="sm:col-span-2"><dt className={ETIQUETTE}>Données</dt><dd className="mt-1 text-white/80">{t.donnees}</dd></div>
-                  <div><dt className={ETIQUETTE}>Pourquoi</dt><dd className="mt-1 text-white/80">{t.pourquoi}</dd></div>
-                  <div><dt className={ETIQUETTE}>Base légale</dt><dd className="mt-1 text-white/80">{t.base}</dd></div>
-                  <div className="sm:col-span-2"><dt className={ETIQUETTE}>Conservation</dt><dd className="mt-1 text-white/80">{t.duree}</dd></div>
+                  <Info libelle="Données" className="sm:col-span-2" classeValeur="text-white/80">{t.donnees}</Info>
+                  <Info libelle="Pourquoi" classeValeur="text-white/80">{t.pourquoi}</Info>
+                  <Info libelle="Base légale" classeValeur="text-white/80">{t.base}</Info>
+                  <Info libelle="Conservation" className="sm:col-span-2" classeValeur="text-white/80">{t.duree}</Info>
                 </dl>
               </Verre>
             ))}
@@ -144,25 +147,23 @@ export function LegalPage() {
           <h3 className={`${ETIQUETTE} mt-8`}>Vos droits</h3>
           <p className={`mt-3 ${TEXTE}`}>
             Vous pouvez accéder à vos données, les corriger, les faire effacer, en limiter l&apos;usage, vous y opposer ou les récupérer :
-            écrivez à <a className={LIEN} href={`mailto:${CONTACT}`}>{CONTACT}</a>, réponse sous un mois. Si la réponse ne vous satisfait pas,
+            écrivez à {MAIL}, réponse sous un mois. Si la réponse ne vous satisfait pas,
             vous pouvez saisir la <a className={LIEN} href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">CNIL</a>.
           </p>
-        </section>
+        </RubriqueLegale>
 
-        <section id="legal-traceurs" className="scroll-mt-24 border-t border-white/10 py-10">
-          <h2 className="text-2xl font-semibold tracking-tight">Traceurs</h2>
+        <RubriqueLegale id="legal-traceurs" titre="Traceurs">
           <ul className={`mt-4 list-disc space-y-2 pl-5 ${TEXTE}`}>
-            <li>Un cookie de session, <code className="rounded bg-white/10 px-1 text-[0.9em]">ovrane_session</code>, illisible par les scripts de la page, garde votre visite : sans lui, la conversation ne peut pas reprendre.</li>
-            <li>Un cookie de session, <code className="rounded bg-white/10 px-1 text-[0.9em]">ovrane_jeton</code>, n&apos;est posé que si vous arrivez par le lien d&apos;une de mes candidatures : il sert à vous accueillir en conséquence.</li>
-            <li>Un cookie de sécurité, <code className="rounded bg-white/10 px-1 text-[0.9em]">ovrane_appareil</code>, illisible par les scripts de la page, n&apos;est posé qu&apos;après une connexion à un compte et dure un an : il signale un appareil déjà connu, pour que des essais de mot de passe faits ailleurs ne bloquent pas votre connexion ici. Il ne contient que l&apos;identifiant interne du compte, signé.</li>
+            <li>Un cookie de session, <Code>ovrane_session</Code>, illisible par les scripts de la page, garde votre visite : sans lui, la conversation ne peut pas reprendre.</li>
+            <li>Un cookie de session, <Code>ovrane_jeton</Code>, n&apos;est posé que si vous arrivez par le lien d&apos;une de mes candidatures : il sert à vous accueillir en conséquence.</li>
+            <li>Un cookie de sécurité, <Code>ovrane_appareil</Code>, illisible par les scripts de la page, n&apos;est posé qu&apos;après une connexion à un compte et dure un an : il signale un appareil déjà connu, pour que des essais de mot de passe faits ailleurs ne bloquent pas votre connexion ici. Il ne contient que l&apos;identifiant interne du compte, signé.</li>
             <li>Le stockage local de votre navigateur garde vos réglages d&apos;affichage (voix coupée ou non, teinte des boîtes) et, si vous utilisez Illusion, les brouillons de ses formulaires, rangés sous votre compte et effacés à la déconnexion.</li>
             <li>Aucun cookie publicitaire, aucune mesure d&apos;audience tierce (ni Google Analytics, ni équivalent).</li>
           </ul>
           <p className={`mt-4 ${TEXTE}`}>Pour tout effacer, supprimez les données de ce site dans les réglages de votre navigateur.</p>
-        </section>
+        </RubriqueLegale>
 
-        <section id="legal-ia" className="scroll-mt-24 border-t border-white/10 py-10">
-          <h2 className="text-2xl font-semibold tracking-tight">Intelligence artificielle</h2>
+        <RubriqueLegale id="legal-ia" titre="Intelligence artificielle">
           <ul className={`mt-4 list-disc space-y-2 pl-5 ${TEXTE}`}>
             <li>Sur l&apos;accueil, vous échangez avec une intelligence artificielle, pas avec moi.</li>
             <li>Ses réponses sont générées automatiquement par un modèle d&apos;OpenAI à partir de mes contenus. Elles peuvent contenir des erreurs : les pages projets et mon CV font foi.</li>
@@ -171,16 +172,15 @@ export function LegalPage() {
             <li>Un appel n&apos;est transcrit qu&apos;après en avoir prévenu votre interlocuteur ; seul le texte est gardé, jamais le son.</li>
             <li>Ne partagez pas d&apos;informations sensibles dans la conversation.</li>
           </ul>
-        </section>
+        </RubriqueLegale>
 
-        <section id="legal-propriete" className="scroll-mt-24 border-t border-white/10 py-10">
-          <h2 className="text-2xl font-semibold tracking-tight">Propriété intellectuelle</h2>
+        <RubriqueLegale id="legal-propriete" titre="Propriété intellectuelle">
           <p className={`mt-4 ${TEXTE}`}>
             Les textes, maquettes, visuels et le code de ce site appartiennent à Maxime Thiong-kay, sauf mention contraire ; toute reproduction
             demande son accord. Hikup est un projet d&apos;équipe Epitech : ses visuels appartiennent à leurs auteurs. Les captures d&apos;applications
             tierces, comme Proloquo2Go, restent la propriété de leurs éditeurs et ne sont reproduites qu&apos;à des fins d&apos;analyse.
           </p>
-        </section>
-      </article>
+        </RubriqueLegale>
+      </PageSite>
   );
 }

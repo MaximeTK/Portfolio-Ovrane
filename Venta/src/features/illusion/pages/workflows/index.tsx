@@ -4,17 +4,23 @@ import './workflows.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler, ErreurIllusion } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Activite } from '../../activite/Activite';
+
 import { useSondage } from '../../activite/sondage';
-import { Dock, Fenetre, usePanneau, useVues } from '../../dock/Dock';
+import { Fenetre, usePanneau, useVues } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin, Panneau } from '../../dock/Panneau';
-import { nomProfil } from '../../partage/FicheOffre';
+import { envoyerSignalement } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import {
   ongletChamp, ongletComparaison, ongletIncomplet, ongletRejeu, ongletVerification, useOngletRejouer,
   type Champ, type DemandeRejeu, type EtatRejeu, type Incomplet, type Signalement, type Verification,
 } from './panneaux';
-import { ICONES_COMMUNES, TRAIT, message, useAvisBref, useEchap, useClicDehors, type Avis } from '../commun';
+import { useEchap, useGeste } from '../commun';
+import { MenuTenu, OptionMenu } from '../../elements/Menu';
+import { Action } from '../../elements/Action';
+import { ICONES } from '../../elements/icones';
+import { useAvis, type Dire } from '../../elements/Avis';
+import { message, nomProfil } from '../../elements/format';
+import { PageDock } from '../../activite/PageDock';
 
 // Arbre d'un site comme /workflows/site le rend, réponses par profil.
 type Valeur = { fiche?: string; avec?: string; format?: string; ia?: unknown; reponse?: unknown; fixe?: string; cv?: unknown; lettre?: unknown } | null;
@@ -34,11 +40,7 @@ type Contexte = { site: string; cle: string; reponses: Carte['reponses']; nomPag
 // Le rejeu est relu chaque seconde tant qu'il tourne.
 const PAS_REJEU_MS = 1000;
 
-const ICONES = {
-  ...ICONES_COMMUNES,
-  portee: <svg {...TRAIT} strokeWidth={2.4}><path d="m6 9 6 6 6-6" /></svg>,
-  bouclier: <svg {...TRAIT}><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" /><path d="m8.5 12 2.5 2.5 4.5-5" /></svg>,
-};
+
 
 // D'où une ligne tire sa valeur et la cible qu'elle vise.
 function source(v: Valeur): string {
@@ -67,9 +69,9 @@ export default function PageWorkflows({ compte }: ProprietesPage) {
   const [verif, setVerif] = useState(() => repris<Verification | null>('workflows:verif', null));
   useGarder('workflows', { recherche, adresse, carte, rang, rejeu, pasLu, signales, verif });
   const [erreurVerif, setErreurVerif] = useState('');
-  const [occupe, setOccupe] = useState(false);
-  const [avis, setAvis] = useState<Avis>(null);
-  const erreur = (e: unknown) => setAvis({ texte: message(e), erreur: true });
+  const { dire, vue: avis } = useAvis('avis-wf', true);
+  const { occupe, geste: agir } = useGeste((t) => dire(t, true));
+  const erreur = (e: unknown) => dire(message(e), true);
 
   // Arbre d'un site ou d'une offre ; `garder` reste sur la page.
   const afficher = useCallback(async (voulue: string, garder = false) => {
@@ -141,87 +143,67 @@ export default function PageWorkflows({ compte }: ProprietesPage) {
       erreur(e);
     }
   };
-  const ordonner = async (ordre: 'suivant' | 'auto' | 'arreter') => {
-    setOccupe(true);
-    try {
-      setRejeu(await appeler<EtatRejeu>('/workflows/rejeu/ordre', { methode: 'POST', corps: { ordre } }));
-    } catch (e) {
-      erreur(e);
-    }
-    setOccupe(false);
-  };
-  const conclure = async (geste: 'fusionner' | 'remplacer' | 'annuler') => {
-    setOccupe(true);
-    try {
-      const e = await appeler<EtatRejeu>('/workflows/rejeu/conclure', { methode: 'POST', corps: { geste } });
-      setRejeu(e);
-      setAvis({ texte: { fusionner: 'Workflow refait fusionné à celui en base.', remplacer: 'Workflow refait mis à la place de celui en base.', annuler: 'Workflow refait annulé : celui en base ne bouge pas.' }[geste] });
-      // Rangé dans la base, le workflow refait se relit ; annulé, rien n'a bougé
-      if (geste !== 'annuler' && e.url) await afficher(e.url, true);
-    } catch (e) {
-      erreur(e);
-    }
-    setOccupe(false);
-  };
+  const ordonner = (ordre: 'suivant' | 'auto' | 'arreter') => agir(async () => {
+    setRejeu(await appeler<EtatRejeu>('/workflows/rejeu/ordre', { methode: 'POST', corps: { ordre } }));
+  });
+  const conclure = (geste: 'fusionner' | 'remplacer' | 'annuler') => agir(async () => {
+    const e = await appeler<EtatRejeu>('/workflows/rejeu/conclure', { methode: 'POST', corps: { geste } });
+    setRejeu(e);
+    dire({ fusionner: 'Workflow refait fusionné à celui en base.', remplacer: 'Workflow refait mis à la place de celui en base.', annuler: 'Workflow refait annulé : celui en base ne bouge pas.' }[geste]);
+    // Rangé dans la base, le workflow refait se relit ; annulé, rien n'a bougé
+    if (geste !== 'annuler' && e.url) await afficher(e.url, true);
+  });
   // Un signalement part en attente de vérification : rien ne change avant
   const signaler = async (n: number) => {
     const c = (rejeu.champs ?? [])[n];
     if (!c) return;
     try {
-      await appeler('/signalements', { methode: 'POST', corps: { site: c.site ?? '', ligne: c.ligne ?? '', page: c.page ?? '', question: c.question ?? '', source: c.source ?? {} } });
+      const texte = await envoyerSignalement(c);
       setSignales((s) => new Set(s).add(n));
-      setAvis({ texte: 'Signalement envoyé : il sera vérifié avant toute correction.' });
+      dire(texte);
       if (admin) void lireVerif();
     } catch (e) {
       erreur(e);
     }
   };
-  const rejeter = async (s: Signalement) => {
-    setOccupe(true);
-    try {
-      await appeler(`/signalements/${encodeURIComponent(s.cle)}/rejeter`, { methode: 'POST' });
-      setAvis({ texte: 'Signalement rejeté : la ligne reste telle quelle.' });
-      await lireVerif();
-    } catch (e) {
-      erreur(e);
-    }
-    setOccupe(false);
-  };
+  const rejeter = (s: Signalement) => agir(async () => {
+    await appeler(`/signalements/${encodeURIComponent(s.cle)}/rejeter`, { methode: 'POST' });
+    dire('Signalement rejeté : la ligne reste telle quelle.');
+    await lireVerif();
+  });
   // Un signalement validé pose un champ du profil de tous ; la réponse tombe.
   const valider = async (s: Signalement, champ: Champ) => {
     const fait = await appeler<{ champ: { libelle: string }; reponses_caduques: number }>(`/signalements/${encodeURIComponent(s.cle)}/valider`, { methode: 'POST', corps: champ });
-    setAvis({ texte: `La ligne pose désormais « ${fait.champ.libelle} » ; ${fait.reponses_caduques} réponse(s) caduque(s).` });
+    dire(`La ligne pose désormais « ${fait.champ.libelle} » ; ${fait.reponses_caduques} réponse(s) caduque(s).`);
     await lireVerif();
     if (carte?.site === s.site) await afficher(carte.site, true);
   };
 
   const rejeuIci = !!rejeu.url && (!carte || rejeu.site === carte.site);
   return (
-    <Dock id="workflows" principal="arbre" fenetres={{ arbre: { mini: [470, 260] } }} panneau={null}>
-      <Activite />
+    <PageDock id="workflows" principal="arbre" fenetres={{ arbre: { mini: [470, 260] } }} panneau={null}>
       <FenetreArbre admin={admin} recherche={recherche} setRecherche={setRecherche} afficher={afficher} carte={carte} erreurCarte={erreurCarte}
         rang={rang} setRang={setRang} nbVerif={(verif?.signalements.length ?? 0) + (verif?.donnees.length ?? 0)} rejeuEnCours={rejeuIci && rejeu.en_cours}
-        avis={avis} setAvis={setAvis} />
+        avis={avis} dire={dire} />
       <PanneauWorkflows admin={admin} adresse={adresse} carte={carte} afficher={afficher} rejeu={rejeu} setRejeu={setRejeu} rejeuIci={rejeuIci}
         setPasLu={setPasLu} occupe={occupe} signales={signales} lirePas={(s) => void lirePas(s)} ordonner={(o) => void ordonner(o)}
         signaler={(n) => void signaler(n)} conclure={conclure} verif={verif} erreurVerif={erreurVerif} rejeter={(s) => void rejeter(s)} valider={valider} />
-    </Dock>
+    </PageDock>
   );
 }
 
 type ProprietesArbre = {
   admin: boolean; recherche: string; setRecherche: (r: string) => void; afficher: (a: string, garder?: boolean) => Promise<void>;
   carte: Carte | null; erreurCarte: string; rang: number; setRang: (r: number) => void; nbVerif: number; rejeuEnCours: boolean;
-  avis: Avis; setAvis: (a: Avis) => void;
+  avis: React.ReactNode; dire: Dire;
 };
 
 // Fenêtre principale : recherche, résumé, page choisie et arbre.
-function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurCarte, rang, setRang, nbVerif, rejeuEnCours, avis, setAvis }: ProprietesArbre) {
+function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurCarte, rang, setRang, nbVerif, rejeuEnCours, avis, dire }: ProprietesArbre) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const [menu, setMenu] = useState(false);
   const [ouverte, setOuverte] = useState(false);
   const [retrait, setRetrait] = useState<Retrait | null>(null);
-  const [occupe, setOccupe] = useState(false);
   const champ = useRef<HTMLInputElement>(null);
 
   // Échap ferme le menu, sinon la confirmation, sinon le panneau
@@ -230,20 +212,17 @@ function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurC
     else if (retrait) setRetrait(null);
     else fermer();
   });
-  useAvisBref(avis, setAvis);
 
   const retirer = async () => {
     if (!retrait || !carte) return;
-    setOccupe(true);
     try {
       await appeler('/workflows/voie/retirer', { methode: 'POST', corps: retrait });
-      setAvis({ texte: "Voie retirée de l'arbre : si le site la remontre, l'IA la réapprendra." });
+      dire("Voie retirée de l'arbre : si le site la remontre, l'IA la réapprendra.");
       setRetrait(null);
       await afficher(carte.site, true);
     } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
+      dire(message(e), true);
     }
-    setOccupe(false);
   };
 
   const page = carte?.arbres[rang];
@@ -272,19 +251,17 @@ function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurC
         <span className="espace" />
         <div className="actions" role="group" aria-label="Actions">
           {admin && (
-            <button type="button" className={`action${onglet === 'verification' || onglet === 'champ' ? ' allume' : ''}`} title="Vérification" aria-haspopup="dialog"
-              aria-expanded={onglet === 'verification'} onClick={() => ouvrir('verification')}>
-              <span className="ico">{ICONES.bouclier}</span><span className="txt">Vérification</span>{nbVerif > 0 && <span className="compteur">{nbVerif}</span>}<MarqueAdmin />
-            </button>
+            <Action allume={onglet === 'verification' || onglet === 'champ'} icone={ICONES.bouclier} title="Vérification" aria-haspopup="dialog" aria-expanded={onglet === 'verification'} onClick={() => ouvrir('verification')}><span className="txt">Vérification</span>{nbVerif > 0 && <span className="compteur">{nbVerif}</span>}<MarqueAdmin />
+            </Action>
           )}
-          <button type="button" className="action plein" aria-haspopup="dialog" aria-expanded={onglet === 'rejouer' || onglet === 'rejeu'} onClick={() => ouvrir(rejeuEnCours ? 'rejeu' : 'rejouer')}>
-            Rejouer<span className="ico">{ICONES.jouer}</span>
-          </button>
+          <Action plein iconeApres={ICONES.jouer} aria-haspopup="dialog" aria-expanded={onglet === 'rejouer' || onglet === 'rejeu'} onClick={() => ouvrir(rejeuEnCours ? 'rejeu' : 'rejouer')}>
+            Rejouer
+          </Action>
         </div>
       </div>
       {retrait && (
-        <Confirmer question="Retirer cette voie ?" detail="Si le site la remontre, l'IA la réapprendra." action="Retirer" occupe={occupe}
-          onAnnuler={() => setRetrait(null)} onConfirmer={() => void retirer()} />
+        <Confirmer question="Retirer cette voie ?" detail="Si le site la remontre, l'IA la réapprendra." action="Retirer"
+          onAnnuler={() => setRetrait(null)} onConfirmer={retirer} />
       )}
       <div className="arbre">
         {page && ctx ? (
@@ -297,7 +274,7 @@ function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurC
             : carte ? 'Aucune page apprise pour ce site.' : "Cherchez un site, ou collez l'adresse d'une de ses offres : son arbre s'affiche ici, page par page."}</p>
         )}
       </div>
-      {avis && <p className={`avis-wf${avis.erreur ? ' erreur' : ''}`} role={avis.erreur ? 'alert' : 'status'} onClick={() => setAvis(null)}>{avis.texte}</p>}
+      {avis}
     </Fenetre>
   );
 }
@@ -306,24 +283,16 @@ function FenetreArbre({ admin, recherche, setRecherche, afficher, carte, erreurC
 function MenuPages({ carte, rang, ouvert, basculer, fermer, choisir }: {
   carte: Carte; rang: number; ouvert: boolean; basculer: () => void; fermer: () => void; choisir: (i: number) => void;
 }) {
-  const hote = useClicDehors(ouvert, fermer);
   const n = carte.arbres.length;
   return (
-    <div ref={hote} className="menu-hote filtre-hote">
-      <button type="button" className="filtre actif" aria-haspopup="listbox" aria-expanded={ouvert} aria-label={`Page : ${rang + 1} sur ${n}`} title={carte.arbres[rang]?.page} onClick={basculer}>
-        <span><span className="lib">Page</span>{rang + 1} / {n}</span>{ICONES.chevron}
-      </button>
-      {ouvert && (
-        <div className="menu verre" role="listbox" aria-label="Pages du site">
-          <span className="verre-halos" aria-hidden="true" />
-          {carte.arbres.map((a, i) => (
-            <button key={a.cle} type="button" role="option" aria-selected={i === rang} className={`menu-option${i === rang ? ' actif' : ''}`} onClick={() => choisir(i)}>
-              <span className="num">{i + 1}</span><span className="adr">{a.cle}</span><span className="compteur">{a.candidatures}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <MenuTenu ouvert={ouvert} basculer={basculer} fermer={fermer} classeHote="filtre-hote" actif lib="Page" valeur={`${rang + 1} / ${n}`} titre="Pages du site" icone={ICONES.chevron}
+      aria-label={`Page : ${rang + 1} sur ${n}`} title={carte.arbres[rang]?.page}>
+      {carte.arbres.map((a, i) => (
+        <OptionMenu key={a.cle} actif={i === rang} onClick={() => choisir(i)}>
+          <span className="num">{i + 1}</span><span className="adr">{a.cle}</span><span className="compteur">{a.candidatures}</span>
+        </OptionMenu>
+      ))}
+    </MenuTenu>
   );
 }
 

@@ -6,11 +6,14 @@ import { appeler, telecharger } from '../../api';
 import { usePanneau, useVues } from '../../dock/Dock';
 import { AuPied, Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import { ongletAjoutCompetence, ongletFicheOffre, type DemandeAjout } from '../../partage/FicheOffre';
-import { Couleurs, ICONES, ListeFichiers, RELAIS, court, poids, useFichiers, type Fichier } from './commun';
-import { MODELE_VIDE, nomFichier, quand, sansJson, type Documents, type Formulaire, type Modele, type NomAtelier, type Parametres, type Production } from './index';
-import { message, duree } from '../commun';
+import { Couleurs, FONDS, ListeFichiers, RELAIS, court, poids, useFichiers, type Fichier } from './commun';
+import { MODELE_VIDE, type Documents, type Formulaire, type Modele, type NomAtelier, type Parametres, type Production } from './index';
+import { duree } from '../commun';
+import { Action } from '../../elements/Action';
+import { Champ, Interrupteur, ChampSaisie, ChampListe, ChampZone, SectionFiche, LibelleValeur } from '../../elements/Champ';
+import { ICONES } from '../../elements/icones';
+import { message, nomFichier, quand, sansJson } from '../../elements/format';
 
-const FONDS = ['', 'aplat', 'degrade', 'photo', 'photo-teintee', 'blanc'];
 const LANGUES = ['fr', 'en', 'de', 'es', 'it', 'pt', 'nl'];
 const STATUTS: Record<string, string> = {
   POSTULEE: 'Envoyée', PRETE: 'Prête, pas encore déposée', A_LA_MAIN: 'À faire à la main', ECHEC: 'Échec', INADAPTEE: 'Inadaptée',
@@ -85,7 +88,6 @@ export function PanneauDocuments({ d }: { d: Documents }) {
 function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (dm: DemandeAjout) => void }) {
   const { ouvrir, fermer } = usePanneau();
   const [confirmer, setConfirmer] = useState(false);
-  const [occupe, setOccupe] = useState(false);
   const lien = `${RELAIS}/productions/${p.candidature}/${p.nature}`;
   const piece = p.nature === 'cv' ? 'CV' : 'Lettre';
   const exporter = () => {
@@ -103,24 +105,20 @@ function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (
     ouvrir(nom === 'constructeur' ? 'nouveau-cv' : 'nouvelle-lettre');
   };
   const supprimer = async () => {
-    setOccupe(true);
     // La fiche supprime sa pièce, pas la sélection de la galerie
     if (await d.supprimer([p])) fermer();
-    setOccupe(false);
   };
   const tirage = ([['fond_mode', 'Fond'], ['fond_accent', 'Accent'], ['fond_famille', 'Police'], ['fond_structure', 'Structure'], ['fond_secondaire', 'Secondaire'], ['fond_photo', 'Photo']] as const)
     .filter(([c]) => p[c]);
   const ligne = ([c, lib]: (typeof tirage)[number]) => (
-    <li key={c}><span className="lib-champ">{lib}</span>
-      {c === 'fond_photo' ? <span className="d">{p[c] === 'True' ? 'oui' : 'non'}</span>
-        : hexa(p[c]) ? <span className="d mono"><i className="pastille petite" style={{ background: p[c] }} />{p[c]}</span> : <span className="d">{p[c]}</span>}
-    </li>
+    <LibelleValeur key={c} as="li" libelle={lib}>{c === 'fond_photo' ? <span className="d">{p[c] === 'True' ? 'oui' : 'non'}</span>
+        : hexa(p[c]) ? <span className="d mono"><i className="pastille petite" style={{ background: p[c] }} />{p[c]}</span> : <span className="d">{p[c]}</span>}</LibelleValeur>
   );
   const donne = `${STATUTS[p.statut] ?? p.statut}${p.statut === 'POSTULEE' && !p.reponse ? ' · pas encore de réponse' : ''}`;
   return (
     <>
       {confirmer && (
-        <Confirmer question={p.nature === 'cv' ? 'Supprimer ce CV ?' : 'Supprimer cette lettre ?'} occupe={occupe} action="Supprimer"
+        <Confirmer question={p.nature === 'cv' ? 'Supprimer ce CV ?' : 'Supprimer cette lettre ?'} action="Supprimer"
           detail={p.offre_reelle ? 'Le fichier part, la candidature envoyée reste.' : "Bâti sans annonce : rien d'autre n'en dépend."}
           onAnnuler={() => setConfirmer(false)} onConfirmer={supprimer} />
       )}
@@ -136,16 +134,16 @@ function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (
           )}
           <div>
             <ul className="liste-f">
-              <li><span className="lib-champ">Pièce</span><span className="d">{piece} · <span className="mono" title={p.nom}>{p.nom}</span></span></li>
-              <li><span className="lib-champ">Poste</span><span className="d">{p.poste || '(sans intitulé)'}</span></li>
-              <li><span className="lib-champ">Entreprise</span><span className="d">{p.entreprise || '—'}</span></li>
-              <li><span className="lib-champ">Offre</span>{p.offre_reelle
+              <LibelleValeur as="li" libelle="Pièce" d>{piece} · <span className="mono" title={p.nom}>{p.nom}</span></LibelleValeur>
+              <LibelleValeur as="li" libelle="Poste" d>{p.poste || '(sans intitulé)'}</LibelleValeur>
+              <LibelleValeur as="li" libelle="Entreprise" d>{p.entreprise || '—'}</LibelleValeur>
+              <LibelleValeur as="li" libelle="Offre">{p.offre_reelle
                 ? <button type="button" className="d lien" aria-haspopup="dialog" data-ouvre="fiche-offre" data-objet={p.offre} onClick={() => ouvrir('fiche-offre', p.offre)}>Voir la fiche de poste</button>
-                : <span className="d">aucune annonce : bâti sans lien</span>}</li>
-              <li><span className="lib-champ">Profil</span><span className="d mono">{nomFichier(p.profil_chemin || p.profil) || '—'}</span></li>
-              <li><span className="lib-champ">Fabriquée le</span><span className="d">{quand(p.date)}{p.fabrication_s ? ` · en ${Math.round(p.fabrication_s)} s` : ''}</span></li>
-              <li><span className="lib-champ">Ce qu&apos;elle a donné</span><span className="d">{p.essai ? 'Essai de mise en page' : donne}
-                {p.reponse && <> · <span className="t-rep">{REPONSES[p.reponse] ?? p.reponse}</span></>}{p.liens_suivis ? ` · ${p.clics} clic(s) sur ses liens` : ''}</span></li>
+                : <span className="d">aucune annonce : bâti sans lien</span>}</LibelleValeur>
+              <LibelleValeur as="li" libelle="Profil"><span className="d mono">{nomFichier(p.profil_chemin || p.profil) || '—'}</span></LibelleValeur>
+              <LibelleValeur as="li" libelle="Fabriquée le" d>{quand(p.date)}{p.fabrication_s ? ` · en ${Math.round(p.fabrication_s)} s` : ''}</LibelleValeur>
+              <LibelleValeur as="li" libelle="Ce qu&apos;elle a donné" d>{p.essai ? 'Essai de mise en page' : donne}
+                {p.reponse && <> · <span className="t-rep">{REPONSES[p.reponse] ?? p.reponse}</span></>}{p.liens_suivis ? ` · ${p.clics} clic(s) sur ses liens` : ''}</LibelleValeur>
             </ul>
             {tirage.length > 0 && (
               <>
@@ -175,11 +173,11 @@ function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (
         )}
       </div>
       <AuPied>
-        <button type="button" className="action rouge gauche" onClick={() => setConfirmer(true)}><span className="ico">{ICONES.supprimer}</span>Supprimer</button>
-        <button type="button" className="action" title="Exporter les paramètres" onClick={exporter}><span className="ico">{ICONES.exporter}</span><span className="txt">Exporter les paramètres</span></button>
-        <button type="button" className="action plein" onClick={() => telecharger(`/productions/${p.candidature}/${p.nature}`).catch((e) => d.dire(message(e), true))}>
-          Télécharger<span className="ico">{ICONES.telecharger}</span>
-        </button>
+        <Action className="gauche" rouge icone={ICONES.supprimer} onClick={() => setConfirmer(true)}>Supprimer</Action>
+        <Action icone={ICONES.exporter} txt title="Exporter les paramètres" onClick={exporter}>Exporter les paramètres</Action>
+        <Action plein iconeApres={ICONES.telecharger} onClick={() => telecharger(`/productions/${p.candidature}/${p.nature}`).catch((e) => d.dire(message(e), true))}>
+          Télécharger
+        </Action>
       </AuPied>
     </>
   );
@@ -204,10 +202,7 @@ function useOngletFabrication(d: Documents, nom: NomAtelier): Onglet {
   };
   const id = (c: string) => `${nom}-${c}`;
   const bascule = (c: 'deja_postule' | 'essai' | 'silencieux', libelle: string, aide: string, admin = false, inactif = false) => (
-    <label className={`inter${inactif ? ' inactif' : ''}`} title={aide}>
-      <span>{libelle}{admin && <MarqueAdmin />}</span>
-      <input type="checkbox" checked={f[c]} disabled={inactif} onChange={(e) => changer({ [c]: e.target.checked } as Partial<Formulaire>)} />
-    </label>
+    <Interrupteur className={inactif ? 'inactif' : undefined} title={aide} libelle={<>{libelle}{admin && <MarqueAdmin />}</>} checked={f[c]} disabled={inactif} onChange={(e) => changer({ [c]: e.target.checked } as Partial<Formulaire>)} />
   );
   const options = (
     <>
@@ -225,34 +220,28 @@ function useOngletFabrication(d: Documents, nom: NomAtelier): Onglet {
     titre: cv ? 'Nouveau CV' : 'Nouvelle lettre',
     corps: (
       <form className="docs-f" aria-label={cv ? 'Nouveau CV' : 'Nouvelle lettre'} onSubmit={(e) => { e.preventDefault(); lancer(); }}>
-        <button type="button" className="action" onClick={reprendre}><span className="ico">{ICONES.reprendre}</span>Reprendre les paramètres {cv ? 'de la lettre' : 'du CV'}</button>
+        <Action icone={ICONES.reprendre} onClick={reprendre}>Reprendre les paramètres {cv ? 'de la lettre' : 'du CV'}</Action>
         <div className="section-f haut">
-          <div className="champ"><label htmlFor={id('url')} title="L'annonce est ouverte et lue : elle donne l'intitulé, l'employeur et les compétences qui taillent le dossier. Vide : le dossier vaut pour lui-même.">URL de l&apos;offre</label>
-            <input id={id('url')} className="saisie" type="url" placeholder="https://…/offre/12345" value={f.offre} onChange={(e) => changer({ offre: e.target.value })} /></div>
-          <div className="champ"><label htmlFor={id('ent')} title="Sert à nommer les fichiers ; n'apparaît pas sur le CV.">Entreprise</label>
-            <input id={id('ent')} className="saisie" value={f.entreprise} onChange={(e) => changer({ entreprise: e.target.value })} /></div>
-          <div className="champ"><label htmlFor={id('poste')} title="Repris en tête du CV. Vide : celui du profil.">Poste visé</label>
-            <input id={id('poste')} className="saisie" value={f.poste} onChange={(e) => changer({ poste: e.target.value })} /></div>
-          <div className="champ"><label htmlFor={id('profil')}>Profil du candidat *</label>
-            <select id={id('profil')} className="saisie" value={f.profil} required onChange={(e) => changer({ profil: e.target.value })}>
+          <ChampSaisie id={id('url')} titre="L'annonce est ouverte et lue : elle donne l'intitulé, l'employeur et les compétences qui taillent le dossier. Vide : le dossier vaut pour lui-même." libelle="URL de l&apos;offre" type="url" placeholder="https://…/offre/12345" value={f.offre} onChange={(e) => changer({ offre: e.target.value })} />
+          <ChampSaisie id={id('ent')} titre="Sert à nommer les fichiers ; n'apparaît pas sur le CV." libelle="Entreprise" value={f.entreprise} onChange={(e) => changer({ entreprise: e.target.value })} />
+          <ChampSaisie id={id('poste')} titre="Repris en tête du CV. Vide : celui du profil." libelle="Poste visé" value={f.poste} onChange={(e) => changer({ poste: e.target.value })} />
+          <ChampListe id={id('profil')} libelle="Profil du candidat *" value={f.profil} required onChange={(e) => changer({ profil: e.target.value })}>
               <option value="">— choisir un profil —</option>
               {d.profils.map((p) => <option key={p} value={p}>{sansJson(p)}</option>)}
-            </select></div>
+            </ChampListe>
           {cv ? (
-            <div className="champ"><span className="lib-champ">Palette du fond</span>
-              <Couleurs valeurs={f.palette} changer={(palette) => changer({ palette })} libelle="Palette du fond" />
-              <p className="aide-champ">Vide : celles de l&apos;identité de l&apos;entreprise.</p></div>
+            <Champ groupe libelle="Palette du fond" aide="Vide : celles de l&apos;identité de l&apos;entreprise.">
+              <Couleurs valeurs={f.palette} changer={(palette) => changer({ palette })} libelle="Palette du fond" /></Champ>
           ) : (
             <>
-              <div className="champ"><label htmlFor={id('langue')} title="Celle de l'offre : le corps, l'objet, la date et la formule s'y écrivent.">Langue de la lettre</label>
-                <select id={id('langue')} className="saisie" value={f.langue} onChange={(e) => changer({ langue: e.target.value })}>
+              <ChampListe id={id('langue')} titre="Celle de l'offre : le corps, l'objet, la date et la formule s'y écrivent." libelle="Langue de la lettre" value={f.langue} onChange={(e) => changer({ langue: e.target.value })}>
                   {LANGUES.map((l) => <option key={l} value={l}>{l}</option>)}
-                </select></div>
+                </ChampListe>
               {options}
             </>
           )}
         </div>
-        {cv && <div className="section-f"><h3>Options</h3>{options}</div>}
+        {cv && <SectionFiche titre="Options">{options}</SectionFiche>}
         {badge}
         <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
       </form>
@@ -260,14 +249,12 @@ function useOngletFabrication(d: Documents, nom: NomAtelier): Onglet {
     pied: (
       <>
         {cv && (
-          <button type="button" className="action" disabled={!!etat?.en_cours} title="Le même CV, mis en page pareil, sans son fond : le texte seul, en PNG transparent à 300 ppp. Rien n'entre en base ; le fichier se télécharge à la fin."
-            onClick={() => (motif ? d.dire(`Impossible de lancer : ${motif}.`, true) : void d.executer(nom, { transparent: true, essai: true }))}>
-            <span className="ico">{ICONES.image}</span>PNG transparent
-          </button>
+          <Action icone={ICONES.image} disabled={!!etat?.en_cours} title="Le même CV, mis en page pareil, sans son fond : le texte seul, en PNG transparent à 300 ppp. Rien n'entre en base ; le fichier se télécharge à la fin." onClick={() => (motif ? d.dire(`Impossible de lancer : ${motif}.`, true) : void d.executer(nom, { transparent: true, essai: true }))}>PNG transparent
+          </Action>
         )}
-        <button type="button" className="action plein" disabled={!etat?.en_cours && !!motif} title={!etat?.en_cours && motif ? `Impossible de lancer : ${motif}.` : undefined} onClick={lancer}>
-          {etat?.en_cours ? 'Arrêter' : 'Exécuter'}<span className="ico">{etat?.en_cours ? ICONES.arret : ICONES.fleche}</span>
-        </button>
+        <Action plein iconeApres={etat?.en_cours ? ICONES.arret : ICONES.fleche} disabled={!etat?.en_cours && !!motif} title={!etat?.en_cours && motif ? `Impossible de lancer : ${motif}.` : undefined} onClick={lancer}>
+          {etat?.en_cours ? 'Arrêter' : 'Exécuter'}
+        </Action>
       </>
     ),
   };
@@ -300,31 +287,27 @@ function useOngletReglages(d: Documents, actif: boolean): Onglet {
       <div className="docs-f" onKeyDown={(e) => {
         if (e.key === 'Enter' && (e.target as HTMLElement).matches('select') && change) enregistrer();
       }}>
-        <div className="section-f"><h3>CV</h3>
+        <SectionFiche titre="CV">
           <div className="grille-2">
-            <div className="champ"><label htmlFor="rg-fond" title="Reprend le fond imposé à tous les CV : vide, un tirage différent à chaque CV.">Fond</label>
-              <select id="rg-fond" className="saisie" value={brouillon.fond} onChange={(e) => setBrouillon({ ...brouillon, fond: e.target.value })}>
+            <ChampListe id="rg-fond" titre="Reprend le fond imposé à tous les CV : vide, un tirage différent à chaque CV." libelle="Fond" value={brouillon.fond} onChange={(e) => setBrouillon({ ...brouillon, fond: e.target.value })}>
                 {FONDS.map((f) => <option key={f} value={f}>{f || 'Défaut'}</option>)}
-              </select></div>
-            <div className="champ"><span className="lib-champ">Palette imposée</span>
-              <Couleurs valeurs={brouillon.palette} changer={(palette) => setBrouillon({ ...brouillon, palette })} libelle="Palette imposée" /></div>
+              </ChampListe>
+            <Champ groupe libelle="Palette imposée">
+              <Couleurs valeurs={brouillon.palette} changer={(palette) => setBrouillon({ ...brouillon, palette })} libelle="Palette imposée" /></Champ>
           </div>
-        </div>
-        <div className="section-f"><h3>Lettre</h3>
+        </SectionFiche>
+        <SectionFiche titre="Lettre">
           {d.admin && (
-            <div className="champ"><label htmlFor="rg-modele" title="Celui qui rédige les lettres. Vide : aucune rédaction, le gabarit suffit.">Modèle<MarqueAdmin /></label>
-              <select id="rg-modele" className="saisie" value={brouillon.modele} onChange={(e) => setBrouillon({ ...brouillon, modele: e.target.value })}>
+            <ChampListe id="rg-modele" titre="Celui qui rédige les lettres. Vide : aucune rédaction, le gabarit suffit." libelle={<>Modèle<MarqueAdmin /></>} value={brouillon.modele} onChange={(e) => setBrouillon({ ...brouillon, modele: e.target.value })}>
                 {modeles.map((m) => <option key={m.nom} value={m.nom}>{m.modele && m.modele !== m.nom ? `${m.nom} · ${m.modele}` : m.nom}</option>)}
                 <option value="">— aucun : le gabarit —</option>
-              </select></div>
+              </ChampListe>
           )}
           <div className="grille-2">
-            <div className="champ"><label htmlFor="rg-prompt" title="Ce que le modèle doit écrire, et comment. Vide : la lettre est assemblée par le gabarit, sans réseau ni jeton.">Prompt de la lettre</label>
-              <textarea id="rg-prompt" className="saisie" rows={3} value={brouillon.prompt} onChange={(e) => setBrouillon({ ...brouillon, prompt: e.target.value })} /></div>
-            <div className="champ"><label htmlFor="rg-notes" title="Remises au modèle sous PROJETS : pour chaque projet, le contexte, la difficulté, la décision prise, ce que ça a donné.">Vos notes (PROJETS)</label>
-              <textarea id="rg-notes" className="saisie" rows={3} value={brouillon.notes} onChange={(e) => setBrouillon({ ...brouillon, notes: e.target.value })} /></div>
+            <ChampZone id="rg-prompt" titre="Ce que le modèle doit écrire, et comment. Vide : la lettre est assemblée par le gabarit, sans réseau ni jeton." libelle="Prompt de la lettre" rows={3} value={brouillon.prompt} onChange={(e) => setBrouillon({ ...brouillon, prompt: e.target.value })} />
+            <ChampZone id="rg-notes" titre="Remises au modèle sous PROJETS : pour chaque projet, le contexte, la difficulté, la décision prise, ce que ça a donné." libelle="Vos notes (PROJETS)" rows={3} value={brouillon.notes} onChange={(e) => setBrouillon({ ...brouillon, notes: e.target.value })} />
           </div>
-          <div className="champ"><span className="lib-champ" title="Fichiers texte joints aux notes de chaque lettre — un carnet de projet, un README, des chiffres. Rangés sous votre compte ; chacun est titré de son nom pour que le modèle cite sa source.">Fichiers de renfort</span>
+          <Champ titre="Fichiers texte joints aux notes de chaque lettre — un carnet de projet, un README, des chiffres. Rangés sous votre compte ; chacun est titré de son nom pour que le modèle cite sa source." groupe libelle="Fichiers de renfort">
             {aSupprimer && (
               <Confirmer question={`Supprimer ${aSupprimer.nom} ?`} detail={`${poids(aSupprimer.taille)} · il ne sera plus joint aux lettres.`} action="Supprimer"
                 onAnnuler={() => setASupprimer(null)} onConfirmer={() => {
@@ -334,11 +317,11 @@ function useOngletReglages(d: Documents, actif: boolean): Onglet {
             )}
             <ListeFichiers route="/pieces-lettre" accept=".md,.txt,.json,.csv,text/*" compact sorte="Fichier de renfort" portee="propre à votre compte"
               gestion={pieces} aSupprimer={setASupprimer} vise={aSupprimer?.nom} />
-          </div>
-        </div>
+          </Champ>
+        </SectionFiche>
       </div>
     ),
-    pied: <button type="button" className="action plein" disabled={!change} title={change ? undefined : "Rien n'a changé"} onClick={enregistrer}>Enregistrer<span className="ico">{ICONES.fleche}</span></button>,
+    pied: <Action plein iconeApres={ICONES.fleche} disabled={!change} title={change ? undefined : "Rien n'a changé"} onClick={enregistrer}>Enregistrer</Action>,
   };
 }
 
@@ -437,38 +420,32 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
       <form className="docs-f" aria-label="Modèle de CV spontané" onSubmit={(e) => { e.preventDefault(); void sauver(); }}>
         <div className="section-f">
           <div className="grille-2">
-            <div className="champ"><label htmlFor={id('nom')}>Nom</label><input id={id('nom')} className="saisie" placeholder="ESN" value={m.nom} onChange={(e) => changer({ nom: e.target.value })} /></div>
-            <div className="champ"><label htmlFor={id('poste')}>Poste en tête du CV</label><input id={id('poste')} className="saisie" placeholder="Vide : celui du profil" value={m.poste} onChange={(e) => changer({ poste: e.target.value })} /></div>
+            <ChampSaisie id={id('nom')} libelle="Nom" placeholder="ESN" value={m.nom} onChange={(e) => changer({ nom: e.target.value })} />
+            <ChampSaisie id={id('poste')} libelle="Poste en tête du CV" placeholder="Vide : celui du profil" value={m.poste} onChange={(e) => changer({ poste: e.target.value })} />
           </div>
-          <div className="champ"><label htmlFor={id('dest')} title="Ce que l'IA lit pour choisir ce CV face à un employeur.">Destiné à</label>
-            <textarea id={id('dest')} className="saisie court" rows={2} placeholder="ESN et cabinets de conseil qui placent des consultants chez leurs clients" value={m.destination} onChange={(e) => changer({ destination: e.target.value })} /></div>
+          <ChampZone id={id('dest')} titre="Ce que l'IA lit pour choisir ce CV face à un employeur." libelle="Destiné à" className="saisie court" rows={2} placeholder="ESN et cabinets de conseil qui placent des consultants chez leurs clients" value={m.destination} onChange={(e) => changer({ destination: e.target.value })} />
           <div className="grille-2">
-            <div className="champ"><label htmlFor={id('profil')}>Profil mis en page</label>
-              <select id={id('profil')} className="saisie" value={m.profil} onChange={(e) => changer({ profil: e.target.value, competences: [] })}>
+            <ChampListe id={id('profil')} libelle="Profil mis en page" value={m.profil} onChange={(e) => changer({ profil: e.target.value, competences: [] })}>
                 <option value="">— choisir un profil —</option>
                 {[...new Set([...d.profils, ...(m.profil ? [m.profil] : [])])].map((p) => <option key={p} value={p}>{sansJson(p)}</option>)}
-              </select></div>
-            <div className="champ"><span className="lib-champ">Mise en page</span>
-              <div><label className="inter" title={`Cochée : le fond et la palette réglés pour le Constructeur au moment de bâtir — aujourd'hui ${d.parametres?.constructeur_fond || 'fond tiré au sort'} —, sans rien recopier.`}>
-                celle du Constructeur<input type="checkbox" checked={m.constructeur} onChange={(e) => changer({ constructeur: e.target.checked })} /></label></div></div>
+              </ChampListe>
+            <Champ groupe libelle="Mise en page">
+              <div><Interrupteur libelle="celle du Constructeur" title={`Cochée : le fond et la palette réglés pour le Constructeur au moment de bâtir — aujourd'hui ${d.parametres?.constructeur_fond || 'fond tiré au sort'} —, sans rien recopier.`} checked={m.constructeur} onChange={(e) => changer({ constructeur: e.target.checked })} /></div></Champ>
           </div>
           {!m.constructeur && (
             <div className="grille-2">
-              <div className="champ"><label htmlFor={id('fond')}>Fond</label>
-                <select id={id('fond')} className="saisie" value={m.fond} onChange={(e) => changer({ fond: e.target.value })}>
+              <ChampListe id={id('fond')} libelle="Fond" value={m.fond} onChange={(e) => changer({ fond: e.target.value })}>
                   {FONDS.map((f) => <option key={f} value={f}>{f || 'Tiré au sort'}</option>)}
-                </select></div>
-              <div className="champ"><span className="lib-champ">Palette</span><Couleurs valeurs={m.palette} changer={(palette) => changer({ palette })} libelle="Palette du modèle" /></div>
+                </ChampListe>
+              <Champ groupe libelle="Palette"><Couleurs valeurs={m.palette} changer={(palette) => changer({ palette })} libelle="Palette du modèle" /></Champ>
             </div>
           )}
           <div className="gestes">
-            <button type="button" className="action" title="Recopie dans ce modèle le profil et le poste de « Nouveau CV », son fond et sa palette : ils ne valent plus que pour ce modèle." onClick={reprendre}>
-              <span className="ico">{ICONES.reprendre}</span>Reprendre du Constructeur</button>
-            <button type="button" className="action" title="Recopie dans « Nouveau CV » le profil, le poste et la palette de ce modèle. Son fond devient celui de tous vos CV." onClick={() => void envoyer()}>
-              <span className="ico">{ICONES.envoyer}</span>Envoyer au Constructeur</button>
+            <Action icone={ICONES.reprendre} title="Recopie dans ce modèle le profil et le poste de « Nouveau CV », son fond et sa palette : ils ne valent plus que pour ce modèle." onClick={reprendre}>Reprendre du Constructeur</Action>
+            <Action icone={ICONES.envoyer} title="Recopie dans « Nouveau CV » le profil, le poste et la palette de ce modèle. Son fond devient celui de tous vos CV." onClick={() => void envoyer()}>Envoyer au Constructeur</Action>
           </div>
         </div>
-        <div className="section-f"><h3>Compétences</h3>
+        <SectionFiche titre="Compétences">
           <p className="lib-champ lib-bloc">Mises en avant, en tête du CV <span className="compteur">{m.competences.length}</span></p>
           {m.competences.length ? (
             <div className="puces">{m.competences.map((c) => (
@@ -486,15 +463,15 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
                       : <button key={c} type="button" className="puce" title="La mettre en avant" onClick={() => changer({ competences: [...m.competences, c] })}>{c}<b>+</b></button>))}</div>
                   </div>
                 ))}
-        </div>
+        </SectionFiche>
         <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
       </form>
       <AuPied>
-        {m.original && <button type="button" className="action rouge gauche" onClick={() => setConfirmer(true)}><span className="ico">{ICONES.supprimer}</span>Supprimer</button>}
-        <button type="button" className="action" onClick={() => void sauver()}>Enregistrer</button>
-        <button type="button" className="action plein" disabled={batit} onClick={() => void batir()}>
-          {batit ? 'Mise en page…' : m.cv ? 'Rebâtir le CV' : 'Bâtir le CV'}<span className="ico">{ICONES.fleche}</span>
-        </button>
+        {m.original && <Action className="gauche" rouge icone={ICONES.supprimer} onClick={() => setConfirmer(true)}>Supprimer</Action>}
+        <Action onClick={() => void sauver()}>Enregistrer</Action>
+        <Action plein iconeApres={ICONES.fleche} disabled={batit} onClick={() => void batir()}>
+          {batit ? 'Mise en page…' : m.cv ? 'Rebâtir le CV' : 'Bâtir le CV'}
+        </Action>
       </AuPied>
     </>
   );

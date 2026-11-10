@@ -1,31 +1,20 @@
 'use client';
 
-import { useEffect, useState, type ComponentPropsWithoutRef, type ElementType, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import type { Bloc, Projet, Scene, Visuel } from './projets';
 import { useUIStore } from '@/lib/uiStore';
+import { Verre } from '@/features/fenetres/Verre';
+import { ETIQUETTE, Info, PageSite, allerA, etatLueur } from './elements';
 
-export const ETIQUETTE = 'text-[10px] font-bold uppercase tracking-[0.25em] text-white/60';
-
-// Bloc en verre : classe .verre et calque de halos, toujours premier enfant
-export function Verre<T extends ElementType = 'div'>({
-  as,
-  className = '',
-  children,
-  ...props
-}: { as?: T; className?: string; children?: ReactNode } & Omit<ComponentPropsWithoutRef<T>, 'as' | 'className' | 'children'>) {
-  const Balise: ElementType = as ?? 'div';
-  return (
-    <Balise className={`verre ${className}`} {...props}>
-      <span className="verre-halos" aria-hidden="true" />
-      {children}
-    </Balise>
-  );
-}
 const PARAGRAPHE = 'max-w-[68ch] text-[15px] leading-relaxed text-white/80 md:text-base';
 
 const GRILLE = { 1: '', 2: 'sm:grid-cols-2', 3: 'grid-cols-2 md:grid-cols-3', 4: 'grid-cols-2 md:grid-cols-4' } as const;
 const TAILLES = { 1: '(min-width: 1024px) 900px, 100vw', 2: '(min-width: 640px) 450px, 100vw', 3: '(min-width: 768px) 300px, 50vw', 4: '(min-width: 768px) 220px, 50vw' } as const;
+
+const deuxChiffres = (n: number) => String(n).padStart(2, '0');
+// L'ancre d'une section : le corps de la page et son sommaire s'accordent
+const ancreSection = (slug: string, id: string) => `${slug}-${id}`;
 
 // Met en gras les passages entre ** **
 function Riche({ texte }: { texte: string }) {
@@ -42,6 +31,10 @@ function Figure({ image, colonnes }: { image: Visuel; colonnes: 1 | 2 | 3 | 4 })
       {image.legende && <figcaption className="text-xs text-white/60">{image.legende}</figcaption>}
     </figure>
   );
+}
+
+function LigneDecision({ libelle, className, children }: { libelle: string; className: string; children: React.ReactNode }) {
+  return <div><dt className={`${ETIQUETTE} inline`}>{libelle}<span aria-hidden="true"> · </span></dt><dd className={`inline ${className}`}>{children}</dd></div>;
 }
 
 function RenduBloc({ bloc }: { bloc: Bloc }) {
@@ -85,7 +78,7 @@ function RenduBloc({ bloc }: { bloc: Bloc }) {
         <ol className={`grid gap-3 sm:grid-cols-2 ${bloc.items.length === 3 ? 'lg:grid-cols-3' : bloc.items.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-5'}`}>
           {bloc.items.map((e, i) => (
             <Verre as="li" key={e.titre} className="p-4">
-              <span className="font-mono text-xs text-white/50">{String(i + 1).padStart(2, '0')}</span>
+              <span className="font-mono text-xs text-white/50">{deuxChiffres(i + 1)}</span>
               <p className="mt-2 font-semibold text-white">{e.titre}</p>
               <p className="mt-1 text-sm leading-relaxed text-white/70">{e.texte}</p>
             </Verre>
@@ -119,9 +112,9 @@ function RenduBloc({ bloc }: { bloc: Bloc }) {
             <div key={d.question} className="grid gap-3 py-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-8">
               <h3 className="font-semibold text-white">{d.question}</h3>
               <dl className="space-y-2 text-sm leading-relaxed">
-                <div><dt className={`${ETIQUETTE} inline`}>Choix<span aria-hidden="true"> · </span></dt><dd className="inline text-white">{d.choix}</dd></div>
-                <div><dt className={`${ETIQUETTE} inline`}>Pourquoi<span aria-hidden="true"> · </span></dt><dd className="inline text-white/75">{d.pourquoi}</dd></div>
-                {d.ecarte && <div><dt className={`${ETIQUETTE} inline`}>Écarté<span aria-hidden="true"> · </span></dt><dd className="inline text-white/60">{d.ecarte}</dd></div>}
+                <LigneDecision libelle="Choix" className="text-white">{d.choix}</LigneDecision>
+                <LigneDecision libelle="Pourquoi" className="text-white/75">{d.pourquoi}</LigneDecision>
+                {d.ecarte && <LigneDecision libelle="Écarté" className="text-white/60">{d.ecarte}</LigneDecision>}
               </dl>
             </div>
           ))}
@@ -178,21 +171,18 @@ function minutesDeLecture(projet: Projet) {
   return Math.max(1, Math.round(mots / 200));
 }
 
-// Fait défiler la vue jusqu'à une section sans toucher à l'URL
-export function allerA(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-}
-
 export function ProjectPage({ projet, rang, total, suivant }: { projet: Projet; rang: number; total: number; suivant: Projet }) {
   const setPage = useUIStore((s) => s.setPage);
-  const ancre = (id: string) => `${projet.slug}-${id}`;
+  const ancre = (id: string) => ancreSection(projet.slug, id);
   const [l1, l2, l3] = projet.tldr.libelles ?? ['Problème', 'Solution', 'Impact'];
   // Un article nommé par son titre : les lecteurs d'écran y sautent directement
   return (
-      <article aria-labelledby={ancre('titre')} className="mx-auto max-w-4xl px-4 pb-24 pt-28 font-sans text-white md:px-8">
-        <header>
-          <p className={ETIQUETTE}>Étude de cas · {String(rang).padStart(2, '0')} / {String(total).padStart(2, '0')} · {minutesDeLecture(projet)} min de lecture</p>
-          <h1 id={ancre('titre')} className="mt-4 max-w-4xl text-3xl font-semibold leading-tight tracking-tight md:text-5xl">{projet.titre}</h1>
+      <PageSite
+        id={ancre('titre')}
+        etiquette={<>Étude de cas · {deuxChiffres(rang)} / {deuxChiffres(total)} · {minutesDeLecture(projet)} min de lecture</>}
+        titre={projet.titre}
+        classeTitre="max-w-4xl leading-tight md:text-5xl"
+        enTete={<>
           <p className="mt-4 max-w-3xl text-base text-white/70 md:text-lg">{projet.accroche}</p>
 
           {projet.scene && <ScenePremierEcran scene={projet.scene} nom={projet.nom} />}
@@ -208,10 +198,7 @@ export function ProjectPage({ projet, rang, total, suivant }: { projet: Projet; 
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-3">
             {projet.fiche.map((f) => (
-              <div key={f.libelle}>
-                <dt className={ETIQUETTE}>{f.libelle}</dt>
-                <dd className="mt-1 text-sm text-white/85">{f.valeur}</dd>
-              </div>
+              <Info key={f.libelle} libelle={f.libelle} classeValeur="text-sm text-white/85">{f.valeur}</Info>
             ))}
           </dl>
 
@@ -220,12 +207,12 @@ export function ProjectPage({ projet, rang, total, suivant }: { projet: Projet; 
               <Image src={projet.couverture.src} alt={projet.couverture.alt} width={projet.couverture.w} height={projet.couverture.h} sizes="(min-width: 896px) 832px, 100vw" className="h-auto w-full rounded-2xl border border-white/10" />
             </div>
           )}
-        </header>
-
+        </>}
+      >
         <div className="mt-12">
             {projet.sections.map((s, i) => (
               <section key={s.id} id={ancre(s.id)} aria-labelledby={`${ancre(s.id)}-titre`} className="scroll-mt-24 border-t border-white/10 py-12 md:py-16">
-                <p className={ETIQUETTE}>{String(i + 1).padStart(2, '0')} · {s.etape}</p>
+                <p className={ETIQUETTE}>{deuxChiffres(i + 1)} · {s.etape}</p>
                 <h2 id={`${ancre(s.id)}-titre`} className="mt-3 max-w-3xl text-2xl font-semibold leading-snug tracking-tight md:text-3xl">{s.titre}</h2>
                 <div className="mt-8 space-y-8">{s.blocs.map((b, j) => <RenduBloc key={j} bloc={b} />)}</div>
               </section>
@@ -245,7 +232,7 @@ export function ProjectPage({ projet, rang, total, suivant }: { projet: Projet; 
             Informations légales
           </button>
         </footer>
-      </article>
+      </PageSite>
   );
 }
 
@@ -261,7 +248,7 @@ export function Sommaire({ projet, visible }: { projet: Projet; visible: boolean
       }
     }, { rootMargin: '-45% 0px -50% 0px' });
     for (const s of projet.sections) {
-      const section = document.getElementById(`${projet.slug}-${s.id}`);
+      const section = document.getElementById(ancreSection(projet.slug, s.id));
       if (section) observateur.observe(section);
     }
     return () => observateur.disconnect();
@@ -275,7 +262,7 @@ export function Sommaire({ projet, visible }: { projet: Projet; visible: boolean
     >
       <ol className="space-y-3">
         {projet.sections.map((s, i) => {
-          const id = `${projet.slug}-${s.id}`;
+          const id = ancreSection(projet.slug, s.id);
           const courant = actif === id;
           return (
             <li key={s.id}>
@@ -283,9 +270,9 @@ export function Sommaire({ projet, visible }: { projet: Projet; visible: boolean
                 type="button"
                 onClick={() => allerA(id)}
                 aria-current={courant ? 'location' : undefined}
-                className={`py-1 text-left text-xs transition-[color,filter] duration-500 ${courant ? 'text-white drop-shadow-[0_0_3px_#fff]' : 'text-white/50 hover:text-white'}`}
+                className={`py-1 text-left text-xs ${etatLueur(courant, 'text-white/50')}`}
               >
-                <span className="font-mono">{String(i + 1).padStart(2, '0')}</span> {s.etape}
+                <span className="font-mono">{deuxChiffres(i + 1)}</span> {s.etape}
               </button>
             </li>
           );

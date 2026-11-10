@@ -1,6 +1,8 @@
 'use client';
 
-import { MenuColonne } from '../commun';
+import { MenuFiltre } from '../../elements/Menu';
+import { Champ, ChampSaisie, ChampListe, SectionFiche } from '../../elements/Champ';
+import { SaisieSecrete } from '../../elements/Champ';
 
 export type Modele = {
   nom: string; fournisseur: string; modele: string; base_url: string; cle_api: boolean; reglages: Record<string, string>; reserve: string;
@@ -51,8 +53,7 @@ export function FormModele({ id, brouillon: b, poser, fournisseurs, autres, erre
   const f = fournisseurs[b.fournisseur];
   const champ = (cle: keyof Brouillon) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => poser({ ...b, [cle]: e.target.value });
   const prix = (cle: 'prix_entree' | 'prix_sortie' | 'prix_cache' | 'prix_ecriture', lib: string, exemple: string) => (
-    <div className="champ"><label htmlFor={`${id}-${cle}`}>{lib}</label>
-      <input id={`${id}-${cle}`} className="saisie" inputMode="decimal" placeholder={exemple} value={b[cle]} onChange={champ(cle)} /></div>
+    <ChampSaisie id={`${id}-${cle}`} libelle={lib} inputMode="decimal" placeholder={exemple} value={b[cle]} onChange={champ(cle)} />
   );
   return (
     <form id={id} className="form-modele" onSubmit={(e) => {
@@ -61,58 +62,48 @@ export function FormModele({ id, brouillon: b, poser, fournisseurs, autres, erre
     }}>
       <div className="section-f form-serre">
         <div className="grille-2">
-          <div className="champ"><label htmlFor={`${id}-nom`}>Nom</label><input id={`${id}-nom`} className="saisie" placeholder="Audit" value={b.nom} onChange={champ('nom')} /></div>
-          <div className="champ"><label htmlFor={`${id}-four`}>Fournisseur</label>
-            {/* Un autre fournisseur ne garde que ses réglages ; une valeur absente tombe. */}
-            <select id={`${id}-four`} className="saisie" value={b.fournisseur} onChange={(e) => {
-              const neuf = fournisseurs[e.target.value];
-              poser({ ...b, fournisseur: e.target.value, reglages: Object.fromEntries(Object.entries(b.reglages)
-                .filter(([cle, v]) => neuf?.reglages.some((r) => r.cle === cle && r.choix.includes(v)))) });
-            }}>
-              <option value="">— choisir —</option>
-              {Object.entries(fournisseurs).map(([cle, x]) => <option key={cle} value={cle}>{x.nom}</option>)}
-            </select></div>
+          <ChampSaisie id={`${id}-nom`} libelle="Nom" placeholder="Audit" value={b.nom} onChange={champ('nom')} />
+          {/* Un autre fournisseur ne garde que ses réglages ; le reste tombe */}
+          <ChampListe id={`${id}-four`} libelle="Fournisseur" value={b.fournisseur} onChange={(e) => {
+            const neuf = fournisseurs[e.target.value];
+            poser({ ...b, fournisseur: e.target.value, reglages: Object.fromEntries(Object.entries(b.reglages)
+              .filter(([cle, v]) => neuf?.reglages.some((r) => r.cle === cle && r.choix.includes(v)))) });
+          }}>
+            <option value="">— choisir —</option>
+            {Object.entries(fournisseurs).map(([cle, x]) => <option key={cle} value={cle}>{x.nom}</option>)}
+          </ChampListe>
         </div>
         <div className="grille-2">
-          <div className="champ"><label htmlFor={`${id}-mod`}>Modèle</label><input id={`${id}-mod`} className="saisie" placeholder="gpt-5.6-luna" value={b.modele} onChange={champ('modele')} /></div>
-          <div className="champ"><label htmlFor={`${id}-tok`}>Tokens max</label>
-            <input id={`${id}-tok`} className="saisie" inputMode="numeric" placeholder="au choix de la brique" value={b.max_tokens} onChange={champ('max_tokens')} /></div>
+          <ChampSaisie id={`${id}-mod`} libelle="Modèle" placeholder="gpt-5.6-luna" value={b.modele} onChange={champ('modele')} />
+          <ChampSaisie id={`${id}-tok`} libelle="Tokens max" inputMode="numeric" placeholder="au choix de la brique" value={b.max_tokens} onChange={champ('max_tokens')} />
         </div>
         <div className="grille-2">
-          <div className="champ"><label htmlFor={`${id}-adr`}>Adresse</label>
-            <input id={`${id}-adr`} className="saisie" placeholder={f?.base_url || 'celle du fournisseur'} value={b.base_url} onChange={champ('base_url')} /></div>
-          <div className="champ"><label htmlFor={`${id}-reg`}>Réglages</label>
+          <ChampSaisie id={`${id}-adr`} libelle="Adresse" placeholder={f?.base_url || 'celle du fournisseur'} value={b.base_url} onChange={champ('base_url')} />
+          <Champ pour={`${id}-reg`} libelle="Réglages">
             {f?.reglages.length ? f.reglages.map((r, i) => (
               <select key={r.cle} id={i ? undefined : `${id}-reg`} className="saisie" title={r.aide} aria-label={r.libelle} value={b.reglages[r.cle] ?? ''}
                 onChange={(e) => poser({ ...b, reglages: { ...b.reglages, [r.cle]: e.target.value } })}>
                 {r.choix.map((v) => <option key={v} value={v}>{`${r.libelle} : ${v || 'défaut'}`}</option>)}
               </select>
             )) : <select id={`${id}-reg`} className="saisie" disabled title={f?.aide ?? "Choisissez d'abord le fournisseur."}><option>—</option></select>}
-          </div>
+          </Champ>
         </div>
       </div>
-      <div className="section-f form-serre"><h3>Prix, en $ par million de tokens</h3>
+      <SectionFiche titre="Prix, en $ par million de tokens" className="form-serre">
         <div className="grille-2">{prix('prix_entree', '$/M entrée', '1.25')}{prix('prix_sortie', '$/M sortie', '10')}</div>
         <div className="grille-2">{prix('prix_cache', '$/M lu en cache', '0.125')}{prix('prix_ecriture', '$/M écrit en cache', '1.5')}</div>
-      </div>
-      <div className="section-f form-serre"><h3>Accès</h3>
+      </SectionFiche>
+      <SectionFiche titre="Accès" className="form-serre">
         <div className="grille-2">
-          <div className="champ"><label htmlFor={`${id}-cle`}>Clé d&apos;API</label>
-            <span className="secret">
-              <input id={`${id}-cle`} className="saisie" type="password" autoComplete="new-password" value={b.cle}
-                placeholder={b.effacerCle ? "effacée à l'enregistrement" : b.avaitCle && b.nom === b.ancien ? 'enregistrée' : 'non renseignée'}
-                onChange={(e) => poser({ ...b, cle: e.target.value, effacerCle: false })} />
-              {b.avaitCle && b.nom === b.ancien && !b.effacerCle && !b.cle && (
-                <button type="button" className="effacer" title="Retire cette clé du coffre à l'enregistrement." onClick={() => poser({ ...b, effacerCle: true })}>Effacer</button>
-              )}
-            </span></div>
-          <div className="champ"><label htmlFor={`${id}-res`}>Réserve</label>
-            <select id={`${id}-res`} className="saisie" value={b.reserve} onChange={champ('reserve')} title="La réserve prend la demande sur-le-champ quand ce modèle sature ou tombe.">
+          <Champ pour={`${id}-cle`} libelle="Clé d&apos;API">
+            <SaisieSecrete id={`${id}-cle`} valeur={b.cle} pose={!!b.avaitCle && b.nom === b.ancien} efface={!!b.effacerCle} titre="Retire cette clé du coffre à l'enregistrement."
+              changer={(v) => poser({ ...b, cle: v, effacerCle: false })} effacer={() => poser({ ...b, effacerCle: true })} /></Champ>
+          <ChampListe id={`${id}-res`} libelle="Réserve" value={b.reserve} onChange={champ('reserve')} title="La réserve prend la demande sur-le-champ quand ce modèle sature ou tombe.">
               {['', ...new Set([...autres, b.reserve].filter(Boolean))].map((n) => <option key={n} value={n}>{n || '— aucune —'}</option>)}
-            </select></div>
+            </ChampListe>
         </div>
         {b.avaitCle && b.ancien && b.nom !== b.ancien && !b.cle && <p className="aide-champ">Renommé, le modèle perd sa clé : retapez-la.</p>}
-      </div>
+      </SectionFiche>
       {erreur && <p className="alerte-f" role="alert">{erreur}</p>}
     </form>
   );
@@ -120,7 +111,7 @@ export function FormModele({ id, brouillon: b, poser, fournisseurs, autres, erre
 
 // Filtre Fournisseur : menu en colonne
 export function MenuFournisseur(p: { valeur: string; choix: { cle: string; libelle: string; n: number }[]; courant: string; choisir: (c: string) => void }) {
-  return <MenuColonne {...p} lib="Fournisseur" titre="Fournisseur des modèles" actif={!!p.courant} classeMenu=" menu-fournisseur" />;
+  return <MenuFiltre {...p} lib="Fournisseur" titre="Fournisseur des modèles" actif={!!p.courant} classeMenu="menu-fournisseur" />;
 }
 
 export function CorpsEffacer({ apercu, erreur }: { apercu: Apercu | null; erreur: string }) {

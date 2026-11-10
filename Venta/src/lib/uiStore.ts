@@ -10,6 +10,8 @@ export const CLE_SON = 'ovrane:son-coupe';
 export const CLE_VERRE = 'ovrane:verre';
 export const CLE_FLOU = 'ovrane:flou';
 export const VERRE_DEFAUT = 0.55;
+export const VERRE_MAX = 0.9;
+export const FLOU_MAX = 40;
 const MAX_FENETRES = 10;
 
 /** Fenêtre flottante : Markdown d'une réponse, ou image de public/assets */
@@ -57,6 +59,27 @@ interface UIState {
   closeAllWindows: () => void;
 }
 
+// Stockage bloqué : le choix ne vaut que pour cette visite
+export function retenirLocal(cle: string, valeur: string) {
+  try {
+    localStorage.setItem(cle, valeur);
+  } catch {
+    // Rien à faire de plus
+  }
+}
+
+// Une page ou la messagerie ouverte : l'œil a quitté le centre de l'écran
+export const horsAccueil = (s: Pick<UIState, 'page' | 'viewMode'>) => s.page !== null || s.viewMode === 'messaging';
+
+// La page d'Illusion d'une vue « illusion/<page>?<recherche> », sinon null
+export function partiesIllusion(vue: string | null | undefined) {
+  if (!vue?.startsWith('illusion/')) return null;
+  const marque = vue.indexOf('?');
+  return marque < 0 ? { slug: vue.slice(9), recherche: '' } : { slug: vue.slice(9, marque), recherche: vue.slice(marque + 1) };
+}
+
+export const vueIllusion = (slug: string, recherche = '') => `illusion/${slug}${recherche ? `?${recherche}` : ''}`;
+
 export const useUIStore = create<UIState>((set) => ({
   viewMode: 'dashboard',
   appState: 'sleeping',
@@ -77,35 +100,23 @@ export const useUIStore = create<UIState>((set) => ({
   // --verre-opacite teinte toutes les boîtes en verre (globals.css)
   reglerVerre: (opacite) => {
     document.documentElement.style.setProperty('--verre-opacite', String(opacite));
-    try {
-      localStorage.setItem(CLE_VERRE, String(opacite));
-    } catch {
-      // Stockage bloqué : le réglage vaut pour cette visite
-    }
+    retenirLocal(CLE_VERRE, String(opacite));
     set({ verreOpacite: opacite });
   },
   // --verre-flou : ce que les fenêtres flottantes d'Illusion laissent voir
   reglerFlou: (pixels) => {
     document.documentElement.style.setProperty('--verre-flou', `${pixels}px`);
-    try {
-      localStorage.setItem(CLE_FLOU, String(pixels));
-    } catch {
-      // Stockage bloqué : le réglage vaut pour cette visite
-    }
+    retenirLocal(CLE_FLOU, String(pixels));
     set({ verreFlou: pixels });
   },
   basculerSon: () =>
     set((s) => {
-      try {
-        localStorage.setItem(CLE_SON, s.sonCoupe ? '0' : '1');
-      } catch {
-        // Stockage bloqué : le choix vaut pour cette visite
-      }
+      retenirLocal(CLE_SON, s.sonCoupe ? '0' : '1');
       return { sonCoupe: !s.sonCoupe };
     }),
   setAppState: (state) => set({ appState: state }),
   // Ouvrir ou fermer une page ramène au tableau de bord ; l'en-tête suit la page
-  setPage: (page) => set({ page, viewMode: 'dashboard', cote: page?.startsWith('illusion/') ? 'illusion' : 'ovrane' }),
+  setPage: (page) => set({ page, viewMode: 'dashboard', cote: partiesIllusion(page) ? 'illusion' : 'ovrane' }),
   setCote: (cote) => set({ cote }),
   setAppLocked: (locked, message) => set({ isAppLocked: locked, lockedMessage: message }),
 

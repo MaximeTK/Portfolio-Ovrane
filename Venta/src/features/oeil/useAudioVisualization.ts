@@ -17,6 +17,17 @@ function creerGain(context: AudioContext, valeur: number) {
   return gain;
 }
 
+// Contexte audio du navigateur, sous son ancien nom chez Safari
+export const creerContexteAudio = () => new (window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+
+// Le même analyseur pour les deux chemins de la voix : l'œil s'anime pareil
+export function creerAnalyseur(contexte: AudioContext) {
+  const analyseur = contexte.createAnalyser();
+  analyseur.fftSize = 1024;
+  analyseur.smoothingTimeConstant = 0.85;
+  return analyseur;
+}
+
 export function startLevelLoop(analyser: AnalyserNode, onLevel: LevelHandler): () => void {
   const buffer = new Uint8Array(analyser.frequencyBinCount);
   let frame = 0;
@@ -43,13 +54,11 @@ export function useAudioVisualization() {
   // Son direct et son filtré se mêlent avant l'analyseur, relié à la sortie
   const setupAudioVisualization = useCallback((audio: HTMLAudioElement, onLevel: LevelHandler) => {
     detacherRef.current?.();
-    const context = (contexteRef.current ??= new (window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)());
+    const context = (contexteRef.current ??= creerContexteAudio());
     audio.crossOrigin ||= 'anonymous';
 
     const source = context.createMediaElementSource(audio);
-    const analyser = context.createAnalyser();
-    analyser.fftSize = 1024;
-    analyser.smoothingTimeConstant = 0.85;
+    const analyser = creerAnalyseur(context);
     const direct = creerGain(context, DIRECT);
     const filtre = creerGain(context, FILTRE);
     const noeuds: AudioNode[] = [source, analyser, direct, filtre];

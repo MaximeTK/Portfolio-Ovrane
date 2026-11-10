@@ -1,0 +1,21 @@
+/* Adresses par site : site, adresse, état, date, geste. */
+.ov [data-fen=adresses] .titre-groupe{cursor:default;color:rgb(var(--encre))}
+.ov [data-fen=adresses] tbody tr{cursor:default}
+.ov [data-fen=adresses] thead th:nth-child(1){width:calc(110px + (100cqw - 620px) * .35)}
+.ov [data-fen=adresses] thead th:nth-child(2){width:calc(240px + (100cqw - 620px) * .65)}
+.ov [data-fen=adresses] thead th:nth-child(3){width:96px}
+.ov [data-fen=adresses] thead th:nth-child(4){width:70px}
+.ov [data-fen=adresses] thead th:nth-child(5){width:104px}
+.ov [data-fen=adresses] td .action{height:26px;font-size:var(--t-corps,12px)}
+.ov [data-fen=adresses] tr.vide-f td{height:auto;padding:16px 20px;white-space:normal;color:rgb(var(--encre) / .6)}
+.ov [data-fen=adresses] tr.vide-f:hover td{background:none}
+/* L'avis du dernier geste, posé au bas de la fenêtre ; un clic le ferme. */
+.ov [data-fen=adresses] .avis{position:absolute;left:14px;right:14px;bottom:14px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-14) / .92);font-size:var(--t-corps,12.5px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
+.ov [data-fen=adresses] .avis.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
+
+/* Thèmes : titre et gestes de la charte, avis de la charte. */
+.ov.trame [data-fen=adresses] .titre-groupe,.ov.trame [data-fen=adresses] .titre-groupe:hover{background:none;color:var(--texte)}
+.ov.trame [data-fen=adresses] td .action{height:auto;font-size:.875rem}
+.ov.trame [data-fen=adresses] tr.vide-f td{color:var(--texte-2)}
+.ov.trame [data-fen=adresses] .avis{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
+.ov.trame [data-fen=adresses] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}

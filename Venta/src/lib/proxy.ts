@@ -3,6 +3,7 @@ import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
 import { INDISPONIBLE } from '@/lib/messages';
 import { JETON_COOKIE, isValidJeton } from '@/lib/redirections';
+import { optionsCookie } from './origine';
 
 const SESSION_COOKIE = 'ovrane_session';
 // Marque d'appareil déjà connecté : un tiers ne bloque pas le titulaire
@@ -110,13 +111,7 @@ export async function relayerJson(request: NextRequest, path: string, init: Forw
   for (const [nom, cookie] of [[SESSION_COOKIE, session], [APPAREIL_COOKIE, appareil]] as const) {
     const { jeton, expireLe } = (cookie ?? {}) as { jeton?: string; expireLe?: string };
     if (!jeton) continue;
-    relaye.cookies.set(nom, jeton, {
-      httpOnly: true,
-      secure: request.nextUrl.protocol === 'https:',
-      sameSite: 'lax',
-      path: '/',
-      ...(expireLe ? { expires: new Date(expireLe) } : {}),
-    });
+    relaye.cookies.set(nom, jeton, optionsCookie(request.nextUrl, expireLe ? new Date(expireLe) : undefined));
   }
   if (corps.deconnexion === true) relaye.cookies.delete(SESSION_COOKIE);
   return relaye;

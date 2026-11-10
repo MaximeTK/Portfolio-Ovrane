@@ -4,16 +4,20 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { appeler, telecharger, televerser } from '../../api';
 import { useSondage } from '../../activite/sondage';
 import { AuPied, MarqueAdmin, type Onglet } from '../../dock/Panneau';
-import { dateUtc } from '../../partage/FicheOffre';
 import { aOublier, repris, useGarder } from '../../stockage';
-import { useParametresOuverts, ICONES_COMMUNES, TRAIT, message, duree, type Avis } from '../commun';
+import { useGeste, useParametresOuverts, duree } from '../commun';
+import { Action } from '../../elements/Action';
+import type { Dire } from '../../elements/Avis';
+import { Champ, Interrupteur, ChampSaisie, ChampZone, ChampListe, OptionsModele, SectionFiche } from '../../elements/Champ';
+import { ICONES } from '../../elements/icones';
+import { jourMois, message, parVirgules, quand } from '../../elements/format';
 
 type PieceJointe = { nom: string; type: string; taille: number; telechargeable: boolean };
 // Un mail tel que /mails et /mails/fil le rendent
 export type MailLu = {
   message_id: string; sens: string; recu_le: string; expediteur: string; destinataire: string; sujet: string; corps: string;
   fil: string; lu: boolean; pieces_jointes: PieceJointe[]; tags: string[]; a_html: boolean; entreprise_siren: string | null;
-  offre_cle: string | null; rattachement: string; reponse: string; reponse_erreur: string; a_repondre?: boolean;
+  offre_cle: string | null; rattachement: string; reponse: string; reponse_erreur: string; a_repondre?: boolean; repondable?: boolean;
 };
 
 // Libellés des tags, de la couleur du libellé de la boîte (palette Proton).
@@ -43,23 +47,9 @@ const PLAFOND_PIECES = 15 * 1024 * 1024;
 
 export const adresseSeule = (brut: string) => ((/<([^>]+)>/.exec(brut ?? '')?.[1] ?? brut ?? '').trim());
 export const nomAffiche = (brut: string) => (brut ?? '').trim().split('<')[0].trim().replace(/^"|"$/g, '') || adresseSeule(brut);
-export const formaterDate = (iso: string) => (iso ? dateUtc(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
-const jourMois = (iso: string) => (iso ? dateUtc(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '—');
 const poids = (octets: number) => (!octets ? '' : octets < 1024 ? `${octets} o` : octets < 1048576 ? `${Math.round(octets / 1024)} Ko` : `${(octets / 1048576).toFixed(1)} Mo`);
-const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+export const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
-export const ICONES = {
-  ...ICONES_COMMUNES,
-  tag: <svg {...TRAIT}><path d="M3 3h8l10 10-8 8L3 11z" /><path d="M7.5 7.5h.01" /></svg>,
-  rattacher: <svg {...TRAIT}><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>,
-  vider: <svg {...TRAIT}><path d="M3 13h5l1.5 3h5l1.5-3h5" /><path d="M5 5h14l2 8v6H3v-6z" /></svg>,
-  executer: <svg {...TRAIT}><path d="m4 17 6-5-6-5M12 19h8" /></svg>,
-  trombone: <svg {...TRAIT}><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7" /></svg>,
-  fiche: <svg {...TRAIT}><rect x="3" y="7" width="18" height="13" /><path d="M9 7V4h6v3M3 13h18" /></svg>,
-  offre: <svg {...TRAIT}><path d="M14 3H6v18h12V7z" /><path d="M14 3v4h4M9 12h6M9 16h6" /></svg>,
-  reecrire: <svg {...TRAIT}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
-  valider: <svg {...TRAIT} strokeWidth={2.6}><path d="M5 12l5 5L20 7" /></svg>,
-};
 
 // Un tag : la pastille carrée de sa couleur, puis son nom
 export function Nature({ tag }: { tag: string }) {
@@ -70,14 +60,14 @@ type PieceEnvoi = { nom: string; contenu: string; taille: number };
 type Depart = { destinataire: string; sujet: string; corps: string; repond_a: string };
 
 // Formulaire d'envoi de Répondre et Nouveau message, boutons au pied.
-function useEnvoi({ id, cle, depart, titre, aide, setAvis, apres }: {
-  id: string; cle: string; depart: Depart; titre?: string; aide?: string; setAvis: (a: Avis) => void; apres: () => void;
+function useEnvoi({ id, cle, depart, titre, aide, dire, apres }: {
+  id: string; cle: string; depart: Depart; titre?: string; aide?: string; dire: Dire; apres: () => void;
 }) {
   const [destinataire, setDestinataire] = useState(depart.destinataire);
   const [sujet, setSujet] = useState(depart.sujet);
   const [corps, setCorps] = useState(depart.corps);
   const [liste, setListe] = useState<PieceEnvoi[]>([]);
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   const pieces = useRef<PieceEnvoi[]>([]);
   const attente = useRef(0);
   const lecture = useRef<Promise<void>>(Promise.resolve());
@@ -106,14 +96,14 @@ function useEnvoi({ id, cle, depart, titre, aide, setAvis, apres }: {
         retenus.push(f);
       }
     }
-    if (refuses.length) setAvis({ texte: `${refuses.join(', ')} : pas joint${refuses.length > 1 ? 's' : ''}, les pièces dépasseraient 15 Mo au total, au-delà de ce que le relais accepte.`, erreur: true });
+    if (refuses.length) dire(`${refuses.join(', ')} : pas joint${refuses.length > 1 ? 's' : ''}, les pièces dépasseraient 15 Mo au total, au-delà de ce que le relais accepte.`, true);
     attente.current += retenus.reduce((s, f) => s + f.size, 0);
     lecture.current = lecture.current.then(async () => {
       for (const f of retenus) {
         try {
           poser([...pieces.current, { ...(await televerser(f)), taille: f.size }]);
         } catch (e) {
-          setAvis({ texte: message(e), erreur: true });
+          dire(message(e), true);
         } finally {
           attente.current -= f.size;
         }
@@ -121,39 +111,31 @@ function useEnvoi({ id, cle, depart, titre, aide, setAvis, apres }: {
     });
   };
   // L'envoi attend la lecture des fichiers pour ne pas partir sans ses pièces.
-  const envoyer = async (e: React.FormEvent) => {
+  const envoyer = (e: React.FormEvent) => {
     e.preventDefault();
     if (occupe) return;
-    setOccupe(true);
-    try {
+    return geste(async () => {
       await lecture.current;
       if (!corps.trim()) {
-        setAvis({ texte: 'Le message est vide.', erreur: true });
+        dire('Le message est vide.', true);
         return;
       }
       const r = await appeler<{ mail: { destinataire: string } }>('/mails/envoyer', {
         methode: 'POST', corps: { destinataire: destinataire.trim(), sujet: sujet.trim(), corps, repond_a: depart.repond_a, pieces: pieces.current.map(({ nom, contenu }) => ({ nom, contenu })) },
       });
-      setAvis({ texte: `Envoyé à ${r.mail.destinataire}.` });
+      dire(`Envoyé à ${r.mail.destinataire}.`);
       apres();
-    } catch (err) {
-      setAvis({ texte: message(err), erreur: true });
-    } finally {
-      setOccupe(false);
-    }
+    });
   };
   const champs = (
     <form id={id} className={titre ? 'section-f repondre' : undefined} onSubmit={(e) => void envoyer(e)}>
       {titre && <h3>{titre}</h3>}
       {aide && <p className="aide-champ">{aide}</p>}
       <div className="grille-2 dest-objet">
-        <div className="champ"><label htmlFor={`${id}-dest`}>Destinataire</label>
-          <input id={`${id}-dest`} className="saisie" type="email" required placeholder="rh@exemple.fr" value={destinataire} onChange={(e) => setDestinataire(e.target.value)} /></div>
-        <div className="champ"><label htmlFor={`${id}-objet`}>Objet</label>
-          <input id={`${id}-objet`} className="saisie" value={sujet} onChange={(e) => setSujet(e.target.value)} /></div>
+        <ChampSaisie id={`${id}-dest`} libelle="Destinataire" type="email" required placeholder="rh@exemple.fr" value={destinataire} onChange={(e) => setDestinataire(e.target.value)} />
+        <ChampSaisie id={`${id}-objet`} libelle="Objet" value={sujet} onChange={(e) => setSujet(e.target.value)} />
       </div>
-      <div className="champ"><label htmlFor={`${id}-message`}>Message</label>
-        <textarea id={`${id}-message`} className="saisie" rows={9} value={corps} onChange={(e) => setCorps(e.target.value)} /></div>
+      <ChampZone id={`${id}-message`} libelle="Message" rows={9} value={corps} onChange={(e) => setCorps(e.target.value)} />
       {liste.length > 0 && (
         <p className="pieces">
           {liste.map((p, rang) => (
@@ -170,8 +152,8 @@ function useEnvoi({ id, cle, depart, titre, aide, setAvis, apres }: {
   );
   const pied = (
     <>
-      <button type="button" className="action gauche" onClick={() => fichiers.current?.click()}><span className="ico">{ICONES.trombone}</span>Joindre un fichier</button>
-      <button type="submit" form={id} className="action plein" disabled={occupe}>{occupe ? 'Envoi…' : 'Envoyer'}<span className="ico">{ICONES.fleche}</span></button>
+      <Action className="gauche" icone={ICONES.trombone} onClick={() => fichiers.current?.click()}>Joindre un fichier</Action>
+      <Action plein iconeApres={ICONES.fleche_pages} type="submit" form={id} disabled={occupe}>{occupe ? 'Envoi…' : 'Envoyer'}</Action>
     </>
   );
   return { champs, pied };
@@ -206,18 +188,18 @@ function Message({ m, replie }: { m: MailLu; replie: boolean }) {
       })}
     </p>
   );
-  const nom = <b>{nomAffiche(m.expediteur) || '—'}</b>, quand = <time>{formaterDate(m.recu_le)}</time>;
+  const nom = <b>{nomAffiche(m.expediteur) || '—'}</b>, recu = <time>{quand(m.recu_le)}</time>;
   const vers = `→ ${adresseSeule(m.destinataire) || '—'}`;
   return (
     <li className={`msg${m.sens === 'sortant' ? ' envoye' : ''}`}>
       {replie ? (
         <details>
-          <summary className="msg-tete">{nom}<span className="d">{m.sujet || '(sans objet)'}</span>{quand}</summary>
+          <summary className="msg-tete">{nom}<span className="d">{m.sujet || '(sans objet)'}</span>{recu}</summary>
           <p className="msg-objet">{vers}</p>{corps}{pieces}
         </details>
       ) : (
         <>
-          <p className="msg-tete">{nom}<span className="d">{vers}</span>{quand}</p>
+          <p className="msg-tete">{nom}<span className="d">{vers}</span>{recu}</p>
           <p className="msg-objet">{m.sujet || '(sans objet)'}</p>{corps}{pieces}
         </>
       )}
@@ -244,7 +226,7 @@ const poserFil = (id: string, lu: FilLu) => {
 };
 const useFilLu = (id: string) => useSyncExternalStore(abonner, () => fils.get(id), () => undefined);
 
-type ProprietesFil = { setAvis: (a: Avis) => void; relire: () => void; voirFiche: (siren: string) => void; voirOffre: (cle: string) => void; fermer: () => void };
+type ProprietesFil = { dire: Dire; relire: () => void; voirFiche: (siren: string) => void; voirOffre: (cle: string) => void; fermer: () => void };
 
 // Fil : échange, offre où il est rangé, réponse au dernier mail reçu.
 export function ongletFil(id: string, proprietes: ProprietesFil): Onglet {
@@ -264,10 +246,10 @@ function TitreFil({ id }: { id: string }) {
   return <>{`Fil · ${entreprise || '…'}`}</>;
 }
 
-function CorpsFil({ id, setAvis, relire, voirFiche, voirOffre, fermer }: ProprietesFil & { id: string }) {
+function CorpsFil({ id, dire, relire, voirFiche, voirOffre, fermer }: ProprietesFil & { id: string }) {
   const lu = useFilLu(id);
   const [tour, setTour] = useState(0);
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   const uid = useId();
   const relireListe = useRef(relire);
   useEffect(() => {
@@ -295,9 +277,11 @@ function CorpsFil({ id, setAvis, relire, voirFiche, voirOffre, fermer }: Proprie
   // On répond au dernier mail reçu ; un brouillon sur un plus ancien d'abord.
   const dernierRecu = [...fil].reverse().find((m) => m.sens === 'entrant');
   const aRelire = [...fil].reverse().find((m) => m.sens === 'entrant' && m.reponse) ?? dernierRecu;
+  // Un mail de la boîte perso ne se répond pas d'ici.
+  const repondable = aRelire?.repondable !== false;
   const offres = lu?.offres ?? [];
   const envoi = useEnvoi({
-    id: `${uid}-envoi`, cle: `${id}|${aRelire?.message_id ?? ''}`, setAvis, titre: 'Répondre',
+    id: `${uid}-envoi`, cle: `${id}|${aRelire?.message_id ?? ''}`, dire, titre: 'Répondre',
     depart: {
       destinataire: aRelire ? adresseSeule(aRelire.expediteur) : '', corps: aRelire?.reponse ?? '', repond_a: aRelire?.message_id ?? '',
       sujet: aRelire ? (aRelire.sujet?.startsWith('Re: ') ? aRelire.sujet : `Re: ${aRelire.sujet ?? ''}`) : '',
@@ -309,34 +293,29 @@ function CorpsFil({ id, setAvis, relire, voirFiche, voirOffre, fermer }: Proprie
       relire();
     },
   });
-  const rediger = async () => {
+  const rediger = () => {
     if (!dernierRecu) return;
-    setOccupe(true);
-    try {
+    return geste(async () => {
       const r = await appeler<{ redige: boolean; erreur: string }>(`/mails/brouillon/${encodeURIComponent(dernierRecu.message_id)}`, { methode: 'POST' });
-      setAvis(!r.redige ? { texte: "Rien à rédiger : ni demande d'informations, ni refus d'une adresse qui lit ses réponses.", erreur: true }
-        : r.erreur ? { texte: `Brouillon non rédigé : ${r.erreur}`, erreur: true } : { texte: "Brouillon rédigé : relisez-le, rien n'est parti." });
+      dire(!r.redige ? "Rien à rédiger : ni demande d'informations, ni refus d'une adresse qui lit ses réponses."
+        : r.erreur ? `Brouillon non rédigé : ${r.erreur}` : "Brouillon rédigé : relisez-le, rien n'est parti.", !r.redige || !!r.erreur);
       setTour((t) => t + 1);
-    } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
-    } finally {
-      setOccupe(false);
-    }
+    });
   };
   const ranger = async (cle: string) => {
     try {
       const r = await appeler<{ mails: number }>('/mails/fil/offre', { methode: 'POST', corps: { message_id: id, offre_cle: cle } });
-      setAvis({ texte: cle ? `${r.mails} mail(s) du fil rattaché(s) à l'offre choisie.` : `${r.mails} mail(s) du fil détaché(s) : il n'est plus sur aucune offre.` });
+      dire(cle ? `${r.mails} mail(s) du fil rattaché(s) à l'offre choisie.` : `${r.mails} mail(s) du fil détaché(s) : il n'est plus sur aucune offre.`);
       setTour((t) => t + 1);
     } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
+      dire(message(e), true);
     }
   };
   const connue = offres.some((o) => o.cle === racine?.offre_cle);
   const corps = erreur ? (
     <>
       <p className="texte-f erreur-f" role="alert">{erreur}</p>
-      <button type="button" className="action" onClick={() => setTour((t) => t + 1)}><span className="ico">{ICONES.reecrire}</span>Relire le fil</button>
+      <Action icone={ICONES.reprendre} onClick={() => setTour((t) => t + 1)}>Relire le fil</Action>
     </>
   ) : !racine ? <p className="texte-f">Lecture du fil…</p> : (
     <>
@@ -346,70 +325,61 @@ function CorpsFil({ id, setAvis, relire, voirFiche, voirOffre, fermer }: Proprie
       </p>
       <div className="actions actions-f">
         {racine.entreprise_siren && (
-          <button type="button" className="action" aria-haspopup="dialog" data-ouvre="fiche-entreprise" data-objet={racine.entreprise_siren} onClick={() => voirFiche(racine.entreprise_siren!)}>
-            <span className="ico">{ICONES.fiche}</span>Voir la fiche
-          </button>
+          <Action icone={ICONES.fiche} aria-haspopup="dialog" data-ouvre="fiche-entreprise" data-objet={racine.entreprise_siren} onClick={() => voirFiche(racine.entreprise_siren!)}>Voir la fiche
+          </Action>
         )}
         {racine.offre_cle && (
-          <button type="button" className="action" aria-haspopup="dialog" data-ouvre="fiche-offre" data-objet={racine.offre_cle} onClick={() => voirOffre(racine.offre_cle!)}>
-            <span className="ico">{ICONES.offre}</span>Voir l&apos;offre
-          </button>
+          <Action icone={ICONES.offre} aria-haspopup="dialog" data-ouvre="fiche-offre" data-objet={racine.offre_cle} onClick={() => voirOffre(racine.offre_cle!)}>Voir l&apos;offre
+          </Action>
         )}
         {dernierRecu?.a_repondre && (
-          <button type="button" className="action" disabled={occupe} title="Le modèle écrit la réponse au dernier mail reçu ; elle attend ici, rien ne part." onClick={() => void rediger()}>
-            <span className="ico">{ICONES.reecrire}</span>{occupe ? 'Rédaction…' : dernierRecu.reponse ? 'Réécrire le brouillon' : 'Rédiger le brouillon'}
-          </button>
+          <Action icone={ICONES.reprendre} disabled={occupe} title="Le modèle écrit la réponse au dernier mail reçu ; elle attend ici, rien ne part." onClick={() => void rediger()}>{occupe ? 'Rédaction…' : dernierRecu.reponse ? 'Réécrire le brouillon' : 'Rédiger le brouillon'}
+          </Action>
         )}
       </div>
-      <div className="champ">
-        <label htmlFor={`${uid}-offre`} title="Tout le fil suit : ses mails passent sur l'offre choisie, ou sur aucune.">Offre du fil</label>
-        <select id={`${uid}-offre`} className="saisie" value={racine.offre_cle ?? ''} onChange={(e) => void ranger(e.target.value)}>
+      <ChampListe id={`${uid}-offre`} titre="Tout le fil suit : ses mails passent sur l'offre choisie, ou sur aucune." libelle="Offre du fil" value={racine.offre_cle ?? ''} onChange={(e) => void ranger(e.target.value)}>
           <option value="">— aucune (fil détaché) —</option>
           {racine.offre_cle && !connue && <option value={racine.offre_cle}>offre actuelle</option>}
           {offres.map((o) => <option key={o.cle} value={o.cle}>{`${o.entreprise || '—'} — ${o.titre || '(sans intitulé)'} · ${jourMois(o.date)}`}</option>)}
-        </select>
-      </div>
+        </ChampListe>
       <ol className="messages-fil">
         {fil.map((m, rang) => <Message key={m.message_id} m={m} replie={rang < fil.length - 1} />)}
       </ol>
-      {aRelire ? envoi.champs : <p className="texte-f repondre">Ce fil ne contient aucun message reçu : il n&apos;y a personne à qui répondre.</p>}
+      {!aRelire ? <p className="texte-f repondre">Ce fil ne contient aucun message reçu : il n&apos;y a personne à qui répondre.</p>
+        : repondable ? envoi.champs
+        : <p className="texte-f repondre repondre-perso">Ce mail est arrivé sur votre boîte personnelle : répondez-y depuis celle-ci.</p>}
     </>
   );
   // Joindre et Envoyer vont au pied de la fenêtre, propres à chacune.
   return (
     <>
       {corps}
-      {aRelire && <AuPied>{envoi.pied}</AuPied>}
+      {aRelire && repondable && <AuPied>{envoi.pied}</AuPied>}
     </>
   );
 }
 
 // Étiqueter N mails : des tags posés, retirés ou remplacés sur la sélection
-export function useOngletEtiqueter({ selection, setAvis, relire, fermer }: { selection: Set<string>; setAvis: (a: Avis) => void; relire: () => void; fermer: () => void }): Onglet {
+export function useOngletEtiqueter({ selection, dire, relire, fermer }: { selection: Set<string>; dire: Dire; relire: () => void; fermer: () => void }): Onglet {
   const [coches, setCoches] = useState<Set<string>>(() => new Set());
   const [libres, setLibres] = useState('');
   const [mode, setMode] = useState('ajouter');
-  const [occupe, setOccupe] = useState(false);
-  const appliquer = async (e: React.FormEvent) => {
+  const { occupe, geste } = useGeste((t) => dire(t, true));
+  const appliquer = (e: React.FormEvent) => {
     e.preventDefault();
     const tags = [...coches, ...libres.split(',').map((t) => t.trim())].filter(Boolean);
     if (!tags.length && mode !== 'remplacer') {
-      setAvis({ texte: 'Aucun tag indiqué.', erreur: true });
+      dire('Aucun tag indiqué.', true);
       return;
     }
-    setOccupe(true);
-    try {
+    return geste(async () => {
       const r = await appeler<{ touches: number }>('/mails/etiquettes', { methode: 'POST', corps: { identifiants: [...selection], tags, mode } });
-      setAvis({ texte: `${r.touches} mail(s) réétiqueté(s).` });
+      dire(`${r.touches} mail(s) réétiqueté(s).`);
       setCoches(new Set());
       setLibres('');
       fermer();
       relire();
-    } catch (err) {
-      setAvis({ texte: message(err), erreur: true });
-    } finally {
-      setOccupe(false);
-    }
+    });
   };
   const n = selection.size;
   return {
@@ -430,31 +400,30 @@ export function useOngletEtiqueter({ selection, setAvis, relire, fermer }: { sel
             </label>
           ))}
         </div>
-        <div className="champ"><label htmlFor="tags-libres">Autres tags</label>
-          <input id="tags-libres" className="saisie" placeholder="urgent, à relancer…" value={libres} onChange={(e) => setLibres(e.target.value)} /></div>
-        <div className="champ"><span className="lib-champ">Mode</span>
+        <ChampSaisie id="tags-libres" libelle="Autres tags" placeholder="urgent, à relancer…" value={libres} onChange={(e) => setLibres(e.target.value)} />
+        <Champ groupe libelle="Mode">
           <div className="modes-f" role="radiogroup" aria-label="Mode">
             {[['ajouter', 'Ajouter'], ['retirer', 'Retirer'], ['remplacer', 'Remplacer tout']].map(([v, nom]) => (
               <label key={v} className="choix mode-f"><input type="radio" name="mode-tags" className="cache" checked={mode === v} onChange={() => setMode(v)} />{nom}</label>
             ))}
           </div>
-        </div>
+        </Champ>
       </form>
     ),
     pied: (
       <>
-        <button type="button" className="action" onClick={fermer}>Annuler</button>
-        <button type="submit" form="etiqueter-f" className="action plein" disabled={occupe || !n}>Appliquer<span className="ico">{ICONES.fleche}</span></button>
+        <Action onClick={fermer}>Annuler</Action>
+        <Action plein iconeApres={ICONES.fleche_pages} type="submit" form="etiqueter-f" disabled={occupe || !n}>Appliquer</Action>
       </>
     ),
   };
 }
 
-// Nouveau message : un mail neuf depuis l'adresse des candidatures.
-export function useOngletEcrire({ adresse, setAvis, apres }: { adresse: string; setAvis: (a: Avis) => void; apres: () => void }): Onglet {
+// Nouveau message : part de l'adresse du site, sinon de l'adresse fixe.
+export function useOngletEcrire({ allume, dire, apres }: { allume: boolean; dire: Dire; apres: () => void }): Onglet {
   const [envois, setEnvois] = useState(0);
   const envoi = useEnvoi({
-    id: 'nouveau-envoi', cle: `nouveau-${envois}`, setAvis, depart: { destinataire: '', sujet: '', corps: '', repond_a: '' },
+    id: 'nouveau-envoi', cle: `nouveau-${envois}`, dire, depart: { destinataire: '', sujet: '', corps: '', repond_a: '' },
     apres: () => {
       setEnvois((n) => n + 1);
       apres();
@@ -464,7 +433,7 @@ export function useOngletEcrire({ adresse, setAvis, apres }: { adresse: string; 
     cle: 'ecrire', titre: 'Écrire', label: 'Nouveau message',
     corps: (
       <>
-        <p className="meta-f">{adresse ? `Depuis ${adresse}` : 'Aucune adresse réglée : voyez les Réglages.'}</p>
+        <p className="meta-f">{allume ? "Part de votre adresse pour ce site si vous en avez une, sinon de votre adresse fixe." : "Le suivi des mails n'est pas encore en service : l'envoi sera refusé."}</p>
         {envoi.champs}
       </>
     ),
@@ -473,98 +442,122 @@ export function useOngletEcrire({ adresse, setAvis, apres }: { adresse: string; 
 }
 
 // Réglages · Mails : la brique Mail du compte ; le Modèle n'est qu'à l'admin
-type Champ = { cle: string; libelle: string; sorte?: 'nombre' | 'inter' | 'secret' | 'modele'; aide?: string; infobulle?: string; admin?: boolean };
-const BOITE: (Champ | [Champ, Champ])[] = [
-  { cle: 'mail_adresse', libelle: 'Identifiant du Bridge', aide: "L'adresse principale du compte : c'est elle qui ouvre la boîte, où le Bridge range TOUTES vos adresses." },
-  { cle: 'mail_candidat', libelle: 'Adresse des candidatures', infobulle: "Celle des CV. Seuls les mails arrivés à elle — ou partis d'elle — sont suivis, et les réponses partent d'elle. Vide : toute la boîte." },
-  { cle: 'mail_secret', libelle: 'Mot de passe IMAP', sorte: 'secret', aide: 'Celui GÉNÉRÉ PAR LE BRIDGE, jamais celui du compte.' },
-  [{ cle: 'mail_imap_hote', libelle: 'Hôte IMAP' }, { cle: 'mail_imap_port', libelle: 'Port IMAP', sorte: 'nombre' }],
-  [{ cle: 'mail_dossier', libelle: 'Dossier relevé' }, { cle: 'mail_timeout_secondes', libelle: 'Timeout (s)', sorte: 'nombre' }],
-  { cle: 'mail_dossier_envoyes', libelle: 'Dossier des envoyés', infobulle: "Relevé lui aussi : un mail écrit depuis votre client de messagerie ouvre un fil dont la suite arrive ici. Vide : demandé au serveur (« Sent », « Envoyés »…)." },
-  { cle: 'mail_fenetre_jours', libelle: 'Première relève (jours)', sorte: 'nombre', infobulle: 'De combien de jours on remonte au PREMIER passage sur un dossier. Ensuite la relève reprend au curseur, quel que soit le temps écoulé.' },
-  [{ cle: 'mail_smtp_hote', libelle: 'Hôte SMTP', infobulle: 'Par où les mails partent — le Bridge, lui aussi local.' }, { cle: 'mail_smtp_port', libelle: 'Port SMTP', sorte: 'nombre' }],
-];
+type Champ = { cle: string; libelle: string; sorte?: 'nombre' | 'inter' | 'modele'; aide?: string; infobulle?: string; admin?: boolean };
 const REPONSES: Champ[] = [
+  { cle: 'mail_timeout_secondes', libelle: 'Timeout (s)', sorte: 'nombre' },
   { cle: 'mail_reponses', libelle: 'Rédiger les réponses', sorte: 'inter', infobulle: "Demandes d'informations et refus d'une adresse qui lit ses réponses : le brouillon attend d'être relu dans le fil, il ne part pas tout seul. Désactivé : étiquetage seul, sans tokens." },
   { cle: 'mail_modele', libelle: 'Modèle', sorte: 'modele', admin: true, aide: 'Un des modèles définis en haut des Paramètres.' },
   { cle: 'mail_signature', libelle: 'Signature', infobulle: 'Reprise à la fin des brouillons rédigés. Vide : aucune.' },
   { cle: 'mail_relance_jours', libelle: 'Relancer après (jours)', sorte: 'nombre', infobulle: "Une candidature restée sans nouvelles N jours reçoit un brouillon de relance, deux au plus, jamais vers un no-reply. 0 : aucune relance." },
-];
-const BOITE_REELLE: Champ[] = [
-  { cle: 'mail_synchro_boite', libelle: 'Synchroniser avec la boîte', sorte: 'inter', infobulle: "Les tags du dashboard se posent aussi dans la vraie boîte, et ce que vous y changez revient ici, tant que l'écoute tourne. Prend effet au prochain démarrage de l'écoute." },
-  { cle: 'mail_supprimer_inutiles', libelle: 'Jeter les mails inutiles', sorte: 'inter', infobulle: "Une fois par jour, les mails tagués « Inutile » partent à la corbeille de la vraie boîte, puis quittent le dashboard." },
   { cle: 'mail_preparation', libelle: 'Préparer les entretiens', sorte: 'inter', infobulle: "Un mail qui propose un rendez-vous fait rédiger la préparation de l'entretien, à lire dans la fiche de l'offre." },
 ];
 type Parametres = Record<string, unknown> & { modeles?: { nom: string; modele?: string }[]; mail_mots_etiquettes?: Record<string, string[]> };
 const texteMots = (mots?: Record<string, string[]>) => Object.fromEntries(MOTS_ETIQUETTES.map((t) => [t, (mots?.[t] ?? []).join(', ')]));
 
-export function useOngletReglages({ admin, actif, fermer, setAvis, relire }: { admin: boolean; actif: boolean; fermer: () => void; setAvis: (a: Avis) => void; relire: () => void }): Onglet {
+// Ce que /adresses/suivi rend : l'adresse de suivi, la règle, la confirmation
+type Suivi = {
+  adresse: string; expediteurs: string[]; regle: string; empreinte: string; a_recopier: boolean;
+  confirmation: { de: string; code: string; lien: string } | null;
+};
+
+// Générer les règles : la ligne Gmail à coller, pour les vraies adresses
+function GenererRegles({ actif, dire }: { actif: boolean; dire: Dire }) {
+  const [suivi, setSuivi] = useState<Suivi | null>(null);
+  const lire = async () => {
+    try {
+      setSuivi((await appeler<{ suivi: Suivi | null }>('/adresses/suivi', { signal: null })).suivi);
+    } catch {
+      /* le prochain tour réessaie */
+    }
+  };
+  // La demande de confirmation de Gmail arrive pendant que le panneau est ouvert
+  useSondage(lire, 5000, actif);
+  const copier = async (texte: string, regle: boolean) => {
+    try {
+      await navigator.clipboard.writeText(texte);
+      if (regle && suivi) await appeler('/adresses/suivi/copiee', { methode: 'POST', corps: { empreinte: suivi.empreinte } });
+      dire(regle ? 'Règle copiée : collez-la dans Gmail.' : 'Liste copiée.');
+      await lire();
+    } catch (e) {
+      dire(message(e), true);
+    }
+  };
+  if (!suivi) return null;
+  const c = suivi.confirmation;
+  return (
+    <SectionFiche titre="Générer les règles" className="regles-f">
+      <p className="aide-champ">Les sites où vous gardez votre vraie adresse entrent dans le suivi, sans mot de passe de boîte.</p>
+      <ul className="liste-f">
+        <li>Adresse de suivi<span className="d a-copier">{suivi.adresse}</span></li>
+        {c?.code && <li>Code de confirmation<span className="d a-copier">{c.code}</span></li>}
+        {c?.lien && <li>Lien de confirmation<span className="d a-copier">{c.lien}</span></li>}
+        {c && <li>Reçu de<span className="d">{c.de || '—'}</span></li>}
+      </ul>
+      <ol className="etapes">
+        <li>Gmail, « Voir tous les paramètres », « Transfert et POP/IMAP » : ajoutez l&apos;adresse de suivi, puis saisissez le code de confirmation.</li>
+        <li>« Filtres et adresses bloquées », « Créer un filtre » : collez la ligne dans « Contient les mots ».</li>
+        <li>« Créer un filtre », cochez « Transférer à » et choisissez l&apos;adresse de suivi.</li>
+      </ol>
+      {suivi.regle ? (
+        <>
+          <p className="texte-f a-copier">{suivi.regle}</p>
+          {suivi.a_recopier && <p className="aide-champ a-recopier">La liste a changé depuis votre dernière copie : recopiez la règle dans Gmail.</p>}
+          <Action onClick={() => void copier(suivi.regle, true)}>Copier</Action>
+          <p className="lib-champ autre-boite">Autre messagerie : les expéditeurs</p>
+          <p className="texte-f a-copier">{suivi.expediteurs.join(', ')}</p>
+          <Action onClick={() => void copier(suivi.expediteurs.join(', '), false)}>Copier la liste</Action>
+        </>
+      ) : <p className="aide-champ">Aucun site à compte existant pour l&apos;instant.</p>}
+    </SectionFiche>
+  );
+}
+
+export function useOngletReglages({ admin, actif, fermer, dire, relire }: { admin: boolean; actif: boolean; fermer: () => void; dire: Dire; relire: () => void }): Onglet {
   // Réglages gardés d'une visite à l'autre, relus à l'ouverture.
   const [lus, setLus] = useState(() => repris<Parametres | null>('mails:reglages', null));
   const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
   const [mots, setMots] = useState<Record<string, string>>(() => (lus ? texteMots(lus.mail_mots_etiquettes) : {}));
   useGarder('mails', { reglages: lus });
-  const [secret, setSecret] = useState<string | null>(null);
   const [erreur, setErreur] = useState('');
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   const reprendre = (p: Parametres) => {
     setLus(p);
     setValeurs(p);
     setMots(texteMots(p.mail_mots_etiquettes));
-    setSecret(null);
   };
   useParametresOuverts<Parametres>(actif, reprendre, setErreur);
-  const champs = [...BOITE.flat(), ...REPONSES, ...BOITE_REELLE].filter((c) => c.sorte !== 'secret' && (admin || !c.admin));
+  const champs = REPONSES.filter((c) => admin || !c.admin);
   const changes: Record<string, unknown> = {};
   if (lus) {
     for (const c of champs) if (valeurs[c.cle] !== lus[c.cle]) changes[c.cle] = c.sorte === 'nombre' ? Number(valeurs[c.cle]) : valeurs[c.cle];
     const avant = texteMots(lus.mail_mots_etiquettes);
     if (MOTS_ETIQUETTES.some((t) => mots[t] !== avant[t])) {
-      changes.mail_mots_etiquettes = Object.fromEntries(MOTS_ETIQUETTES.map((t) => [t, (mots[t] ?? '').split(',').map((m) => m.trim()).filter(Boolean)]));
+      changes.mail_mots_etiquettes = Object.fromEntries(MOTS_ETIQUETTES.map((t) => [t, parVirgules(mots[t] ?? '')]));
     }
-    // Un secret ne part que tapé ou effacé ; vide, le champ garde l'enregistré.
-    if (secret !== null) changes.mail_secret = secret;
   }
-  const enregistrer = async (e: React.FormEvent) => {
+  const enregistrer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!Object.keys(changes).length) return;
-    setOccupe(true);
-    try {
+    return geste(async () => {
       const r = await appeler<Parametres & { rejeu_mails?: number }>('/parametres', { methode: 'PUT', corps: changes });
       reprendre(r);
-      setAvis({ texte: `Réglages enregistrés${r.rejeu_mails ? ` — ${r.rejeu_mails} mail(s) réétiqueté(s) par mots-clés` : ''}.` });
+      dire(`Réglages enregistrés${r.rejeu_mails ? ` — ${r.rejeu_mails} mail(s) réétiqueté(s) par mots-clés` : ''}.`);
       relire();
-    } catch (err) {
-      setAvis({ texte: message(err), erreur: true });
-    } finally {
-      setOccupe(false);
-    }
+    });
   };
   const champ = (c: Champ) => {
     const id = `rm-${c.cle}`;
     const marque = c.admin && <MarqueAdmin />;
     if (c.sorte === 'inter') {
       return (
-        <label key={c.cle} className="inter" title={c.infobulle}>{c.libelle}
-          <input type="checkbox" checked={!!valeurs[c.cle]} onChange={(e) => setValeurs({ ...valeurs, [c.cle]: e.target.checked })} /></label>
+        <Interrupteur key={c.cle} libelle={c.libelle} title={c.infobulle} checked={!!valeurs[c.cle]} onChange={(e) => setValeurs({ ...valeurs, [c.cle]: e.target.checked })} />
       );
     }
     let saisie: React.ReactNode;
-    if (c.sorte === 'secret') {
-      const enregistre = !!lus?.[c.cle];
-      saisie = (
-        <span className="secret-f">
-          <input id={id} className="saisie" type="password" autoComplete="new-password" value={secret ?? ''}
-            placeholder={secret === '' && enregistre ? "effacé à l'enregistrement" : enregistre ? 'enregistrée' : 'non renseignée'}
-            title={enregistre ? 'Enregistré : tapez une valeur pour le remplacer.' : undefined} onChange={(e) => setSecret(e.target.value || null)} />
-          {enregistre && secret === null && <button type="button" className="action" title="Retire ce secret à l'enregistrement." onClick={() => setSecret('')}>Effacer</button>}
-        </span>
-      );
-    } else if (c.sorte === 'modele') {
+    if (c.sorte === 'modele') {
       saisie = (
         <select id={id} className="saisie" value={String(valeurs[c.cle] ?? '')} onChange={(e) => setValeurs({ ...valeurs, [c.cle]: e.target.value })}>
-          <option value="">Aucun</option>
-          {(lus?.modeles ?? []).map((m) => <option key={m.nom} value={m.nom}>{m.modele ? `${m.nom} · ${m.modele}` : m.nom}</option>)}
+          <OptionsModele modeles={lus?.modeles ?? []} vide="Aucun" valeur={String(valeurs[c.cle] ?? '')} />
         </select>
       );
     } else {
@@ -574,7 +567,7 @@ export function useOngletReglages({ admin, actif, fermer, setAvis, relire }: { a
       );
     }
     return (
-      <div key={c.cle} className="champ"><label htmlFor={id} title={c.infobulle}>{c.libelle}{marque}</label>{saisie}{c.aide && <p className="aide-champ">{c.aide}</p>}</div>
+      <Champ pour={id} titre={c.infobulle} libelle={<>{c.libelle}{marque}</>} aide={c.aide} key={c.cle}>{saisie}</Champ>
     );
   };
   const visibles = (liste: Champ[]) => liste.filter((c) => admin || !c.admin).map(champ);
@@ -582,31 +575,25 @@ export function useOngletReglages({ admin, actif, fermer, setAvis, relire }: { a
     cle: 'reglages', titre: 'Réglages', label: 'Réglages · Mails',
     corps: erreur ? <p className="texte-f erreur-f" role="alert">{erreur}</p> : !lus ? <p className="texte-f">Lecture des réglages…</p> : (
       <form id="reglages-mails" onSubmit={(e) => void enregistrer(e)}>
-        <div className="section-f"><h3>Boîte</h3>
-          {BOITE.map((c) => (Array.isArray(c) ? <div key={c[0].cle} className="grille-2">{c.map(champ)}</div> : champ(c)))}
-        </div>
-        <div className="section-f"><h3>Réponses</h3>{visibles(REPONSES)}</div>
-        <div className="section-f"><h3>Boîte réelle</h3>{visibles(BOITE_REELLE)}</div>
-        <div className="section-f mots-f"><h3>Tri par mots-clés</h3>
+        {!!lus.adresses_facade && <GenererRegles actif={actif} dire={dire} />}
+        <SectionFiche titre="Réponses">{visibles(REPONSES)}</SectionFiche>
+        <SectionFiche titre="Tri par mots-clés" className="mots-f">
           <p className="aide-champ">Un mot lu dans l&apos;objet ou le corps d&apos;un mail reçu lui pose ce tag d&apos;office, sans appeler le modèle.</p>
           <div className="grille-2">
             {MOTS_ETIQUETTES.map((t) => (
-              <div key={t} className="champ" style={{ '--n': COULEURS_NATURE[t] } as React.CSSProperties}>
-                <label htmlFor={`mk-${t}`}>{NATURES[t]}</label>
-                <input id={`mk-${t}`} className="saisie" placeholder="mots séparés par des virgules" value={mots[t] ?? ''} onChange={(e) => setMots({ ...mots, [t]: e.target.value })} />
-              </div>
+              <ChampSaisie id={`mk-${t}`} libelle={NATURES[t]} key={t} style={{ '--n': COULEURS_NATURE[t] } as React.CSSProperties} placeholder="mots séparés par des virgules" value={mots[t] ?? ''} onChange={(e) => setMots({ ...mots, [t]: e.target.value })} />
             ))}
           </div>
-        </div>
+        </SectionFiche>
       </form>
     ),
     pied: (
       <>
-        <button type="button" className="action" onClick={() => {
+        <Action onClick={() => {
           if (lus) reprendre(lus);
           fermer();
-        }}>Annuler</button>
-        <button type="submit" form="reglages-mails" className="action plein" disabled={occupe || !Object.keys(changes).length}>Enregistrer<span className="ico">{ICONES.valider}</span></button>
+        }}>Annuler</Action>
+        <Action plein iconeApres={ICONES.coche} type="submit" form="reglages-mails" disabled={occupe || !Object.keys(changes).length}>Enregistrer</Action>
       </>
     ),
   };
@@ -616,7 +603,7 @@ export function useOngletReglages({ admin, actif, fermer, setAvis, relire }: { a
 type Argument = { cle: string; libelle: string; type: string; aide: string; valeur: unknown; details: { valeur: string; libelle: string; texte: string }[] };
 type Course = { en_cours: boolean; journal: string; ok: boolean | null; erreur: string; depuis_s: number; duree_s: number };
 
-export function useOngletExecuter({ actif, fermer, setAvis }: { actif: boolean; fermer: () => void; setAvis: (a: Avis) => void }): Onglet {
+export function useOngletExecuter({ actif, fermer, dire }: { actif: boolean; fermer: () => void; dire: Dire }): Onglet {
   // Brique et lancement gardés d'une visite à l'autre, relus à l'ouverture.
   const [args, setArgs] = useState(() => repris<Argument[] | null>('mails:arguments', null));
   const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => Object.fromEntries((args ?? []).map((a) => [a.cle, a.valeur])));
@@ -652,19 +639,19 @@ export function useOngletExecuter({ actif, fermer, setAvis }: { actif: boolean; 
     try {
       if (course?.en_cours) {
         const r = await appeler<{ arretee: boolean }>('/atelier/mail/arreter', { methode: 'POST' });
-        setAvis(r.arretee ? { texte: "Brique tuée — ce qu'elle avait dit reste affiché." } : { texte: 'Aucun lancement en cours.', erreur: true });
+        dire(r.arretee ? "Brique tuée — ce qu'elle avait dit reste affiché." : 'Aucun lancement en cours.', !r.arretee);
       } else if (!test) {
         // Hors test, le pipeline lance la brique : journal, résultat écrit en base.
         const r = await appeler<{ lancee: boolean }>('/briques/mail/lancer', { methode: 'POST' });
-        setAvis(r.lancee ? { texte: 'Brique mail lancée par le pipeline — le résultat est écrit en base, suivez le journal.' } : { texte: 'Brique mail déjà en cours.', erreur: true });
+        dire(r.lancee ? 'Brique mail lancée par le pipeline — le résultat est écrit en base, suivez le journal.' : 'Brique mail déjà en cours.', !r.lancee);
         return;
       } else {
         const r = await appeler<{ lancee: boolean; etat: Course }>('/atelier/mail', { methode: 'POST', corps: { valeurs } });
-        setAvis(r.lancee ? { texte: 'Test lancé — rien ne sera écrit en base.' } : { texte: 'Brique mail déjà lancée depuis ici : attendez-la, ou arrêtez-la.', erreur: true });
+        dire(r.lancee ? 'Test lancé — rien ne sera écrit en base.' : 'Brique mail déjà lancée depuis ici : attendez-la, ou arrêtez-la.', !r.lancee);
       }
       setCourse(await appeler<Course>('/atelier/mail'));
     } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
+      dire(message(e), true);
     }
   };
   const commande = args?.find((a) => a.type === 'commande');
@@ -679,7 +666,7 @@ export function useOngletExecuter({ actif, fermer, setAvis }: { actif: boolean; 
       <>
         {commande && (
           <div className="section-f">
-            <div className="champ"><span className="lib-champ">{commande.libelle}<MarqueAdmin /></span>
+            <Champ groupe libelle={<>{commande.libelle}<MarqueAdmin /></>}>
               <div className="commandes-f" role="radiogroup" aria-label={commande.libelle}>
                 {commande.details.map((d) => (
                   <label key={d.valeur} className="choix commande-f">
@@ -688,18 +675,17 @@ export function useOngletExecuter({ actif, fermer, setAvis }: { actif: boolean; 
                   </label>
                 ))}
               </div>
-            </div>
+            </Champ>
           </div>
         )}
         <div className="section-f">
           {booleens.map((a) => (
             <div key={a.cle}>
-              <label className="inter"><span>{a.libelle}<MarqueAdmin /></span>
-                <input type="checkbox" checked={!!valeurs[a.cle]} onChange={(e) => setValeurs({ ...valeurs, [a.cle]: e.target.checked })} /></label>
+              <Interrupteur libelle={<>{a.libelle}<MarqueAdmin /></>} checked={!!valeurs[a.cle]} onChange={(e) => setValeurs({ ...valeurs, [a.cle]: e.target.checked })} />
               {a.aide && <p className="aide-champ">{a.aide}</p>}
             </div>
           ))}
-          <label className="inter"><span>Mode test<MarqueAdmin /></span><input type="checkbox" checked={test} onChange={(e) => setTest(e.target.checked)} /></label>
+          <Interrupteur libelle={<>Mode test<MarqueAdmin /></>} checked={test} onChange={(e) => setTest(e.target.checked)} />
           <p className="aide-champ">Coché : la brique tourne, sa sortie s&apos;affiche ici, et RIEN n&apos;est écrit en base. Décoché : le lancement passe par le pipeline et le résultat est conservé.</p>
         </div>
         {badge && (
@@ -712,8 +698,8 @@ export function useOngletExecuter({ actif, fermer, setAvis }: { actif: boolean; 
     ),
     pied: (
       <>
-        <button type="button" className="action" onClick={fermer}>Annuler</button>
-        <button type="button" className="action plein" disabled={!args} onClick={() => void lancer()}>{course?.en_cours ? 'Arrêter' : 'Exécuter'}<span className="ico">{ICONES.fleche}</span></button>
+        <Action onClick={fermer}>Annuler</Action>
+        <Action plein iconeApres={ICONES.fleche_pages} disabled={!args} onClick={() => void lancer()}>{course?.en_cours ? 'Arrêter' : 'Exécuter'}</Action>
       </>
     ),
   };

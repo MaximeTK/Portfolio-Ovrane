@@ -1,13 +1,9 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import { Dock } from '../../dock/Dock';
-import { Activite } from '../../activite/Activite';
 import type { ProprietesPage } from '../liste';
-import {
-  ActionOnglet, CorpsAtelier, CorpsDejaBase, CorpsReglages, ICONES, Lots, PiedAtelier, PiedDejaBase, PanneauFiches, PiedReglages, TableauFiches,
-  arbreFiches, useAtelier, useAvis, useBriques, useReglages, type ChampReglage, type Confirmation, type Lot,
-} from '../collecte/fiches';
+import { PageFiches, useEtatFiches, CorpsAtelier, CorpsDejaBase, CorpsReglages, Lots, PiedAtelier, PiedDejaBase, PiedReglages, arbreFiches, useAtelier, useBriques, useReglages, type ChampReglage, type Lot } from '../collecte/fiches';
+import { ActionOnglet } from '../../elements/Groupes';
+import { ICONES } from '../../elements/icones';
 
 const CHAMPS: ChampReglage[] = [
   { cle: 'parser_profondeur', libelle: 'Profondeur de crawl', type: 'nombre', aide: "Combien de clics le parser s'autorise depuis l'accueil. 1 : l'accueil seul. 3 : il descend jusqu'aux pages « Nous rejoindre » et « Contact »." },
@@ -19,32 +15,25 @@ const LOTS: Lot[] = [{ brique: 'parser', famille: 'parser', libelle: 'Parser', a
 const ARBRE = arbreFiches((l) => (l <= 1366 ? 420 : null));
 
 export default function PageParser(_: ProprietesPage) {
-  const { avis, dire } = useAvis();
-  const [selection, setSelection] = useState<Set<string>>(new Set());
-  const [confirmation, setConfirmation] = useState<Confirmation>(null);
-  const [version, setVersion] = useState(0);
-  const relire = useCallback(() => setVersion((v) => v + 1), []);
+  const etat = useEtatFiches();
+  const { dire, selection, setConfirmation, relire } = etat;
   const briques = useBriques('parser');
   const atelier = useAtelier('parser', dire, relire);
   const reglages = useReglages('parser', CHAMPS, dire, atelier.recharger);
 
   return (
-    <Dock id="parser" principal="fiches" arbre={ARBRE} fenetres={{ fiches: { mini: [470, 220] } }} panneau="executer">
-      <Activite />
-      <TableauFiches section="parser" titre="Fiches entreprises" avis={avis} version={version} selection={selection} choisir={setSelection}
-        confirmation={confirmation} annuler={() => setConfirmation(null)}
-        actions={(
+    <PageFiches section="parser" etat={etat} arbre={ARBRE} panneau="executer"
+      actions={(
           <>
-            <ActionOnglet cle="reglages" libelle="Réglages" icone={ICONES.reglages} />
-            <ActionOnglet cle="executer" libelle="Exécuter" icone={ICONES.executer} titre="Lance le parser à la main sur un site." />
+            <ActionOnglet cle="reglages" icone={ICONES.reglages} title="Réglages">Réglages</ActionOnglet>
+            <ActionOnglet cle="executer" icone={ICONES.executer} title="Lance le parser à la main sur un site.">Exécuter</ActionOnglet>
             <Lots lots={LOTS} actives={briques.actives} selection={selection} dire={dire} relire={briques.lire} demander={setConfirmation} />
           </>
-        )} />
-      <PanneauFiches avant={[
+      )}
+      avant={[
         { cle: 'reglages', titre: 'Réglages', label: 'Réglages · Parser', corps: <CorpsReglages champs={CHAMPS} r={reglages} />, pied: <PiedReglages r={reglages} /> },
         { cle: 'executer', titre: 'Exécuter', label: 'Parser · exécuter', corps: <CorpsAtelier at={atelier} />, pied: <PiedAtelier at={atelier} /> },
         ...(atelier.dejaBase ? [{ cle: 'deja-base', titre: 'Déjà en base', label: 'Cette entreprise est déjà en base', corps: <CorpsDejaBase at={atelier} />, pied: <PiedDejaBase at={atelier} /> }] : []),
       ]} />
-    </Dock>
   );
 }

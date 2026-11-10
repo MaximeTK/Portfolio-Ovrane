@@ -80,7 +80,6 @@
 .ov .workflows .vide-wf b{font-weight:600;color:rgb(var(--encre))}
 /* L'avis d'un geste : posé en bas à droite de la fenêtre ; un clic le ferme. */
 .ov .workflows .avis-wf{position:absolute;right:14px;bottom:14px;z-index:3;max-width:min(560px,calc(100% - 28px));margin:0;padding:8px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-10) / .88);box-shadow:0 8px 24px rgb(0 0 0 / .35);font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
-.ov .workflows .avis-wf.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
 
 /* Tableaux du panneau : largeurs au contenu, textes longs à la ligne. */
 .ov .wf-p .tab-wf{table-layout:auto;font-size:var(--t-corps,12px)}
@@ -176,8 +175,6 @@
 .ov.trame .workflows .retirer,.ov.trame .workflows .retirer:hover{font-size:.875rem;font-weight:500;color:var(--erreur);text-decoration:underline;text-underline-offset:2px}
 .ov.trame .workflows .vide-wf{padding:16px 4px;font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
 .ov.trame .workflows .vide-wf b{font-weight:500;color:var(--texte)}
-.ov.trame .workflows .avis-wf{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.trame .workflows .avis-wf.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Panneau : tableaux en 14 px, boutons de ligne et journal lisibles. */
 .ov.trame .wf-p .tab-wf{font-size:.875rem}
 .ov.trame .wf-p .tab-wf td{padding-top:8px;padding-bottom:8px;line-height:1.25rem}

@@ -3,6 +3,8 @@ import dynamic from 'next/dynamic';
 import type { Message } from './types';
 import { MessageBubble } from './MessageBubble';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
+import { TRAIT_ROND } from '@/features/site/elements';
+import { heure } from '@/features/illusion/elements/format';
 import { CHAT_UI } from '@/lib/messages';
 
 const ImageGallery = dynamic(() => import('./ImageGallery').then((m) => m.ImageGallery));
@@ -32,10 +34,10 @@ function formatDateDivider(timestamp: number): string {
 
 function formatMessageTime(timestamp: number): string {
   const date = new Date(timestamp);
-  const heure = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  if (memeJour(date, new Date())) return heure;
-  if (memeJour(date, hier())) return `${CHAT_UI.yesterday} ${heure}`;
-  return `${date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${heure}`;
+  const moment = heure(date);
+  if (memeJour(date, new Date())) return moment;
+  if (memeJour(date, hier())) return `${CHAT_UI.yesterday} ${moment}`;
+  return `${date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${moment}`;
 }
 
 export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessages, scrollTrigger }: MessagingViewProps) {
@@ -140,7 +142,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
             style={{ backgroundColor: currentPalette.topColor }}
           >
             <span>{CHAT_UI.backToLatest}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg {...TRAIT_ROND} width={12} height={12} strokeWidth={3}>
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </button>

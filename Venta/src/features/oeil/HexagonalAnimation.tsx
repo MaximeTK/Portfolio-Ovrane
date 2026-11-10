@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { useUIStore } from '@/lib/uiStore';
+import { horsAccueil, useUIStore } from '@/lib/uiStore';
 import { CENTRE_HEADER_PX } from '@/features/site/SiteHeader';
 
 // Largeur du conteneur une fois l'œil logé dans le header (hexagone ~29 px)
@@ -22,8 +22,10 @@ export interface HexagonalAnimationHandle {
   triggerWave: () => void;
 }
 
+export type AnimationOeil = 'standby' | 'thinking' | 'speak';
+
 interface HexagonalAnimationProps {
-  currentAnimation: 'standby' | 'thinking' | 'speak';
+  currentAnimation: AnimationOeil;
   isSpeaking: boolean;
   getAudioLevel: () => number;
   mode?: 'sleep' | 'awake';
@@ -54,7 +56,8 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
   const setCote = useUIStore((state) => state.setCote);
   const isSleep = mode === 'sleep';
   // Messagerie ou page ouverte : l'œil quitte le centre pour le header
-  const enHaut = !isSleep && (viewMode === 'messaging' || page !== null);
+  const horsDuCentre = useUIStore(horsAccueil);
+  const enHaut = !isSleep && horsDuCentre;
   // Si les canaux d'Illusion sont montrés, leur logo remplace l'œil du header
   const isInteractive = !isSleep && !isAppLocked && !(cote === 'illusion' && enHaut);
   // Endormi : deux gris ; éveillé : blanc ; en réflexion : jaune pâle

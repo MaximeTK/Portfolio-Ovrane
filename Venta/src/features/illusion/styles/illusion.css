@@ -241,7 +241,7 @@
 .ov .echos[data-forme=large] .fil-actions>li.jour{flex:0 0 100%}
 
 /* Fenêtres flottantes : au-dessus de la page, déplacées par leur barre. */
-.ov .flottante{position:absolute;z-index:8;display:flex;flex-direction:column;max-height:calc(100% - 96px);background:rgb(var(--sombre-14) / .62);-webkit-backdrop-filter:blur(26px) saturate(150%);backdrop-filter:blur(26px) saturate(150%);border:1px solid rgb(var(--encre) / .18);box-shadow:0 24px 64px rgb(0 0 0 / .4)}
+.ov .flottante{position:absolute;z-index:8;display:flex;flex-direction:column;max-height:calc(100% - 96px);box-shadow:0 24px 64px rgb(0 0 0 / .4)}
 .ov .f-barre{flex:none;display:flex;align-items:center;gap:10px;height:38px;padding:0 4px 0 12px;border-bottom:1px solid rgb(var(--encre) / .1);cursor:move;user-select:none}
 .ov .f-poignee{flex:none;width:10px;height:14px;background:radial-gradient(circle,rgb(var(--encre) / .5) 1px,transparent 1.6px) 0 0/5px 5px}
 .ov .f-titre{flex:1;min-width:0;font-size:var(--t-petit,10px);font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgb(var(--encre));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -347,8 +347,8 @@
 /* Fenêtre flottante : au-dessus des autres, liseré clair, suit la main. */
 .ov .dock [data-flot]{transition:none;box-shadow:inset 0 0 0 1px rgb(var(--encre) / calc(.38 * var(--lueur)))}
 /* Flou réglé : une flottante laisse voir ce qu'elle recouvre, voilé. */
-.ov.a-flou.th-verre .dock [data-flot]{-webkit-backdrop-filter:blur(var(--verre-flou));backdrop-filter:blur(var(--verre-flou))}
-.ov.a-flou.th-verre .dock [data-flot]::before{background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0)}
+.ov.a-flou.th-verre :is(.dock [data-flot],.flottante){-webkit-backdrop-filter:blur(var(--verre-flou));backdrop-filter:blur(var(--verre-flou))}
+.ov.a-flou.th-verre :is(.dock [data-flot],.flottante)::before{background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0)}
 /* Arrivée : chaque fenêtre naît d'une ligne centrale qui s'ouvre en 0,3 s. */
 /* Même dessin que le liseré : ces lignes bordent la fenêtre en mouvement. */
 .ov .ouv-ligne{display:none;position:absolute;left:0;right:0;top:calc(50% - 1px);z-index:4;height:2px;pointer-events:none;background:#fff;mix-blend-mode:overlay}

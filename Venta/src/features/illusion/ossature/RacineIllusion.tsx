@@ -8,6 +8,7 @@ import { useUIStore } from '@/lib/uiStore';
 import { classesTheme, useApparence } from '../apparence';
 import { DUREE_FLOTTANTE, LENTEUR_FLOTTANTE } from '../dock/moteur';
 import type { Compte } from '../api';
+import { DemandeCode } from '../partage/DemandeCode';
 import { DUREES, ecrire, mouvementReduit } from '../partage/glyphes';
 import { poserCompte } from '../stockage';
 
@@ -62,6 +63,7 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
       <div key={page} className="scene">
         {children}
       </div>
+      {compte && <DemandeCode />}
     </div>
   );
 }

@@ -1,0 +1,16 @@
+/* Ce que partagent les pages à groupes : navigation, pied, secret. */
+.ov [data-fen=reglages] .corps-groupes,.ov [data-fen=serveur] .corps-groupes{flex:1;min-height:0;display:flex;border-top:1px solid rgb(var(--encre) / .08)}
+.ov [data-fen=reglages] .groupes,.ov [data-fen=serveur] .groupes{flex:none;display:flex;flex-direction:column;padding:10px 28px 10px 20px;border-right:1px solid rgb(var(--encre) / .08);overflow-y:auto;scrollbar-width:none}
+.ov [data-fen=reglages] .rubrique,.ov [data-fen=serveur] .rubrique{display:flex;align-items:center;height:32px;font-size:var(--t-corps,13px);color:rgb(var(--encre) / .62);white-space:nowrap;text-align:left;transition:color .2s}
+.ov [data-fen=reglages] .rubrique:hover,.ov [data-fen=serveur] .rubrique:hover{color:rgb(var(--encre))}
+.ov [data-fen=reglages] .rubrique.actif,.ov [data-fen=serveur] .rubrique.actif{color:rgb(var(--encre));font-weight:600;text-shadow:0 0 8px rgb(var(--encre) / .5)}
+.ov [data-fen=reglages] .rubrique.allume,.ov [data-fen=serveur] .rubrique.allume{color:rgb(var(--encre));text-shadow:0 0 6px rgb(var(--encre) / .5)}
+.ov [data-fen=reglages] .pied-groupe,.ov [data-fen=serveur] .pied-groupe{flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;height:48px;padding:0 14px 0 20px;border-top:1px solid rgb(var(--encre) / .08);font-size:var(--t-corps,12px);color:rgb(var(--encre) / .6)}
+.ov [data-fen=reglages] .etat-changes,.ov [data-fen=serveur] .etat-changes{min-width:0;line-height:1.3;overflow-wrap:anywhere}
+.ov [data-fen=reglages] .secret,.ov :is([data-fen=serveur],.serveur-f) .secret{display:flex;align-items:center;gap:8px}
+.ov [data-fen=reglages] .secret .saisie,.ov :is([data-fen=serveur],.serveur-f) .secret .saisie{flex:1;min-width:0}
+.ov [data-fen=reglages] .effacer,.ov :is([data-fen=serveur],.serveur-f) .effacer{flex:none;font-size:var(--t-petit,11.5px);font-weight:600;color:rgb(var(--encre) / .68);text-decoration:underline;text-decoration-color:rgb(var(--encre) / .25);text-underline-offset:3px;transition:color .2s}
+.ov [data-fen=reglages] .effacer:hover,.ov :is([data-fen=serveur],.serveur-f) .effacer:hover{color:rgb(var(--encre))}
+.ov.trame [data-fen=reglages] .rubrique:hover,.ov.trame [data-fen=serveur] .rubrique:hover{background:var(--surface-moyenne);color:var(--texte)}
+.ov.trame [data-fen=reglages] .effacer:hover,.ov.trame :is([data-fen=serveur],.serveur-f) .effacer:hover{color:var(--primaire)}
+@media (max-height:780px){.ov [data-fen=reglages] .rubrique,.ov [data-fen=serveur] .rubrique{height:29px}.ov [data-fen=reglages] .pied-groupe,.ov [data-fen=serveur] .pied-groupe{height:44px}}

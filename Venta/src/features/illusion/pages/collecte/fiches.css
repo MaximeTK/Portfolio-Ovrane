@@ -88,7 +88,6 @@
 .ov .pf .badge.echec{background:rgb(var(--rouge) / .14);color:rgb(var(--rouge))}
 .ov .pf .note-f{margin-bottom:12px !important;padding-left:10px;border-left:2px solid rgb(var(--encre) / .25);font-size:var(--t-corps,12px);line-height:1.45;color:rgb(var(--encre) / .65)}
 .ov .pf .gestes-f{display:flex;justify-content:flex-end;gap:22px;margin-top:8px}
-.ov .pf .journal-f{max-height:160px;overflow:auto;margin:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11px);line-height:1.45;color:rgb(var(--encre) / .62);white-space:pre-wrap;overflow-wrap:anywhere;scrollbar-width:none}
 .ov .pf .cmd>summary{cursor:pointer;list-style:none}
 .ov .pf .cmd>summary::-webkit-details-marker{display:none}
 .ov .pf .cmd>summary::after{content:" +";color:rgb(var(--encre) / .5)}
@@ -175,7 +174,6 @@
 .ov.trame .pf .badge.fini{background:var(--ok-doux);color:var(--ok)}
 .ov.trame .pf .badge.echec{background:var(--erreur-douce);color:var(--erreur)}
 .ov.trame .pf .note-f{padding-left:12px;border-left-color:var(--filet);font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
-.ov.trame .pf .journal-f{font-size:.75rem;line-height:1.125rem;color:var(--texte-2);scrollbar-width:auto}
 .ov.trame .pf .cmd>summary::after{color:var(--texte-2)}
 .ov.trame .pf .soc-d{font-size:.875rem;line-height:1.25rem;color:var(--texte-2)}
 .ov.trame .pf .soc .siren{white-space:nowrap}

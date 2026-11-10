@@ -1,15 +1,19 @@
 'use client';
 
 import { LienIllusion } from '../../partage/LienIllusion';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 import { AuPied, type Onglet } from '../../dock/Panneau';
-import { jourMois, nomProfil } from '../../partage/FicheOffre';
-import { ICONES_COMMUNES, TRAIT, message } from '../commun';
+import { SOURCES_SAISIE, signalable, type Saisie } from '../../partage/FicheOffre';
+import { Action } from '../../elements/Action';
+import { Champ, Interrupteur, ChampSaisie, ChampListe, SectionFiche } from '../../elements/Champ';
+import { ICONES } from '../../elements/icones';
+import { jourMoisIso, message, nomProfil } from '../../elements/format';
+import { CHAMP_VIERGE, ChampsDuProfil, champVersEnvoi, useFormChamp } from '../profil/FormChampProfil';
+import { useGeste } from '../commun';
 
 // Ce que /workflows/rejeu rend : dernier passage, étape en attente, journal.
-export type Saisie = { question?: string; valeur?: string; source?: { sorte?: string; donnee?: string }; signalement?: string; site?: string; ligne?: string; page?: string };
 type Geste = { geste?: string; cible?: string; valeur?: string; ligne?: string; jade?: boolean };
 type Comparaison = { arbres?: { page: string; identiques: string[]; nouvelles: string[]; changees: string[]; absentes: string[] }[] };
 export type EtatRejeu = {
@@ -28,31 +32,17 @@ const sansProtocole = (u?: string) => (u ?? '').replace(/^https?:\/\//i, '');
 // Chaque sorte de passage telle que la page la nomme
 const SORTES: Record<string, string> = { rejouer: 'Rejeu sans IA', corriger: "Rejeu avec l'IA en repli", refaire: "Refonte par l'IA" };
 const CONCLUSIONS: Record<string, string> = { fusionner: 'fusionné à celui en base', remplacer: 'mis à la place de celui en base', annuler: 'annulé' };
-// D'où vient une valeur saisie ; déduite ou inventée, elle demande l'attention
-const SOURCES_SAISIE: Record<string, string> = {
-  exacte: 'de la fiche', deduite: 'déduite', inventee: 'inventée', offre: "propre à l'offre", cv: "CV de l'offre", lettre: "lettre de l'offre",
-  fixe: 'case', coffre: 'coffre', modele: "écrite par l'IA", non_declaree: 'non déclarée',
-};
+// Une valeur déduite ou inventée demande l'attention
 const A_VERIFIER = ['deduite', 'inventee'];
-const SECTIONS_DE_CHAMP: Record<string, string> = { identite: 'Identité', presentation: 'Présentation', situation: 'Situation', remuneration: 'Rémunération', motivations: 'Motivations', reponses_fixes: 'Réponses fixes' };
-const FORMES_CHAMP: Record<string, string> = { text: 'Texte', texte_long: 'Texte long', nombre: 'Nombre', choix: 'Choix', liste: 'Liste', email: 'E-mail', lieu: 'Lieu (commune)' };
 // « Ville de naissance » → ville_de_naissance
 const cleDe = (texte?: string) => (texte ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
 
-const ICONES = {
-  ...ICONES_COMMUNES,
-  arreter: <svg {...TRAIT}><rect x="6" y="6" width="12" height="12" /></svg>,
-  auto: <svg {...TRAIT}><path d="m5 5 7 7-7 7M13 5l7 7-7 7" /></svg>,
-  suivant: <svg {...TRAIT}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
-  valider: <svg {...TRAIT} strokeWidth={2.6}><path d="m5 12 5 5 9-10" /></svg>,
-  chevron: <svg {...TRAIT}><path d="m6 9 6 6 6-6" /></svg>,
-};
-const ico = (i: React.ReactNode) => <span className="ico">{i}</span>;
 
-// La source d'une valeur saisie : son nom, la donnée de la fiche dessous
-function Source({ s }: { s?: { sorte?: string; donnee?: string } }) {
+
+// La source d'une valeur saisie : son nom, la donnée de la fiche à la suite
+function Source({ s, saut }: { s?: { sorte?: string; donnee?: string }; saut?: boolean }) {
   const sorte = s?.sorte ?? '';
-  return <><span className={`src${A_VERIFIER.includes(sorte) ? ' att' : ''}`}>{SOURCES_SAISIE[sorte] ?? sorte}</span>{s?.donnee && <> <code>{s.donnee}</code></>}</>;
+  return <><span className={`src${A_VERIFIER.includes(sorte) ? ' att' : ''}`}>{SOURCES_SAISIE[sorte] ?? sorte}</span>{s?.donnee && <>{saut ? <br /> : ' '}<code>{s.donnee}</code></>}</>;
 }
 
 // Rejouer : offre, profil, mode de lot ; rien n'est jamais envoyé.
@@ -64,8 +54,8 @@ export function useOngletRejouer({ actif, adresse, site, lancer }: { actif: bool
   const [url, setUrl] = useState('');
   const [profil, setProfil] = useState(() => profils?.[0] ?? '');
   const [manuel, setManuel] = useState(true);
-  const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
+  const { occupe, geste } = useGeste(setErreur);
   // L'adresse d'une offre cherchée préremplit le passage
   useEffect(() => setUrl(/^https?:\/\//i.test(adresse) ? adresse : ''), [adresse]);
   useEffect(() => {
@@ -79,41 +69,31 @@ export function useOngletRejouer({ actif, adresse, site, lancer }: { actif: bool
       setErreur(message(e));
     });
   }, [actif]);
-  const partir = async (sorte: DemandeRejeu['sorte']) => {
+  const partir = (sorte: DemandeRejeu['sorte']) => {
     if (!url.trim()) return setErreur("Donnez l'adresse d'une offre du site.");
-    setOccupe(true);
-    setErreur('');
-    try {
+    return geste(async () => {
+      setErreur('');
       await lancer({ url: url.trim(), profil, mode: manuel ? 'manuel' : 'auto', sorte });
-    } catch (e) {
-      setErreur(message(e));
-    }
-    setOccupe(false);
+    });
   };
   return {
     cle: 'rejouer', titre: 'Rejouer',
     corps: (
       <div className="wf-p">
-        <div className="champ"><label htmlFor="wf-url">Adresse d&apos;une offre</label>
-          <input id="wf-url" className="saisie" type="url" placeholder={site ? `Une offre de ${site}` : 'https://…'} value={url}
-            onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !occupe && void partir('rejouer')} />
-        </div>
-        <div className="champ"><label htmlFor="wf-profil">Profil</label>
-          <select id="wf-profil" className="saisie" value={profil} onChange={(e) => setProfil(e.target.value)}>
+        <ChampSaisie id="wf-url" libelle="Adresse d&apos;une offre" type="url" placeholder={site ? `Une offre de ${site}` : 'https://…'} value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !occupe && void partir('rejouer')} />
+        <ChampListe id="wf-profil" libelle="Profil" aide="Le profil dont les réponses servent." value={profil} onChange={(e) => setProfil(e.target.value)}>
             {(profils ?? []).map((n) => <option key={n} value={n}>{nomProfil(n)}</option>)}
-          </select>
-          <p className="aide-champ">Le profil dont les réponses servent.</p>
-        </div>
-        <label className="inter">Lot par lot, à mon ordre<input type="checkbox" checked={manuel} onChange={(e) => setManuel(e.target.checked)} /></label>
+          </ChampListe>
+        <Interrupteur libelle="Lot par lot, à mon ordre" checked={manuel} onChange={(e) => setManuel(e.target.checked)} />
         <p className="aide-champ">Sans IA, le workflow enregistré se rejoue sans rien écrire. Avec l&apos;IA, elle ne fait que ce que l&apos;arbre ne sait pas et sa correction s&apos;y greffe. De zéro, l&apos;IA refait tout le chemin, à comparer ensuite. Rien n&apos;est jamais envoyé.</p>
         {erreur && <p className="erreur-f" role="alert">{erreur}</p>}
       </div>
     ),
     pied: (
       <>
-        <button type="button" className="action gauche" disabled={occupe} title="L'IA refait tout le chemin, appris à part ; à la fin, on le compare à celui en base" onClick={() => void partir('refaire')}>Refaire de zéro</button>
-        <button type="button" className="action" disabled={occupe} title="Le workflow enregistré, rejoué avec l'IA en repli" onClick={() => void partir('corriger')}>Avec l&apos;IA</button>
-        <button type="button" className="action plein" disabled={occupe} title="Le workflow enregistré, rejoué sans l'IA et sans rien écrire" onClick={() => void partir('rejouer')}>Rejouer sans IA{ico(ICONES.jouer)}</button>
+        <Action className="gauche" disabled={occupe} title="L'IA refait tout le chemin, appris à part ; à la fin, on le compare à celui en base" onClick={() => void partir('refaire')}>Refaire de zéro</Action>
+        <Action disabled={occupe} title="Le workflow enregistré, rejoué avec l'IA en repli" onClick={() => void partir('corriger')}>Avec l&apos;IA</Action>
+        <Action iconeApres={ICONES.jouer} plein disabled={occupe} title="Le workflow enregistré, rejoué sans l'IA et sans rien écrire" onClick={() => void partir('rejouer')}>Rejouer sans IA</Action>
       </>
     ),
   };
@@ -146,11 +126,11 @@ export function ongletRejeu({ rejeu: e, occupe, signales, lirePas, ordonner, sig
             </p>
           )}
           {(e.journal ?? []).length > 0 && (
-            <details className="bloc-f lignes-journal"><summary>Lignes de l&apos;étape{ICONES.chevron}</summary><pre>{(e.journal ?? []).join('\n')}</pre></details>
+            <details className="bloc-f lignes-journal"><summary>Lignes de l&apos;étape{ICONES.suite}</summary><pre>{(e.journal ?? []).join('\n')}</pre></details>
           )}
         </div>
         {e.attente && (
-          <div className="section-f"><h3>Lot à jouer</h3>
+          <SectionFiche titre="Lot à jouer">
             <p className="lot-page" title={e.attente.url}>{[e.attente.titre, sansProtocole(e.attente.url)].filter(Boolean).join(' — ')}</p>
             <div className="lot">
               <ol className="gestes">
@@ -162,33 +142,32 @@ export function ongletRejeu({ rejeu: e, occupe, signales, lirePas, ordonner, sig
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="capture" src={`/api/illusion/app/workflows/rejeu/capture?v=${e.attente.vu ?? 0}`} alt="La page avant le lot" />
             </div>
-          </div>
+          </SectionFiche>
         )}
         {champs.length > 0 && (
-          <div className="section-f"><h3>Ce qui a été saisi</h3>
+          <SectionFiche titre="Ce qui a été saisi">
             <table className="tab-wf saisi">
               <thead><tr><th>Question</th><th>Valeur</th><th>Source</th><th><span className="cache">Signaler</span></th></tr></thead>
               <tbody>
                 {champs.map((c, n) => {
-                  const sorte = c.source?.sorte ?? '';
                   const signal = c.signalement === 'valide' ? <span className="signalee">valeur signalée fausse sur ce site</span>
                     : c.signalement === 'en_attente' || signales.has(n) ? <span className="signalee">signalée, en attente</span>
-                      : c.ligne && !['cv', 'lettre', 'coffre'].includes(sorte) ? <button type="button" className="btn-l" onClick={() => signaler(n)}>Signaler</button> : null;
+                      : signalable(c) ? <button type="button" className="btn-l" onClick={() => signaler(n)}>Signaler</button> : null;
                   return <tr key={n}><td>{c.question || '—'}</td><td>{c.valeur || '—'}</td><td><Source s={c.source} /></td><td>{signal}</td></tr>;
                 })}
               </tbody>
             </table>
-          </div>
+          </SectionFiche>
         )}
       </div>
     ),
     pied: e.en_cours ? (
       <>
-        <button type="button" className="action gauche" disabled={occupe} onClick={() => ordonner('arreter')}>{ico(ICONES.arreter)}Arrêter</button>
+        <Action icone={ICONES.arreter} className="gauche" disabled={occupe} onClick={() => ordonner('arreter')}>Arrêter</Action>
         {e.mode === 'manuel' && (
           <>
-            <button type="button" className="action" disabled={occupe} onClick={() => ordonner('auto')}>{ico(ICONES.auto)}Continuer en auto</button>
-            <button type="button" className="action plein" disabled={occupe || !e.attente} onClick={() => ordonner('suivant')}>Suivant{ico(ICONES.suivant)}</button>
+            <Action icone={ICONES.auto} disabled={occupe} onClick={() => ordonner('auto')}>Continuer en auto</Action>
+            <Action iconeApres={ICONES.fleche} plein disabled={occupe || !e.attente} onClick={() => ordonner('suivant')}>Suivant</Action>
           </>
         )}
       </>
@@ -203,7 +182,7 @@ export function ongletComparaison(rejeu: EtatRejeu, occupe: boolean, conclure: (
     cle: 'comparaison', titre: 'Comparaison', label: 'Le workflow refait, comparé à celui en base',
     corps: (
       <div className="wf-p">
-        <div className="section-f"><h3>Le workflow refait, comparé à celui en base</h3>
+        <SectionFiche titre="Le workflow refait, comparé à celui en base">
           {(rejeu.comparaison?.arbres ?? []).map((a) => {
             const nouveaux = [...a.nouvelles, ...a.changees.map((n) => `${n} (changée)`)];
             return (
@@ -217,14 +196,14 @@ export function ongletComparaison(rejeu: EtatRejeu, occupe: boolean, conclure: (
               </div>
             );
           })}
-        </div>
+        </SectionFiche>
       </div>
     ),
     pied: (
       <>
-        <button type="button" className="action gauche" disabled={occupe} title="Le refait est effacé ; celui en base ne bouge pas" onClick={() => conclure('annuler')}>Annuler</button>
-        <button type="button" className="action" disabled={occupe} title="Le refait prend toute la place de celui en base" onClick={() => conclure('remplacer')}>Remplacer</button>
-        <button type="button" className="action plein" disabled={occupe} title="Les deux réunis : ce qui est identique est écrasé par le refait, le reste des deux est gardé" onClick={() => conclure('fusionner')}>Fusionner{ico(ICONES.valider)}</button>
+        <Action className="gauche" disabled={occupe} title="Le refait est effacé ; celui en base ne bouge pas" onClick={() => conclure('annuler')}>Annuler</Action>
+        <Action disabled={occupe} title="Le refait prend toute la place de celui en base" onClick={() => conclure('remplacer')}>Remplacer</Action>
+        <Action iconeApres={ICONES.valider} plein disabled={occupe} title="Les deux réunis : ce qui est identique est écrasé par le refait, le reste des deux est gardé" onClick={() => conclure('fusionner')}>Fusionner</Action>
       </>
     ),
   };
@@ -239,7 +218,7 @@ export function ongletVerification({ verif, erreur, occupe, valider, rejeter, fe
     corps: (
       <div className="wf-p wf-verif">
         {erreur && <p className="erreur-f" role="alert">Vérification illisible : {erreur}</p>}
-        <div className="section-f"><h3>Valeurs signalées fausses</h3>
+        <SectionFiche titre="Valeurs signalées fausses">
           {verif && !verif.signalements.length ? <p className="texte-f">Aucun signalement en attente.</p> : (
             <table className="tab-wf verif-s">
               <thead><tr><th>Site</th><th>Question</th><th>Source</th><th>Signalée</th><th><span className="cache">Décision</span></th></tr></thead>
@@ -247,8 +226,8 @@ export function ongletVerification({ verif, erreur, occupe, valider, rejeter, fe
                 {(verif?.signalements ?? []).map((s) => (
                   <tr key={s.cle}>
                     <td>{s.site}</td><td>{s.question || '—'}</td>
-                    <td><span className={`src${A_VERIFIER.includes(s.source?.sorte ?? '') ? ' att' : ''}`}>{SOURCES_SAISIE[s.source?.sorte ?? ''] ?? s.source?.sorte ?? ''}</span>{s.source?.donnee && <><br /><code>{s.source.donnee}</code></>}</td>
-                    <td>{s.compte} fois,<br /><span className="d">dernière {jourMois(s.dernier)}</span></td>
+                    <td><Source s={s.source} saut /></td>
+                    <td>{s.compte} fois,<br /><span className="d">dernière {jourMoisIso(s.dernier)}</span></td>
                     <td className="pile">
                       <button type="button" className="btn-l" aria-haspopup="dialog" disabled={occupe} data-ouvre="champ" data-objet={s.cle} onClick={() => valider(s)}>Valider…</button>
                       <button type="button" className="btn-l gris" disabled={occupe} onClick={() => rejeter(s)}>Rejeter</button>
@@ -258,8 +237,8 @@ export function ongletVerification({ verif, erreur, occupe, valider, rejeter, fe
               </tbody>
             </table>
           )}
-        </div>
-        <div className="section-f"><h3>Données demandées hors du profil</h3>
+        </SectionFiche>
+        <SectionFiche titre="Données demandées hors du profil">
           {verif && !verif.donnees.length ? <p className="texte-f">Rien de demandé hors du profil.</p> : (
             <table className="tab-wf verif-d">
               <thead><tr><th>Donnée</th><th>Libellés vus</th><th>Sites</th><th>Demandée</th><th><span className="cache">Ajouter</span></th></tr></thead>
@@ -273,13 +252,13 @@ export function ongletVerification({ verif, erreur, occupe, valider, rejeter, fe
               </tbody>
             </table>
           )}
-        </div>
+        </SectionFiche>
       </div>
     ),
     pied: (
       <>
         <span className="aide-champ gauche">Rien ne change avant validation.</span>
-        <button type="button" className="action" onClick={fermer}>Fermer</button>
+        <Action onClick={fermer}>Fermer</Action>
       </>
     ),
   };
@@ -292,54 +271,24 @@ export function ongletChamp(cible: Signalement, proprietes: ProprietesChamp): On
   return { cle: 'champ', titre: 'Champ du profil', admin: true, corps: <ChampDuProfil cible={cible} {...proprietes} />, pied: true };
 }
 
-const VIERGE = { cle: '', libelle: '', section: 'identite', type: 'text', choix: '', obligatoire: true };
 function ChampDuProfil({ cible, champs, valider, annuler }: ProprietesChamp & { cible: Signalement }) {
-  const id = useId();
   // Le signalement préremplit la clé et le libellé de sa question
-  const [f, setF] = useState(() => ({ ...VIERGE, cle: cleDe(cible.question || cible.ligne), libelle: cible.question ?? '' }));
-  const [occupe, setOccupe] = useState(false);
+  const { f, poser } = useFormChamp(() => ({ ...CHAMP_VIERGE, cle: cleDe(cible.question || cible.ligne), libelle: cible.question ?? '' }));
   const [erreur, setErreur] = useState('');
-  const partir = async () => {
-    setOccupe(true);
+  const { occupe, geste } = useGeste(setErreur);
+  const partir = () => geste(async () => {
     setErreur('');
-    try {
-      await valider(cible, { cle: f.cle.trim(), libelle: f.libelle.trim(), section: f.section, type: f.type, obligatoire: f.obligatoire,
-        choix: f.choix.split(',').map((c) => c.trim()).filter(Boolean) });
-    } catch (e) {
-      setErreur(message(e));
-    }
-    setOccupe(false);
-  };
-  const poser = (cle: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setF((v) => ({ ...v, [cle]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value }));
+    await valider(cible, champVersEnvoi(f));
+  });
   const entree = (e: React.KeyboardEvent) => e.key === 'Enter' && !occupe && void partir();
   return (
     <div className="wf-p">
       <p className="texte-f">Valider « {cible.question || cible.ligne} » sur {cible.site}. Une clé déjà au profil le rend obligatoire ; une nouvelle l&apos;y ajoute pour tous.</p>
-      <div className="grille-2">
-        <div className="champ"><label htmlFor={`${id}-cle`}>Clé du profil</label>
-          <input id={`${id}-cle`} className="saisie" type="text" list={`${id}-cles`} autoComplete="off" value={f.cle} onChange={poser('cle')} onKeyDown={entree} />
-          <datalist id={`${id}-cles`}>{champs.map((c) => <option key={c.cle} value={c.cle}>{c.libelle}</option>)}</datalist>
-        </div>
-        <div className="champ"><label htmlFor={`${id}-lib`}>Libellé</label><input id={`${id}-lib`} className="saisie" type="text" value={f.libelle} onChange={poser('libelle')} onKeyDown={entree} /></div>
-      </div>
-      <div className="grille-2">
-        <div className="champ"><label htmlFor={`${id}-sec`}>Section</label>
-          <select id={`${id}-sec`} className="saisie" value={f.section} onChange={poser('section')}>{Object.entries(SECTIONS_DE_CHAMP).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
-        </div>
-        <div className="champ"><label htmlFor={`${id}-forme`}>Forme</label>
-          <select id={`${id}-forme`} className="saisie" value={f.type} onChange={poser('type')}>{Object.entries(FORMES_CHAMP).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
-        </div>
-      </div>
-      <div className="champ"><label htmlFor={`${id}-choix`}>Choix</label>
-        <input id={`${id}-choix`} className="saisie" type="text" value={f.choix} onChange={poser('choix')} onKeyDown={entree} />
-        <p className="aide-champ">Séparés par des virgules.</p>
-      </div>
-      <label className="inter">Obligatoire<input type="checkbox" checked={f.obligatoire} onChange={poser('obligatoire')} /></label>
+      <ChampsDuProfil f={f} poser={poser} entree={entree} cles={champs} libelleCle="Clé du profil" />
       {erreur && <p className="erreur-f" role="alert">{erreur}</p>}
       <AuPied>
-          <button type="button" className="action" onClick={annuler}>Annuler</button>
-          <button type="button" className="action plein" disabled={occupe} onClick={() => void partir()}>Valider{ico(ICONES.valider)}</button>
+          <Action onClick={annuler}>Annuler</Action>
+          <Action iconeApres={ICONES.valider} plein disabled={occupe} onClick={() => void partir()}>Valider</Action>
       </AuPied>
     </div>
   );
@@ -360,9 +309,9 @@ export function ongletIncomplet(incomplet: Incomplet | null, fermer: () => void)
     ),
     pied: (
       <>
-        <button type="button" className="action" onClick={fermer}>Fermer</button>
+        <Action onClick={fermer}>Fermer</Action>
         {(incomplet?.profils ?? []).map((p) => (
-          <LienIllusion key={p.nom} vers={`profil?fiche=${encodeURIComponent(`${nomProfil(p.nom)}.json`)}`} className="action plein">Compléter {nomProfil(p.nom)}{ico(ICONES.suivant)}</LienIllusion>
+          <LienIllusion key={p.nom} vers={`profil?fiche=${encodeURIComponent(`${nomProfil(p.nom)}.json`)}`} className="action plein">Compléter {nomProfil(p.nom)}<span className="ico">{ICONES.fleche}</span></LienIllusion>
         ))}
       </>
     ),

@@ -4,20 +4,11 @@
 .ov [data-fen=reglages] .filtre .chevron{width:12px;height:12px}
 .ov [data-fen=reglages] .menu-etat{left:0;right:auto}
 .ov [data-fen=reglages] .menu-etat .compteur{margin-left:auto;padding-left:16px}
-.ov [data-fen=reglages] .corps-groupes{flex:1;min-height:0;display:flex;border-top:1px solid rgb(var(--encre) / .08)}
 /* Colonne des groupes : du texte seul, le groupe choisi allumé en blanc. */
-.ov [data-fen=reglages] .groupes{flex:none;display:flex;flex-direction:column;padding:10px 28px 10px 20px;border-right:1px solid rgb(var(--encre) / .08);overflow-y:auto;scrollbar-width:none}
-.ov [data-fen=reglages] .rubrique{display:flex;align-items:center;height:32px;font-size:var(--t-corps,13px);color:rgb(var(--encre) / .62);white-space:nowrap;text-align:left;transition:color .2s}
-.ov [data-fen=reglages] .rubrique:hover{color:rgb(var(--encre))}
-.ov [data-fen=reglages] .rubrique.actif{color:rgb(var(--encre));font-weight:600;text-shadow:0 0 8px rgb(var(--encre) / .5)}
-.ov [data-fen=reglages] .rubrique.allume{color:rgb(var(--encre));text-shadow:0 0 6px rgb(var(--encre) / .5)}
 .ov [data-fen=reglages] .groupe-contenu{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
 .ov [data-fen=reglages] .groupe-contenu>.defile{flex:1;min-height:0;overflow:auto}
 .ov [data-fen=reglages] .aide-groupe{padding:12px 20px 0 24px;font-size:var(--t-petit,11.5px);line-height:1.45;color:rgb(var(--encre) / .55)}
 /* Pied du groupe : l'état des changements à gauche, Enregistrer à droite. */
-.ov [data-fen=reglages] .pied-groupe{flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;height:48px;padding:0 14px 0 20px;border-top:1px solid rgb(var(--encre) / .08);font-size:var(--t-corps,12px);color:rgb(var(--encre) / .6)}
-.ov [data-fen=reglages] .etat-changes{min-width:0;line-height:1.3;overflow-wrap:anywhere}
-@media (max-height:780px){.ov [data-fen=reglages] .rubrique{height:29px}.ov [data-fen=reglages] .pied-groupe{height:44px}}
 /* Fenêtre resserrée : la colonne des groupes se serre. */
 .ov [data-fen=reglages]:is([data-l=s],[data-l=xs]) .groupes{padding:10px 16px 10px 14px}
 
@@ -28,10 +19,6 @@
 .ov [data-fen=reglages] .champ>label .marque-admin,.ov [data-fen=reglages] :is(.inter,.reglage-n)>span .marque-admin{margin-left:8px}
 .ov [data-fen=reglages] .reglage-n{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:34px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .88)}
 .ov [data-fen=reglages] .reglage-n .saisie{flex:none;width:64px;height:28px;padding:0 8px;text-align:right}
-.ov [data-fen=reglages] .secret{display:flex;align-items:center;gap:8px}
-.ov [data-fen=reglages] .secret .saisie{flex:1;min-width:0}
-.ov [data-fen=reglages] .effacer{flex:none;font-size:var(--t-petit,11.5px);font-weight:600;color:rgb(var(--encre) / .68);text-decoration:underline;text-decoration-color:rgb(var(--encre) / .25);text-underline-offset:3px;transition:color .2s}
-.ov [data-fen=reglages] .effacer:hover{color:rgb(var(--encre))}
 .ov [data-fen=reglages] .couleurs{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .ov [data-fen=reglages] .couleur{display:inline-flex;align-items:center;gap:2px}
 .ov [data-fen=reglages] .couleur input{width:30px;height:22px;padding:0;border:1px solid rgb(var(--encre) / .3);background:none;cursor:pointer}
@@ -60,12 +47,9 @@
 .ov [data-fen=reglages] .saisie.cel{width:calc(100% - 16px);max-width:360px;height:26px;padding:0 8px;background:rgb(var(--noir) / .18);border-color:rgb(var(--encre) / .1)}
 .ov [data-fen=reglages] .saisie.cel:hover{border-color:rgb(var(--encre) / .28)}
 .ov [data-fen=reglages] .saisie.cel:focus{border-color:rgb(var(--encre))}
-.ov [data-fen=reglages] .saisie.cel[readonly]{background:none;border-color:transparent;font-weight:600}
 .ov [data-fen=reglages] .tab-comptes .secret{width:calc(100% - 16px);max-width:360px;gap:6px}
-.ov [data-fen=reglages] .tab-comptes .secret .saisie.cel{width:auto}
 .ov [data-fen=reglages] .poignee{color:rgb(var(--encre) / .45);cursor:grab;user-select:none}
 .ov [data-fen=reglages] .poignee:hover{color:rgb(var(--encre))}
-.ov [data-fen=reglages] .epingle{font-size:var(--t-corps,13px);color:rgb(var(--encre));text-shadow:0 0 8px rgb(var(--encre) / .5)}
 .ov [data-fen=reglages] .inter.seul{display:inline-flex;min-height:0}
 .ov [data-fen=reglages] .sous-tab{max-width:460px;padding:12px 20px 14px}
 /* Onglet ouvert : Ordre, Actif, Identifiant et Mot de passe se retirent. */
@@ -106,8 +90,6 @@
 .ov [data-fen=reglages]:not([data-l=l]) .confirmer p{flex:1 1 100%;white-space:normal}
 
 /* L'avis du dernier geste, posé au bas de la fenêtre ; un clic le ferme. */
-.ov [data-fen=reglages] .avis{position:absolute;left:14px;right:14px;bottom:56px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-14) / .92);font-size:var(--t-corps,12.5px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
-.ov [data-fen=reglages] .avis.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
 
 /* Thèmes plats : colonne de groupes en choix pleins, verre intact. */
 .ov.trame [data-fen=reglages] .titre-groupe,.ov.trame [data-fen=reglages] .titre-groupe:hover{background:none;color:var(--texte)}
@@ -118,7 +100,6 @@
 .ov.trame [data-fen=reglages] .groupes{gap:2px;padding:8px;border-right:1px solid var(--filet);scrollbar-width:auto}
 .ov.trame [data-fen=reglages]:is([data-l=s],[data-l=xs]) .groupes{padding:8px}
 .ov.trame [data-fen=reglages] .rubrique{flex:none;height:auto;min-height:44px;padding:0 12px;border-radius:8px;font-size:.875rem;color:var(--texte-2);transition:background-color .15s var(--courbe)}
-.ov.trame [data-fen=reglages] .rubrique:hover{background:var(--surface-moyenne);color:var(--texte)}
 .ov.trame [data-fen=reglages] .rubrique.actif{background:var(--selection);font-weight:500;color:var(--primaire)}
 .ov.trame [data-fen=reglages] .rubrique.allume{background:var(--primaire-doux);color:var(--sur-primaire-doux)}
 .ov.trame [data-fen=reglages] .aide-groupe{padding:12px 16px 0;font-size:.75rem;line-height:1rem;color:var(--texte-2)}
@@ -130,7 +111,6 @@
 .ov.trame [data-fen=reglages] .reglage-n{min-height:52px;font-size:.875rem;color:var(--texte)}
 .ov.trame [data-fen=reglages] .reglage-n .saisie{width:88px;height:auto}
 .ov.trame [data-fen=reglages] .effacer{display:inline-flex;align-items:center;min-height:44px;font-size:.875rem;font-weight:500;color:var(--primaire);text-decoration-color:currentColor;text-underline-offset:2px}
-.ov.trame [data-fen=reglages] .effacer:hover{color:var(--primaire)}
 .ov.trame [data-fen=reglages] .couleur input{width:44px;height:32px;border:1px solid var(--contour);border-radius:8px}
 .ov.trame [data-fen=reglages] .couleur button{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;font-size:1rem;color:var(--texte-2)}
 .ov.trame [data-fen=reglages] .couleur button:hover{background:var(--surface-moyenne);color:var(--texte)}
@@ -153,12 +133,9 @@
 .ov.trame [data-fen=reglages] .saisie.cel{width:100%;max-width:none;height:auto;min-height:40px;padding:0 8px;background:var(--surface);border-color:var(--filet)}
 .ov.trame [data-fen=reglages] .saisie.cel:hover{border-color:var(--contour)}
 .ov.trame [data-fen=reglages] .saisie.cel:focus{border-color:var(--primaire)}
-.ov.trame [data-fen=reglages] .saisie.cel[readonly]{background:none;border-color:transparent;font-weight:500}
 .ov.trame [data-fen=reglages] .tab-comptes .secret{width:100%;max-width:none}
-.ov.trame [data-fen=reglages] .tab-comptes .secret .saisie.cel{flex:1;width:auto;min-width:0}
 .ov.trame [data-fen=reglages] .poignee{color:var(--texte-2)}
 .ov.trame [data-fen=reglages] .poignee:hover{color:var(--texte)}
-.ov.trame [data-fen=reglages] .epingle{font-size:.875rem;color:var(--texte)}
 .ov.trame [data-fen=reglages] .sous-tab{padding:12px 16px 16px}
 /* Voyants ronds et sans lueur : vert ouvert, rouge refusé, gris sinon. */
 .ov.trame :is([data-fen=reglages],.tester) .voyant{width:10px;height:10px;border-radius:50%;background:var(--contour)}
@@ -175,8 +152,6 @@
 .ov.trame .apparence .matiere{min-height:60px;padding:10px 12px}
 .ov.trame .apparence .matiere:has(:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
 .ov.trame .apparence .apercu-mat{width:44px;height:32px;border-radius:6px}
-.ov.trame [data-fen=reglages] .avis{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.trame [data-fen=reglages] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Teinte des boîtes : son réglage et un message d'aperçu. */
 .ov .apparence .teinte input{display:block;width:100%;margin:8px 0;accent-color:var(--primaire)}
 .ov .apparence .apercu-teinte{width:fit-content;max-width:80%;margin:8px 0 8px auto;padding:12px 16px;border-radius:16px;background:var(--verre);font-size:.875rem;color:#fff}

@@ -2,21 +2,25 @@
 
 import './offres.css';
 import { LienIllusion } from '../../partage/LienIllusion';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { appeler, televerser } from '../../api';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Activite } from '../../activite/Activite';
-import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
-import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
-import { ongletFicheEntreprise, useFicheEntreprise, useQuestionsFiche } from '../../partage/FicheEntreprise';
+
+import { Fenetre, usePanneau } from '../../dock/Dock';
+import { MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
+import { ConfirmerQuestion, ongletFicheEntreprise, useFicheEntreprise, useQuestionsFiche } from '../../partage/FicheEntreprise';
 import { OFFRE_CHANGEE, ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
-import {
-  ChoixLangue, ICONES, LANGUES, MenuFiltre, Pagination, enregistrerReglages, jourMois, libelleSource, liste, nomFiche,
-  sansJson, useAvis, useEtatVeille, useGestesStock, useProfilsVeille,
-  type Choix, type Parametres, type ProfilRecherche, type Taille,
-} from './commun';
-import { message, useEchap } from '../commun';
+import { ChoixLangue, MenuFiltre, PiedCartes, RetraitCarte, avisAjout, posterOffre, surEntree, urlOffreValide, useCartes, useEtatVeille, useGestesStock, useParametresVeille, useProfilsVeille, type Choix, type Parametres, type ProfilRecherche, type Taille } from './commun';
+import { PaginationAller, useEchap, useGeste, useLignesAuto } from '../commun';
+import { Action } from '../../elements/Action';
+import { useAvis, type Dire } from '../../elements/Avis';
+import { Champ, Interrupteur, ChampSaisie, ChampZone, ChampListe } from '../../elements/Champ';
+import { ActionOnglet } from '../../elements/Groupes';
+import { ICONES } from '../../elements/icones';
+import { ouvrable } from '../../elements/Case';
+import { jourMoisIso, libelleSource, lienSur, message, nomFichier, nomLangue, nomMetier, optionsGroupe, parVirgules, sansJson } from '../../elements/format';
+import { PageDock } from '../../activite/PageDock';
 
 type OffreFile = {
   cle: string; entreprise_brute: string; entreprise_siren: string | null; titre: string; lieu: string; contrat: string; source: string;
@@ -57,14 +61,12 @@ const RAISONS: Record<string, [string, string]> = {
 };
 const PREFIXE_BANNI = 'terme banni : ';
 const libelleMotif = (m: string) => (m.startsWith(PREFIXE_BANNI) ? `terme banni « ${m.slice(PREFIXE_BANNI.length)} »` : m);
-const lienSur = (url: string) => (/^https?:\/\//i.test(url ?? '') ? url : undefined);
 
 export default function PageOffres({ compte }: ProprietesPage) {
   return (
-    <Dock id="offres" principal="offres" panneau={compte.admin ? 'veille' : 'recherche'}>
-      <Activite />
+    <PageDock id="offres" principal="offres" panneau={compte.admin ? 'veille' : 'recherche'}>
       <Offres admin={compte.admin} />
-    </Dock>
+    </PageDock>
   );
 }
 
@@ -80,10 +82,9 @@ function Offres({ admin }: { admin: boolean }) {
   const [auto, setAuto] = useState(() => repris('offres:auto', 13));
   const [file, setFile] = useState(() => repris<ReponseFile | null>('offres:file', null));
   const [ecartees, setEcartees] = useState(() => repris<ReponseEcartees | null>('offres:ecartees', null));
-  const [parametres, setParametres] = useState(() => repris<Parametres | null>('offres:parametres', null));
   const [profils, setProfils] = useState(() => repris<ProfilDispo[]>('offres:profils', []));
   const [incomplets, setIncomplets] = useState(() => repris<Incomplets>('offres:incomplets', {}));
-  useGarder('offres', { passe, groupe, debut, taille, auto, file, ecartees, parametres, profils, incomplets });
+  useGarder('offres', { passe, groupe, debut, taille, auto, file, ecartees, profils, incomplets });
   const [ligne, setLigne] = useState<string | null>(null);
   const [tour, setTour] = useState(0);
   const defile = useRef<HTMLDivElement>(null);
@@ -137,10 +138,14 @@ function Offres({ admin }: { admin: boolean }) {
       dire(message(e), true);
     }
   }, [dire]);
-  useEffect(() => {
-    appeler<Parametres>('/parametres').then(setParametres, (e) => dire(message(e), true));
+  const apresReglages = useCallback(() => {
     lireProfils();
-  }, [dire, lireProfils]);
+    recharger();
+  }, [lireProfils, recharger]);
+  const { parametres, enregistrer } = useParametresVeille('offres', dire, apresReglages);
+  useEffect(() => {
+    lireProfils();
+  }, [lireProfils]);
 
   // Une passe qui finit, un stock ou une fiche qui change : la file se relit
   const signature = etat ? `${etat.en_cours}|${etat.tri_en_cours}|${etat.stock.offres}` : '';
@@ -154,36 +159,6 @@ function Offres({ admin }: { admin: boolean }) {
     return () => window.removeEventListener(OFFRE_CHANGEE, recharger);
   }, [recharger]);
 
-  // « auto » : autant de lignes que la hauteur en tient ; une offre a deux étages
-  useLayoutEffect(() => {
-    const el = defile.current;
-    if (!el) return;
-    let minuteur = 0;
-    const mesurer = () => {
-      const bas = window.innerHeight <= 780;
-      const hauteur = motif ? (bas ? 30 : 36) : bas ? 40 : 44;
-      setAuto(Math.max(1, Math.floor((el.clientHeight - (bas ? 30 : 34)) / hauteur)));
-    };
-    mesurer();
-    const suivi = new ResizeObserver(() => {
-      window.clearTimeout(minuteur);
-      minuteur = window.setTimeout(mesurer, 250);
-    });
-    suivi.observe(el);
-    return () => {
-      suivi.disconnect();
-      window.clearTimeout(minuteur);
-    };
-  }, [motif]);
-
-  const enregistrer = useCallback(async (modifs: Partial<Parametres>) => {
-    const r = await enregistrerReglages(modifs, dire);
-    if (!r) return false;
-    setParametres(r);
-    lireProfils();
-    recharger();
-    return true;
-  }, [dire, lireProfils, recharger]);
   const recherche = useProfilsRecherche(parametres, profils, incomplets, enregistrer);
   const veilles = useProfilsVeille(parametres, enregistrer);
   const ajout = useAjout(profils, dire, recharger);
@@ -199,7 +174,6 @@ function Offres({ admin }: { admin: boolean }) {
 
   // Les questions de la fiche entreprise se posent en barre à la place des outils
   const question = useQuestionsFiche();
-  const [occupe, setOccupe] = useState(false);
   const sansQuestion = () => useFicheEntreprise.setState({ question: null });
 
   // Échap ferme la confirmation, sinon le panneau ; celle d'une carte, seule
@@ -212,14 +186,8 @@ function Offres({ admin }: { admin: boolean }) {
   });
 
   const groupes = file?.groupes ?? {};
-  const choixGroupe = (cle: 'langue' | 'metier', comptes: Record<string, number> = {}, tous: string, nom: (v: string) => string): Choix[] => {
-    const valeurs = { ...comptes, ...(groupe[cle] && !(groupe[cle] in comptes) ? { [groupe[cle]]: 0 } : {}) };
-    return [{ cle: '', libelle: tous }, ...Object.entries(valeurs)
-      .sort(([a], [b]) => Number(a === '-') - Number(b === '-') || a.localeCompare(b, 'fr'))
-      .map(([v, n]) => ({ cle: v, libelle: nom(v), n }))];
-  };
-  const nomLangue = (v: string) => (v === '-' ? 'sans langue' : LANGUES[v] ?? v);
-  const nomMetier = (v: string) => (v === '-' ? 'sans métier' : v);
+  const choixGroupe = (cle: 'langue' | 'metier', comptes: Record<string, number> | undefined, tous: string, nom: (v: string) => string): Choix[] =>
+    [{ cle: '', libelle: tous }, ...optionsGroupe(comptes, groupe[cle], nom).map((o) => ({ cle: o.valeur, libelle: o.nom, n: o.compte }))];
   const changerGroupe = (cle: 'langue' | 'metier', v: string) => {
     setGroupe((g) => ({ ...g, [cle]: v }));
     // Un groupe choisi sur une passe d'écartées ramène à la file, seule rangée
@@ -227,6 +195,8 @@ function Offres({ admin }: { admin: boolean }) {
     setPage(1);
   };
   const donnees = motif ? ecartees : file;
+  // La mesure attend une première lecture : la ligne d'une offre a deux étages
+  useLignesAuto(defile, setAuto, `${motif}|${!!donnees}`);
 
   const onglets: Onglet[] = [
     { cle: 'recherche', titre: 'Recherche', label: 'Profils de recherche', corps: recherche.corps, pied: recherche.pied },
@@ -266,34 +236,21 @@ function Offres({ admin }: { admin: boolean }) {
           <span className="espace" />
           <div className="actions" role="group" aria-label="Actions">
             {admin && (
-              <button type="button" className="action repli-2" title={gestes.titreTri} onClick={gestes.etiquettes}>
-                <span className="ico">{ICONES.etiquettes}</span><span className="txt">{gestes.libelleTri}</span><MarqueAdmin />
-              </button>
+              <Action className="repli-2" icone={ICONES.tag} title={gestes.titreTri} onClick={gestes.etiquettes}><span className="txt">{gestes.libelleTri}</span><MarqueAdmin />
+              </Action>
             )}
             {admin && (
-              <button type="button" className="action repli-2" title="Vider les offres — ADMIN" aria-haspopup="dialog" aria-expanded={confirmer} onClick={gestes.ouvrirVider}>
-                <span className="ico">{ICONES.vider}</span><span className="txt">Vider les offres</span><MarqueAdmin />
-              </button>
+              <Action className="repli-2" icone={ICONES.vider} title="Vider les offres — ADMIN" aria-haspopup="dialog" aria-expanded={confirmer} onClick={gestes.ouvrirVider}><span className="txt">Vider les offres</span><MarqueAdmin />
+              </Action>
             )}
-            <button type="button" className={`action repli-1${onglet === 'recherche' ? ' allume' : ''}`} title="Profils de recherche" aria-haspopup="dialog" aria-expanded={onglet === 'recherche'} onClick={() => ouvrir('recherche')}>
-              <span className="ico">{ICONES.recherche}</span><span className="txt">Profils de recherche</span>
-            </button>
-            <button type="button" className={`action plein${onglet === 'ajouter' ? ' allume' : ''}`} title="Ajouter une offre" aria-haspopup="dialog" aria-expanded={onglet === 'ajouter'} onClick={() => ouvrir('ajouter')}>
-              <span className="txt">Ajouter une offre</span><span className="ico">{ICONES.plus}</span>
-            </button>
+            <ActionOnglet cle="recherche" className="repli-1" icone={ICONES.recherche} title="Profils de recherche">Profils de recherche
+            </ActionOnglet>
+            <ActionOnglet cle="ajouter" plein iconeApres={ICONES.plus_pages} title="Ajouter une offre">
+              Ajouter une offre
+            </ActionOnglet>
           </div>
         </div>
-        {gestes.barre ?? (question && (
-          <Confirmer
-            question={question.question} detail={question.detail} action={question.action} occupe={occupe} onAnnuler={sansQuestion}
-            onConfirmer={async () => {
-              setOccupe(true);
-              await question.faire(fermer);
-              setOccupe(false);
-              sansQuestion();
-            }}
-          />
-        ))}
+        {gestes.barre ?? (question && <ConfirmerQuestion question={question} fermer={fermer} />)}
         <div className="defile" ref={defile}>
           {motif ? (
             <table className="ecartees">
@@ -301,12 +258,12 @@ function Offres({ admin }: { admin: boolean }) {
               <tbody>
                 {ecartees?.offres.map((o) => (
                   <tr key={o.cle}>
-                    <td className="d">{jourMois(o.publiee_le)}</td>
+                    <td className="d">{jourMoisIso(o.publiee_le)}</td>
                     <td><span className="motif" title={o.detail || undefined}>{libelleMotif(o.motif)}</span></td>
                     <td title={o.entreprise}><b className="ent">{o.entreprise || '—'}</b></td>
                     <td title={o.titre}>{o.titre || '—'}</td>
                     <td>{[o.lieu, o.contrat].filter(Boolean).join(' · ') || '—'}</td>
-                    <td className="d">{libelleSource(o.source) || '—'}</td>
+                    <td className="d">{libelleSource(o.source)}</td>
                     <td>{lienSur(o.url) ? <a className="lien-d" href={lienSur(o.url)} target="_blank" rel="noopener noreferrer" aria-label={`Voir l'offre ${o.titre}`}>voir</a> : null}</td>
                   </tr>
                 ))}
@@ -322,12 +279,10 @@ function Offres({ admin }: { admin: boolean }) {
                   const etape = passes.find((p) => p.cle === o.etape)?.libelle ?? o.etape;
                   return (
                     <tr
-                      key={o.cle} className={ouverte(o.cle) ? 'ouverte' : undefined} tabIndex={0} data-ouvre="fiche-offre" data-objet={o.cle}
+                      key={o.cle} className={ouverte(o.cle) ? 'ouverte' : undefined} {...ouvrable('fiche-offre', o.cle, () => ouvrirOffre(o.cle))}
                       aria-label={`${o.titre} chez ${o.entreprise_brute} : ouvrir la fiche de l'offre`}
-                      onClick={() => ouvrirOffre(o.cle)}
-                      onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && ouvrirOffre(o.cle)}
                     >
-                      <td className="d">{jourMois(o.publiee_le)}</td>
+                      <td className="d">{jourMoisIso(o.publiee_le)}</td>
                       <td title={o.entreprise_brute}>
                         {o.entreprise_siren ? (
                           <>
@@ -340,7 +295,7 @@ function Offres({ admin }: { admin: boolean }) {
                       </td>
                       <td title={o.titre}>{o.titre || '—'}{sous && <span className="sous">{sous}</span>}</td>
                       <td>{[o.lieu, o.contrat].filter(Boolean).join(' · ') || '—'}</td>
-                      <td className="d">{libelleSource(o.source) || '—'}</td>
+                      <td className="d">{libelleSource(o.source)}</td>
                       <td><span className={`eo ${CLASSE_ETAPE[o.etape] ?? ''}`} title={o.raison || undefined}>{etape}</span></td>
                     </tr>
                   );
@@ -352,7 +307,7 @@ function Offres({ admin }: { admin: boolean }) {
             </table>
           )}
         </div>
-        <Pagination page={page} pages={donnees?.pages ?? 1} taille={taille} auto={Math.max(10, auto)} surPage={setPage} surTaille={setTaille} />
+        <PaginationAller page={page} pages={donnees?.pages ?? 1} setPage={setPage} taille={taille} tailles={[25, 50]} setTaille={(t) => setTaille(t as Taille)} auto={Math.max(10, auto)} />
         {avis}
       </Fenetre>
       <Panneau elements={elements} onglets={onglets} />
@@ -368,55 +323,44 @@ const carteRecherche = (p: Partial<ProfilRecherche>, enregistre: boolean): Carte
   mots_bannis: (p.mots_bannis ?? []).join(', '), departements: (p.departements ?? []).join(', '), profils_candidature: p.profils_candidature ?? [],
 });
 const lireRecherche = (c: CarteRecherche): ProfilRecherche => ({
-  nom: c.nom.trim(), actif: c.actif, langue: c.langue, mots_cles: liste(c.mots_cles), mots_bannis: liste(c.mots_bannis),
-  departements: liste(c.departements), profils_candidature: c.profils_candidature,
+  nom: c.nom.trim(), actif: c.actif, langue: c.langue, mots_cles: parVirgules(c.mots_cles), mots_bannis: parVirgules(c.mots_bannis),
+  departements: parVirgules(c.departements), profils_candidature: c.profils_candidature,
 });
 const versProfil = (nom?: string) => `profil?${nom ? `fiche=${encodeURIComponent(nom)}` : 'nouveau=1'}`;
 
 function useProfilsRecherche(parametres: Parametres | null, profils: ProfilDispo[], incomplets: Incomplets, enregistrer: (m: Partial<Parametres>) => Promise<boolean>) {
-  const [cartes, setCartes] = useState<CarteRecherche[]>([]);
-  const [retrait, setRetrait] = useState<number | null>(null);
+  const editeur = useCartes({ source: parametres?.profils_recherche, carte: carteRecherche, lire: lireRecherche, sauver: (lus) => enregistrer({ profils_recherche: lus.filter((p) => p.nom) }) });
+  const { cartes, setCartes, reprendre, change, modifier, sauver } = editeur;
   const [choix, setChoix] = useState<Record<number, string>>({});
-  const reprendre = useCallback(() => setCartes((parametres?.profils_recherche ?? []).map((p) => carteRecherche(p, true))), [parametres]);
-  useEffect(() => reprendre(), [reprendre]);
-  const enregistres = JSON.stringify((parametres?.profils_recherche ?? []).map((p) => lireRecherche(carteRecherche(p, true))));
-  const change = JSON.stringify(cartes.map(lireRecherche)) !== enregistres;
-  const modifier = (id: number, champs: Partial<CarteRecherche>) => setCartes((cs) => cs.map((c) => (c.id === id ? { ...c, ...champs } : c)));
-  const sauver = async () => {
-    if (await enregistrer({ profils_recherche: cartes.map(lireRecherche).filter((p) => p.nom) })) setRetrait(null);
-  };
 
   const corps = (
-    <div className="cartes" onKeyDown={(e) => {
-      if (e.key === 'Enter' && (e.target as HTMLElement).matches('input:not([type=checkbox])') && change) sauver();
-    }}>
+    <div className="cartes" onKeyDown={surEntree(() => change && sauver(), 'input:not([type=checkbox])')}>
       {cartes.map((c) => {
-        const fautifs = c.profils_candidature.filter((ch) => incomplets[nomFiche(ch)]);
-        const attaches = new Set(c.profils_candidature.map(nomFiche));
+        const fautifs = c.profils_candidature.filter((ch) => incomplets[nomFichier(ch)]);
+        const attaches = new Set(c.profils_candidature.map(nomFichier));
         const libres = profils.filter((p) => !attaches.has(p.nom));
         return (
           <article key={c.id} className={`carte-f${fautifs.length ? ' alerte' : ''}`} aria-label={`Profil de recherche ${c.nom || 'nouveau'}`}>
             {fautifs.map((ch) => {
-              const manque = incomplets[nomFiche(ch)];
+              const manque = incomplets[nomFichier(ch)];
               return (
                 <p key={ch} className="alerte-f">
-                  ⚠ « {sansJson(nomFiche(ch))} » ne peut pas candidater : {manque.length} champ(s) obligatoire(s) vide(s) ({manque.map((m) => m.libelle).join(', ')}). Ses offres attendent.{' '}
-                  <LienIllusion className="lien-d" vers={versProfil(nomFiche(ch))}>Compléter</LienIllusion>
+                  ⚠ « {sansJson(nomFichier(ch))} » ne peut pas candidater : {manque.length} champ(s) obligatoire(s) vide(s) ({manque.map((m) => m.libelle).join(', ')}). Ses offres attendent.{' '}
+                  <LienIllusion className="lien-d" vers={versProfil(nomFichier(ch))}>Compléter</LienIllusion>
                 </p>
               );
             })}
-            <div className="champ"><label htmlFor={`pr${c.id}-nom`}>Nom</label><input id={`pr${c.id}-nom`} className="saisie" value={c.nom} onChange={(e) => modifier(c.id, { nom: e.target.value })} /></div>
+            <ChampSaisie id={`pr${c.id}-nom`} libelle="Nom" value={c.nom} onChange={(e) => modifier(c.id, { nom: e.target.value })} />
             <div className="grille-2">
-              <div className="champ"><label htmlFor={`pr${c.id}-langue`}>Langue</label><ChoixLangue id={`pr${c.id}-langue`} valeur={c.langue} changer={(langue) => modifier(c.id, { langue })} /></div>
-              <div className="champ"><label htmlFor={`pr${c.id}-dep`} title="Vide : ceux du ciblage général.">Départements</label><input id={`pr${c.id}-dep`} className="saisie" value={c.departements} onChange={(e) => modifier(c.id, { departements: e.target.value })} /></div>
+              <Champ pour={`pr${c.id}-langue`} libelle="Langue"><ChoixLangue id={`pr${c.id}-langue`} valeur={c.langue} changer={(langue) => modifier(c.id, { langue })} /></Champ>
+              <ChampSaisie id={`pr${c.id}-dep`} titre="Vide : ceux du ciblage général." libelle="Départements" value={c.departements} onChange={(e) => modifier(c.id, { departements: e.target.value })} />
             </div>
-            <div className="champ"><label htmlFor={`pr${c.id}-int`}>Intitulés cherchés</label><textarea id={`pr${c.id}-int`} className="saisie" value={c.mots_cles} onChange={(e) => modifier(c.id, { mots_cles: e.target.value })} /></div>
-            <div className="champ"><label htmlFor={`pr${c.id}-ban`}>Termes bannis</label><input id={`pr${c.id}-ban`} className="saisie" value={c.mots_bannis} onChange={(e) => modifier(c.id, { mots_bannis: e.target.value })} /></div>
-            <div className="champ">
-              <span className="lib-champ">Profils de candidature</span>
+            <ChampZone id={`pr${c.id}-int`} libelle="Intitulés cherchés" value={c.mots_cles} onChange={(e) => modifier(c.id, { mots_cles: e.target.value })} />
+            <ChampSaisie id={`pr${c.id}-ban`} libelle="Termes bannis" value={c.mots_bannis} onChange={(e) => modifier(c.id, { mots_bannis: e.target.value })} />
+            <Champ groupe libelle="Profils de candidature">
               <span className="puces">
                 {c.profils_candidature.map((ch) => {
-                  const nom = nomFiche(ch);
+                  const nom = nomFichier(ch);
                   const manque = incomplets[nom];
                   return (
                     <span key={ch} className={`puce${manque ? ' incomplet' : ''}`} title={manque ? `Non exploitable : ${manque.map((m) => m.libelle).join(', ')}` : ch}>
@@ -437,96 +381,67 @@ function useProfilsRecherche(parametres: Parametres | null, profils: ProfilDispo
                   setChoix((x) => ({ ...x, [c.id]: '' }));
                 }}>Attacher</button>
               </span>
-            </div>
-            {retrait === c.id ? (
-              <Confirmer
-                question="Retirer ce profil de recherche ?" action="Retirer" detail="Effet à l'enregistrement."
-                onAnnuler={() => setRetrait(null)}
-                onConfirmer={() => {
-                  setCartes((cs) => cs.filter((x) => x.id !== c.id));
-                  setRetrait(null);
-                }}
-              />
-            ) : (
-              <div className="carte-pied">
-                <button type="button" className="lien-d" title={c.enregistre ? `${c.nom || 'Ce profil'} et les profils de candidature qui lui sont attachés ne seront plus interrogés par la veille.` : undefined}
-                  onClick={() => (c.enregistre ? setRetrait(c.id) : setCartes((cs) => cs.filter((x) => x.id !== c.id)))}>Retirer</button>
-                <label className="inter">Actif<input type="checkbox" checked={c.actif} onChange={(e) => modifier(c.id, { actif: e.target.checked })} /></label>
-              </div>
-            )}
+            </Champ>
+            <RetraitCarte cartes={editeur} id={c.id} enregistree={c.enregistre} question="Retirer ce profil de recherche ?"
+              titre={`${c.nom || 'Ce profil'} et les profils de candidature qui lui sont attachés ne seront plus interrogés par la veille.`}>
+              <Interrupteur libelle="Actif" checked={c.actif} onChange={(e) => modifier(c.id, { actif: e.target.checked })} />
+            </RetraitCarte>
           </article>
         );
       })}
       {!cartes.length && <p className="texte-f">Aucun profil de recherche : sans profil actif, la veille ne sait pas quoi chercher.</p>}
     </div>
   );
-  const pied = (
-    <>
-      <button type="button" className="action gauche" onClick={() => setCartes((cs) => [...cs, carteRecherche({ actif: true }, false)])}><span className="ico">{ICONES.plus}</span>Nouveau profil de recherche</button>
-      <button type="button" className="action" disabled={!change} onClick={reprendre}>Annuler</button>
-      <button type="button" className="action plein" disabled={!change} onClick={sauver}>Enregistrer<span className="ico">{ICONES.fleche}</span></button>
-    </>
-  );
+  const pied = <PiedCartes libelle="Nouveau profil de recherche" ajouter={() => setCartes((cs) => [...cs, carteRecherche({ actif: true }, false)])} change={change} reprendre={reprendre} sauver={sauver} />;
   return { corps, pied };
 }
 
 // Ajouter une offre à la file : le lien suffit, le reste est facultatif
-function useAjout(profils: ProfilDispo[], dire: (t: string, e?: boolean) => void, recharger: () => void) {
+function useAjout(profils: ProfilDispo[], dire: Dire, recharger: () => void) {
   const vide = { url: '', entreprise: '', titre: '', profil: '' };
   const [saisie, setSaisie] = useState(vide);
   const [cv, setCv] = useState<File | null>(null);
   const [cle, setCle] = useState(0);
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   const entame = Object.values(saisie).some(Boolean) || !!cv;
   const vider = () => {
     setSaisie(vide);
     setCv(null);
     setCle((k) => k + 1);
   };
-  const ajouter = async () => {
-    if (!/^https?:\/\/\S+$/i.test(saisie.url.trim())) {
+  const ajouter = () => {
+    if (!urlOffreValide(saisie.url)) {
       dire("Indiquez l'URL de l'offre — c'est tout ce qu'il faut pour la mettre en file.", true);
       return;
     }
-    setOccupe(true);
-    try {
-      const r = await appeler<{ neuve: boolean; entreprise_siren: string | null }>('/offres', {
-        methode: 'POST', corps: { ...saisie, url: saisie.url.trim(), ...(cv ? { cv: await televerser(cv) } : {}) },
-      });
-      dire(r.neuve ? `Offre ajoutée à la file${r.entreprise_siren ? ' et rattachée à sa fiche' : ''}.` : 'Cette offre était déjà en base — elle est rendue à la file.', !r.neuve);
+    return geste(async () => {
+      dire(...avisAjout(await posterOffre(saisie, cv), 'Cette offre était déjà en base — elle est rendue à la file.'));
       vider();
       recharger();
-    } catch (e) {
-      dire(message(e), true);
-    }
-    setOccupe(false);
+    });
   };
   const champ = (c: keyof typeof vide) => ({ value: saisie[c], onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setSaisie((s) => ({ ...s, [c]: e.target.value })) });
   const corps = (
-    <div className="section-f" onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLElement).matches('input') && ajouter()}>
-      <div className="champ"><label htmlFor="ao-url">URL de l&apos;offre</label><input id="ao-url" className="saisie" type="url" placeholder="https://…/offre/12345" required {...champ('url')} /></div>
+    <div className="section-f" onKeyDown={surEntree(ajouter, 'input')}>
+      <ChampSaisie id="ao-url" libelle="URL de l&apos;offre" type="url" placeholder="https://…/offre/12345" required {...champ('url')} />
       <div className="grille-2">
-        <div className="champ"><label htmlFor="ao-ent">Entreprise</label><input id="ao-ent" className="saisie" placeholder="Exemple SA" {...champ('entreprise')} /></div>
-        <div className="champ"><label htmlFor="ao-titre">Intitulé</label><input id="ao-titre" className="saisie" {...champ('titre')} /></div>
+        <ChampSaisie id="ao-ent" libelle="Entreprise" placeholder="Exemple SA" {...champ('entreprise')} />
+        <ChampSaisie id="ao-titre" libelle="Intitulé" {...champ('titre')} />
       </div>
-      <div className="champ">
-        <label htmlFor="ao-profil">Profil du candidat</label>
-        <select id="ao-profil" className="saisie" {...champ('profil')}>
+      <ChampListe id="ao-profil" libelle="Profil du candidat" {...champ('profil')}>
           <option value="">Automatique</option>
           {profils.map((p) => <option key={p.nom} value={p.chemin}>{sansJson(p.nom)}</option>)}
-        </select>
-      </div>
-      <div className="champ">
-        <label htmlFor="ao-cv">CV imposé</label>
+        </ChampListe>
+      <Champ pour="ao-cv" libelle="CV imposé">
         <input key={cle} id="ao-cv" className="saisie fichier" type="file" accept=".pdf,application/pdf" onChange={(e) => setCv(e.target.files?.[0] ?? null)} />
-      </div>
+      </Champ>
       <p className="aide-champ">L&apos;adresse entre dans la file, avec le profil et le CV saisis s&apos;il y en a. Rien ne part maintenant ; l&apos;employeur et l&apos;intitulé sont relus sur l&apos;annonce.</p>
     </div>
   );
   const pied = (
     <>
-      <button type="button" className="action" disabled={!entame} onClick={vider}>Annuler</button>
-      <button type="button" className="action plein" disabled={occupe} onClick={ajouter}>Ajouter à la file<span className="ico">{ICONES.plus}</span></button>
+      <Action disabled={!entame} onClick={vider}>Annuler</Action>
+      <Action plein iconeApres={ICONES.plus_pages} disabled={occupe} onClick={ajouter}>Ajouter à la file</Action>
     </>
   );
   return { corps, pied, entame };

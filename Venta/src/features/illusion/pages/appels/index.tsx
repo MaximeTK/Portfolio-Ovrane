@@ -4,14 +4,22 @@ import './appels.css';
 import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Activite } from '../../activite/Activite';
-import { Dock, Fenetre, usePanneau, useVues, type ArbreDepart } from '../../dock/Dock';
+
+import { Fenetre, usePanneau, useVues, type ArbreDepart } from '../../dock/Dock';
 import { ECART } from '../../dock/moteur';
 import { Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
-import { dateUtc, ongletFicheOffre } from '../../partage/FicheOffre';
+import { ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { demarrer, nomEnDirect, oublierAvis, terminer, useDirect, type Mode, type Tour } from './direct';
-import { useParametresOuverts, useLignesAuto, ICONES_COMMUNES, TRAIT, message, duree, useAvisBref, useEchap, type Avis } from '../commun';
+import { useParametresOuverts, useLignesAuto, duree, useEchap, useGeste, useLecture, usePagination, decouper, PaginationAller } from '../commun';
+import { Action } from '../../elements/Action';
+import { ChampSaisie, ChampListe, OptionsModele, SectionFiche } from '../../elements/Champ';
+import { ActionOnglet } from '../../elements/Groupes';
+import { ICONES } from '../../elements/icones';
+import { ouvrable } from '../../elements/Case';
+import { useAvis, type Dire } from '../../elements/Avis';
+import { dollars, jourMois, message, quand } from '../../elements/format';
+import { PageDock } from '../../activite/PageDock';
 
 // Ce que /vues/appels rend : appels, offres et jour de candidature.
 type LigneAppel = {
@@ -29,18 +37,10 @@ type Parametres = { ruby_cle: boolean; ruby_modele_parole: string; ruby_modele: 
 
 const TAILLES = [25, 50];
 const MODELES_PAROLE = ['universal-streaming-multilingual', 'universal-3-6-pro'];
-const quand = (iso: string) => dateUtc(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-const jour = (iso: string) => dateUtc(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-const dollars = (v: number) => `${v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: v > 0 && v < 0.01 ? 4 : 2 })} $`;
-const minutes = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
-const libelleOffre = (o: OffreEnvoyee) => `${o.entreprise} — ${o.titre} · ${jour(o.envoyee_le)}`;
 
-const ICONES = {
-  ...ICONES_COMMUNES,
-  coche: <svg {...TRAIT} strokeWidth={2.6}><path d="M5 12l5 5L20 7" /></svg>,
-  refaire: <svg {...TRAIT}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>,
-  arreter: <svg {...TRAIT}><rect x="6" y="6" width="12" height="12" /></svg>,
-};
+const minutes = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
+const libelleOffre = (o: OffreEnvoyee) => `${o.entreprise} — ${o.titre} · ${jourMois(o.envoyee_le)}`;
+
 
 // Activité | liste | détail | panneau : le panneau ouvert prend le détail.
 const ARBRE: ArbreDepart = (zone, style) => {
@@ -65,29 +65,23 @@ function parties(texte: string) {
 export default function PageAppels({ compte }: ProprietesPage) {
   const direct = useDirect();
   // Appels lus et choisi gardés d'une visite à l'autre, relus derrière.
-  const [vue, setVue] = useState(() => repris<Vue | null>('appels:vue', null));
-  const [erreurVue, setErreurVue] = useState('');
   const [choisi, setChoisiEtat] = useState(() => repris<number | null>('appels:choisi', null));
-  useGarder('appels', { vue, choisi });
-  const [avis, setAvis] = useState<Avis>(null);
+  useGarder('appels', { choisi });
   const [version, setVersion] = useState(0);
   const dernierChoisi = useRef(choisi);
   const setChoisi = useCallback((id: number | null) => {
     dernierChoisi.current = id;
     setChoisiEtat(id);
   }, []);
+  const { lu: vue, erreur: erreurVue, relire: lire } = useLecture<Vue>('appels', 'vue', '/vues/appels', (lu) => {
+    // Sans appel choisi, le plus récent des appels clos
+    if (dernierChoisi.current === null || !lu.appels.some((a) => a.id === dernierChoisi.current)) setChoisi((lu.appels.find((a) => a.fin) ?? lu.appels[0])?.id ?? null);
+  });
   const relire = useCallback(async () => {
-    try {
-      const lu = await appeler<Vue>('/vues/appels');
-      setVue(lu);
-      setErreurVue('');
-      // Sans appel choisi, le plus récent des appels clos
-      if (dernierChoisi.current === null || !lu.appels.some((a) => a.id === dernierChoisi.current)) setChoisi((lu.appels.find((a) => a.fin) ?? lu.appels[0])?.id ?? null);
-    } catch (e) {
-      setErreurVue(message(e));
-    }
+    await lire();
     setVersion((v) => v + 1);
-  }, [setChoisi]);
+  }, [lire]);
+  const { dire, vue: avis } = useAvis('avis-appels', true, erreurVue);
   // Lus à l'arrivée et après chaque geste ; l'appel terminé s'affiche vite.
   useEffect(() => {
     if (direct.analyse !== null) setChoisi(direct.analyse);
@@ -95,46 +89,36 @@ export default function PageAppels({ compte }: ProprietesPage) {
   }, [direct.analyse, setChoisi, relire]);
   useEffect(() => {
     if (!direct.avis) return;
-    setAvis(direct.avis);
+    dire(direct.avis.texte, direct.avis.erreur);
     oublierAvis();
-  }, [direct.avis]);
+  }, [direct.avis, dire]);
 
   return (
-    <Dock id="appels" principal="appels" arbre={ARBRE} panneau={direct.appel ? 'direct' : compte.admin ? 'reglages' : null}
+    <PageDock id="appels" principal="appels" arbre={ARBRE} panneau={direct.appel ? 'direct' : compte.admin ? 'reglages' : null}
       fenetres={{ appels: { mini: [420, 220], pref: [560, 360], flot: [640, 480] }, appel: { mini: [400, 260], pref: [520, 400], flot: [560, 620] } }}>
-      <Activite />
-      <Liste vue={vue} erreurVue={erreurVue} choisi={choisi} setChoisi={setChoisi} avis={avis} setAvis={setAvis} />
-      <Detail vue={vue} choisi={choisi} version={version} setChoisi={setChoisi} setAvis={setAvis} relire={relire} />
-      <PanneauAppels admin={compte.admin} vue={vue} version={version} setAvis={setAvis} relire={relire} />
-    </Dock>
+      <Liste vue={vue} choisi={choisi} setChoisi={setChoisi} avis={avis} />
+      <Detail vue={vue} choisi={choisi} version={version} setChoisi={setChoisi} dire={dire} relire={relire} />
+      <PanneauAppels admin={compte.admin} vue={vue} version={version} dire={dire} relire={relire} />
+    </PageDock>
   );
 }
 
-type ProprietesListe = {
-  vue: Vue | null; erreurVue: string; choisi: number | null; setChoisi: (id: number | null) => void; avis: Avis; setAvis: (a: Avis) => void;
-};
+type ProprietesListe = { vue: Vue | null; choisi: number | null; setChoisi: (id: number | null) => void; avis: React.ReactNode };
 
-function Liste({ vue, erreurVue, choisi, setChoisi, avis, setAvis }: ProprietesListe) {
+function Liste({ vue, choisi, setChoisi, avis }: ProprietesListe) {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const { focus } = useVues();
   const direct = useDirect();
   // La pagination choisie reste d'une visite à l'autre, avec la mesure « auto »
-  const [taille, setTaille] = useState(() => repris<number | 'auto'>('appels:taille', 'auto'));
-  const [auto, setAuto] = useState(() => repris('appels:auto', 8));
-  const [page, setPage] = useState(() => repris('appels:page', 1));
-  useGarder('appels', { taille, auto, page });
+  const { page, setPage, taille, setTaille, auto, setAuto } = usePagination('appels', 8);
   const defile = useRef<HTMLDivElement>(null);
 
   // Échap ferme le panneau, sauf celui qu'une confirmation a gardé pour elle
   useEchap(fermer);
-  useAvisBref(avis, setAvis);
-  useLignesAuto(defile, setAuto, 46);
+  useLignesAuto(defile, setAuto);
 
   const appels = vue?.appels ?? [];
-  const parPage = taille === 'auto' ? auto : taille;
-  const pages = Math.max(1, Math.ceil(appels.length / parPage));
-  const courante = Math.min(page, pages);
-  const visibles = appels.slice((courante - 1) * parPage, courante * parPage);
+  const { pages, courante, visibles } = decouper(appels, page, taille, auto);
 
   // L'appel en cours rouvre son direct ; un autre va dans la fenêtre active.
   const ouvrirLigne = (a: LigneAppel) => {
@@ -156,12 +140,11 @@ function Liste({ vue, erreurVue, choisi, setChoisi, avis, setAvis }: ProprietesL
         <p className="note-outils">Seul le texte est gardé, jamais l&apos;audio : prévenez votre interlocuteur que l&apos;appel est transcrit.</p>
         <span className="espace" />
         <div className="actions" role="group" aria-label="Actions">
-          <button type="button" className={`action${onglet === 'reglages' ? ' allume' : ''}`} title="Réglages" aria-haspopup="dialog" aria-expanded={onglet === 'reglages'} onClick={() => ouvrir('reglages')}>
-            <span className="ico">{ICONES.reglages}</span><span className="txt">Réglages</span>
-          </button>
-          <button type="button" className="action plein" aria-haspopup="dialog" aria-expanded={onglet === 'nouvel' || onglet === 'direct'} onClick={() => ouvrir(direct.appel ? 'direct' : 'nouvel')}>
-            Nouvel appel<span className="ico">{ICONES.plus}</span>
-          </button>
+          <ActionOnglet cle="reglages" icone={ICONES.reglages} title="Réglages">Réglages
+          </ActionOnglet>
+          <Action plein iconeApres={ICONES.plus_pages} aria-haspopup="dialog" aria-expanded={onglet === 'nouvel' || onglet === 'direct'} onClick={() => ouvrir(direct.appel ? 'direct' : 'nouvel')}>
+            Nouvel appel
+          </Action>
         </div>
       </div>
       <div className="defile" ref={defile}>
@@ -173,8 +156,7 @@ function Liste({ vue, erreurVue, choisi, setChoisi, avis, setAvis }: ProprietesL
               const classe = (enDirect && onglet === 'direct') || (onglet === 'appel' && objet === String(a.id)) ? 'ouverte' : onglet === null && a.id === choisi ? 'choisi' : '';
               const offre = [a.entreprise, a.intitule].filter(Boolean).join(' · ');
               return (
-                <tr key={a.id} className={classe} tabIndex={0} aria-selected={classe !== ''} title={enDirect ? 'Voir la transcription en direct' : undefined} data-ouvre="appel" data-objet={a.id}
-                  onClick={() => ouvrirLigne(a)} onKeyDown={(e) => e.key === 'Enter' && ouvrirLigne(a)}>
+                <tr key={a.id} className={classe} {...ouvrable('appel', a.id, () => ouvrirLigne(a))} aria-selected={classe !== ''} title={enDirect ? 'Voir la transcription en direct' : undefined}>
                   <td className="mono d">{quand(a.debut)}</td>
                   <td><span className="t-appel" title={a.titre || 'Appel'}>{a.titre || 'Appel'}</span><span className={`offre-appel${offre ? '' : ' sans'}`} title={offre || undefined}>{offre || 'aucune offre'}</span></td>
                   <td className="d">{a.fin ? duree(a.duree_s) : <span className="direct-c">en cours</span>}</td>
@@ -187,52 +169,40 @@ function Liste({ vue, erreurVue, choisi, setChoisi, avis, setAvis }: ProprietesL
           </tbody>
         </table>
       </div>
-      {(avis || erreurVue) && (
-        <p className={`avis-appels${avis?.erreur || (!avis && erreurVue) ? ' erreur' : ''}`} role={avis?.erreur || (!avis && erreurVue) ? 'alert' : 'status'} onClick={() => setAvis(null)}>
-          {avis?.texte ?? erreurVue}
-        </p>
-      )}
-      <div className="pagination">
-        <select aria-label="Lignes par page" value={String(taille)} onChange={(e) => { setTaille(e.target.value === 'auto' ? 'auto' : Number(e.target.value)); setPage(1); }}>
-          <option value="auto">auto ({auto})</option>
-          {TAILLES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <nav className="pages" aria-label="Pages">
-          <button type="button" className="pl" disabled={courante <= 1} aria-label="Page précédente" onClick={() => setPage(courante - 1)}>‹</button>
-          {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
-            <button key={n} type="button" className={`pl${n === courante ? ' actif' : ''}`} aria-current={n === courante ? 'page' : undefined} onClick={() => setPage(n)}>{n}</button>
-          ))}
-          <button type="button" className="pl" disabled={courante >= pages} aria-label="Page suivante" onClick={() => setPage(courante + 1)}>›</button>
-        </nav>
+      {avis}
+      <PaginationAller page={courante} pages={pages} setPage={setPage} taille={taille} tailles={TAILLES} auto={auto} setTaille={(t) => {
+        setTaille(t);
+        setPage(1);
+      }}>
         <span className="espace" />
         <span className="compteur">{vue ? `${appels.length} appel${appels.length > 1 ? 's' : ''}` : ''}</span>
-      </div>
+      </PaginationAller>
     </Fenetre>
   );
 }
 
-type ProprietesDetail = { vue: Vue | null; choisi: number | null; version: number; setChoisi: (id: number | null) => void; setAvis: (a: Avis) => void; relire: () => Promise<void> };
+type ProprietesDetail = { vue: Vue | null; choisi: number | null; version: number; setChoisi: (id: number | null) => void; dire: Dire; relire: () => Promise<void> };
 
 // L'appel choisi au clic gauche ; le panneau ouvert prend sa place
-function Detail({ vue, choisi, version, setChoisi, setAvis, relire }: ProprietesDetail) {
+function Detail({ vue, choisi, version, setChoisi, dire, relire }: ProprietesDetail) {
   const { onglet } = usePanneau();
   return (
     <Fenetre id="appel" className="detail-appel" hidden={onglet !== null} aria-label="Appel choisi" titrePrise="Glisser pour détacher l'appel choisi">
       {choisi === null ? (
         <div className="appel-d"><p className="vide-appel"><b>Aucun appel choisi.</b>Choisissez un appel dans la liste, ou démarrez-en un.</p></div>
-      ) : <ContenuAppel key={choisi} id={choisi} vue={vue} version={version} setAvis={setAvis} relire={relire} supprime={() => setChoisi(null)} />}
+      ) : <ContenuAppel key={choisi} id={choisi} vue={vue} version={version} dire={dire} relire={relire} supprime={() => setChoisi(null)} />}
     </Fenetre>
   );
 }
 
-type ProprietesContenu = { id: number; vue: Vue | null; version: number; setAvis: (a: Avis) => void; relire: () => Promise<void>; supprime: () => void };
+type ProprietesContenu = { id: number; vue: Vue | null; version: number; dire: Dire; relire: () => Promise<void>; supprime: () => void };
 
 // Un appel en fenêtre : titre, offre, voix, transcription, analyse, gestes.
 // Le micro d'abord, puis le son de l'appel, chaque piste par lettre
 const nomsDe = (d: DetailAppel) => Object.fromEntries(d.segments.map((s) => [`${s.piste}:${s.locuteur || ''}`, s.nom])
   .sort(([a], [b]) => Number(a.startsWith('appel')) - Number(b.startsWith('appel')) || a.localeCompare(b)));
 
-function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: ProprietesContenu) {
+function ContenuAppel({ id, vue, version, dire, relire, supprime }: ProprietesContenu) {
   const { ouvrir } = usePanneau();
   const direct = useDirect();
   const [detail, setDetail] = useState(() => repris<DetailAppel | null>(`appels:detail-${id}`, null));
@@ -243,7 +213,7 @@ function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: Propriete
   const [noms, setNoms] = useState<Record<string, string>>(() => (detail ? nomsDe(detail) : {}));
   const [geste, setGeste] = useState<'clore' | 'analyser' | null>(null);
   const [confirmer, setConfirmer] = useState(false);
-  const [occupe, setOccupe] = useState(false);
+  const { geste: effacer } = useGeste((t) => dire(t, true));
   const base = useId();
   const analyseEnCours = direct.analyse === id;
 
@@ -276,19 +246,19 @@ function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: Propriete
     if (!lu) return;
     try {
       montrer(await appeler<DetailAppel>(`/appels/${lu.id}`, { methode: 'PUT', corps }));
-      setAvis({ texte });
+      dire(texte);
       await relire();
     } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
+      dire(message(e), true);
     }
   };
   const faire = async (quoi: 'clore' | 'analyser', action: (appel: DetailAppel) => Promise<string>) => {
     if (!lu) return;
     setGeste(quoi);
     try {
-      setAvis({ texte: await action(lu) });
+      dire(await action(lu));
     } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
+      dire(message(e), true);
     } finally {
       setGeste(null);
       await relire();
@@ -304,20 +274,14 @@ function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: Propriete
     montrer(await appeler<DetailAppel>(`/appels/${a.id}/analyse`, { methode: 'POST' }));
     return 'Analyse rédigée.';
   });
-  const supprimer = async () => {
-    setOccupe(true);
-    try {
-      await appeler(`/appels/${id}`, { methode: 'DELETE' });
-      supprime();
-      setAvis({ texte: 'Appel effacé, avec sa transcription et son analyse.' });
-    } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
-    } finally {
-      setOccupe(false);
-      setConfirmer(false);
-      await relire();
-    }
-  };
+  const supprimer = () => effacer(async () => {
+    await appeler(`/appels/${id}`, { methode: 'DELETE' });
+    supprime();
+    dire('Appel effacé, avec sa transcription et son analyse.');
+  }, () => {
+    setConfirmer(false);
+    return relire();
+  });
 
   const voix = Object.keys(noms);
   const offres = vue?.offres ?? [];
@@ -361,13 +325,10 @@ function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: Propriete
               {voix.map((cle) => {
                 const [piste, lettre] = cle.split(':');
                 return (
-                  <div key={cle} className="champ">
-                    <label htmlFor={`${base}-voix-${cle}`}>{piste === 'appel' ? "Son de l'appel" : 'Micro'}{lettre ? ` · voix ${lettre}` : ''}</label>
-                    <input id={`${base}-voix-${cle}`} className="saisie" value={noms[cle]} onChange={(e) => setNoms((n) => ({ ...n, [cle]: e.target.value }))} />
-                  </div>
+                  <ChampSaisie id={`${base}-voix-${cle}`} libelle={<>{piste === 'appel' ? "Son de l'appel" : 'Micro'}{lettre ? ` · voix ${lettre}` : ''}</>} key={cle} value={noms[cle]} onChange={(e) => setNoms((n) => ({ ...n, [cle]: e.target.value }))} />
                 );
               })}
-              <button type="submit" className="action">Enregistrer les noms</button>
+              <Action type="submit">Enregistrer les noms</Action>
             </form>
           )}
           <div className="defile-appel">
@@ -389,22 +350,18 @@ function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: Propriete
           </div>
           {confirmer && (
             <Confirmer question="Supprimer l'appel ?" detail="Sa transcription et son analyse sont effacées." action="Supprimer"
-              occupe={occupe} onAnnuler={() => setConfirmer(false)} onConfirmer={() => void supprimer()} />
+              onAnnuler={() => setConfirmer(false)} onConfirmer={supprimer} />
           )}
           <div className="pied-appel">
             {!lu.fin && !enDirect && (
-              <button type="button" className="action plein" disabled={geste !== null}
-                title="L'appel s'est interrompu sans « Terminer » (onglet fermé, coupure) : il se clôt sur la durée de sa transcription, estimée à son dernier tour de parole."
-                onClick={() => void clore()}>
-                {geste === 'clore' ? 'Clôture…' : "Clore l'appel"}<span className="ico">{ICONES.coche}</span>
-              </button>
+              <Action plein iconeApres={ICONES.coche} disabled={geste !== null} title="L'appel s'est interrompu sans « Terminer » (onglet fermé, coupure) : il se clôt sur la durée de sa transcription, estimée à son dernier tour de parole." onClick={() => void clore()}>
+                {geste === 'clore' ? 'Clôture…' : "Clore l'appel"}
+              </Action>
             )}
-            <button type="button" className="action" disabled={!lu.segments.length || geste !== null || enDirect} onClick={() => void analyser()}>
-              <span className="ico">{ICONES.refaire}</span>{geste === 'analyser' ? 'Analyse en cours…' : lu.analyse ? "Refaire l'analyse" : 'Analyser'}
-            </button>
-            <button type="button" className="action rouge" aria-haspopup="dialog" disabled={enDirect} onClick={() => setConfirmer(true)}>
-              <span className="ico">{ICONES.supprimer}</span>Supprimer l&apos;appel
-            </button>
+            <Action icone={ICONES.reprendre} disabled={!lu.segments.length || geste !== null || enDirect} onClick={() => void analyser()}>{geste === 'analyser' ? 'Analyse en cours…' : lu.analyse ? "Refaire l'analyse" : 'Analyser'}
+            </Action>
+            <Action rouge icone={ICONES.supprimer} aria-haspopup="dialog" disabled={enDirect} onClick={() => setConfirmer(true)}>Supprimer l&apos;appel
+            </Action>
           </div>
         </>
       )}
@@ -413,11 +370,11 @@ function ContenuAppel({ id, vue, version, setAvis, relire, supprime }: Propriete
 }
 
 // Panneau : éléments, Nouvel appel ou En direct, puis Réglages.
-function PanneauAppels({ admin, vue, version, setAvis, relire }: { admin: boolean; vue: Vue | null; version: number; setAvis: (a: Avis) => void; relire: () => Promise<void> }) {
+function PanneauAppels({ admin, vue, version, dire, relire }: { admin: boolean; vue: Vue | null; version: number; dire: Dire; relire: () => Promise<void> }) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const ouverts = useVues().vues[0].objets;
   const direct = useDirect();
-  const reglages = useOngletReglages(admin, onglet === 'reglages', fermer, setAvis);
+  const reglages = useOngletReglages(admin, onglet === 'reglages', fermer, dire);
   const nouvel = useOngletNouvel(vue, () => {
     ouvrir('direct');
     void relire();
@@ -432,7 +389,7 @@ function PanneauAppels({ admin, vue, version, setAvis, relire }: { admin: boolea
       // Effacé, l'appel ne se montre plus
       return vue && !ligne ? null : {
         cle: 'appel', titre: ligne ? `Appel · ${quand(ligne.debut)}` : 'Appel', label: `Appel · ${ligne?.titre || 'sans titre'}`,
-        corps: <ContenuAppel id={Number(n)} vue={vue} version={version} setAvis={setAvis} relire={relire} supprime={fermer} />,
+        corps: <ContenuAppel id={Number(n)} vue={vue} version={version} dire={dire} relire={relire} supprime={fermer} />,
       };
     },
     'fiche-offre': (c) => ongletFicheOffre(c),
@@ -447,21 +404,16 @@ function useOngletNouvel(vue: Vue | null, demarre: () => void, fermer: () => voi
   const [mode, setMode] = useState<Mode>('pc');
   const [offre, setOffre] = useState('');
   const [titre, setTitre] = useState('');
-  const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
-  const lancer = async (e: React.FormEvent) => {
+  const { occupe, geste } = useGeste(setErreur);
+  const lancer = (e: React.FormEvent) => {
     e.preventDefault();
-    setOccupe(true);
     setErreur('');
-    try {
+    return geste(async () => {
       await demarrer({ mode, offre_cle: offre, titre: titre.trim() });
       setTitre('');
       demarre();
-    } catch (err) {
-      setErreur(message(err));
-    } finally {
-      setOccupe(false);
-    }
+    });
   };
   return {
     cle: 'nouvel', titre: 'Nouvel appel',
@@ -476,22 +428,18 @@ function useOngletNouvel(vue: Vue | null, demarre: () => void, fermer: () => voi
               <b>Téléphone en haut-parleur</b><small>micro seul</small></label>
           </div>
         </div>
-        <div className="champ"><label htmlFor="nouvel-offre">Offre concernée</label>
-          <select id="nouvel-offre" className="saisie" value={offre} onChange={(e) => setOffre(e.target.value)}>
+        <ChampListe id="nouvel-offre" libelle="Offre concernée" value={offre} onChange={(e) => setOffre(e.target.value)}>
             <option value="">— aucune offre —</option>
             {(vue?.offres ?? []).map((o) => <option key={o.cle} value={o.cle}>{libelleOffre(o)}</option>)}
-          </select>
-        </div>
-        <div className="champ"><label htmlFor="nouvel-titre">Titre</label>
-          <input id="nouvel-titre" className="saisie" placeholder="Premier échange RH" value={titre} onChange={(e) => setTitre(e.target.value)} />
-        </div>
+          </ChampListe>
+        <ChampSaisie id="nouvel-titre" libelle="Titre" placeholder="Premier échange RH" value={titre} onChange={(e) => setTitre(e.target.value)} />
         <p className="aide-champ">Sur le PC, le navigateur demande quel onglet ou quel écran partager : choisissez celui de l&apos;appel et cochez « Partager l&apos;audio ». Un casque évite que le micro reprenne la voix de l&apos;interlocuteur.</p>
       </form>
     ),
     pied: (
       <>
-        <button type="button" className="action" onClick={fermer}>Annuler</button>
-        <button type="submit" form="nouvel-appel" className="action plein" disabled={occupe}>{occupe ? 'Ouverture…' : "Démarrer l'enregistrement"}<span className="ico">{ICONES.fleche}</span></button>
+        <Action onClick={fermer}>Annuler</Action>
+        <Action plein iconeApres={ICONES.fleche_pages} type="submit" form="nouvel-appel" disabled={occupe}>{occupe ? 'Ouverture…' : "Démarrer l'enregistrement"}</Action>
       </>
     ),
   };
@@ -542,15 +490,14 @@ function PiedDirect() {
   return (
     <>
       <span className="aide-champ gauche">Seul le texte est gardé.</span>
-      <button type="button" className="action rouge" disabled={direct.cloture} onClick={() => void terminer()}>
-        <span className="ico">{ICONES.arreter}</span>{direct.cloture ? 'Clôture…' : "Terminer l'appel"}
-      </button>
+      <Action rouge icone={ICONES.arreter} disabled={direct.cloture} onClick={() => void terminer()}>{direct.cloture ? 'Clôture…' : "Terminer l'appel"}
+      </Action>
     </>
   );
 }
 
 // Réglages Appels : clé et modèle de transcription ; l'analyse est à l'admin.
-function useOngletReglages(admin: boolean, actif: boolean, fermer: () => void, setAvis: (a: Avis) => void): Onglet {
+function useOngletReglages(admin: boolean, actif: boolean, fermer: () => void, dire: Dire): Onglet {
   // Réglages gardés d'une visite à l'autre, relus à l'ouverture.
   const [lus, setLus] = useState(() => repris<Parametres | null>('appels:reglages', null));
   const [cle, setCle] = useState('');
@@ -558,7 +505,7 @@ function useOngletReglages(admin: boolean, actif: boolean, fermer: () => void, s
   const [modele, setModele] = useState(() => lus?.ruby_modele ?? '');
   useGarder('appels', { reglages: lus });
   const [erreur, setErreur] = useState('');
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste(setErreur);
   const prendre = (p: Parametres) => {
     setLus(p);
     setCle('');
@@ -571,22 +518,15 @@ function useOngletReglages(admin: boolean, actif: boolean, fermer: () => void, s
     ...(parole !== lus.ruby_modele_parole ? { ruby_modele_parole: parole } : {}),
     ...(admin && modele !== lus.ruby_modele ? { ruby_modele: modele } : {}),
   } : {};
-  const enregistrer = async (e: React.FormEvent) => {
+  const enregistrer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!Object.keys(changes).length) return;
-    setOccupe(true);
-    try {
+    return geste(async () => {
       prendre(await appeler<Parametres>('/parametres', { methode: 'PUT', corps: changes }));
       setErreur('');
-      setAvis({ texte: 'Réglages des appels enregistrés.' });
-    } catch (err) {
-      setErreur(message(err));
-    } finally {
-      setOccupe(false);
-    }
+      dire('Réglages des appels enregistrés.');
+    });
   };
-  const modeles = (lus?.modeles ?? []).map((m) => ({ nom: m.nom, texte: m.modele ? `${m.nom} · ${m.modele}` : m.nom }));
-  if (modele && !modeles.some((m) => m.nom === modele)) modeles.push({ nom: modele, texte: `${modele} (absent du catalogue)` });
   return {
     cle: 'reglages', titre: 'Réglages', label: 'Réglages · Appels',
     corps: (
@@ -594,34 +534,24 @@ function useOngletReglages(admin: boolean, actif: boolean, fermer: () => void, s
         {erreur && <p className="avis-f erreur" role="alert">{erreur}</p>}
         {!lus && !erreur && <p className="texte-f">Lecture des réglages…</p>}
         {lus && (
-          <div className="section-f"><h3>RUBY</h3>
-            <div className="champ"><label htmlFor="ruby-cle">Clé AssemblyAI</label>
-              <input id="ruby-cle" className="saisie" type="password" autoComplete="off" placeholder={lus.ruby_cle ? 'enregistrée' : 'non renseignée'} value={cle} onChange={(e) => setCle(e.target.value)} />
-              <p className="aide-champ">Sur assemblyai.com : 50 $ offerts à l&apos;inscription, soit environ 180 heures d&apos;appels en multilingual.</p>
-            </div>
-            <div className="champ"><label htmlFor="ruby-parole">Modèle de transcription</label>
-              <select id="ruby-parole" className="saisie" value={parole} onChange={(e) => setParole(e.target.value)}>
+          <SectionFiche titre="RUBY">
+            <ChampSaisie id="ruby-cle" libelle="Clé AssemblyAI" aide="Sur assemblyai.com : 50 $ offerts à l&apos;inscription, soit environ 180 heures d&apos;appels en multilingual." type="password" autoComplete="off" placeholder={lus.ruby_cle ? 'enregistrée' : 'non renseignée'} value={cle} onChange={(e) => setCle(e.target.value)} />
+            <ChampListe id="ruby-parole" libelle="Modèle de transcription" aide="Multilingual : 0,15 $/h, français, anglais, espagnol, allemand, italien, portugais. 3.6 Pro : 0,45 $/h, plus précis sur un haut-parleur de téléphone. Séparer les voix ajoute 0,12 $/h." value={parole} onChange={(e) => setParole(e.target.value)}>
                 {MODELES_PAROLE.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-              <p className="aide-champ">Multilingual : 0,15 $/h, français, anglais, espagnol, allemand, italien, portugais. 3.6 Pro : 0,45 $/h, plus précis sur un haut-parleur de téléphone. Séparer les voix ajoute 0,12 $/h.</p>
-            </div>
+              </ChampListe>
             {admin && (
-              <div className="champ"><label htmlFor="ruby-modele">Modèle de l&apos;analyse<MarqueAdmin /></label>
-                <select id="ruby-modele" className="saisie" value={modele} onChange={(e) => setModele(e.target.value)}>
-                  <option value="">— celui des mails —</option>
-                  {modeles.map((m) => <option key={m.nom} value={m.nom}>{m.texte}</option>)}
-                </select>
-                <p className="aide-champ">Celui qui lit la transcription et en tire le résumé, les questions, les engagements et ce qu&apos;il reste à faire. Vide : celui des mails.</p>
-              </div>
+              <ChampListe id="ruby-modele" libelle={<>Modèle de l&apos;analyse<MarqueAdmin /></>} aide="Celui qui lit la transcription et en tire le résumé, les questions, les engagements et ce qu&apos;il reste à faire. Vide : celui des mails." value={modele} onChange={(e) => setModele(e.target.value)}>
+                  <OptionsModele modeles={lus?.modeles ?? []} vide="— celui des mails —" valeur={modele} />
+                </ChampListe>
             )}
-          </div>
+          </SectionFiche>
         )}
       </form>
     ),
     pied: (
       <>
-        <button type="button" className="action" onClick={() => { if (lus) prendre(lus); fermer(); }}>Annuler</button>
-        <button type="submit" form="reglages-appels" className="action plein" disabled={!Object.keys(changes).length || occupe}>Enregistrer<span className="ico">{ICONES.coche}</span></button>
+        <Action onClick={() => { if (lus) prendre(lus); fermer(); }}>Annuler</Action>
+        <Action plein iconeApres={ICONES.coche} type="submit" form="reglages-appels" disabled={!Object.keys(changes).length || occupe}>Enregistrer</Action>
       </>
     ),
   };

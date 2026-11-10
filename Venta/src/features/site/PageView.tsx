@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useUIStore } from '@/lib/uiStore';
+import { partiesIllusion, useUIStore, vueIllusion } from '@/lib/uiStore';
 import { INDISPONIBLE } from '@/lib/messages';
+import { lireJson } from '@/lib/reseau';
 import { ErreurIllusion, lireCompte } from '@/features/illusion/api';
 import { ADMINISTRATION, MON_ESPACE, PAGE_DEPART, chargerAdministration, estAdmin, titreDe } from '@/features/illusion/pages/liste';
 import { PROJETS, trouverProjet } from './projets';
 import { ProjectPage, Sommaire } from './ProjectPage';
 import { LegalPage } from './LegalPage';
 import { ConnexionPage } from './ConnexionPage';
-import type { useChatController } from '@/features/chat/useChatController';
+import type { EnvoiAuth } from '@/features/chat/useChatController';
 
 // Illusion ne se charge que pour un compte qui y a accès
 const chargerIllusion = () => import('@/features/illusion/ossature/VueIllusion');
@@ -20,15 +21,8 @@ const ReglagesVisiteur = dynamic(() => import('@/features/illusion/pages/reglage
 // Vues qui ne sont pas des études de cas, et leur titre d'onglet
 const VUES: Record<string, string> = { legal: 'Informations légales', reglages: 'Réglages', connexion: 'Compte' };
 
-// La page d'Illusion d'une vue « illusion/<page>?<recherche> », sinon null
-function partiesIllusion(vue: string | null) {
-  if (!vue?.startsWith('illusion/')) return null;
-  const marque = vue.indexOf('?');
-  return marque < 0 ? { slug: vue.slice(9), recherche: '' } : { slug: vue.slice(9, marque), recherche: vue.slice(marque + 1) };
-}
-
 interface PageViewProps {
-  sendAuth: ReturnType<typeof useChatController>['sendAuth'];
+  sendAuth: EnvoiAuth;
   utilisateur: string | null;
 }
 
@@ -94,8 +88,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
   // Compte d'Illusion relu à chaque connexion ; code préparé dès l'accès ouvert
   useEffect(() => {
     let actif = true;
-    fetch('/api/auth/compte')
-      .then((res) => (res.ok ? res.json() : null))
+    lireJson<{ compte?: unknown }>('/api/auth/compte')
       .then((data) => (data?.compte ? lireCompte() : null))
       .then((compte) => {
         if (!actif) return;
@@ -120,7 +113,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
     }
     const connue = entree.slug === 'accueil' || [...MON_ESPACE, ...ADMINISTRATION].some((p) => p.slug === entree.slug);
     const slug = connue && (compteIllusion?.admin || !estAdmin(entree.slug)) ? entree.slug : PAGE_DEPART;
-    const vue = `illusion/${slug}${entree.recherche ? `?${entree.recherche}` : ''}`;
+    const vue = vueIllusion(slug, entree.recherche);
     window.history.replaceState({ page: vue }, '', `/${vue}`);
     setPage(vue);
   }, [entree, compteIllusion, erreurIllusion, setPage]);

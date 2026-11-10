@@ -131,8 +131,6 @@
 @container carte (max-width:297px){.ov [data-fen=metriques] .t-wf :is(th,td):nth-child(3){display:none}}
 
 /* L'avis du dernier geste, posé au bas de la fenêtre ; un clic le ferme. */
-.ov [data-fen=metriques] .avis{position:absolute;left:14px;right:14px;bottom:14px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-14) / .92);font-size:var(--t-corps,12.5px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
-.ov [data-fen=metriques] .avis.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
 
 /* Coûts du panneau : Poste et Coût restent, les autres colonnes partent */
 .ov .metriques-f{container:metriques-f/inline-size}
@@ -223,8 +221,6 @@
 .ov.trame [data-fen=metriques] .mini-m:hover,.ov.trame [data-fen=metriques] .mini-m:focus-visible{border-color:var(--contour);background:var(--surface-basse)}
 .ov.trame [data-fen=metriques] .mini-m.allume{border-color:var(--primaire);background:var(--selection)}
 .ov.trame [data-fen=metriques] .mini-m b{font-size:.875rem;font-weight:500}
-.ov.trame [data-fen=metriques] .avis{padding:12px 16px;border-left:0;border-radius:8px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.trame [data-fen=metriques] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Panneau des détails : blocs, listes et alertes sur les mêmes jetons. */
 .ov.trame .metriques-f .intro-f{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
 .ov.trame .metriques-f .alerte-f{font-size:.875rem;line-height:1.25rem;color:var(--erreur)}

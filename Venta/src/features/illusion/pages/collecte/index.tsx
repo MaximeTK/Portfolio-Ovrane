@@ -3,14 +3,17 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Dock, usePanneau } from '../../dock/Dock';
-import { Activite } from '../../activite/Activite';
-import { messageDe } from '../../partage/FicheEntreprise';
+import { usePanneau } from '../../dock/Dock';
 import type { ProprietesPage } from '../liste';
-import {
-  ActionOnglet, CorpsReglages, FLECHE, ICONES, PanneauFiches, PiedReglages, TableauFiches, arbreFiches, useAvis, useReglages,
-  type ChampReglage, type Confirmation, type Dire,
-} from './fiches';
+import { FLECHE } from '../../partage/FicheEntreprise';
+import { PageFiches, useEtatFiches, CorpsReglages, PiedReglages, arbreFiches, useReglages, type ChampReglage } from './fiches';
+import { useGeste } from '../commun';
+import { Action } from '../../elements/Action';
+import type { Dire } from '../../elements/Avis';
+import { ActionOnglet } from '../../elements/Groupes';
+import { ChampSaisie, SectionFiche } from '../../elements/Champ';
+import { ICONES } from '../../elements/icones';
+import { message } from '../../elements/format';
 
 const CHAMPS: ChampReglage[] = [
   { cle: 'codes_naf', libelle: 'Secteurs visés', type: 'catalogue', catalogue: 'naf', aide: 'Les activités interrogées dans le registre.' },
@@ -33,11 +36,10 @@ function useImport(dire: Dire, relire: () => void) {
   const [requete, setRequete] = useState(() => repris('collecte:import:requete', ''));
   const [candidats, setCandidats] = useState(() => repris<Candidat[] | null>('collecte:import:candidats', null));
   useGarder('collecte:import', { requete, candidats });
-  const [occupe, setOccupe] = useState(false);
-  const chercher = async (q: string) => {
+  const { occupe, geste } = useGeste((t) => dire(t, true));
+  const chercher = (q: string) => {
     if (!q.trim()) return dire('Indiquez un nom ou un SIREN.', true);
-    setOccupe(true);
-    try {
+    return geste(async () => {
       const r = await appeler<{ siren?: string; nom?: string; deja_en_base?: boolean; candidats?: Candidat[] }>('/entreprises/importer', { methode: 'POST', corps: { requete: q } });
       if (r.siren) {
         dire(r.deja_en_base ? `${r.nom} est déjà en base (${r.siren}).` : `${r.nom} importée (${r.siren}).`, r.deja_en_base);
@@ -47,10 +49,7 @@ function useImport(dire: Dire, relire: () => void) {
         setCandidats(r.candidats ?? []);
         if (!r.candidats?.length) dire('Aucune société active de ce nom dans Sirene.', true);
       }
-    } catch (e) {
-      dire(messageDe(e), true);
-    }
-    setOccupe(false);
+    });
   };
   return { requete, setRequete, candidats, setCandidats, occupe, chercher };
 }
@@ -60,27 +59,22 @@ function CorpsImport({ i }: { i: Import }) {
   return (
     <div className="pf">
       <div className="section-f">
-        <div className="champ">
-          <label htmlFor="im-soc">Nom ou SIREN</label>
-          <input id="im-soc" className="saisie" value={i.requete} placeholder="Exemple SA — ou 123456789" onChange={(e) => i.setRequete(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !i.occupe && i.chercher(i.requete)} />
-        </div>
+        <ChampSaisie id="im-soc" libelle="Nom ou SIREN" value={i.requete} placeholder="Exemple SA — ou 123456789" onChange={(e) => i.setRequete(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !i.occupe && i.chercher(i.requete)} />
         <p className="aide-champ">Cherchée dans Sirene et créée telle quelle, sans passer par les filtres de la collecte.</p>
       </div>
       {i.candidats && i.candidats.length > 0 && (
-        <div className="section-f">
-          <h3>Laquelle ?</h3>
+        <SectionFiche titre="Laquelle ?">
           <ul className="liste-f resultats">
             {i.candidats.map((c) => (
               <li key={c.siren}>
                 <span className="soc"><b>{c.nom}</b><span className="siren">{c.siren}</span></span>
                 <span className="soc-d">{c.secteur ?? '—'}<br />{[c.localisation, c.effectif].filter(Boolean).join(' · ') || '—'}</span>
                 {c.deja_en_base ? <span className="tag-f">déjà en base</span>
-                  : <button type="button" className="action" disabled={i.occupe} onClick={() => i.chercher(c.siren)}><span className="ico">{ICONES.importer}</span>Importer</button>}
+                  : <Action icone={ICONES.importer} disabled={i.occupe} onClick={() => i.chercher(c.siren)}>Importer</Action>}
               </li>
             ))}
           </ul>
-        </div>
+        </SectionFiche>
       )}
     </div>
   );
@@ -90,30 +84,27 @@ function PiedImport({ i }: { i: Import }) {
   const { fermer } = usePanneau();
   return (
     <>
-      <button type="button" className="action" onClick={() => {
+      <Action onClick={() => {
         i.setRequete('');
         i.setCandidats(null);
         fermer();
-      }}>Annuler</button>
-      <button type="button" className="action plein" disabled={i.occupe} onClick={() => i.chercher(i.requete)}>Chercher{FLECHE}</button>
+      }}>Annuler</Action>
+      <Action plein disabled={i.occupe} onClick={() => i.chercher(i.requete)}>Chercher{FLECHE}</Action>
     </>
   );
 }
 
 export default function PageCollecte(_: ProprietesPage) {
-  const { avis, dire } = useAvis();
-  const [selection, setSelection] = useState<Set<string>>(new Set());
-  const [confirmation, setConfirmation] = useState<Confirmation>(null);
-  const [version, setVersion] = useState(0);
+  const etat = useEtatFiches();
+  const { dire, setConfirmation, relire } = etat;
   const [curseur, setCurseur] = useState(() => repris<Record<string, number> | null>('collecte:curseur', null));
   useGarder('collecte', { curseur });
-  const relire = useCallback(() => setVersion((v) => v + 1), []);
   const reglages = useReglages('collecte', CHAMPS, dire);
   const imp = useImport(dire, relire);
 
   // Où en est la collecte, secteur par secteur
   const lireCurseur = useCallback(() => {
-    appeler<Record<string, number>>('/pipeline/curseur-collecte').then(setCurseur).catch((e) => dire(messageDe(e), true));
+    appeler<Record<string, number>>('/pipeline/curseur-collecte').then(setCurseur).catch((e) => dire(message(e), true));
   }, [dire]);
   useEffect(() => {
     lireCurseur();
@@ -129,7 +120,7 @@ export default function PageCollecte(_: ProprietesPage) {
       dire('Collecte lancée.');
       setTimeout(lireCurseur, 4000);
     } catch (e) {
-      dire(messageDe(e), true);
+      dire(message(e), true);
     }
   };
   const reparer = () => setConfirmation({
@@ -141,30 +132,25 @@ export default function PageCollecte(_: ProprietesPage) {
         await appeler('/entreprises/resoudre-sites', { methode: 'POST' });
         dire('Réparation lancée — suivez le journal.');
       } catch (e) {
-        dire(messageDe(e), true);
+        dire(message(e), true);
       }
     },
   });
 
   return (
-    <Dock id="collecte" principal="fiches" arbre={ARBRE} fenetres={{ fiches: { mini: [470, 220] } }} panneau="reglages">
-      <Activite />
-      <TableauFiches section="collecte" titre="Fiches entreprises" avis={avis} note={prochaine} version={version} selection={selection} choisir={setSelection}
-        confirmation={confirmation} annuler={() => setConfirmation(null)}
-        actions={(
+    <PageFiches section="collecte" etat={etat} arbre={ARBRE} panneau="reglages" note={prochaine}
+      actions={(
           <>
-            <ActionOnglet cle="reglages" libelle="Réglages" icone={ICONES.reglages} />
-            <ActionOnglet cle="importer" libelle="Importer" icone={ICONES.importer} titre="Crée la fiche d'une société nommément, sans passer par les filtres de la collecte." />
-            <button type="button" className="action" aria-haspopup="dialog" title="Re-résout le site officiel de chaque fiche, puis redresse les liens qui ne répondent qu'en « www. »." onClick={reparer}>
-              <span className="ico">{ICONES.reparer}</span><span className="txt">Réparer Sites</span>
-            </button>
-            <button type="button" className="action plein" title="Interroge Sirene selon les secteurs réglés." onClick={collecter}><span className="txt">Collecter</span>{FLECHE}</button>
+            <ActionOnglet cle="reglages" icone={ICONES.reglages} title="Réglages">Réglages</ActionOnglet>
+            <ActionOnglet cle="importer" icone={ICONES.importer} title="Crée la fiche d'une société nommément, sans passer par les filtres de la collecte.">Importer</ActionOnglet>
+            <Action icone={ICONES.reparer} txt aria-haspopup="dialog" title="Re-résout le site officiel de chaque fiche, puis redresse les liens qui ne répondent qu'en « www. »." onClick={reparer}>Réparer Sites
+            </Action>
+            <Action plein title="Interroge Sirene selon les secteurs réglés." onClick={collecter}><span className="txt">Collecter</span>{FLECHE}</Action>
           </>
-        )} />
-      <PanneauFiches avant={[
+      )}
+      avant={[
         { cle: 'reglages', titre: 'Réglages', label: 'Réglages · Collecte Sirene', corps: <CorpsReglages champs={CHAMPS} r={reglages} aide={prochaine} />, pied: <PiedReglages r={reglages} /> },
         { cle: 'importer', titre: 'Importer', label: 'Importer une société', corps: <CorpsImport i={imp} />, pied: <PiedImport i={imp} /> },
       ]} />
-    </Dock>
   );
 }

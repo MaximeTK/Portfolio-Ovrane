@@ -38,8 +38,6 @@
 .ov [data-fen=profils]:not([data-l=l]) .confirmer p{flex:1 1 100%;white-space:normal}
 
 /* L'avis du dernier geste, posé au bas de la fenêtre ; un clic le ferme. */
-.ov [data-fen=profils] .avis{position:absolute;left:14px;right:14px;bottom:14px;z-index:6;margin:0;padding:9px 12px;border-left:2px solid rgb(var(--encre));background:rgb(var(--sombre-14) / .92);font-size:var(--t-corps,12.5px);line-height:1.4;color:rgb(var(--encre));cursor:pointer;overflow-wrap:anywhere}
-.ov [data-fen=profils] .avis.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
 
 /* Éditeur : deux colonnes si possible, sections fermées en étiquettes */
 .ov .ed-profil .nom-profil{margin-bottom:10px}
@@ -125,8 +123,6 @@
 .ov.trame [data-fen=profils] .confirmer.copie .saisie{height:auto;min-height:40px}
 .ov.trame [data-fen=profils] .confirmer.copie .lib-champ{margin-right:0}
 .ov.trame [data-fen=profils]>.prise+.outils~.confirmer{padding-left:52px}
-.ov.trame [data-fen=profils] .avis{border-left:0;border-radius:12px;background:var(--surface);box-shadow:var(--ombre-3);font-size:.875rem;line-height:1.25rem;color:var(--texte)}
-.ov.trame [data-fen=profils] .avis.erreur{background:var(--erreur-douce);color:var(--sur-erreur-douce)}
 /* Éditeur : sections en 14 px, fermées en puces, poignées lisibles. */
 .ov.trame .ed-profil .mono{font-family:inherit;font-size:.875rem}
 .ov.trame .ed-profil .requis{color:var(--erreur)}

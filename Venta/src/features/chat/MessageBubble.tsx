@@ -14,7 +14,8 @@ import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
 import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
 import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
 import { CHAT_UI } from '@/lib/messages';
-import { Verre } from '@/features/site/ProjectPage';
+import { estCommandeImage, estImageSite, urlAsset } from '@/lib/images';
+import { Verre } from '@/features/fenetres/Verre';
 import type { Command, Message } from './types';
 
 // Leurs alias suivent : js, ts, py, sh…
@@ -32,9 +33,9 @@ const MAX_IMAGES = 9;
 function messageImages(content: string, commands: Command[] = []): string[] {
   const sources = [
     ...Array.from(content.matchAll(/!\[[^\]]*\]\(([^)]+)\)|<img\s[^>]*src=["']([^"']+)["']/g), (m) => m[1] ?? m[2]),
-    ...commands.filter((c) => /^show(picture|image)$/i.test(c.command)).map((c) => `/assets/${encodeURIComponent(c.parameter)}`),
+    ...commands.filter((c) => estCommandeImage(c.command)).map((c) => urlAsset(c.parameter)),
   ];
-  return [...new Set(sources.filter((src) => src.startsWith('/assets/') && !src.includes('..')))];
+  return [...new Set(sources.filter(estImageSite))];
 }
 
 interface MessageBubbleProps {

@@ -14,5 +14,14 @@ export function requeteDuSite(methode: string, entetes: Pick<Headers, 'get'>, or
 export const origineDuSite = ({ nextUrl, headers }: { nextUrl: Pick<URL, 'protocol' | 'host'>; headers: Pick<Headers, 'get'> }) =>
   `${nextUrl.protocol}//${headers.get('host') ?? nextUrl.host}`;
 
+/** Cookie du site : illisible par les scripts, valable partout */
+export const optionsCookie = (url: Pick<URL, 'protocol'>, expires?: Date) => ({
+  httpOnly: true,
+  secure: url.protocol === 'https:',
+  sameSite: 'lax' as const,
+  path: '/',
+  ...(expires ? { expires } : {}),
+});
+
 /** Corps JSON annoncé : un formulaire HTML ne sait pas l'envoyer */
 export const corpsJson = (entetes: Pick<Headers, 'get'>) => /^application\/json(;|$)/i.test(entetes.get('content-type')?.trim() ?? '');

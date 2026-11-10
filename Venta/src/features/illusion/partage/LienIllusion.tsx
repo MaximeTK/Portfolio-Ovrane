@@ -1,9 +1,9 @@
 'use client';
 
-import { useUIStore } from '@/lib/uiStore';
+import { useUIStore, vueIllusion } from '@/lib/uiStore';
 
 // Ouvre une page d'Illusion dans le site ; l'en-tête passe à ses canaux
-export const ouvrirIllusion = (vers: string) => useUIStore.getState().setPage(`illusion/${vers}`);
+export const ouvrirIllusion = (vers: string) => useUIStore.getState().setPage(vueIllusion(vers));
 
 type ProprietesLien = { vers: string } & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 

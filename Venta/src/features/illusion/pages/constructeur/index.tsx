@@ -4,12 +4,16 @@ import './constructeur.css';
 import { useEffect, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
-import { Activite } from '../../activite/Activite';
-import { Dock, Fenetre } from '../../dock/Dock';
+
+import { Fenetre } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin } from '../../dock/Panneau';
 import type { ProprietesPage } from '../liste';
-import { Couleurs, ICONES, ListeFichiers, poids, useAvis, useFichiers, type Fichier } from '../documents/commun';
-import { message } from '../commun';
+import { Couleurs, FONDS, ListeFichiers, poids, useAvis, useFichiers, type Fichier } from '../documents/commun';
+import { Action } from '../../elements/Action';
+import { Champ, ChampListe } from '../../elements/Champ';
+import { ICONES } from '../../elements/icones';
+import { message } from '../../elements/format';
+import { PageDock } from '../../activite/PageDock';
 
 type Reglages = { constructeur_fond: string; constructeur_palette: string[] };
 type Sorte = 'background' | 'structure' | 'title';
@@ -22,16 +26,14 @@ const SORTES: { cle: Sorte; titre: string; sorte: string; accept: string; apercu
   { cle: 'title', titre: 'Polices des titres', sorte: 'Police des titres', accept: '.woff2,.woff,.ttf,.otf', apercu: 'police', mot: 'police',
     aide: 'Le nom, le poste et les titres en tirent une au hasard ; une police variable est écartée.' },
 ];
-const FONDS = ['', 'aplat', 'degrade', 'photo', 'photo-teintee', 'blanc'];
 const pluriel = (n: number, mot: string) => `${n} ${n > 1 ? mot.replace(/^(\w+)/, '$1s') : mot}`;
 
 // Page d'administration : le registre ne la sert qu'au compte du serveur
 export default function PageConstructeur(_: ProprietesPage) {
   return (
-    <Dock id="constructeur" principal="elements" fenetres={{ elements: { mini: [620, 400] } }}>
-      <Activite />
+    <PageDock id="constructeur" principal="elements" fenetres={{ elements: { mini: [620, 400] } }}>
       <Elements />
-    </Dock>
+    </PageDock>
   );
 }
 
@@ -44,7 +46,6 @@ function Elements() {
     title: useFichiers('/elements-cv/title', dire, true, 'constructeur'),
   };
   const [aSupprimer, setASupprimer] = useState<{ sorte: Sorte; f: Fichier } | null>(null);
-  const [occupe, setOccupe] = useState(false);
   // Fond et palette lus restent d'une visite à l'autre, relus ensuite
   const [reglages, setReglages] = useState(() => repris<Reglages | null>('constructeur:reglages', null));
   useGarder('constructeur', { reglages });
@@ -69,9 +70,7 @@ function Elements() {
   };
   const supprimer = async () => {
     if (!aSupprimer) return;
-    setOccupe(true);
     await gestions[aSupprimer.sorte].supprimer(aSupprimer.f.nom);
-    setOccupe(false);
     setASupprimer(null);
   };
   const compte = (s: (typeof SORTES)[number]) => gestions[s.cle].fichiers?.length ?? 0;
@@ -86,15 +85,15 @@ function Elements() {
           <span>{SORTES.map((s) => pluriel(compte(s), s.mot)).join(' · ')} · la galerie est dans Documents</span></p>
         <span className="espace" />
         <div className="actions" role="group" aria-label="Actions">
-          <button type="button" className="action plein" disabled={!change} title={change ? undefined : "Rien n'a changé"} onClick={() => void enregistrer()}>
-            Enregistrer<span className="ico">{ICONES.coche}</span>
-          </button>
+          <Action plein iconeApres={ICONES.valider} disabled={!change} title={change ? undefined : "Rien n'a changé"} onClick={() => void enregistrer()}>
+            Enregistrer
+          </Action>
         </div>
       </div>
       {aSupprimer && (
-        <Confirmer question={`Supprimer ${aSupprimer.f.nom} ?`} admin occupe={occupe} action="Supprimer"
+        <Confirmer question={`Supprimer ${aSupprimer.f.nom} ?`} admin action="Supprimer"
           detail={`${poids(aSupprimer.f.taille)} · elle ne sera plus tirée pour les CV de tous les comptes.`}
-          onAnnuler={() => setASupprimer(null)} onConfirmer={() => void supprimer()} />
+          onAnnuler={() => setASupprimer(null)} onConfirmer={supprimer} />
       )}
       <div className="elements">
         <div className="gest-cols">
@@ -108,14 +107,11 @@ function Elements() {
           ))}
         </div>
         <div className="imposes">
-          <div className="champ"><label htmlFor="c-fond">Fond imposé</label>
-            <select id="c-fond" className="saisie" value={fond} onChange={(e) => setFond(e.target.value)}>
+          <ChampListe id="c-fond" libelle="Fond imposé" aide="« Aléatoire » : un tirage différent à chaque CV, ce qui permet de comparer les retours." value={fond} onChange={(e) => setFond(e.target.value)}>
               {FONDS.map((f) => <option key={f} value={f}>{f || 'Aléatoire'}</option>)}
-            </select>
-            <p className="aide-champ">« Aléatoire » : un tirage différent à chaque CV, ce qui permet de comparer les retours.</p></div>
-          <div className="champ"><span className="lib-champ">Palette imposée</span>
-            <Couleurs valeurs={palette} changer={setPalette} libelle="Palette imposée" grand />
-            <p className="aide-champ">Quatre couleurs au plus. Vide : la palette vient de l&apos;identité de l&apos;entreprise.</p></div>
+            </ChampListe>
+          <Champ groupe libelle="Palette imposée" aide="Quatre couleurs au plus. Vide : la palette vient de l&apos;identité de l&apos;entreprise.">
+            <Couleurs valeurs={palette} changer={setPalette} libelle="Palette imposée" grand /></Champ>
         </div>
       </div>
       {vue}

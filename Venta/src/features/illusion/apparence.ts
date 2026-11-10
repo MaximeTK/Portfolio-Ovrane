@@ -1,3 +1,4 @@
+import { retenirLocal } from '@/lib/uiStore';
 import { useEffect, useLayoutEffect } from 'react';
 import { create } from 'zustand';
 import { useUIStore } from '@/lib/uiStore';
@@ -25,12 +26,8 @@ type EtatApparence = Reglage & {
 const CLE_THEME = 'illusion:theme';
 const CLE_MATIERE = 'illusion:matiere';
 function retenir({ matiere, theme }: Reglage) {
-  try {
-    localStorage.setItem(CLE_THEME, theme);
-    localStorage.setItem(CLE_MATIERE, matiere);
-  } catch {
-    // Stockage bloqué : le réglage vaut pour cette visite
-  }
+  retenirLocal(CLE_THEME, theme);
+  retenirLocal(CLE_MATIERE, matiere);
 }
 
 // Un choix fait pendant la lecture l'emporte sur ce qu'elle rapporte

@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useUIStore } from '@/lib/uiStore';
+import { horsAccueil, useUIStore } from '@/lib/uiStore';
+import { lireJson } from '@/lib/reseau';
 import { HexagonalAnimation } from '@/features/oeil/HexagonalAnimation';
 import type { IllusionAccueil, Message, TexteSigne } from '@/features/chat/types';
-import type { useChatController } from '@/features/chat/useChatController';
+import type { EnvoiAuth } from '@/features/chat/useChatController';
 import { CHAT_UI, INDISPONIBLE } from '@/lib/messages';
 
 // Identifiant que le navigateur gardait avant la session en cookie
 const ANCIEN_ID = 'venta_userId';
 
 interface IntroSequenceProps {
-  sendAuth: ReturnType<typeof useChatController>['sendAuth'];
+  sendAuth: EnvoiAuth;
   messages: Message[];
   messagingHint: boolean;
 }
@@ -30,9 +31,8 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
     setAppState('processing');
     setVisitError(false);
     // En parallèle : l'accueil du recruteur ne dépend pas de la session
-    const welcome = fetch('/api/illusion/accueil')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((accueil: IllusionAccueil | null): TexteSigne | null => (accueil?.texte ? { texte: accueil.texte, voix: accueil.voix ?? '' } : null))
+    const welcome = lireJson<IllusionAccueil>('/api/illusion/accueil')
+      .then((accueil): TexteSigne | null => (accueil?.texte ? { texte: accueil.texte, voix: accueil.voix ?? '' } : null))
       .catch(() => null);
     // L'ancien identifiant est confié une seule fois au backend, puis oublié
     let ancienId: string | null = null;
@@ -66,7 +66,7 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
   // L'accueil s'efface après 10 s, ou dès que la messagerie ou une page s'ouvre
   useEffect(() => {
     if (appState !== 'awake' || isAppLocked) return;
-    if (viewMode === 'messaging' || page) {
+    if (horsAccueil({ page, viewMode })) {
       setIsWelcomeVisible(false);
       return;
     }

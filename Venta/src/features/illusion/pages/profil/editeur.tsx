@@ -2,10 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
+import { Menu, OptionMenu } from '../../elements/Menu';
 import {
   CHAMPS_DIVERS, CHAMPS_RECHERCHE, GROUPES, RUBRIQUES, SECTIONS, TITRES, libelleDonnee,
   type Champ, type ChampSchema, type Forme,
 } from './champs';
+import { Action } from '../../elements/Action';
+import { Champ as ChampFormulaire, ChampSaisie, LibelleValeur } from '../../elements/Champ';
+import { Poignee, deplacer, moitieAvant } from '../../elements/glisser';
+import { ICONES } from '../../elements/icones';
 
 export type Profil = Record<string, unknown>;
 export type EtatProfil = { manquants: { cle: string; libelle: string }[]; a_completer: { cle: string; valeur: unknown; sorte: string; sites: string[] }[] };
@@ -301,16 +306,16 @@ function ChampLieu({ id, valeur, portee, exemple, changer, choisir }: { id: stri
           }
         }} />
       {lieux.length > 0 && (
-        <div id={`${id}-lieux`} className="menu verre lieux" role="listbox" aria-label="Lieux proposés">
+        <Menu id={`${id}-lieux`} className="lieux" role="listbox" aria-label="Lieux proposés">
           {lieux.map((l, n) => (
-            <button key={n} type="button" role="option" aria-selected={false} className="menu-option" onMouseDown={(e) => e.preventDefault()}
+            <OptionMenu key={n} onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 rang.current++;
                 setLieux([]);
                 choisir(l);
-              }}>{l.detail ?? l.libelle}</button>
+              }}>{l.detail ?? l.libelle}</OptionMenu>
           ))}
-        </div>
+        </Menu>
       )}
     </div>
   );
@@ -337,23 +342,7 @@ function Libelle({ id, champ }: { id: string; champ: Champ }) {
   return champ.type === 'riche' ? <span className="lib-champ" id={`${id}-lib`}>{champ.libelle}{etoile}</span> : <label htmlFor={id}>{champ.libelle}{etoile}</label>;
 }
 
-const CHEVRON = <svg className="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
-const PLUS = <span className="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>;
-
 type Vol = { sorte: 'section'; cle: string } | { sorte: 'bloc'; rubrique: string; uid: number } | null;
-
-// Où lâcher : avant ou après la cible, selon la moitié survolée
-const avant = (e: React.DragEvent, horizontal: boolean) => {
-  const r = e.currentTarget.getBoundingClientRect();
-  return horizontal ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
-};
-function deplacer<T>(liste: T[], quoi: T, cible: T, dessus: boolean) {
-  if (quoi === cible) return liste;
-  const sans = liste.filter((x) => x !== quoi);
-  const i = sans.indexOf(cible) + (dessus ? 0 : 1);
-  const neuve = [...sans.slice(0, i), quoi, ...sans.slice(i)];
-  return neuve.every((x, n) => x === liste[n]) ? liste : neuve;
-}
 
 type ProprietesEditeur = {
   e: Editeur;
@@ -437,7 +426,7 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
     if (v.sorte === 'section' && cible.sorte === 'section') {
       ev.preventDefault();
       ev.stopPropagation();
-      const dessus = avant(ev, horizontal);
+      const dessus = moitieAvant(ev, horizontal);
       setSaisie((s) => {
         const ordre = deplacer(s.ordre, v.cle, cible.cle, dessus);
         return ordre === s.ordre ? s : { ...s, ordre };
@@ -446,7 +435,7 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
       // Une expérience ne se range pas dans les projets : elle reste dans SA liste
       ev.preventDefault();
       ev.stopPropagation();
-      const dessus = avant(ev, false);
+      const dessus = moitieAvant(ev);
       setSaisie((s) => {
         if (v.rubrique === 'competences') {
           const quoi = s.competences.find((g) => g.uid === v.uid)!, sur = s.competences.find((g) => g.uid === cible.uid)!;
@@ -460,25 +449,21 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
     }
   };
   const prise = (quoi: Vol, titre: string, classe: string) => (
-    <span className={classe} title={titre} aria-hidden="true" draggable
-      onClick={(ev) => ev.preventDefault()}
-      onDragStart={(ev) => {
+    <Poignee classe={classe} titre={titre}
+      prendre={(ev) => {
         vol.current = quoi;
-        ev.dataTransfer.effectAllowed = 'move';
-        // Firefox n'ouvre un glissement que si des données sont posées
-        ev.dataTransfer.setData('text/plain', '');
-        (ev.currentTarget.closest('.sec, .bloc') as HTMLElement | null)?.classList.add('en-vol');
+        ev.currentTarget.closest('.sec, .bloc')?.classList.add('en-vol');
       }}
-      onDragEnd={(ev) => {
+      lacher={(ev) => {
         vol.current = null;
-        (ev.currentTarget.closest('.sec, .bloc') as HTMLElement | null)?.classList.remove('en-vol');
-      }}>⠿</span>
+        ev.currentTarget.closest('.sec, .bloc')?.classList.remove('en-vol');
+      }} />
   );
   const retirer = (rubrique: string, id: number) => setSaisie((s) => (rubrique === 'competences'
     ? { ...s, competences: s.competences.filter((g) => g.uid !== id) }
     : { ...s, rubriques: { ...s.rubriques, [rubrique]: s.rubriques[rubrique].filter((b) => b.uid !== id) } }));
   const piedBloc = (rubrique: string, id: number) => (
-    <div className="pied-bloc"><button type="button" className="action rouge" onClick={() => retirer(rubrique, id)}>Retirer</button></div>
+    <div className="pied-bloc"><Action rouge onClick={() => retirer(rubrique, id)}>Retirer</Action></div>
   );
 
   const corps = (cle: string) => {
@@ -495,20 +480,14 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
           {saisie.competences.map((gr) => (
             <div key={gr.uid} className="bloc" onDragOver={(ev) => surVol(ev, { sorte: 'bloc', rubrique: 'competences', uid: gr.uid }, false)}>
               {prise({ sorte: 'bloc', rubrique: 'competences', uid: gr.uid }, "Glisser pour changer l'ordre des groupes", 'poignee-b')}
-              <div className="champ"><label htmlFor={idDe(cle, 'groupe', gr.uid)}>Groupe</label>
-                <input id={idDe(cle, 'groupe', gr.uid)} className="saisie" value={gr.groupe} placeholder="Langages"
-                  onChange={(ev) => setSaisie((s) => ({ ...s, competences: s.competences.map((x) => (x.uid === gr.uid ? { ...x, groupe: ev.target.value } : x)) }))} />
-              </div>
-              <div className="champ"><label htmlFor={idDe(cle, 'liste', gr.uid)}>Compétences</label>
-                <input id={idDe(cle, 'liste', gr.uid)} className="saisie" value={gr.liste} placeholder="Python, JavaScript"
-                  onChange={(ev) => setSaisie((s) => ({ ...s, competences: s.competences.map((x) => (x.uid === gr.uid ? { ...x, liste: ev.target.value } : x)) }))} />
-              </div>
+              <ChampSaisie id={idDe(cle, 'groupe', gr.uid)} libelle="Groupe" value={gr.groupe} placeholder="Langages" onChange={(ev) => setSaisie((s) => ({ ...s, competences: s.competences.map((x) => (x.uid === gr.uid ? { ...x, groupe: ev.target.value } : x)) }))} />
+              <ChampSaisie id={idDe(cle, 'liste', gr.uid)} libelle="Compétences" value={gr.liste} placeholder="Python, JavaScript" onChange={(ev) => setSaisie((s) => ({ ...s, competences: s.competences.map((x) => (x.uid === gr.uid ? { ...x, liste: ev.target.value } : x)) }))} />
               {piedBloc('competences', gr.uid)}
             </div>
           ))}
-          <button type="button" className="action ajout" onClick={() => setSaisie((s) => ({ ...s, competences: [...s.competences, { uid: neuf(), groupe: '', liste: '' }] }))}>
-            {PLUS}Ajouter un groupe
-          </button>
+          <Action className="ajout" icone={ICONES.plus} onClick={() => setSaisie((s) => ({ ...s, competences: [...s.competences, { uid: neuf(), groupe: '', liste: '' }] }))}>
+            Ajouter un groupe
+          </Action>
         </div>
       );
     }
@@ -522,10 +501,9 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
             {piedBloc(cle, b.uid)}
           </div>
         ))}
-        <button type="button" className="action ajout"
-          onClick={() => setSaisie((s) => ({ ...s, rubriques: { ...s.rubriques, [cle]: [...s.rubriques[cle], { uid: neuf(), origine: null, valeurs: {} }] } }))}>
-          {PLUS}Ajouter {r.singulier}
-        </button>
+        <Action className="ajout" icone={ICONES.plus} onClick={() => setSaisie((s) => ({ ...s, rubriques: { ...s.rubriques, [cle]: [...s.rubriques[cle], { uid: neuf(), origine: null, valeurs: {} }] } }))}>
+          Ajouter {r.singulier}
+        </Action>
       </div>
     );
   };
@@ -539,7 +517,7 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
           if (o !== ouvertes.has(cle)) setOuvertes((s) => { const n = new Set(s); if (o) n.add(cle); else n.delete(cle); return n; });
         }}
         onDragOver={(ev) => surVol(ev, { sorte: 'section', cle }, !ouverte)}>
-        <summary>{prise({ sorte: 'section', cle }, "Glisser pour changer l'ordre des sections", 'poignee')}{TITRES[cle]}{CHEVRON}</summary>
+        <summary>{prise({ sorte: 'section', cle }, "Glisser pour changer l'ordre des sections", 'poignee')}{TITRES[cle]}{ICONES.chevron_profil}</summary>
         {ouverte && corps(cle)}
       </details>
     );
@@ -564,15 +542,13 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
               if (await completer(d.cle, (completions[d.cle] ?? '').trim())) setCompletions((c) => ({ ...c, [d.cle]: '' }));
             };
             return (
-              <div key={d.cle} className="champ">
-                <label htmlFor={id}>{libelleDonnee(d.cle, schema)}</label>
+              <ChampFormulaire pour={id} libelle={libelleDonnee(d.cle, schema)} aide={<>En attendant : « {texte(d.valeur)} », {d.sorte === 'deduite' ? 'déduite' : d.sorte === 'inventee' ? 'inventée' : d.sorte}{d.sites.length ? ` — ${d.sites.join(', ')}` : ''}</>} key={d.cle}>
                 <div className="ligne-saisie">
                   <input id={id} className="saisie" type="text" value={completions[d.cle] ?? ''} onChange={(ev) => setCompletions((c) => ({ ...c, [d.cle]: ev.target.value }))}
                     onKeyDown={(ev) => ev.key === 'Enter' && garder()} />
-                  <button type="button" className="action" onClick={garder}>Enregistrer</button>
+                  <Action onClick={garder}>Enregistrer</Action>
                 </div>
-                <p className="aide-champ">En attendant : « {texte(d.valeur)} », {d.sorte === 'deduite' ? 'déduite' : d.sorte === 'inventee' ? 'inventée' : d.sorte}{d.sites.length ? ` — ${d.sites.join(', ')}` : ''}</p>
-              </div>
+              </ChampFormulaire>
             );
           })}
         </section>
@@ -585,13 +561,9 @@ export function EditeurProfil({ e, nom, nomNeuf, setNomNeuf, etat, completer, ou
     <section ref={racine} className="editeur ed-profil" aria-label={nom ? `Profil · ${nom}` : 'Nouveau profil de candidature'}>
       <div className="f-corps">
         {nom ? (
-          <ul className="liste-f nom-profil"><li><span className="lib-champ">Nom du profil</span><span className="d mono">{nom}</span></li></ul>
+          <ul className="liste-f nom-profil"><LibelleValeur as="li" libelle="Nom du profil"><span className="d mono">{nom}</span></LibelleValeur></ul>
         ) : (
-          <div className="champ nom-profil">
-            <label htmlFor={`${base}-nom`}>Nom du profil</label>
-            <input id={`${base}-nom`} className="saisie" type="text" placeholder="Dev" value={nomNeuf ?? ''} onChange={(ev) => setNomNeuf?.(ev.target.value)} />
-            <p className="aide-champ">Un identifiant sera ajouté : « Dev » donne « Dev-1561.json ».</p>
-          </div>
+          <ChampSaisie id={`${base}-nom`} libelle="Nom du profil" aide="Un identifiant sera ajouté : « Dev » donne « Dev-1561.json »." classeChamp="nom-profil" type="text" placeholder="Dev" value={nomNeuf ?? ''} onChange={(ev) => setNomNeuf?.(ev.target.value)} />
         )}
         {colonnes ? (
           <div className="colonnes-p">

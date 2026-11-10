@@ -3,78 +3,58 @@
 import './mails.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
-import { repris, useGarder } from '../../stockage';
-import { Activite } from '../../activite/Activite';
-import { useSondage } from '../../activite/sondage';
-import { Dock, Fenetre, usePanneau } from '../../dock/Dock';
+
+import { Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin, Panneau } from '../../dock/Panneau';
 import { ongletFicheEntreprise } from '../../partage/FicheEntreprise';
 import { ongletFicheOffre } from '../../partage/FicheOffre';
+import { LienIllusion } from '../../partage/LienIllusion';
 import type { ProprietesPage } from '../liste';
-import {
-  ICONES, NATURES, Nature, RATTACHEMENTS, adresseSeule, formaterDate, nomAffiche,
-  ongletFil, useOngletEcrire, useOngletEtiqueter, useOngletExecuter, useOngletReglages, type MailLu,
-} from './panneaux';
-import { MenuChoix, PaginationAller, useLignesAuto, message, useAvisBref, useEchap, type Avis } from '../commun';
+import { NATURES, Nature, RATTACHEMENTS, adresseSeule, nomAffiche, ongletFil, useOngletEcrire, useOngletEtiqueter, useOngletExecuter, useOngletReglages, type MailLu, pluriel } from './panneaux';
+import { PaginationAller, useEchap, useFileServeur, useGeste, useLignesAuto, type FileServeur } from '../commun';
+import { useCoches } from '../../elements/Case';
+import { MenuTenu, choixDe } from '../../elements/Menu';
+import { Action } from '../../elements/Action';
+import { Case } from '../../elements/Case';
+import { ICONES } from '../../elements/icones';
+import { ouvrable } from '../../elements/Case';
+import { ActionSupprimer } from '../../elements/Action';
+import { useAvis, type Dire } from '../../elements/Avis';
+import { ActionOnglet } from '../../elements/Groupes';
+import { quand } from '../../elements/format';
+import { PageDock } from '../../activite/PageDock';
 
 // Ce que /mails rend : la page de la boîte, son résumé et l'état de l'écoute
 type EtatBoite = {
-  ecoute: boolean; etape: string; adresse: string; page: number; taille: number; total_filtre: number; pages: number; mails: MailLu[];
+  ecoute: boolean; etape: string; page: number; taille: number; total_filtre: number; pages: number; mails: MailLu[]; facades: boolean;
   resume: { total: number; rattaches: number; envoyes: number; recus: number; fils: number; par_etiquette: Record<string, number> };
 };
 type Filtres = { etiquette: string; sens: string; recherche: string };
 const SENS: Record<string, string> = { '': 'Reçus et envoyés', entrant: 'Reçus', sortant: 'Envoyés' };
 const TAILLES = [25, 50];
-const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
 export default function PageMails({ compte }: ProprietesPage) {
   // Boîte lue et son choix gardés d'une visite à l'autre, relus derrière.
-  const [etat, setEtat] = useState(() => repris<EtatBoite | null>('mails:etat', null));
-  const [erreurBoite, setErreurBoite] = useState('');
-  const [filtres, setFiltres] = useState(() => repris<Filtres>('mails:filtres', { etiquette: '', sens: '', recherche: '' }));
-  const [page, setPage] = useState(() => repris('mails:page', 1));
-  const [taille, setTaille] = useState(() => repris<number | 'auto'>('mails:taille', 'auto'));
-  const [auto, setAuto] = useState(() => repris('mails:auto', 15));
-  useGarder('mails', { etat, filtres, page, taille, auto });
-  const [selection, setSelection] = useState<Set<string>>(() => new Set());
-  const [avis, setAvis] = useState<Avis>(null);
-  // L'API lit au moins 10 lignes ; en « auto », le défileur garde le reste.
-  const adresse = `/mails?${new URLSearchParams({ ...filtres, page: String(page), taille: String(taille === 'auto' ? Math.max(10, auto) : taille) })}`;
-  const relire = useCallback(async () => {
-    try {
-      const lu = await appeler<EtatBoite>(adresse);
-      setEtat(lu);
-      setErreurBoite('');
-      if (lu.page > lu.pages) setPage(lu.pages);
-    } catch (e) {
-      setErreurBoite(message(e));
-    }
-  }, [adresse]);
-  // Boîte et écoute relues toutes les 5 s.
-  useSondage(relire, 5000, true, adresse);
+  const file = useFileServeur<EtatBoite, Filtres>({ section: 'mails', nom: 'etat', chemin: '/mails', filtres: { etiquette: '', sens: '', recherche: '' }, autoDepart: 15 });
+  const { relire } = file;
+  const { dire, vue: avis } = useAvis('avis-boite', true, file.erreur);
   const relireVite = useCallback(() => void relire(), [relire]);
 
   return (
-    <Dock id="mails" principal="boite" panneau={null}>
-      <Activite />
-      <Boite admin={compte.admin} etat={etat} erreurBoite={erreurBoite} filtres={filtres} setFiltres={(f) => { setFiltres(f); setPage(1); }}
-        page={page} setPage={setPage} taille={taille} setTaille={(t) => { setTaille(t); setPage(1); }} auto={auto} setAuto={setAuto}
-        selection={selection} setSelection={setSelection} avis={avis} setAvis={setAvis} relire={relire} />
-      <PanneauDePage admin={compte.admin} adresseBoite={etat?.adresse ?? ''} selection={selection} setAvis={setAvis} relire={relireVite} setPage={setPage} />
-    </Dock>
+    <PageDock id="mails" principal="boite" panneau={null}>
+      <Boite admin={compte.admin} file={file} avis={avis} dire={dire} />
+      <PanneauDePage admin={compte.admin} allume={!!file.lu?.facades} selection={file.selection} dire={dire} relire={relireVite} setPage={file.setPage} />
+    </PageDock>
   );
 }
 
-type ProprietesBoite = {
-  admin: boolean; etat: EtatBoite | null; erreurBoite: string; filtres: Filtres; setFiltres: (f: Filtres) => void;
-  page: number; setPage: (p: number) => void; taille: number | 'auto'; setTaille: (t: number | 'auto') => void; auto: number; setAuto: (n: number) => void;
-  selection: Set<string>; setSelection: (s: Set<string>) => void; avis: Avis; setAvis: (a: Avis) => void; relire: () => Promise<void>;
-};
+type ProprietesBoite = { admin: boolean; file: FileServeur<EtatBoite, Filtres>; avis: React.ReactNode; dire: Dire };
 
-function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, avis, setAvis, relire }: ProprietesBoite) {
+function Boite({ admin, file, avis, dire }: ProprietesBoite) {
+  const { lu: etat, filtres, setFiltres, page, setPage, taille, setTaille, auto, setAuto, selection, setSelection, relire } = file;
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const [confirmation, setConfirmation] = useState<'supprimer' | 'vider' | null>(null);
-  const [occupe, setOccupe] = useState(false);
+  const { occupe, geste } = useGeste((t) => dire(t, true));
   const [menu, setMenu] = useState<'etiquette' | 'sens' | null>(null);
   const [saisie, setSaisie] = useState(filtres.recherche);
   const defile = useRef<HTMLDivElement>(null);
@@ -85,62 +65,45 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
     const t = setTimeout(() => setFiltres({ ...filtres, recherche: saisie }), 250);
     return () => clearTimeout(t);
   }, [saisie, filtres, setFiltres]);
-  // Échap ferme un menu, sinon la confirmation, sinon le panneau
-  useEchap(() => {
+  // Échap ferme un menu, sinon la confirmation, sinon le panneau s'il est libre
+  useEchap((e) => {
     if (menu) setMenu(null);
     else if (confirmation) setConfirmation(null);
-    else fermer();
+    else if (!e.defaultPrevented) fermer();
   }, true);
-  useAvisBref(avis, setAvis);
-  useLignesAuto(defile, setAuto, 36, !!etat?.mails.length);
+  useLignesAuto(defile, setAuto, !!etat?.mails.length);
 
   const mails = etat?.mails ?? [];
   const resume = etat?.resume;
   const n = selection.size;
-  const toutes = mails.length > 0 && mails.every((m) => selection.has(m.message_id));
-  const cocher = (ids: string[], oui: boolean) => {
-    const s = new Set(selection);
-    ids.forEach((id) => (oui ? s.add(id) : s.delete(id)));
-    setSelection(s);
-  };
+  const { toutes, cocher } = useCoches(selection, setSelection, mails.map((m) => m.message_id));
   const ouvrirFil = (id: string) => ouvrir('fil', id);
-  const geste = async (faire: () => Promise<Avis>) => {
-    setOccupe(true);
-    try {
-      setAvis(await faire());
-    } catch (e) {
-      setAvis({ texte: message(e), erreur: true });
-    } finally {
-      setOccupe(false);
-      setConfirmation(null);
-      await relire();
-    }
-  };
-  const supprimer = () => geste(async () => {
+  const agir = (faire: () => Promise<unknown>) => geste(faire, () => {
+    setConfirmation(null);
+    return relire();
+  });
+  const supprimer = () => agir(async () => {
     const r = await appeler<{ efface: number }>('/mails/supprimer', { methode: 'POST', corps: { identifiants: [...selection] } });
     setSelection(new Set());
-    return { texte: `${r.efface} mail(s) supprimé(s).` };
+    dire(`${r.efface} mail(s) supprimé(s).`);
   });
-  const vider = () => geste(async () => {
+  const vider = () => agir(async () => {
     const r = await appeler<{ efface: number }>('/mails/vider', { methode: 'POST' });
     setSelection(new Set());
     setPage(1);
-    return { texte: `${r.efface} mail(s) effacé(s).` };
+    dire(`${r.efface} mail(s) effacé(s).`);
   });
-  const basculerEcoute = () => geste(async () => {
+  const basculerEcoute = () => agir(async () => {
     const armee = !!etat?.ecoute;
     await appeler(armee ? '/mails/ecoute/arreter' : '/mails/ecoute', { methode: 'POST' });
     setTimeout(() => void relire(), 1500);
-    return { texte: armee ? 'Écoute arrêtée.' : 'Écoute démarrée : la boîte est vérifiée toutes les 10 s, sans fin.' };
+    dire(armee ? 'Écoute arrêtée.' : 'Écoute démarrée : la boîte est vérifiée toutes les 10 s, sans fin.');
   });
-  const rattacher = () => geste(async () => {
+  const rattacher = () => agir(async () => {
     const r = await appeler<{ reetiquetes: number; recolles: number; erreur: string }>('/mails/rattacher', { methode: 'POST' });
     const bouge = r.reetiquetes || r.recolles;
-    return {
-      texte: r.erreur ? `${r.recolles} mail(s) rattaché(s), tri non repassé : ${r.erreur}`
-        : bouge ? `${r.reetiquetes} mail(s) réétiqueté(s), ${r.recolles} rattaché(s).` : 'Rien de plus à trier ni à rattacher.',
-      erreur: !!r.erreur || !bouge,
-    };
+    dire(r.erreur ? `${r.recolles} mail(s) rattaché(s), tri non repassé : ${r.erreur}`
+      : bouge ? `${r.reetiquetes} mail(s) réétiqueté(s), ${r.recolles} rattaché(s).` : 'Rien de plus à trier ni à rattacher.', !!r.erreur || !bouge);
   });
 
   const natures = Object.entries(resume?.par_etiquette ?? {});
@@ -164,22 +127,18 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
         </label>
         <span className="espace" />
         <div className="actions" role="group" aria-label="Actions">
-          <button type="button" className={`action selon${onglet === 'etiqueter' ? ' allume' : ''}`} title={`Étiqueter ${pluriel(n, 'mail')}`} aria-haspopup="dialog" aria-expanded={onglet === 'etiqueter'} onClick={() => ouvrir('etiqueter')}>
-            <span className="ico">{ICONES.tag}</span><span className="txt">Étiqueter</span>
-          </button>
-          <button type="button" className="action rouge" title={`Supprimer ${pluriel(n, 'mail')}`} aria-haspopup="dialog" aria-expanded={confirmation === 'supprimer'} onClick={() => setConfirmation('supprimer')}>
-            <span className="ico">{ICONES.supprimer}</span><span><span className="txt">Supprimer </span>({n})</span>
-          </button>
-          <button type="button" className={`action${onglet === 'reglages' ? ' allume' : ''}`} title="Réglages" aria-haspopup="dialog" aria-expanded={onglet === 'reglages'} onClick={() => ouvrir('reglages')}>
-            <span className="ico">{ICONES.reglages}</span><span className="txt">Réglages</span>
-          </button>
-          <button type="button" className="action plein" aria-haspopup="dialog" aria-expanded={onglet === 'ecrire'} onClick={() => ouvrir('ecrire')}>
-            Écrire<span className="ico">{ICONES.plus}</span>
-          </button>
+          <ActionOnglet cle="etiqueter" className="selon" icone={ICONES.tag} title={`Étiqueter ${pluriel(n, 'mail')}`}>Étiqueter
+          </ActionOnglet>
+          <ActionSupprimer n={n} title={`Supprimer ${pluriel(n, 'mail')}`} aria-haspopup="dialog" aria-expanded={confirmation === 'supprimer'} onClick={() => setConfirmation('supprimer')} />
+          <ActionOnglet cle="reglages" icone={ICONES.reglages} title="Réglages">Réglages
+          </ActionOnglet>
+          <ActionOnglet cle="ecrire" allume={false} txt={false} plein iconeApres={ICONES.plus_pages}>
+            Écrire
+          </ActionOnglet>
         </div>
       </div>
       {confirmation === 'supprimer' && (
-        <Confirmer question={`Supprimer ${pluriel(n, 'mail')} ?`} detail={n > 1 ? "Ils sont effacés du dashboard, la vraie boîte n'est pas touchée." : "Il est effacé du dashboard, la vraie boîte n'est pas touchée."}
+        <Confirmer question={`Supprimer ${pluriel(n, 'mail')} ?`} detail={n > 1 ? "Ils sont effacés d'Ovrane, sans retour possible." : "Il est effacé d'Ovrane, sans retour possible."}
           action="Supprimer" occupe={occupe} onAnnuler={() => setConfirmation(null)} onConfirmer={() => void supprimer()} />
       )}
       {confirmation === 'vider' && (
@@ -187,28 +146,24 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
           occupe={occupe} onAnnuler={() => setConfirmation(null)} onConfirmer={() => void vider()} />
       )}
       <p className="etat-boite">
-        <span className="adresse-boite"><span className="lib-champ">Boîte</span>{etat ? etat.adresse || 'adresse non renseignée' : '…'}</span>
+        <span className="adresse-boite"><span className="lib-champ">Boîte</span>{!etat ? '…' : etat.facades ? 'Adresses de façade' : "Le suivi des mails n'est pas encore en service : rien n'est reçu ni envoyé."}</span>
         <span className="volume"><span className="lib-champ">Volume</span>{resume ? `${pluriel(resume.recus, 'reçu')} · ${pluriel(resume.envoyes, 'envoyé')} · ${pluriel(resume.fils, 'fil')} · ${pluriel(resume.rattaches, 'rattaché')}` : '…'}</span>
+        {etat?.facades && <span><LienIllusion vers="adresses" title="Voir, couper ou réactiver l'adresse de chaque site">Adresses par site</LienIllusion></span>}
         {admin && (
           <>
             <span className="espace" />
             <span className="actions actions-etat" role="group" aria-label="Actions réservées à l'admin">
               <MarqueAdmin />
-              <button type="button" className="action" disabled={occupe || !etat} onClick={() => void basculerEcoute()}
-                title={etat?.ecoute ? `Écoute en marche${etat.etape ? ` · ${etat.etape}` : ''} : l'arrêter` : "La boîte est vérifiée toutes les 10 s tant que l'écoute tourne : chaque mail arrivé est rangé aussitôt, étiqueté et rattaché à son offre."}>
+              <Action disabled={occupe || !etat} onClick={() => void basculerEcoute()} title={etat?.ecoute ? `Écoute en marche${etat.etape ? ` · ${etat.etape}` : ''} : l'arrêter` : "La boîte est vérifiée toutes les 10 s tant que l'écoute tourne : chaque mail arrivé est rangé aussitôt, étiqueté et rattaché à son offre."}>
                 <span className={`voyant-ecoute${etat?.ecoute ? '' : ' arrete'}`} aria-hidden="true" />
                 <span className="txt">{etat?.ecoute ? "Arrêter l'écoute" : "Démarrer l'écoute"}</span>
-              </button>
-              <button type="button" className="action" disabled={occupe} onClick={() => void rattacher()}
-                title="Repasser le tri du jour et rejouer le rattachement des mails : un mail arrivé avant sa fiche y retrouve son offre.">
-                <span className="ico">{ICONES.rattacher}</span><span className="txt">Rattacher</span>
-              </button>
-              <button type="button" className="action" title="Effacer tous les mails du dashboard" aria-haspopup="dialog" aria-expanded={confirmation === 'vider'} onClick={() => setConfirmation('vider')}>
-                <span className="ico">{ICONES.vider}</span><span className="txt">Vider</span>
-              </button>
-              <button type="button" className={`action${onglet === 'executer' ? ' allume' : ''}`} title="Lancer la brique Mail à la main" aria-haspopup="dialog" aria-expanded={onglet === 'executer'} onClick={() => ouvrir('executer')}>
-                <span className="ico">{ICONES.executer}</span><span className="txt">Exécuter</span>
-              </button>
+              </Action>
+              <Action icone={ICONES.rattacher} txt disabled={occupe} onClick={() => void rattacher()} title="Repasser le tri du jour et rejouer le rattachement des mails : un mail arrivé avant sa fiche y retrouve son offre.">Rattacher
+              </Action>
+              <Action icone={ICONES.vider_mails} txt title="Effacer tous les mails du dashboard" aria-haspopup="dialog" aria-expanded={confirmation === 'vider'} onClick={() => setConfirmation('vider')}>Vider
+              </Action>
+              <ActionOnglet cle="executer" icone={ICONES.executer_mails} title="Lancer la brique Mail à la main">Exécuter
+              </ActionOnglet>
             </span>
           </>
         )}
@@ -217,7 +172,7 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
         <table>
           <thead>
             <tr>
-              <th><input type="checkbox" className="case" aria-label="Tout sélectionner" checked={toutes} onChange={(e) => cocher(mails.map((m) => m.message_id), e.target.checked)} /></th>
+              <th><Case aria-label="Tout sélectionner" checked={toutes} onChange={(e) => cocher(mails.map((m) => m.message_id), e.target.checked)} /></th>
               <th aria-label="Sens" /><th>Date</th><th>De</th><th>Objet</th><th>PJ</th><th>Nature</th><th>Sur</th><th>Brouillon</th>
             </tr>
           </thead>
@@ -227,13 +182,12 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
               const nom = sortant ? adresseSeule(m.destinataire) : nomAffiche(m.expediteur);
               const ouverte = onglet === 'fil' && objet === m.message_id;
               return (
-                <tr key={m.message_id} className={`${selection.has(m.message_id) ? 'coche' : ''}${ouverte ? ' ouverte' : ''}`} tabIndex={0} data-ouvre="fil" data-objet={m.message_id}
-                  onClick={() => ouvrirFil(m.message_id)} onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && ouvrirFil(m.message_id)}>
+                <tr key={m.message_id} className={`${selection.has(m.message_id) ? 'coche' : ''}${ouverte ? ' ouverte' : ''}`} {...ouvrable('fil', m.message_id, () => ouvrirFil(m.message_id))}>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" className="case" aria-label={`Sélectionner le mail de ${nom || '—'}`} checked={selection.has(m.message_id)} onChange={(e) => cocher([m.message_id], e.target.checked)} />
+                    <Case aria-label={`Sélectionner le mail de ${nom || '—'}`} checked={selection.has(m.message_id)} onChange={(e) => cocher([m.message_id], e.target.checked)} />
                   </td>
                   <td>{sortant ? <span className="sens envoye" title="Envoyé — d'ici ou à la main">↗</span> : <span className="sens recu" title="Reçu">↘</span>}</td>
-                  <td className="d">{formaterDate(m.recu_le)}</td>
+                  <td className="d">{quand(m.recu_le)}</td>
                   <td title={sortant ? m.destinataire : m.expediteur}>{sortant && <span className="vers">à</span>}{nom || '—'}</td>
                   <td className={m.lu ? 'd' : 'non-lu'} title={m.sujet}>{m.sujet || '(sans objet)'}</td>
                   <td>{m.pieces_jointes.length > 0 && <span className="pj" title={m.pieces_jointes.map((p) => p.nom).join(', ')}>{ICONES.trombone}{m.pieces_jointes.length}</span>}</td>
@@ -255,42 +209,38 @@ function Boite({ admin, etat, erreurBoite, filtres, setFiltres, page, setPage, t
             })}
             {etat && !mails.length && (
               <tr className="vide-f"><td colSpan={9}>{filtres.etiquette || filtres.sens || filtres.recherche ? 'Aucun mail sous ces filtres.'
-                : 'Aucun mail. Renseignez la boîte dans les Réglages, puis relevez — ou écrivez le premier.'}</td></tr>
+                : 'Aucun mail pour l’instant.'}</td></tr>
             )}
           </tbody>
         </table>
       </div>
-      {(avis || erreurBoite) && (
-        <p className={`avis-boite${avis?.erreur || (!avis && erreurBoite) ? ' erreur' : ''}`} role={avis?.erreur || (!avis && erreurBoite) ? 'alert' : 'status'} onClick={() => setAvis(null)}>
-          {avis?.texte ?? erreurBoite}
-        </p>
-      )}
+      {avis}
       <PaginationAller page={page} pages={pages} setPage={setPage} taille={taille} tailles={TAILLES} setTaille={setTaille} auto={auto} />
     </Fenetre>
   );
 }
 
 // Un filtre en texte seul et son menu : un clic ailleurs ou Échap le referme
-function MenuFiltre({ lib, valeur, ...menu }: Omit<React.ComponentProps<typeof MenuChoix>, 'label' | 'titre' | 'valeur'> & { lib: string; valeur: string }) {
-  return <MenuChoix {...menu} label={`${lib} : ${valeur}`} titre={lib} valeur={<span><span className="lib">{lib}</span>{valeur}</span>} />;
+function MenuFiltre({ lib, valeur, options, ...menu }: Omit<React.ComponentProps<typeof MenuTenu>, 'valeur' | 'choix'> & { lib: string; valeur: string; options: Parameters<typeof choixDe>[0] }) {
+  return <MenuTenu {...menu} classeHote="filtre-hote" aria-label={`${lib} : ${valeur}`} lib={lib} valeur={valeur} choix={choixDe(options)} />;
 }
 
-type ProprietesPanneau = { admin: boolean; adresseBoite: string; selection: Set<string>; setAvis: (a: Avis) => void; relire: () => void; setPage: (p: number) => void };
+type ProprietesPanneau = { admin: boolean; allume: boolean; selection: Set<string>; dire: Dire; relire: () => void; setPage: (p: number) => void };
 
 // Les onglets du courrier ; les autres sont les outils de la boîte
 const COURRIER = ['fil', 'etiqueter', 'fiche-offre', 'fiche-entreprise'];
 
 // Panneau : fils et fiches, puis étiquetage ou outils selon l'onglet ouvert.
-function PanneauDePage({ admin, adresseBoite, selection, setAvis, relire, setPage }: ProprietesPanneau) {
+function PanneauDePage({ admin, allume, selection, dire, relire, setPage }: ProprietesPanneau) {
   const { onglet, ouvrir, fermer } = usePanneau();
   const voirFiche = useCallback((s: string) => ouvrir('fiche-entreprise', s), [ouvrir]);
   const voirOffre = useCallback((c: string) => ouvrir('fiche-offre', c), [ouvrir]);
-  const etiqueter = useOngletEtiqueter({ selection, setAvis, relire, fermer });
-  const ecrire = useOngletEcrire({ adresse: adresseBoite, setAvis, apres: () => { fermer(); setPage(1); relire(); } });
-  const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, setAvis, relire });
-  const executer = useOngletExecuter({ actif: admin && onglet === 'executer', fermer, setAvis });
+  const etiqueter = useOngletEtiqueter({ selection, dire, relire, fermer });
+  const ecrire = useOngletEcrire({ allume, dire, apres: () => { fermer(); setPage(1); relire(); } });
+  const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, dire, relire });
+  const executer = useOngletExecuter({ actif: admin && onglet === 'executer', fermer, dire });
   const elements = {
-    fil: (id: string) => ongletFil(id, { setAvis, relire, voirFiche, voirOffre, fermer }),
+    fil: (id: string) => ongletFil(id, { dire, relire, voirFiche, voirOffre, fermer }),
     'fiche-offre': (c: string) => ongletFicheOffre(c, { ouvrirEntreprise: voirFiche }),
     'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre: voirOffre }),
   };
