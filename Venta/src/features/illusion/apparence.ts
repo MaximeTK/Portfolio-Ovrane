@@ -34,17 +34,27 @@ function retenir({ matiere, theme }: Reglage) {
 let choix = 0;
 let enCours: Promise<void> | null = null;
 
-const magasin = create<EtatApparence>((set) => ({
-  matiere: 'teinte',
-  enregistree: 'teinte',
+// Thème ou matière changé : un instant, tout glisse vers ses nouvelles valeurs
+let finPassage = 0;
+function passer() {
+  document.documentElement.classList.add('th-passe');
+  clearTimeout(finPassage);
+  finPassage = window.setTimeout(() => document.documentElement.classList.remove('th-passe'), 800);
+}
+
+const magasin = create<EtatApparence>((set, get) => ({
+  matiere: 'verre',
+  enregistree: 'verre',
   theme: 'verre',
   themeEnregistre: 'verre',
   choisirMatiere: (matiere) => {
     choix += 1;
+    if (matiere !== get().matiere) passer();
     set({ matiere });
   },
   choisirTheme: (theme) => {
     choix += 1;
+    if (theme !== get().theme) passer();
     set({ theme });
   },
   relire: () => {

@@ -5,6 +5,7 @@ import { HexagonalAnimation } from '@/features/oeil/HexagonalAnimation';
 import type { IllusionAccueil, Message, TexteSigne } from '@/features/chat/types';
 import type { EnvoiAuth } from '@/features/chat/useChatController';
 import { CHAT_UI, INDISPONIBLE } from '@/lib/messages';
+import { useGlyphes } from '@/features/site/elements';
 
 // Identifiant que le navigateur gardait avant la session en cookie
 const ANCIEN_ID = 'venta_userId';
@@ -121,6 +122,9 @@ export function IntroSequence({ sendAuth, messages, messagingHint }: IntroSequen
 }
 
 function OverlayMessage({ visible, children }: { visible: boolean; children: React.ReactNode }) {
+  // Chaque phrase montrée s'écrit en glyphes
+  const texte = useRef<HTMLParagraphElement>(null);
+  useGlyphes(texte, visible && children);
   return (
     <div
       aria-hidden={!visible}
@@ -128,7 +132,8 @@ function OverlayMessage({ visible, children }: { visible: boolean; children: Rea
         visible ? 'opacity-100' : 'opacity-0'
       }`}
     >
-      <p className="text-sm md:text-base font-bold text-white tracking-[0.15em] uppercase drop-shadow-lg max-w-2xl leading-relaxed">{children}</p>
+      {/* Visible, le fond vivant ôte ses détails de derrière le texte */}
+      <p ref={texte} data-protege={visible ? 'boite' : undefined} className="text-sm md:text-base font-bold text-white tracking-[0.15em] uppercase drop-shadow-lg max-w-2xl leading-relaxed">{children}</p>
     </div>
   );
 }

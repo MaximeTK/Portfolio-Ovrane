@@ -132,7 +132,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
   const projet = affichee && !VUES[affichee] && !illusion ? trouverProjet(affichee) : undefined;
   const rang = projet ? PROJETS.indexOf(projet) : -1;
 
-  // Header sans fond : le texte qui remonte s'efface avant les onglets
+  // Header sans fond : le texte qui remonte est coupé avant les onglets
   return (
     <>
     <div
@@ -140,11 +140,12 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
       tabIndex={-1}
       inert={!page}
       aria-hidden={!page}
-      className={`fixed inset-0 z-20 overflow-y-auto overscroll-contain outline-none ${
-        illusion || affichee === 'reglages' ? '' : '[scrollbar-gutter:stable_both-edges] [touch-action:pan-y] [mask-image:linear-gradient(to_bottom,transparent_56px,black_104px)]'
-      } transition-all duration-500 ease-in-out ${
-        // Ouverte, sans translation : le fond que le verre recopie reste fixe à l'écran
-        page ? 'opacity-100 translate-none' : 'pointer-events-none translate-y-8 opacity-0'
+      className={`fixed inset-x-0 bottom-0 z-20 overflow-y-auto overscroll-contain outline-none ${
+        // Coupé sous l'en-tête plutôt que fondu : un masque couperait le flou du verre
+        illusion || affichee === 'reglages' ? 'top-0' : 'top-14 [scrollbar-gutter:stable_both-edges] [touch-action:pan-y]'
+      } ${
+        // Ni fondu ni translation : sous une opacité, le verre ne voit plus le fond
+        page ? '' : 'pointer-events-none invisible'
       }`}
     >
       {illusion ? (
@@ -156,7 +157,7 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
       ) : affichee === 'reglages' ? (
         <ReglagesVisiteur />
       ) : (
-        <div key={affichee ?? ''} className="apparition">
+        <div key={affichee ?? ''} className="apparition -mt-14">
           {affichee === 'legal' && <LegalPage />}
           {affichee === 'connexion' && (
             <ConnexionPage sendAuth={sendAuth} utilisateur={utilisateur} reinit={reinit} finirReinit={() => setReinit(null)} />

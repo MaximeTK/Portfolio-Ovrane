@@ -24,6 +24,10 @@ export function useFormParametres<P extends Record<string, unknown>, C extends {
     const v = valeurs[c.cle];
     if (c.sorte === 'liste') return Array.isArray(v) ? v : parVirgules(String(v ?? ''));
     if (c.sorte === 'nombre') return v === '' ? 0 : Number(v);
+    // Mots de chaque tag en listes ; un tag sans mot ne part pas, comme au serveur.
+    if (c.sorte === 'mots' && v && typeof v === 'object') {
+      return Object.fromEntries(Object.entries(v).map(([t, x]): [string, unknown[]] => [t, Array.isArray(x) ? x : parVirgules(String(x))]).filter(([, l]) => l.length));
+    }
     return v;
   };
   const changes = lus ? champs.filter((c) => (c.sorte === 'secret' ? !!(secrets[c.cle]?.saisie.trim() || secrets[c.cle]?.effacer) : !egal(envoi(c), lus[c.cle]))) : [];

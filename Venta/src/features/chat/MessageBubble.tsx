@@ -72,7 +72,7 @@ export const MessageBubble = memo(function MessageBubble({ message, time, dateDi
 
           <Bulle
             className={`markdown px-4 py-3 text-sm md:text-base text-white break-words whitespace-pre-wrap ${
-              // Visiteur sur la teinte réglable ; l'IA prend le verre du Figma
+              // Visiteur sur la teinte réglable ; l'IA prend le verre des fenêtres
               isUser
                 ? 'bg-(--verre) shadow-[0_2px_8px_0_rgba(0,0,0,0.15)] rounded-2xl rounded-tr-sm'
                 : '[--verre-rayon:4px_25px_25px_25px]'

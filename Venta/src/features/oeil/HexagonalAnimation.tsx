@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { horsAccueil, useUIStore } from '@/lib/uiStore';
+import { horsAccueil, partiesIllusion, useUIStore, vueIllusion } from '@/lib/uiStore';
 import { CENTRE_HEADER_PX } from '@/features/site/SiteHeader';
 
 // Largeur du conteneur une fois l'œil logé dans le header (hexagone ~29 px)
@@ -41,6 +41,8 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
   const regardRef = useRef({ x: 0, y: 0 });
   const lastWaveTimeRef = useRef(0);
   const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Pendant son trajet de 0,5 s, l'œil ignore un nouveau clic
+  const basculeRef = useRef(0);
   const [isBreathingIn, setIsBreathingIn] = useState(false);
   const [isLogoHover, setIsLogoHover] = useState(false);
   const [cible, setCible] = useState<{ y: number; echelle: number } | null>(null);
@@ -55,14 +57,18 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
   const cote = useUIStore((state) => state.cote);
   const setCote = useUIStore((state) => state.setCote);
   const isSleep = mode === 'sleep';
-  // Messagerie ou page ouverte : l'œil quitte le centre pour le header
-  const horsDuCentre = useUIStore(horsAccueil);
+  // Côté Illusion, son logo prend la place de l'œil, ici comme dans le header
+  const illusion = cote === 'illusion' && !isSleep;
+  const accueilIllusion = useUIStore((state) => partiesIllusion(state.page)?.slug === 'accueil');
+  // Page ou messagerie : l'emblème monte ; les deux accueils le gardent au centre
+  const horsDuCentre = useUIStore((state) => horsAccueil(state) && partiesIllusion(state.page)?.slug !== 'accueil');
   const enHaut = !isSleep && horsDuCentre;
-  // Si les canaux d'Illusion sont montrés, leur logo remplace l'œil du header
-  const isInteractive = !isSleep && !isAppLocked && !(cote === 'illusion' && enHaut);
+  const isInteractive = !isSleep && !isAppLocked;
   // Endormi : deux gris ; éveillé : blanc ; en réflexion : jaune pâle
   const hexColor = isSleep ? (isBreathingIn ? '#A9A9A9' : '#333333') : currentAnimation === 'thinking' ? '#fff9c4' : '#ffffff';
-  const libelle = page ? "Revenir à l'accueil" : viewMode === 'messaging' ? 'Fermer la messagerie' : 'Ouvrir la messagerie';
+  const libelle = illusion
+    ? accueilIllusion ? "Illusion · clic droit : accueil d'Ovrane" : "Illusion : accueil"
+    : page ? "Revenir à l'accueil" : viewMode === 'messaging' ? 'Fermer la messagerie' : 'Ouvrir la messagerie';
 
   // L'œil d'intro respire jusqu'au réveil : 2 s de transition, 0,5 s de pause
   useEffect(() => {
@@ -126,17 +132,27 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
   }, [bounceHexagons, isSleep]);
 
   const handleClick = () => {
-    if (!isInteractive) return;
+    if (!isInteractive || performance.now() - basculeRef.current < 500) return;
+    basculeRef.current = performance.now();
+    // Côté Illusion, le logo ramène à l'accueil d'Illusion
+    if (illusion) {
+      if (!accueilIllusion) setPage(vueIllusion('accueil'));
+      return;
+    }
     // Depuis une page, l'œil ramène à l'écran de base, sans toucher à la session
     if (page) setPage(null);
     else setViewMode(viewMode === 'dashboard' ? 'messaging' : 'dashboard');
   };
 
-  // Compte d'Illusion : le clic droit bascule les canaux d'Ovrane et d'Illusion
+  // Clic droit : l'autre côté, sur place ; au centre, d'un accueil à l'autre
   const handleContextMenu = (e: React.MouseEvent) => {
     if (!isInteractive || !compteIllusion) return;
     e.preventDefault();
-    setCote(cote === 'illusion' ? 'ovrane' : 'illusion');
+    if (illusion) {
+      if (accueilIllusion) setPage(null);
+      else setCote('ovrane');
+    } else if (enHaut) setCote('illusion');
+    else setPage(vueIllusion('accueil'));
   };
 
   // Le regard suit la souris, sauf endormi, en réflexion ou en parole
@@ -209,7 +225,7 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
         }
       >
         <div
-          className="absolute inset-0 m-auto w-full h-full grid place-items-center"
+          className={`absolute inset-0 m-auto w-full h-full grid place-items-center transition-opacity duration-200 ${illusion ? 'opacity-0' : ''}`}
           style={{ scale: '0.25', willChange: 'transform', transform: 'translateZ(0)' }}
         >
           <svg
@@ -222,15 +238,17 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
         </div>
 
         <div
-          className="absolute inset-0 m-auto w-full h-full grid place-items-center transition-colors duration-500"
+          className={`absolute inset-0 m-auto w-full h-full grid place-items-center transition-opacity duration-200 ${illusion ? 'opacity-0' : ''}`}
           style={{ scale: '0.25', willChange: 'transform', transform: 'translateZ(0)' }}
         >
+          {/* data-cache : l'œil effacé, le fond vivant ne le protège plus */}
           <svg
             className="w-full h-full overflow-visible"
             viewBox="-50 -60.3 100 120.6"
             fill="none"
             preserveAspectRatio="xMidYMid meet"
             aria-hidden="true"
+            data-cache={illusion || undefined}
           >
             <defs>
               <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -247,7 +265,8 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
               points={HEX_POINTS}
               stroke={hexColor}
               strokeWidth="12"
-              filter={isSleep ? undefined : 'url(#glow)'}
+              // Néon au survol seulement
+              filter={!isSleep && isLogoHover ? 'url(#glow)' : undefined}
               opacity="0.98"
               className="transition-colors duration-500"
               style={{
@@ -267,7 +286,7 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
                 points="0,-67 42,-35 42,35 0,67 -42,35 -42,-35"
                 stroke={hexColor}
                 strokeWidth="40"
-                filter={isSleep ? undefined : 'url(#glow)'}
+                filter={!isSleep && isLogoHover ? 'url(#glow)' : undefined}
                 opacity="0.98"
                 className="transition-colors duration-500"
                 style={{ willChange: 'stroke', transition: isSleep ? 'stroke 2s ease-in-out' : undefined }}
@@ -275,6 +294,21 @@ export function HexagonalAnimation({ currentAnimation, isSpeaking, getAudioLevel
             </g>
           </svg>
         </div>
+
+        {/* Logo d'Illusion : place, trajet et survol de l'œil ; le fond suit sa forme */}
+        <svg
+          className={`absolute left-1/2 top-1/2 w-[22.4%] -translate-x-1/2 -translate-y-1/2 overflow-visible transition-[opacity,filter] duration-200 ${illusion ? '' : 'opacity-0'}`}
+          style={illusion && isLogoHover ? { filter: 'drop-shadow(0 0 4px #fff) drop-shadow(0 0 12px rgb(255 255 255 / .7))' } : undefined}
+          viewBox="0 0 325.934 274.525"
+          fill="none"
+          stroke="#fff"
+          aria-hidden="true"
+          data-protege={illusion ? 'logo' : undefined}
+        >
+          <path d="M9.4632 262.426L112.954 181.479V19.5844" strokeWidth="30.72" />
+          <path d="M316.471 262.426L212.98 181.479V19.5844" strokeWidth="30.72" />
+          <path d="M163.063 262.272V161.894V0" strokeWidth="30.72" />
+        </svg>
 
         {/* Zone de clic : plus serrée quand l'œil est logé dans le header */}
         <button

@@ -13,14 +13,13 @@
 
 /* Couleurs du verre, en canaux : les thèmes pleins les redéfinissent. */
 .ov{--encre:255 255 255;--noir:0 0 0;--lueur:1;--rouge:255 176 176;--rouge-2:255 208 208;--rouge-3:255 138 138;--vert:147 255 179;--jaune:255 245 141;--orange:255 192 138;--violet:185 168 255;--cyan:147 244 255;--bleu:143 180 255;--rose:255 158 219;--sombre-10:10 10 14;--sombre-14:14 14 18;--sombre-8:8 8 12;--sombre-12:12 12 13}
-/* Les fonds viennent de la palette d'Ovrane, posés au-dessus de .ov. */
+/* Racine sans fond propre : celui choisi dans Ovrane passe dessous. */
 .ov{--accent:rgb(var(--cyan));--boite:rgb(var(--sombre-10) / .55);--ligne:36px;--panneau:440px;position:relative;height:100vh;min-height:620px;display:flex;flex-direction:column;overflow:hidden;color:rgb(var(--encre));color-scheme:dark;font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:var(--t-corps,13px);line-height:1.45;-webkit-font-smoothing:antialiased}
 .ov *{box-sizing:border-box}
 .ov a{color:rgb(var(--encre))}
 .ov a:hover{color:rgb(var(--encre))}
 @media (max-width:1366px){.ov{--panneau:400px}}
 @media (min-width:1700px){.ov{--panneau:500px}}
-.ov .fond{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--fond-haut),var(--fond-bas))}
 .ov .cache{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .ov .etiquette{font-size:var(--t-petit,10px);font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:rgb(var(--encre) / .72)}
 .ov .coquille{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:row;gap:16px;padding:18px 24px 20px}
@@ -28,22 +27,14 @@
 .ov .icone{flex:none;width:18px;height:18px}
 .ov .mono{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11.5px)}
 
-/* Verre d'Ovrane : fond recopié sous un voile, halos de deux coins, liseré. */
-.ov .verre{position:relative;isolation:isolate;border-radius:var(--verre-rayon,25px);clip-path:none;overflow:clip}
-.ov .verre::before,.ov .verre::after{content:"";position:absolute;inset:0;pointer-events:none}
-/* Verre assombri deux fois de 25 % par un voile noir sous halos et liseré. */
-/* Fond calé sur l'écran sans position fixe : une couche par écran en moins. */
-.ov .verre::before{z-index:-3;min-height:0;background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0),linear-gradient(180deg,var(--fond-haut),var(--fond-bas));background-attachment:fixed}
-@supports (-webkit-touch-callout:none){.ov .verre::before{position:fixed;min-height:100vh;background-attachment:scroll}.ov:not(.th-plein) .verre{clip-path:inset(0 round var(--verre-rayon,25px))}}
-/* Une seule lumière, de même taille sur toute fenêtre, dans les deux coins. */
-/* Mélange normal : l'intensité ne dépend jamais du fond derrière. */
-.ov .verre-halos{--halo:rgb(from var(--lumiere) r g b / .5),rgb(from var(--lumiere) r g b / .22) 11%,rgb(from var(--lumiere) r g b / .08) 23%,rgb(from var(--lumiere) r g b / 0) 45.8%;position:absolute;inset:0;z-index:-2;margin:0;border:0;pointer-events:none;mix-blend-mode:normal;opacity:.5625;transition:opacity .3s;background:radial-gradient(circle var(--halo-r,560px) at -1px 0,var(--halo)),radial-gradient(circle var(--halo-r,560px) at calc(100% - 1px) 100%,var(--halo))}
-.ov :is(a,button).verre:is(:hover,:focus-visible)>.verre-halos{opacity:1}
-.ov .verre:focus-visible{outline-offset:-4px}
-/* Liseré de 2 px en overlay : il double la lumière, d'où son dégradé. */
-.ov .verre::after{z-index:-1;border-radius:inherit;border:2px solid #fff;mix-blend-mode:overlay}
-/* Matière « teinte » : le même verre, sans les halos des coins. */
-.ov.mat-teinte .verre>.verre-halos{display:none}
+/* Verre de la Bande 16, celui d'Ovrane : seul l'arrondi suit le thème. */
+.ov .verre{border-radius:var(--verre-rayon,25px);overflow:clip}
+/* Flou et opacité réglables, 40 px et 70 % d'office, vers l'ancien opaque. */
+.ov .verre::before{backdrop-filter:blur(var(--verre-flou,40px)) saturate(1.6) contrast(.8394) brightness(.8299);background:linear-gradient(rgb(0 0 0 / calc(.4375 * var(--verre-plein,.7))) 0 0),linear-gradient(rgb(104 104 104 / calc(.1 * var(--verre-plein,.7))) 0 0),linear-gradient(180deg,rgb(from var(--fond-haut) r g b / var(--verre-plein,.7)),rgb(from var(--fond-bas) r g b / var(--verre-plein,.7)));background-attachment:fixed}
+/* Tout à fait opaque, le flou caché dessous ne se calcule plus. */
+:root.verre-opaque .ov .verre::before{backdrop-filter:none}
+/* Matière « teinte » : le même verre, sans reflets. */
+.ov.mat-teinte .verre>.verre-halos{opacity:0;visibility:hidden}
 
 .ov .compteur{font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,10.5px);color:rgb(var(--encre) / .65)}
 .ov .badge{border-radius:999px;background:rgb(var(--cyan) / .16);color:var(--accent);padding:0 7px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11px);font-weight:500;line-height:18px}
@@ -67,21 +58,30 @@
 .ov .onglet .icone{width:16px;height:16px}
 .ov .onglet .chevron{width:11px;height:11px;transition:transform .2s}
 .ov .onglet[aria-expanded=true] .chevron{transform:rotate(180deg)}
-/* Logo au centre à la place de l'œil d'Ovrane, plus lumineux sur l'accueil. */
-.ov .centre{display:grid;width:64px;height:44px}
-.ov .logo{grid-area:1/1;display:grid;place-items:center;width:64px;height:44px}
-.ov .logo svg{overflow:visible;filter:drop-shadow(0 0 4px rgb(255 255 255 / .75));transition:filter .2s}
-.ov.sur-accueil .logo svg{filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 12px rgb(255 255 255 / .7))}
+/* Place de l'emblème, l'œil ou le logo d'Illusion, posé au-dessus. */
+.ov .centre{width:64px;height:44px}
 /* Accueil : la place du contenu reste vide, l'Activité seule à gauche. */
 .ov.vue-accueil .dock [data-fen]:not([data-fen=activite]){visibility:hidden}
 
 /* Menus : colonne de choix dans la matière des fenêtres, courant allumé. */
 .ov .menu-hote{position:relative;display:inline-flex}
-.ov .menu{--halo-r:220px;position:absolute;top:calc(100% + 6px);right:0;z-index:40;display:flex;flex-direction:column;min-width:210px;padding:6px 0}
+.ov .menu{position:absolute;top:calc(100% + 6px);right:0;z-index:40;display:flex;flex-direction:column;min-width:210px;padding:6px 0}
 .ov .menu-option{display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:var(--t-corps,12.5px);white-space:nowrap;color:rgb(var(--encre) / .75);transition:color .2s,background .2s}
 .ov .menu-option:hover,.ov .menu-option:focus-visible{background:rgb(var(--encre) / .05);color:rgb(var(--encre))}
 .ov .menu-option.actif{color:rgb(var(--encre));text-shadow:0 0 8px rgb(var(--encre) / .35)}
 .ov .menu-option .icone{width:16px;height:16px}
+/* Listes déroulantes : le select s'ouvre en verre, comme les menus. */
+.ov select,.ov select::picker(select){appearance:base-select}
+.ov select{align-items:center;gap:8px;white-space:nowrap;overflow:hidden}
+.ov select::picker-icon{content:"";flex:none;position:sticky;inset-inline-end:0;width:12px;height:12px;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='square'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat;transition:rotate .2s}
+.ov select:open::picker-icon{rotate:180deg}
+.ov select::picker(select){margin:6px 0;padding:6px 0;border:0;background:rgb(var(--noir) / .25);color:rgb(var(--encre));backdrop-filter:blur(var(--verre-flou,28px)) saturate(1.6) contrast(.8394) brightness(.8299);outline:1px solid rgb(from var(--lumiere) r g b / .4);outline-offset:-1px}
+.ov select option{min-height:32px;padding:0 16px;gap:10px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .75)}
+.ov select option:is(:hover,:focus-visible){background:rgb(from var(--lumiere) r g b / .16);color:rgb(var(--encre))}
+.ov select option:checked{background:rgb(from var(--lumiere) r g b / .3);color:rgb(var(--encre))}
+.ov select option:focus-visible{outline:1px solid rgb(var(--encre));outline-offset:-1px}
+/* Sans liste personnalisable, la liste du système reste lisible. */
+@supports not (appearance:base-select){.ov select :is(option,option:checked){background:rgb(var(--sombre-14));color:rgb(var(--encre))}}
 
 /* Actions d'une fenêtre : l'action pleine garde son carré blanc après. */
 .ov .actions{display:flex;align-items:center;gap:22px}
@@ -151,6 +151,10 @@
 /* Pagination sans cadres : page courante allumée, « … » pour saisir la page. */
 .ov .pagination{flex:none;height:44px;display:flex;align-items:center;gap:14px;border-top:1px solid rgb(var(--encre) / .08);padding:0 14px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .75)}
 .ov .pagination select{height:28px;border:0;background:none;padding:0 2px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .6);cursor:pointer}
+/* Comme le select natif, sa largeur s'arrondit au pixel supérieur. */
+.ov .pagination select{width:calc-size(max-content,round(up,size,1px))}
+/* Large comme « auto (N) » : choisir 25 ou 50 ne décale pas les pages. */
+.ov .pagination select{min-width:calc(7ch + 30px)}
 .ov .pages{display:flex;align-items:center;gap:4px}
 .ov .pl{min-width:24px;height:28px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .6);transition:color .2s}
 .ov .pl:hover{color:rgb(var(--encre))}
@@ -331,7 +335,10 @@
 
 /* Chaque fenêtre est une case de la grille, qui glisse en 0,3 s. */
 .ov .coquille.dock{display:block}
-.ov .dock [data-fen]{position:absolute;box-sizing:border-box;margin:0;transition:left .3s cubic-bezier(.2,.8,.2,1),top .3s cubic-bezier(.2,.8,.2,1),width .3s cubic-bezier(.2,.8,.2,1),height .3s cubic-bezier(.2,.8,.2,1)}
+/* Mesure de la coupe d'ouverture : elle glisse avec la taille de la fenêtre. */
+@property --fw{syntax:"<length>";inherits:false;initial-value:0px}
+@property --fh{syntax:"<length>";inherits:false;initial-value:0px}
+.ov .dock [data-fen]{position:absolute;box-sizing:border-box;margin:0;transition:left .3s cubic-bezier(.2,.8,.2,1),top .3s cubic-bezier(.2,.8,.2,1),width .3s cubic-bezier(.2,.8,.2,1),height .3s cubic-bezier(.2,.8,.2,1),--fw .3s cubic-bezier(.2,.8,.2,1),--fh .3s cubic-bezier(.2,.8,.2,1)}
 .ov.sans-anim .dock [data-fen]{transition:none}
 /* Avant la première pose (rendu serveur), les fenêtres sont invisibles. */
 .ov .dock:not([data-pret]) [data-fen]{opacity:0}
@@ -343,32 +350,34 @@
 .ov .dock [data-fige]>[data-figee]{position:absolute !important;left:var(--f-x) !important;top:var(--f-y) !important;width:var(--f-l) !important;height:var(--f-h) !important;min-width:0 !important;min-height:0 !important;max-width:none !important;max-height:none !important;margin:0 !important;contain:size layout}
 /* Repli : le contenu reste sur place, la fenêtre se referme dessus. */
 .ov .dock [data-repli]{clip-path:inset(0 round var(--verre-rayon,25px))}
+/* En verre, clip et non clip-path : flou, liseré et reflets voient le fond. */
+.ov.th-verre .dock [data-repli]{clip-path:none;clip:rect(auto,auto,auto,auto)}
 .ov .dock [data-repli]>[data-figee]{position:fixed !important}
-/* Fenêtre flottante : au-dessus des autres, liseré clair, suit la main. */
-.ov .dock [data-flot]{transition:none;box-shadow:inset 0 0 0 1px rgb(var(--encre) / calc(.38 * var(--lueur)))}
-/* Flou réglé : une flottante laisse voir ce qu'elle recouvre, voilé. */
-.ov.a-flou.th-verre :is(.dock [data-flot],.flottante){-webkit-backdrop-filter:blur(var(--verre-flou));backdrop-filter:blur(var(--verre-flou))}
-.ov.a-flou.th-verre :is(.dock [data-flot],.flottante)::before{background:linear-gradient(rgb(0 0 0 / .4375) 0 0),linear-gradient(rgb(104 104 104 / .1) 0 0)}
+/* Fenêtre flottante : au-dessus des autres, elle suit la main. */
+.ov .dock [data-flot]{transition:none}
 /* Arrivée : chaque fenêtre naît d'une ligne centrale qui s'ouvre en 0,3 s. */
 /* Même dessin que le liseré : ces lignes bordent la fenêtre en mouvement. */
-.ov .ouv-ligne{display:none;position:absolute;left:0;right:0;top:calc(50% - 1px);z-index:4;height:2px;pointer-events:none;background:#fff;mix-blend-mode:overlay}
+.ov .ouv-ligne{display:none;position:absolute;left:0;right:0;top:calc(50% - 1px);z-index:4;height:var(--trait,2px);pointer-events:none;background:#fff;mix-blend-mode:overlay}
+/* En verre, un pixel éclairci comme le liseré : même trait, même teinte. */
+.ov.th-verre .ouv-ligne{--trait:1px;background:none;mix-blend-mode:normal;backdrop-filter:brightness(2)}
 .ov.ouverture .dock[data-pret] .ouv-ligne{display:block;animation:ov-ligne-haut .3s cubic-bezier(.6,0,.2,1) both,ov-eteint 1ms .3s both}
 .ov.ouverture .dock[data-pret] .ouv-ligne+.ouv-ligne{animation-name:ov-ligne-bas,ov-eteint}
-.ov.ouverture .dock[data-pret] [data-fen]{animation:ov-ouverture .3s cubic-bezier(.6,0,.2,1) both}
+.ov.ouverture .dock[data-pret] [data-fen]{animation:ov-ouverture .3s cubic-bezier(.6,0,.2,1) backwards}
 .ov.ouverture .dock[data-pret] [data-fen]>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation:ov-voile .12s backwards}
 /* Une flottante s'ouvre en 0,5 s, voile et lignes à la même échelle. */
 .ov.ouverture .dock[data-pret] [data-flot]{animation-duration:.5s}
 .ov.ouverture .dock[data-pret] [data-flot]>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation-duration:.2s}
 .ov.ouverture .dock[data-pret] [data-flot] .ouv-ligne{animation-duration:.5s,1ms;animation-delay:0s,.5s}
-@keyframes ov-ouverture{0%{clip-path:inset(calc(50% - 1px) 50% calc(50% - 1px) 50%)}40%{clip-path:inset(calc(50% - 1px) 0 calc(50% - 1px) 0)}100%{clip-path:inset(0 0 0 0 round var(--verre-rayon,25px))}}
+/* Coupe par clip (--fw, --fh posés par le dock) : elle n'isole pas le verre. */
+@keyframes ov-ouverture{0%{clip:rect(calc(var(--fh) / 2 - 1px),calc(var(--fw) / 2),calc(var(--fh) / 2 + 1px),calc(var(--fw) / 2))}40%{clip:rect(calc(var(--fh) / 2 - 1px),var(--fw),calc(var(--fh) / 2 + 1px),0px)}100%{clip:rect(0px,var(--fw),var(--fh),0px)}}
 @keyframes ov-ligne-haut{0%,40%{top:calc(50% - 1px)}100%{top:0}}
-@keyframes ov-ligne-bas{0%,40%{top:calc(50% - 1px)}100%{top:calc(100% - 2px)}}
+@keyframes ov-ligne-bas{0%,40%{top:calc(50% + 1px - var(--trait,2px))}100%{top:calc(100% - var(--trait,2px))}}
 @keyframes ov-eteint{to{opacity:0}}
 @keyframes ov-voile{from,to{visibility:hidden}}
 /* Au changement de page, la fenêtre propre s'ouvre après la fermeture. */
 .ov .dock[data-pret] .holo-ouvre .ouv-ligne{display:block;animation:ov-ligne-haut .5s cubic-bezier(.6,0,.2,1) both,ov-eteint 1ms .5s both}
 .ov .dock[data-pret] .holo-ouvre .ouv-ligne+.ouv-ligne{animation-name:ov-ligne-bas,ov-eteint}
-.ov .dock[data-pret] [data-fen].holo-ouvre{animation:ov-ouverture .5s cubic-bezier(.6,0,.2,1) both}
+.ov .dock[data-pret] [data-fen].holo-ouvre{animation:ov-ouverture .5s cubic-bezier(.6,0,.2,1) backwards}
 .ov .dock[data-pret] [data-fen].holo-ouvre>:not(.verre-halos,.prise,.taille,.ouv-ligne){animation:ov-voile .2s backwards}
 /* Fenêtres de la page quittée, copiées devant ; flottantes en 0,5 s. */
 .ov .fantomes{position:absolute;inset:0;z-index:2;pointer-events:none}

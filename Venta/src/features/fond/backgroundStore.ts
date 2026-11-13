@@ -3,10 +3,33 @@ import { lireJson, posterJson } from '@/lib/reseau';
 import { create } from 'zustand';
 import { COLOR_PALETTES, type ColorPalette } from './colorPalettes';
 
+// Photos proposées comme fond, servies depuis public/fonds
+export const PHOTOS = [
+  { id: 'foret-automne', nom: "Forêt d'automne" },
+  { id: 'feuille-rosee', nom: 'Feuille et rosée' },
+  { id: 'fougeres', nom: 'Fougères' },
+  { id: 'alchemille', nom: 'Alchémille' },
+  { id: 'sentier', nom: 'Sentier fleuri' },
+  { id: 'torrent', nom: 'Torrent' },
+  { id: 'ruisseau', nom: 'Ruisseau au soleil' },
+  { id: 'montagnes', nom: 'Montagnes' },
+  { id: 'lac', nom: 'Lac de montagne' },
+  { id: 'feu-de-camp', nom: 'Feu de camp' },
+  { id: 'ble', nom: 'Blé' },
+];
+export const urlPhoto = (id: string) => `/fonds/${id}.jpg`;
+
+// Fond vivant de la Bande 16, ses bokeh seuls, dégradé de la palette, ou une photo
+export type Fond = 'organique' | 'bokeh' | 'degrade' | `photo:${string}`;
+const fondConnu = (v: unknown): v is Fond => v === 'organique' || v === 'bokeh' || v === 'degrade' || PHOTOS.some((p) => v === `photo:${p.id}`);
+
 interface BackgroundState {
   currentPalette: ColorPalette;
+  fond: Fond;
   setBackground: (paletteId: string) => void;
   choisirFond: (paletteId: string) => void;
+  essayerFond: (fond: Fond) => void;
+  garderFond: (fond: Fond) => void;
   resetBackground: () => void;
   loadPreference: () => Promise<void>;
 }
@@ -37,6 +60,7 @@ function resolvePalette(paletteId: string): ColorPalette | undefined {
 
 export const useBackgroundStore = create<BackgroundState>((set) => ({
   currentPalette: COLOR_PALETTES.default,
+  fond: 'organique',
 
   // Le backend enregistre lui-même la préférence du fond qu'il demande
   setBackground: (paletteId) => {
@@ -52,13 +76,23 @@ export const useBackgroundStore = create<BackgroundState>((set) => ({
     posterJson('/api/preferences', { preference: 'backgroundColor', value: palette.id }).catch(() => {});
   },
 
-  resetBackground: () => set({ currentPalette: COLOR_PALETTES.default }),
+  // Fond montré sans être enregistré : un essai des réglages
+  essayerFond: (fond) => set({ fond }),
 
-  // Préférence du profil de la session, sinon le fond par défaut
+  // Fond enregistré dans le profil, comme la palette
+  garderFond: (fond) => {
+    set({ fond });
+    posterJson('/api/preferences', { preference: 'fond', value: fond }).catch(() => {});
+  },
+
+  resetBackground: () => set({ currentPalette: COLOR_PALETTES.default, fond: 'organique' }),
+
+  // Préférences du profil de la session, sinon le fond par défaut
   loadPreference: async () => {
-    const data = await lireJson<{ preferences?: { backgroundColor?: unknown } }>('/api/preferences', { signal: AbortSignal.timeout(5000) })
+    const data = await lireJson<{ preferences?: { backgroundColor?: unknown; fond?: unknown } }>('/api/preferences', { signal: AbortSignal.timeout(5000) })
       .catch(() => null);
     const id = data?.preferences?.backgroundColor;
-    set({ currentPalette: (typeof id === 'string' && resolvePalette(id)) || COLOR_PALETTES.default });
+    const fond = data?.preferences?.fond;
+    set({ currentPalette: (typeof id === 'string' && resolvePalette(id)) || COLOR_PALETTES.default, fond: fondConnu(fond) ? fond : 'organique' });
   },
 }));

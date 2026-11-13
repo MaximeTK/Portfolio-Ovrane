@@ -156,6 +156,10 @@
 .ov.trame .ed-profil .zone-r:focus{border-color:var(--primaire)}
 .ov.trame .ed-profil .zone-r:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .ov.trame .ed-profil .zone-r:empty::before{color:var(--texte-2)}
+/* Verre : barre et zone sur le voile des champs, sans trait hors focus. */
+.ov.th-verre .ed-profil :is(.barre-r,.zone-r){background:rgb(var(--noir) / .25)}
+.ov.th-verre .ed-profil .barre-r{border-top-color:transparent;border-inline-color:transparent}
+.ov.th-verre .ed-profil .zone-r:not(:focus){border-color:transparent}
 /* Entrées répétables : cartes à filet, poignée sur le premier champ. */
 .ov.trame .ed-profil .bloc{padding:12px 12px 8px 36px;border:1px solid var(--filet);border-radius:12px;background:var(--surface)}
 .ov.trame .ed-profil .bloc .poignee-b{left:12px}

@@ -15,6 +15,9 @@
 /* Formulaire d'un groupe : autant de colonnes que la largeur en tient. */
 .ov [data-fen=reglages] .form-colonnes{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px 28px;padding:14px 20px 14px 24px}
 .ov [data-fen=reglages] .colonne-f{min-width:0}
+/* L'apparence dans la grande fenêtre : ses blocs en colonnes */
+.ov [data-fen=reglages] .groupe-contenu .apparence{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-content:start;gap:18px 28px;padding:14px 20px 14px 24px}
+.ov [data-fen=reglages] .groupe-contenu .apparence>.section-f{margin:0;padding-top:0;border-top:0}
 .ov [data-fen=reglages] .section-f h3 .marque-admin{vertical-align:1px}
 .ov [data-fen=reglages] .champ>label .marque-admin,.ov [data-fen=reglages] :is(.inter,.reglage-n)>span .marque-admin{margin-left:8px}
 .ov [data-fen=reglages] .reglage-n{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:34px;font-size:var(--t-corps,12.5px);color:rgb(var(--encre) / .88)}
@@ -31,6 +34,12 @@
 .ov [data-fen=reglages] .fichiers .mini{flex:none;width:20px;height:22px;font-size:var(--t-corps,13px);color:rgb(var(--encre) / .7)}
 .ov [data-fen=reglages] .fichiers .mini:hover{color:rgb(var(--encre))}
 @media (max-height:780px){.ov [data-fen=reglages] .form-colonnes .champ{gap:4px;margin-bottom:8px}.ov [data-fen=reglages] .form-colonnes .saisie{height:28px}.ov [data-fen=reglages] .form-colonnes .inter,.ov [data-fen=reglages] .reglage-n{min-height:30px}.ov [data-fen=reglages] .form-colonnes textarea.saisie{min-height:58px}}
+/* Mails : le tri par mots-clés sur toute la largeur, un tag par saisie. */
+.ov [data-fen=reglages] .colonne-f:has(.mots-f){grid-column:1/-1}
+.ov [data-fen=reglages] .mots-f{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0 24px}
+.ov [data-fen=reglages] .mots-f>.aide-champ{grid-column:1/-1}
+.ov [data-fen=reglages] .mots-f .champ>label{display:flex;align-items:center;gap:7px;font-size:var(--t-corps,12px);font-weight:500;letter-spacing:0;text-transform:none;color:rgb(var(--encre) / .88);white-space:nowrap}
+.ov [data-fen=reglages] .mots-f .champ>label::before{content:"";flex:none;width:7px;height:7px;background:var(--n);box-shadow:0 0 5px var(--n)}
 
 /* Comptes des plateformes : le défileur sert de repère de largeur. */
 .ov [data-fen=reglages] .grille-tab{container-type:inline-size}
@@ -74,8 +83,11 @@
 /* Apparence : les palettes d'Ovrane et la matière des fenêtres. */
 .ov .apparence .h3-val{display:flex;justify-content:space-between;align-items:baseline}
 .ov .apparence .h3-val .val{font-size:var(--t-corps,12px);font-weight:600;letter-spacing:0;text-transform:none;color:rgb(var(--encre) / .8)}
-.ov .apparence .palettes{display:grid;grid-template-columns:repeat(auto-fill,minmax(24px,1fr));gap:4px}
-.ov .apparence .palette{height:22px;cursor:pointer}
+/* Teinte : pastilles rondes de la Bande 16, la choisie cerclée. */
+.ov .apparence .palettes{display:grid;grid-template-columns:repeat(auto-fill,22px);gap:6px}
+.ov .apparence .palette{width:22px;height:22px;padding:0;border:0;border-radius:50% !important;cursor:pointer;box-shadow:inset 0 0 0 1px rgb(255 255 255 / .3)}
+.ov .apparence .palette:has(:checked){outline:2px solid currentColor;outline-offset:2px}
+.ov.th-clair .apparence .palette{box-shadow:inset 0 0 0 1px rgb(0 0 0 / .2)}
 .ov .apparence .palette:has(:focus-visible),.ov .apparence .matiere:has(:focus-visible){outline:1px solid rgb(var(--encre));outline-offset:2px}
 .ov .apparence .matieres{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .ov .apparence .matiere{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer}
@@ -84,6 +96,13 @@
 .ov .apparence .apercu-mat{flex:none;width:30px;height:22px}
 .ov .apparence .apercu-mat.m-verre{background:linear-gradient(135deg,rgb(var(--encre) / .35),transparent 55%),linear-gradient(180deg,var(--haut),var(--bas));border:1px solid rgb(var(--encre) / .7)}
 .ov .apparence .apercu-mat.m-teinte{background:rgb(var(--sombre-12) / .85);border:1px solid rgb(var(--encre) / .16)}
+/* Photos de fond en vignettes, « Aucune » d'abord sur le dégradé. */
+.ov .apparence .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;margin-top:10px}
+.ov .apparence .photo{position:relative;display:grid;place-items:center;aspect-ratio:3/2;overflow:hidden;cursor:pointer;font-size:var(--t-petit,11px)}
+.ov .apparence .photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ov .apparence .photo.aucune{background:linear-gradient(180deg,var(--fond-haut),var(--fond-bas))}
+.ov .apparence .photo:has(:checked){outline:2px solid rgb(var(--encre));outline-offset:1px}
+.ov .apparence .photo:has(:focus-visible){outline:1px solid rgb(var(--encre));outline-offset:2px}
 
 /* Fenêtre étroite : la confirmation passe sur deux lignes. */
 .ov [data-fen=reglages]:not([data-l=l]) .confirmer{flex-wrap:wrap;height:auto;min-height:36px;row-gap:4px;padding:6px 12px}
@@ -110,6 +129,8 @@
 .ov.trame [data-fen=reglages] .form-colonnes textarea.saisie{min-height:96px}
 .ov.trame [data-fen=reglages] .reglage-n{min-height:52px;font-size:.875rem;color:var(--texte)}
 .ov.trame [data-fen=reglages] .reglage-n .saisie{width:88px;height:auto}
+.ov.trame [data-fen=reglages] .mots-f .champ>label{gap:8px;font-size:.875rem;color:var(--texte)}
+.ov.trame [data-fen=reglages] .mots-f .champ>label::before{width:10px;height:10px;border-radius:50%;box-shadow:none}
 .ov.trame [data-fen=reglages] .effacer{display:inline-flex;align-items:center;min-height:44px;font-size:.875rem;font-weight:500;color:var(--primaire);text-decoration-color:currentColor;text-underline-offset:2px}
 .ov.trame [data-fen=reglages] .couleur input{width:44px;height:32px;border:1px solid var(--contour);border-radius:8px}
 .ov.trame [data-fen=reglages] .couleur button{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;font-size:1rem;color:var(--texte-2)}

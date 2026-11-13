@@ -75,7 +75,7 @@ const MAIL = <a className={LIEN} href={`mailto:${CONTACT}`}>{CONTACT}</a>;
 // Une rubrique de la page : son ancre, son titre, son contenu
 function RubriqueLegale({ id, titre, children }: { id: string; titre: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="scroll-mt-24 border-t border-white/10 py-10">
+    <section id={id} className="scroll-mt-10 border-t border-white/10 py-10">
       <h2 className="text-2xl font-semibold tracking-tight">{titre}</h2>
       {children}
     </section>

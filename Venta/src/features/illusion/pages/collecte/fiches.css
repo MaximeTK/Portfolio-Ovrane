@@ -138,6 +138,8 @@
 /* Recherche : une cible de 44 px au trait plein, comme la planche. */
 .ov.trame [data-fen=fiches] .cherche{height:44px;gap:8px;margin-left:8px;border-bottom-color:var(--contour);color:var(--texte-2)}
 .ov.trame [data-fen=fiches] .cherche:focus-within{border-color:var(--primaire);color:var(--texte)}
+/* Verre : la recherche perd son trait clair, qui revient blanc au focus. */
+.ov.th-verre [data-fen=fiches] .cherche:not(:focus-within){border-bottom-color:transparent}
 .ov.trame [data-fen=fiches] .ico-cherche svg{width:18px;height:18px}
 .ov.trame [data-fen=fiches] .cherche input{height:42px;color:var(--texte)}
 .ov.trame [data-fen=fiches] .cherche input::placeholder{color:var(--texte-2);opacity:1}
@@ -157,6 +159,9 @@
 .ov.trame .pf .catalogue{gap:6px;min-height:48px;padding:7px 8px;border-color:var(--contour);border-radius:8px;background:var(--surface)}
 .ov.trame .pf .catalogue:hover{border-color:var(--texte)}
 .ov.trame .pf .catalogue:focus-within{border-color:var(--primaire)}
+/* Verre : catalogue sur le voile des champs, sans trait clair hors focus. */
+.ov.th-verre .pf .catalogue{background:rgb(var(--noir) / .25)}
+.ov.th-verre .pf .catalogue:not(:focus-within){border-color:transparent}
 .ov.trame .pf .catalogue input{height:32px;font-size:.875rem;color:var(--texte)}
 .ov.trame .pf .catalogue input::placeholder{color:var(--texte-2);opacity:1}
 .ov.trame .pf .catalogue .puce{gap:4px;padding:0 4px 0 8px;font-size:.875rem;line-height:1.25rem;color:var(--texte)}

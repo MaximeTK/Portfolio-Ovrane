@@ -211,7 +211,7 @@ export function ProjectPage({ projet, rang, total, suivant }: { projet: Projet; 
       >
         <div className="mt-12">
             {projet.sections.map((s, i) => (
-              <section key={s.id} id={ancre(s.id)} aria-labelledby={`${ancre(s.id)}-titre`} className="scroll-mt-24 border-t border-white/10 py-12 md:py-16">
+              <section key={s.id} id={ancre(s.id)} aria-labelledby={`${ancre(s.id)}-titre`} className="scroll-mt-10 border-t border-white/10 py-12 md:py-16">
                 <p className={ETIQUETTE}>{deuxChiffres(i + 1)} · {s.etape}</p>
                 <h2 id={`${ancre(s.id)}-titre`} className="mt-3 max-w-3xl text-2xl font-semibold leading-snug tracking-tight md:text-3xl">{s.titre}</h2>
                 <div className="mt-8 space-y-8">{s.blocs.map((b, j) => <RenduBloc key={j} bloc={b} />)}</div>
@@ -258,6 +258,7 @@ export function Sommaire({ projet, visible }: { projet: Projet; visible: boolean
     <nav
       aria-label="Sommaire"
       inert={!visible}
+      data-protege="boite"
       className={`fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 font-sans transition-opacity duration-500 xl:block ${visible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
     >
       <ol className="space-y-3">

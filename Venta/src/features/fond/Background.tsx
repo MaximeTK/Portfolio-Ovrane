@@ -1,53 +1,55 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useBackgroundStore } from './backgroundStore';
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import { useUIStore } from '@/lib/uiStore';
+import { useBackgroundStore, urlPhoto } from './backgroundStore';
+import { baseDe, lancerFond } from './fondVivant';
+
+const FONDU = '2500ms cubic-bezier(0.4, 0, 0.2, 1)';
 
 export function Background({ children }: { children: React.ReactNode }) {
   const currentPalette = useBackgroundStore((state) => state.currentPalette);
+  const fond = useBackgroundStore((state) => state.fond);
+  const toileRef = useRef<HTMLCanvasElement>(null);
+  const photo = fond.startsWith('photo:') ? fond.slice(6) : null;
+  // Photos posées : la nouvelle se fond sur l'ancienne, retirée ensuite
+  const [posees, setPosees] = useState<string[]>(photo ? [photo] : []);
+  if (photo && posees.at(-1) !== photo) setPosees([...posees.filter((p) => p !== photo), photo]);
 
-  // Fondu croisé : la nouvelle palette recouvre l'active puis la remplace
-  const [activePalette, setActivePalette] = useState(currentPalette);
-  const [nextPalette, setNextPalette] = useState<typeof currentPalette | null>(null);
-
+  const vivant = fond === 'organique' || fond === 'bokeh';
+  // Fond vivant : suit la palette, dort ou ralentit, ses bokeh naissent au réveil
   useEffect(() => {
-    if (currentPalette.id === activePalette.id) return;
-    setNextPalette(currentPalette);
-    const timer = setTimeout(() => {
-      setActivePalette(currentPalette);
-      setNextPalette(null);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, [currentPalette, activePalette.id]);
+    const toile = toileRef.current;
+    if (!toile) return;
+    const lire = () => useBackgroundStore.getState().fond;
+    return lancerFond(toile, () => useBackgroundStore.getState().currentPalette, () => lire() === 'organique' || lire() === 'bokeh',
+      () => useUIStore.getState().page !== null, () => useUIStore.getState().appState === 'awake', () => lire() === 'organique');
+  }, []);
+
+  // Couleurs du fond pour le verre et le dégradé, au rythme du fondu
+  const couleurs = {
+    '--fond-haut': currentPalette.topColor,
+    '--fond-bas': currentPalette.bottomColor,
+    '--lumiere': currentPalette.lumiere,
+    transition: `--fond-haut ${FONDU}, --fond-bas ${FONDU}, --lumiere ${FONDU}`,
+  } as React.CSSProperties;
 
   return (
     <>
-      <div className="fixed inset-0 min-h-screen pointer-events-none z-0">
-        <div
-          className="absolute inset-0 transition-colors duration-[2500ms]"
-          style={{ background: `linear-gradient(180deg, ${activePalette.topColor} 0%, ${activePalette.bottomColor} 100%)` }}
-        />
-        <div
-          className="absolute inset-0 transition-opacity duration-[2500ms] ease-in-out"
-          style={{
-            background: nextPalette
-              ? `linear-gradient(180deg, ${nextPalette.topColor} 0%, ${nextPalette.bottomColor} 100%)`
-              : 'transparent',
-            opacity: nextPalette ? 1 : 0,
-          }}
-        />
+      <div className="fixed inset-0 min-h-screen pointer-events-none z-0" style={{ background: baseDe(currentPalette), ...couleurs }}>
+        {/* Dégradé d'avant la Bande 16, sous le fond vivant et les photos */}
+        <div className={`fond-degrade${currentPalette.arc ? ' arc' : ''}`} />
+        <canvas ref={toileRef} className="fond-vivant" data-eteint={!vivant || undefined} aria-hidden="true" />
+        {posees.map((p) => (
+          <Image key={p} src={urlPhoto(p)} alt="" fill sizes="100vw" className="fond-photo" data-eteint={!photo || undefined}
+            onLoad={(e) => { e.currentTarget.dataset.charge = ''; }}
+            onTransitionEnd={() => setPosees((l) => (photo === p ? [p] : photo ? l : []))} />
+        ))}
+        <div className="fond-voile" data-eteint={!photo || undefined} />
       </div>
 
-      {/* Couleurs du fond pour le verre qui le recopie, au rythme du fondu */}
-      <div
-        className="relative z-10"
-        style={{
-          '--fond-haut': currentPalette.topColor,
-          '--fond-bas': currentPalette.bottomColor,
-          '--lumiere': currentPalette.lumiere,
-          transition: '--fond-haut 2500ms cubic-bezier(0.4, 0, 0.2, 1), --fond-bas 2500ms cubic-bezier(0.4, 0, 0.2, 1), --lumiere 2500ms cubic-bezier(0.4, 0, 0.2, 1)',
-        } as React.CSSProperties}
-      >
+      <div className="relative z-10" style={couleurs}>
         {children}
       </div>
     </>

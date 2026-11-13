@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useUIStore } from '@/lib/uiStore';
-import { TRAIT_ROND } from '@/features/site/elements';
+import { TRAIT_ROND, useGlyphes } from '@/features/site/elements';
 
 const MAX_LENGTH = 5000;
 const PLACEHOLDER = 'Posez-moi une question';
@@ -35,6 +35,9 @@ export function InputArea({ onSubmit, triggerWave, isLoading = false, tipsEnable
   const [isTipVisible, setIsTipVisible] = useState(false);
   const sonCoupe = useUIStore((s) => s.sonCoupe);
   const basculerSon = useUIStore((s) => s.basculerSon);
+  // Chaque astuce montrée s'écrit en glyphes
+  const astuce = useRef<HTMLDivElement>(null);
+  useGlyphes(astuce, isTipVisible && activeTip);
 
   // Hauteur suivant le texte jusqu'à 200 px ; plus d'une ligne au-delà de ~60 px
   useEffect(() => {
@@ -92,7 +95,7 @@ export function InputArea({ onSubmit, triggerWave, isLoading = false, tipsEnable
           }`}
           aria-hidden={!isTipVisible}
         >
-          <div className="mx-auto w-full text-white/90 text-xs md:text-sm text-center drop-shadow-md line-clamp-2">{activeTip}</div>
+          <div ref={astuce} className="mx-auto w-full text-white/90 text-xs md:text-sm text-center drop-shadow-md line-clamp-2">{activeTip}</div>
         </div>
       )}
 

@@ -8,10 +8,14 @@ type Cote = 'ovrane' | 'illusion';
 // Choix « voix coupée », teinte des boîtes et flou, gardés dans ce navigateur
 export const CLE_SON = 'ovrane:son-coupe';
 export const CLE_VERRE = 'ovrane:verre';
-export const CLE_FLOU = 'ovrane:flou';
+// Flou et opacité du verre des fenêtres d'Illusion, clés de la Bande 16
+export const CLE_FLOU = 'ovrane:flou-verre';
+export const CLE_PLEIN = 'ovrane:plein-verre';
 export const VERRE_DEFAUT = 0.55;
 export const VERRE_MAX = 0.9;
+export const FLOU_DEFAUT = 40;
 export const FLOU_MAX = 40;
+export const PLEIN_DEFAUT = 0.7;
 const MAX_FENETRES = 10;
 
 /** Fenêtre flottante : Markdown d'une réponse, ou image de public/assets */
@@ -41,11 +45,13 @@ interface UIState {
   sonCoupe: boolean;
   verreOpacite: number;
   verreFlou: number;
+  verrePlein: number;
 
   setViewMode: (mode: ViewMode) => void;
   basculerSon: () => void;
   reglerVerre: (opacite: number) => void;
   reglerFlou: (pixels: number) => void;
+  reglerPlein: (part: number) => void;
   setAppState: (state: AppState) => void;
   setPage: (page: string | null) => void;
   setCote: (cote: Cote) => void;
@@ -93,7 +99,8 @@ export const useUIStore = create<UIState>((set) => ({
   maxZIndex: 100,
   sonCoupe: false,
   verreOpacite: VERRE_DEFAUT,
-  verreFlou: 0,
+  verreFlou: FLOU_DEFAUT,
+  verrePlein: PLEIN_DEFAUT,
 
   // Le chat est d'Ovrane : l'ouvrir ou le fermer remet ses canaux
   setViewMode: (mode) => set({ viewMode: mode, cote: 'ovrane' }),
@@ -103,11 +110,19 @@ export const useUIStore = create<UIState>((set) => ({
     retenirLocal(CLE_VERRE, String(opacite));
     set({ verreOpacite: opacite });
   },
-  // --verre-flou : ce que les fenêtres flottantes d'Illusion laissent voir
+  // --verre-flou : le flou du verre des fenêtres d'Illusion (illusion.css)
   reglerFlou: (pixels) => {
     document.documentElement.style.setProperty('--verre-flou', `${pixels}px`);
     retenirLocal(CLE_FLOU, String(pixels));
     set({ verreFlou: pixels });
+  },
+  // --verre-plein : part du verre opaque de l'ancien Illusion, de 0 à 1
+  reglerPlein: (part) => {
+    const racine = document.documentElement;
+    racine.style.setProperty('--verre-plein', String(part));
+    racine.classList.toggle('verre-opaque', part >= 1);
+    retenirLocal(CLE_PLEIN, String(part));
+    set({ verrePlein: part });
   },
   basculerSon: () =>
     set((s) => {

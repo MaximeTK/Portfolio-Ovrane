@@ -142,10 +142,6 @@
 .ov:has([data-fen=boite]) [data-fen^=panneau] .lancement.en-cours{color:var(--accent)}
 .ov:has([data-fen=boite]) [data-fen^=panneau] .lancement.echec{color:rgb(var(--rouge))}
 .ov:has([data-fen=boite]) [data-fen^=panneau] .sortie-f{max-height:260px;margin:0;overflow:auto;scrollbar-width:none;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11px);line-height:1.45;color:rgb(var(--encre) / .75);white-space:pre-wrap;overflow-wrap:anywhere}
-/* Réglages : mot de passe et « Effacer », puis le tri par mots-clés par tag. */
-.ov:has([data-fen=boite]) [data-fen^=panneau] .mots-f .champ>label{display:flex;align-items:center;gap:7px;font-size:var(--t-corps,12px);font-weight:500;letter-spacing:0;text-transform:none;color:rgb(var(--encre) / .88);white-space:nowrap}
-.ov:has([data-fen=boite]) [data-fen^=panneau] .mots-f .champ>label::before{content:"";flex:none;width:7px;height:7px;background:var(--n);box-shadow:0 0 5px var(--n)}
-.ov:has([data-fen=boite]) [data-fen^=panneau] .mots-f .grille-2 .champ{margin-bottom:12px}
 
 /* Thèmes plats : boîte et panneau aux valeurs de la planche, verre intact. */
 .ov.trame [data-fen=boite] .filtre-hote+.filtre-hote{margin-left:4px}
@@ -232,7 +228,7 @@
 .ov.trame:has([data-fen=boite]) [data-fen^=panneau] .repondre{margin-top:16px;padding-top:16px;border-top:1px solid var(--filet)}
 /* À la place du formulaire : ce mail ne se répond pas d'Ovrane. */
 .ov.trame:has([data-fen=boite]) [data-fen^=panneau] .repondre-perso{display:grid;place-items:center;min-height:120px;padding:16px;border:1px solid var(--filet);text-align:center;background:repeating-linear-gradient(135deg,var(--filet) 0 1px,transparent 1px 8px)}
-/* Étiqueter, Exécuter et Réglages : choix de 44 px, lueurs retirées. */
+/* Étiqueter et Exécuter : choix de 44 px, lueurs retirées. */
 .ov.trame:has([data-fen=boite]) [data-fen^=panneau] :is(.tag-f,.mode-f){height:auto;min-height:44px;padding:0 12px}
 .ov.trame:has([data-fen=boite]) [data-fen^=panneau] .tag-f .nat{white-space:normal}
 .ov.trame:has([data-fen=boite]) [data-fen^=panneau] .tag-f:has(:checked) .nat{color:var(--sur-primaire-doux)}
@@ -248,8 +244,6 @@
 .ov.trame:has([data-fen=boite]) [data-fen^=panneau] .lancement.en-cours{color:var(--primaire)}
 .ov.trame:has([data-fen=boite]) [data-fen^=panneau] .lancement.echec{color:var(--erreur)}
 .ov.trame:has([data-fen=boite]) [data-fen^=panneau] .sortie-f{padding:12px;border-radius:8px;background:var(--surface-basse);font-size:.75rem;line-height:1rem;color:var(--texte)}
-.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .mots-f .champ>label{gap:8px;font-size:.875rem;color:var(--texte)}
-.ov.trame:has([data-fen=boite]) [data-fen^=panneau] .mots-f .champ>label::before{width:10px;height:10px;border-radius:50%;box-shadow:none}
 
 /* Générer les règles : étapes numérotées, valeurs longues à sélectionner. */
 .ov .regles-f .etapes{margin:10px 0;padding-left:18px;list-style:decimal;font-size:var(--t-corps,12.5px);line-height:1.45;color:rgb(var(--encre) / .82)}

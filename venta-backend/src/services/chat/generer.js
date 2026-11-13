@@ -14,7 +14,7 @@ const INSTRUCTIONS = fs.readFileSync(new URL('../../../prompts/instructions.txt'
 export const SYSTEM_FIXE = `${SYSTEM_PROMPTS.mainContext}\n\n${INSTRUCTIONS}\n\n${SYSTEM_PROMPTS.contextRule}`;
 
 const IMAGE = /\b(montre|montrer|display|affiche|affiches|voir|voirs|afficher|images|image|photo|photos|logos|logo|visuels|visuel|illustration|screenshots|screenshot|captures|capture|interfaces|interface)\b/i;
-const COULEUR = /\b(fond|background|arriere-plan|couleur|palette|themes|theme|argente|gris|noir|dore|jaune|orange|rouge|ecarlate|vert clair|vert_clair|foret|maree|feuille|aqua|ocean|hopa|gris ciel|gris_ciel|spectre|mauve|rose|cyberpunk|melon|goyavier|marron|vin)\b/i;
+const COULEUR = /\b(fond|background|arriere-plan|couleur|palette|themes|theme|argente|gris|noir|dore|jaune|orange|rouge|ecarlate|vert clair|vert_clair|foret|feuille|aqua|ocean|hopa|gris ciel|gris_ciel|spectre|mauve|rose|cyberpunk|goyavier|marron|vin|arc en ciel|arc_en_ciel|prairie|jade|chlorophylle|azur|lagon|orchidee|sable|taupe|brique|cuivre|spectrale|tilleul)\b/i;
 
 // Outils d'interface seulement si l'intention est claire, sinon trop d'actions
 function outilsPour(prompt) {

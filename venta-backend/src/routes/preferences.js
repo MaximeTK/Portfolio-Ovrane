@@ -5,8 +5,12 @@ import { sendError, requireSession } from '../http.js';
 import { paletteConnue } from '../services/chat/outils.js';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../messages.js';
 
+// Fond : vivant, ses bokeh seuls, dégradé de la palette, ou une des photos du site
+const PHOTOS = ['foret-automne', 'feuille-rosee', 'fougeres', 'alchemille', 'sentier', 'torrent', 'ruisseau', 'montagnes', 'lac', 'feu-de-camp', 'ble'];
+const FONDS = new Set(['organique', 'bokeh', 'degrade', ...PHOTOS.map((p) => `photo:${p}`)]);
+
 // Chaque préférence admet les valeurs de son catalogue seulement
-const PREFERENCES = new Map([['backgroundColor', paletteConnue]]);
+const PREFERENCES = new Map([['backgroundColor', paletteConnue], ['fond', (v) => (FONDS.has(v) ? v : null)]]);
 
 export function setupPreferencesRoutes(app) {
   // Lecture seule : ni visite comptée ni IP écrite

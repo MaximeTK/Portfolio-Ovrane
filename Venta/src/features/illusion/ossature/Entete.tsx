@@ -43,11 +43,6 @@ export function Entete({ compte, visible }: ProprietesEntete) {
     const ecrits = Array.from(canaux ?? []).map((c) => ecrire(c, { duree: DUREES.canaux, texte: true }));
     return () => ecrits.forEach((c) => c.annuler());
   }, [visible]);
-  // Clic droit sur le logo : les canaux d'Ovrane reviennent, l'œil au centre
-  const versOvrane = (e: React.MouseEvent) => {
-    e.preventDefault();
-    useUIStore.getState().setCote('ovrane');
-  };
   const onglet = (slug: string, titre: string) => (
     <LienIllusion
       vers={slug}
@@ -59,22 +54,15 @@ export function Entete({ compte, visible }: ProprietesEntete) {
   );
 
   return (
-    <div ref={barre} inert={!visible} className={`ov ov-barre mat-${matiere} ${classesTheme(theme)}${visible ? ' visible' : ''}${page === 'accueil' ? ' sur-accueil' : ''}`}>
+    <div ref={barre} inert={!visible} className={`ov ov-barre mat-${matiere} ${classesTheme(theme)}${visible ? ' visible' : ''}`}>
       <nav className="barre-canaux" aria-label="Canaux d'Illusion">
         <div className="cote gauche">
           {onglet('offres', 'Offres')}
           {onglet('candidatures', 'Candidatures')}
           {onglet('documents', 'Documents')}
         </div>
-        <div className="centre">
-          <LienIllusion vers="accueil" className="logo" onContextMenu={versOvrane} aria-label="Illusion : accueil" title="Illusion · clic : accueil · clic droit : canaux d'Ovrane">
-            <svg viewBox="0 0 325.934 274.525" width="34" height="29" fill="none" stroke="#fff" aria-hidden="true">
-              <path d="M9.4632 262.426L112.954 181.479V19.5844" strokeWidth="30.72" />
-              <path d="M316.471 262.426L212.98 181.479V19.5844" strokeWidth="30.72" />
-              <path d="M163.063 262.272V161.894V0" strokeWidth="30.72" />
-            </svg>
-          </LienIllusion>
-        </div>
+        {/* Place de l'emblème : l'œil ou le logo d'Illusion, posé au-dessus */}
+        <div className="centre" />
         <div className="cote droite">
           {onglet('mails', 'Mails')}
           {onglet('appels', 'Appels')}

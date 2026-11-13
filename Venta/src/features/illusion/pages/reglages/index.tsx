@@ -1,7 +1,6 @@
 'use client';
 
 import './reglages.css';
-import { LienIllusion } from '../../partage/LienIllusion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler, televerser } from '../../api';
 import { repris, useGarder } from '../../stockage';
@@ -10,10 +9,11 @@ import { Confirmer, MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau
 
 import { useSondage } from '../../activite/sondage';
 import type { ProprietesPage } from '../liste';
-import { FENETRES_REGLAGES, useOngletApparence } from './apparence';
+import { FENETRES_REGLAGES, useApparenceReglages } from './apparence';
 import { FILTRES, TableComptes, lignesDe, ongletTester, useOngletAjout, versEnvoi, type Essai, type Identifiant, type Ligne } from './comptes';
 import { useEchap, useGeste } from '../commun';
 import { FONDS } from '../documents/commun';
+import { COULEURS_NATURE, GenererRegles, MOTS_ETIQUETTES, NATURES } from '../mails/panneaux';
 import { egal, useFormParametres } from './useFormParametres';
 import { MenuFiltre, TitreGroupe } from '../../elements/Menu';
 import { Action } from '../../elements/Action';
@@ -23,11 +23,11 @@ import { ActionSupprimer } from '../../elements/Action';
 import { SaisieSecrete } from '../../elements/Champ';
 import { useAvis } from '../../elements/Avis';
 import { avecAbsent, message, optionsModele } from '../../elements/format';
-import { ActionOnglet, CorpsGroupes, PiedGroupe, Rubrique, RubriqueOnglet } from '../../elements/Groupes';
+import { ActionOnglet, CorpsGroupes, PiedGroupe, Rubrique } from '../../elements/Groupes';
 import { PageDock } from '../../activite/PageDock';
 
 type Parametres = Record<string, unknown> & { modeles: { nom: string; modele?: string }[]; identifiants: Identifiant[] };
-type Sorte = 'inter' | 'nombre' | 'texte' | 'liste' | 'secret' | 'choix' | 'modele' | 'texte_long' | 'couleurs';
+type Sorte = 'inter' | 'nombre' | 'texte' | 'liste' | 'secret' | 'choix' | 'modele' | 'texte_long' | 'couleurs' | 'mots';
 type Champ = { cle: string; libelle: string; sorte: Sorte; aide?: string; admin?: boolean; choix?: [string, string][]; vide?: string; min?: number; max?: number };
 type Section = { titre: string; champs: Champ[]; admin?: boolean; pieces?: boolean };
 type Groupe = { cle: string; titre: string; aide?: string; sections?: Section[] };
@@ -39,6 +39,20 @@ const poids = (o: number) => (o < 1024 ? `${o} o` : `${(o / 1024).toFixed(1).rep
 // Réglages du compte par groupe ; « Modèle » et ceux du serveur sont à l'admin.
 const GROUPES: Groupe[] = [
   { cle: 'comptes', titre: 'Comptes des plateformes' },
+  { cle: 'mails', titre: 'Mails',
+    sections: [
+      { titre: 'Réponses', champs: [
+        { cle: 'mail_timeout_secondes', libelle: 'Timeout (s)', sorte: 'nombre', min: 30 },
+        { cle: 'mail_reponses', libelle: 'Rédiger les réponses', sorte: 'inter', aide: "Demandes d'informations et refus d'une adresse qui lit ses réponses : le brouillon attend d'être relu dans le fil, il ne part pas tout seul. Désactivé : étiquetage seul, sans tokens." },
+        { cle: 'mail_modele', libelle: 'Modèle', sorte: 'modele', admin: true, aide: 'Celui qui tranche les mails que les règles laissent et rédige les brouillons.' },
+        { cle: 'mail_signature', libelle: 'Signature', sorte: 'texte', aide: 'Reprise à la fin des brouillons rédigés. Vide : aucune.' },
+        { cle: 'mail_relance_jours', libelle: 'Relancer après (jours)', sorte: 'nombre', min: 0, aide: 'Une candidature restée sans nouvelles N jours reçoit un brouillon de relance, deux au plus, jamais vers un no-reply. 0 : aucune relance.' },
+        { cle: 'mail_preparation', libelle: 'Préparer les entretiens', sorte: 'inter', aide: "Un mail qui propose un rendez-vous fait rédiger la préparation de l'entretien, à lire dans la fiche de l'offre." },
+      ] },
+      { titre: 'Tri par mots-clés', champs: [
+        { cle: 'mail_mots_etiquettes', libelle: 'Tri par mots-clés', sorte: 'mots', aide: "Un mot lu dans l'objet ou le corps d'un mail reçu lui pose ce tag d'office, sans appeler le modèle." },
+      ] },
+    ] },
   { cle: 'liens', titre: 'Liens suivis',
     aide: "Les liens LinkedIn, GitHub et portfolio de chaque CV et lettre passent par le portfolio avec un jeton propre à l'offre : le clic d'un recruteur se compte, et le portfolio se présente selon la candidature.",
     sections: [{ titre: 'Liens suivis', champs: [
@@ -101,15 +115,15 @@ const GROUPES: Groupe[] = [
     ] },
 ];
 
-export default function PageReglages({ compte }: ProprietesPage) {
+export default function PageReglages({ compte, recherche }: ProprietesPage) {
   return (
     <PageDock id="reglages" principal="reglages" panneau={null} fenetres={FENETRES_REGLAGES}>
-      <Reglages admin={compte.admin} />
+      <Reglages admin={compte.admin} voulu={new URLSearchParams(recherche).get('groupe')} />
     </PageDock>
   );
 }
 
-function Reglages({ admin }: { admin: boolean }) {
+function Reglages({ admin, voulu }: { admin: boolean; voulu: string | null }) {
   const { onglet, ouvrir, fermer } = usePanneau();
   // Réglages, groupe, filtre, tests et pièces gardés d'une visite à l'autre.
   const depart = repris<Parametres | null>('reglages:lus', null);
@@ -127,7 +141,8 @@ function Reglages({ admin }: { admin: boolean }) {
       setSelection(new Set());
     },
   });
-  const [groupe, setGroupe] = useState(() => repris('reglages:groupe', 'comptes'));
+  // Un lien vers un groupe l'ouvre, sinon celui de la dernière visite
+  const [groupe, setGroupe] = useState(() => GROUPES.find((x) => x.cle === voulu)?.cle ?? repris('reglages:groupe', 'comptes'));
   const [filtre, setFiltre] = useState(() => repris('reglages:filtre', 'tous'));
   const [essais, setEssais] = useState(() => repris<Record<string, Essai>>('reglages:essais', {}));
   const [testEnCours, setTestEnCours] = useState(() => repris('reglages:testEnCours', ''));
@@ -191,7 +206,9 @@ function Reglages({ admin }: { admin: boolean }) {
       setConfirmation(null);
       // Mots bannis rejoués sur le stock : on le dit, sinon des offres disparaissent.
       const bannis = r.rejeu_bannis?.ecartees ? ` — mots bannis rejoués : ${r.rejeu_bannis.ecartees} offre(s) sortie(s) de la file` : '';
-      dire(`Réglages enregistrés${bannis || ' — les lots les reprennent aussitôt'}.`);
+      // Mots-clés des tags rejoués sur la boîte : des mails changent de tag.
+      const mails = r.rejeu_mails ? ` — ${r.rejeu_mails} mail(s) réétiqueté(s) par mots-clés` : '';
+      dire(`Réglages enregistrés${bannis + mails || ' — les lots les reprennent aussitôt'}.`);
     });
   };
 
@@ -225,6 +242,24 @@ function Reglages({ admin }: { admin: boolean }) {
         <label key={c.cle} className="reglage-n" title={c.aide}><span>{c.libelle}{marque}</span>
           <input className="saisie" type="number" inputMode="numeric" min={c.min} max={c.max} value={String(v ?? '')} onChange={(e) => poser(e.target.value === '' ? '' : Number(e.target.value))} />
         </label>
+      );
+    }
+    if (c.sorte === 'mots') {
+      // Une saisie par tag ; le texte tapé ne redevient liste qu'à l'envoi.
+      const mots = (v ?? {}) as Record<string, unknown>;
+      return (
+        <div key={c.cle} className="mots-f" role="group" aria-label={c.libelle}>
+          <p className="aide-champ">{c.aide}</p>
+          {MOTS_ETIQUETTES.map((t) => {
+            const x = mots[t];
+            return (
+              <Champ key={t} pour={`${id}-${t}`} libelle={NATURES[t]} style={{ '--n': COULEURS_NATURE[t] } as React.CSSProperties}>
+                <input id={`${id}-${t}`} className="saisie" placeholder="mots séparés par des virgules" value={Array.isArray(x) ? x.join(', ') : String(x ?? '')}
+                  onChange={(e) => poser({ ...mots, [t]: e.target.value })} />
+              </Champ>
+            );
+          })}
+        </div>
       );
     }
     let saisie: React.ReactNode;
@@ -298,14 +333,15 @@ function Reglages({ admin }: { admin: boolean }) {
     </Champ>
   );
 
-  const g = GROUPES.find((x) => x.cle === groupe)!;
+  // L'apparence, un groupe de la grande fenêtre hors des paramètres du serveur
+  const g = GROUPES.find((x) => x.cle === groupe) ?? { cle: 'apparence', titre: 'Apparence' };
   const coches = lignes.filter((l) => selection.has(l.uid));
   const garde = FILTRES.find((f) => f.cle === filtre)!;
   const ligneTestee = lignes.find((l) => l.site === teste);
-  const apparence = useOngletApparence({ actif: onglet === 'apparence', fermer, dire });
+  const apparence = useApparenceReglages({ actif: groupe === 'apparence', dire });
   const ajout = useOngletAjout({ actif: onglet === 'ajout', lignes, ajouter: (l) => setLignes((ls) => [...ls, l]), fermer, dire });
-  // Seul l'onglet ouvert se montre ; trois ouvreurs ne tiennent pas dans 400 px.
-  const onglets: Onglet[] = [apparence, ...(teste ? [ongletTester({ site: teste, essai: essais[teste], ligne: ligneTestee, occupe: testEnCours !== '', tester, fermer })] : []), ajout]
+  // Seul l'onglet ouvert se montre ; deux ouvreurs ne tiennent pas dans 400 px.
+  const onglets: Onglet[] = [...(teste ? [ongletTester({ site: teste, essai: essais[teste], ligne: ligneTestee, occupe: testEnCours !== '', tester, fermer })] : []), ajout]
     .filter((o) => o.cle === onglet);
 
   return (
@@ -343,13 +379,11 @@ function Reglages({ admin }: { admin: boolean }) {
             }} />
         )}
         <CorpsGroupes nav={<>
-            <RubriqueOnglet cle="apparence">Apparence</RubriqueOnglet>
-            {GROUPES.slice(0, 1).map((x) => <BoutonGroupe key={x.cle} g={x} courant={groupe} choisir={setGroupe} />)}
-            <LienIllusion vers="mails" className="rubrique" title="Les réglages des mails vivent sur la page Mails">Mails</LienIllusion>
-            {GROUPES.slice(1).map((x) => <BoutonGroupe key={x.cle} g={x} courant={groupe} choisir={setGroupe} />)}
+            <Rubrique actif={groupe === 'apparence'} onClick={() => setGroupe('apparence')}>Apparence</Rubrique>
+            {GROUPES.map((x) => <BoutonGroupe key={x.cle} g={x} courant={groupe} choisir={setGroupe} />)}
         </>}>
           <div className="groupe-contenu">
-            {!lus ? <p className="aide-groupe">Lecture des réglages…</p> : groupe === 'comptes' ? (
+            {groupe === 'apparence' ? <div className="defile">{apparence.corps}</div> : !lus ? <p className="aide-groupe">Lecture des réglages…</p> : groupe === 'comptes' ? (
               <div className="defile">
                 <TableComptes lignes={lignes} setLignes={setLignes} essais={essais} filtre={filtre} selection={selection} setSelection={setSelection}
                   teste={onglet === 'tester' ? teste : null} tester={tester} />
@@ -362,6 +396,7 @@ function Reglages({ admin }: { admin: boolean }) {
               <div className="defile">
                 {g.aide && <p className="aide-groupe">{g.aide}</p>}
                 <div className="form-colonnes">
+                  {groupe === 'mails' && !!lus.adresses_facade && <GenererRegles dire={dire} />}
                   {(g.sections ?? []).filter((s) => admin || !s.admin).map((s) => (
                     <div key={s.titre} className="colonne-f">
                       <SectionFiche titre={<>{s.titre}{s.admin && <MarqueAdmin />}</>}>
@@ -373,7 +408,11 @@ function Reglages({ admin }: { admin: boolean }) {
                 </div>
               </div>
             )}
-            <PiedGroupe libelles={libelles} disabled={!libelles.length || occupe} onClick={() => enregistrer()} />
+            {groupe === 'apparence' ? (
+              <footer className="f-pied">{apparence.pied}</footer>
+            ) : (
+              <PiedGroupe libelles={libelles} disabled={!libelles.length || occupe} onClick={() => enregistrer()} />
+            )}
           </div>
         </CorpsGroupes>
         {vue}

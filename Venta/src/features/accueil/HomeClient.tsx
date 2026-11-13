@@ -9,7 +9,7 @@ import { useChatController } from '@/features/chat/useChatController';
 import { InputArea } from '@/features/chat/InputArea';
 import { SiteHeader } from '@/features/site/SiteHeader';
 import { PageView } from '@/features/site/PageView';
-import { horsAccueil, useUIStore, CLE_FLOU, CLE_SON, CLE_VERRE, FLOU_MAX, VERRE_MAX } from '@/lib/uiStore';
+import { horsAccueil, useUIStore, CLE_FLOU, CLE_PLEIN, CLE_SON, CLE_VERRE, FLOU_MAX, VERRE_MAX } from '@/lib/uiStore';
 import { CHAT_UI } from '@/lib/messages';
 import { IntroSequence } from './IntroSequence';
 
@@ -49,11 +49,17 @@ export default function HomeClient() {
   const viewMode = useUIStore((state) => state.viewMode);
   const page = useUIStore((state) => state.page);
   const aDesFenetres = useUIStore((state) => state.windows.length > 0);
-  // Si les canaux d'Illusion sont montrés, l'œil leur laisse sa place
-  const oeilEfface = useUIStore((state) => state.cote === 'illusion' && horsAccueil(state));
   const isAppLocked = useUIStore((state) => state.isAppLocked);
   const sonCoupe = useUIStore((state) => state.sonCoupe);
   const inputVisible = appState === 'awake' && !isAppLocked && !page;
+  // La barre s'ouvre ou se ferme comme une fenêtre d'Illusion, puis se pose
+  const [saisie, setSaisie] = useState({ visible: inputVisible, passage: '' });
+  if (saisie.visible !== inputVisible) setSaisie({ visible: inputVisible, passage: inputVisible ? 'ouvre' : 'ferme' });
+  useEffect(() => {
+    if (!saisie.passage) return;
+    const timer = setTimeout(() => setSaisie((s) => ({ ...s, passage: '' })), 700);
+    return () => clearTimeout(timer);
+  }, [saisie]);
 
   // La messagerie n'est chargée et rendue qu'à sa première ouverture
   if (viewMode === 'messaging' && !messagingOpened) setMessagingOpened(true);
@@ -63,7 +69,7 @@ export default function HomeClient() {
     window.speechSynthesis?.getVoices();
   }, []);
 
-  // Préférences du navigateur (voix, teinte des boîtes, flou), relues d'abord
+  // Préférences du navigateur (voix, teinte, flou, opacité), relues d'abord
   useEffect(() => {
     try {
       if (localStorage.getItem(CLE_SON) === '1') useUIStore.setState({ sonCoupe: true });
@@ -71,6 +77,8 @@ export default function HomeClient() {
       if (verre !== null && Number(verre) >= 0 && Number(verre) <= VERRE_MAX) useUIStore.getState().reglerVerre(Number(verre));
       const flou = localStorage.getItem(CLE_FLOU);
       if (flou !== null && Number(flou) >= 0 && Number(flou) <= FLOU_MAX) useUIStore.getState().reglerFlou(Number(flou));
+      const plein = localStorage.getItem(CLE_PLEIN);
+      if (plein !== null && Number(plein) >= 0 && Number(plein) <= 1) useUIStore.getState().reglerPlein(Number(plein));
     } catch {
       // Stockage bloqué : réglages par défaut
     }
@@ -227,6 +235,7 @@ export default function HomeClient() {
             hasMoreMessages={hasMoreMessages}
             visible={appState === 'awake' && viewMode === 'messaging'}
             scrollTrigger={scrollTrigger}
+            enCours={currentAnimation === 'thinking'}
           />
         )}
 
@@ -241,20 +250,19 @@ export default function HomeClient() {
         >
           <main className="flex items-center justify-center min-h-screen w-full relative z-30 pointer-events-none">
             {appState === 'awake' && (
-              // L'œil s'efface pour le logo d'Illusion en 0,2 s
-              <div className={`transition-opacity duration-200 ${oeilEfface ? 'opacity-0' : ''}`}>
-                <HexagonalAnimation ref={hexAnimationRef} currentAnimation={currentAnimation} isSpeaking={isSpeaking} getAudioLevel={getAudioLevel} />
-              </div>
+              <HexagonalAnimation ref={hexAnimationRef} currentAnimation={currentAnimation} isSpeaking={isSpeaking} getAudioLevel={getAudioLevel} />
             )}
           </main>
         </div>
 
         <div
           inert={!inputVisible}
-          className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 w-[min(600px,90vw)] z-30 transition-all duration-500 delay-150 ${
-            inputVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
+          className={`saisie fixed bottom-8 left-1/2 -translate-x-1/2 w-[min(600px,90vw)] z-30 ${saisie.passage} ${
+            inputVisible || saisie.passage ? '' : 'invisible'
           }`}
         >
+          <span className="ouv-ligne" aria-hidden="true" />
+          <span className="ouv-ligne" aria-hidden="true" />
           <InputArea
             onSubmit={handleSubmit}
             triggerWave={() => hexAnimationRef.current?.triggerWave()}

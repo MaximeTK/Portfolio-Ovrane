@@ -5,20 +5,19 @@
 .ov.trame{--t-petit:.75rem;--t-corps:.875rem;--ligne:48px;--courbe:cubic-bezier(.2,0,0,1);font-family:var(--font-roboto),system-ui,-apple-system,"Segoe UI",sans-serif;font-size:.875rem;line-height:1.25rem;font-variant-numeric:tabular-nums}
 /* Partout : pas de capitales espacées, pas de chasse fixe hors du code. */
 .ov.trame *{letter-spacing:normal !important;text-transform:none !important}
-.ov.th-plein *:not(.logo svg){filter:none !important;text-shadow:none !important}
+.ov.th-plein *{filter:none !important;text-shadow:none !important}
 .ov.trame *:not(pre,code,.mono,.mono *){font-family:inherit !important}
 .ov.th-plein a,.ov.th-plein a:hover{color:inherit}
 .ov.th-plein :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.ov.th-plein :is(td,th) :focus-visible{outline-offset:-3px}
+.ov.th-plein :is(td,th,select) :focus-visible{outline-offset:-3px}
 
-/* Fond : la photo de la planche, assombrie pour le thème sombre. */
-.ov.th-clair .fond{background:linear-gradient(rgb(0 0 0 / .4),rgb(0 0 0 / 0)),center/cover no-repeat url("/illusion/fond-clair.jpg")}
-.ov.th-sombre .fond{background:linear-gradient(rgb(0 0 0 / .4),rgb(0 0 0 / 0)),linear-gradient(rgb(0 0 0 / .68) 0 0),center/cover no-repeat url("/illusion/fond-clair.jpg")}
+/* Changement de thème : couleurs, verre, rayons et ombres glissent ensemble. */
+.th-passe .ov,.th-passe .ov *,.th-passe .ov *::before,.th-passe .ov *::after{transition:color .7s,background-color .7s,border-color .7s,border-radius .7s,box-shadow .7s,opacity .7s,visibility .7s,fill .7s,stroke .7s,outline-color .7s,text-shadow .7s,filter .7s,backdrop-filter .7s !important}
 
 /* Fenêtres : surfaces pleines, 16 px de rayon, ombre légère. */
 .ov.th-plein .verre{--verre-rayon:16px;overflow:hidden;background:var(--surface);border-radius:var(--verre-rayon);box-shadow:var(--ombre-1)}
-.ov.th-plein .verre::before,.ov.th-plein .verre::after{content:none}
-.ov.th-plein .verre-halos{display:none}
+/* Le verre s'efface sans disparaître d'un coup : le thème y glisse. */
+.ov.th-plein .verre::before,.ov.th-plein .verre::after,.ov.th-plein .verre-halos{opacity:0;visibility:hidden}
 .ov.th-plein .dock [data-flot]{box-shadow:var(--ombre-3)}
 .ov.th-plein .ouv-ligne{background:var(--surface);mix-blend-mode:normal}
 .ov.th-plein .flottante{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none;border:0;border-radius:16px;box-shadow:var(--ombre-3)}
@@ -28,17 +27,22 @@
 .ov.trame .barre-canaux .cote{gap:4px}
 .ov.trame .onglet{position:relative;justify-content:center;min-width:44px;padding:0 14px;font-size:.875rem;font-weight:500;transition:background-color .15s var(--courbe)}
 .ov.th-plein .onglet{border-radius:24px;color:#fff}
-.ov.th-plein .onglet:hover,.ov.th-plein .logo:hover{background:rgb(255 255 255 / .16);color:#fff}
+.ov.th-plein .onglet:hover{background:rgb(255 255 255 / .16);color:#fff}
 .ov.th-plein .onglet.actif{color:#fff}
 .ov.th-plein .onglet::after{content:"";position:absolute;left:14px;right:14px;bottom:2px;height:3px;border-radius:3px 3px 0 0;background:#fff;transform:scaleX(0);transition:transform .25s cubic-bezier(.65,0,.25,1)}
 .ov.th-plein .onglet.actif::after{transform:scaleX(1)}
-.ov.th-plein .logo{border-radius:22px;transition:background-color .15s var(--courbe)}
 .ov.ov-barre.th-clair .menu{--encre:28 27 31}
 .ov.ov-barre.th-sombre .menu{--encre:230 225 229}
 .ov.trame .menu{padding:8px 0;box-shadow:var(--ombre-3);color:var(--texte)}
 .ov.trame .menu-option{height:44px;font-size:.875rem;color:var(--texte)}
 .ov.trame .menu-option:hover,.ov.trame .menu-option:focus-visible{background:var(--surface-moyenne);color:var(--texte)}
 .ov.trame .menu-option.actif{background:var(--selection);color:var(--primaire)}
+/* Listes déroulantes : la surface, le rayon et l'ombre des menus du thème. */
+.ov.trame select::picker(select){padding:8px 0}
+.ov.trame select option{min-height:44px;font-size:.875rem;color:var(--texte)}
+.ov.th-plein select::picker(select){border-radius:16px;background:var(--surface);color:var(--texte);backdrop-filter:none;outline:0;box-shadow:var(--ombre-3)}
+.ov.th-plein select option:is(:hover,:focus-visible){background:var(--surface-moyenne);color:var(--texte)}
+.ov.th-plein select option:checked{background:var(--selection);color:var(--primaire)}
 
 /* Barre d'outils : 60 px, commandes plates, une couleur pour le principal. */
 .ov.trame .outils{flex-wrap:wrap;height:auto;min-height:60px;margin:0;padding:8px 12px}
@@ -278,6 +282,11 @@ body:has(.ov.th-plein:not(.ov-barre)) header .coin-site button[aria-current=page
 .ov.th-verre .eo::before{position:absolute;top:calc(50% - 6.5px);left:0}
 .ov.trame .place-entiere{border-width:2px}
 .ov.trame [data-fen]:is([data-l=m],[data-l=s],[data-l=xs]) .outils .actions{gap:4px}
+/* Champs du verre : voile sombre sans trait clair, le blanc au focus seul. */
+.ov.th-verre :is(.saisie,.aller,.marque-admin){background:rgb(var(--noir) / .25)}
+.ov.th-verre :is(.saisie,.aller):not(:focus),.ov.th-verre .marque-admin{border-color:transparent}
+.ov.th-verre .aller:focus{border-bottom-color:rgb(var(--encre))}
+.ov.th-verre.trame [data-fen] .recherche{border-color:transparent;background:rgb(var(--noir) / .25)}
 
 /* Barre de défilement : fine, sans flèches ni fond, couleur de l'encre. */
 .ov.trame *::-webkit-scrollbar{width:6px;height:6px}

@@ -76,6 +76,8 @@ function copier(s: Sortant, calque: HTMLElement, o: DOMRect, classe: string) {
   copie.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
   copie.inert = true;
   copie.classList.add(classe);
+  copie.style.setProperty('--fw', `${s.rect.width}px`);
+  copie.style.setProperty('--fh', `${s.rect.height}px`);
   Object.assign(copie.style, { left: `${s.rect.left - o.left}px`, top: `${s.rect.top - o.top}px`, width: `${s.rect.width}px`, height: `${s.rect.height}px`, transition: 'none' });
   calque.append(copie);
   return copie;

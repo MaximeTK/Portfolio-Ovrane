@@ -21,7 +21,7 @@ type Courbe = [number, number, number, number];
 const VIVE: Courbe = [0.2, 0.8, 0.2, 1];
 // Fermeture : départ souple et fin qui ralentit, sans accélérer à l'arrivée
 export const DOUCE: Courbe = [0.7, 0, 0.25, 1];
-export const TRANSITION_DE = (duree: number, delai = 0, c = VIVE) => ['left', 'top', 'width', 'height'].map((p) => `${p} ${Math.round(duree)}ms cubic-bezier(${c.join(',')}) ${Math.round(delai)}ms`).join(',');
+export const TRANSITION_DE = (duree: number, delai = 0, c = VIVE) => ['left', 'top', 'width', 'height', '--fw', '--fh'].map((p) => `${p} ${Math.round(duree)}ms cubic-bezier(${c.join(',')}) ${Math.round(delai)}ms`).join(',');
 
 // Avancée du glissement (0 à 1) à la fraction u, sur la courbe donnée
 function courbe(u: number, [x1, y1, x2, y2]: Courbe) {
@@ -238,7 +238,8 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
   }
   // Pose sur un côté d'une autre fenêtre (moitié) ou sur un bord d'écran (bande)
   function inserer(arbre: Arbre | null, cible: Cible, id: string): Arbre | null {
-    if (cible.remplir) return arbre || { id };
+    // Rien de rangé en vue : elle prend la place, les cases cachées gardent la leur
+    if (cible.remplir) return arbre ? { dir: 'row', enfants: [arbre, { id }], parts: [1, 1] } : { id };
     const dir = cible.cote === 'gauche' || cible.cote === 'droite' ? 'row' : 'col';
     const avant = cible.cote === 'gauche' || cible.cote === 'haut', neuf = { id };
     if (cible.bord) {
@@ -329,8 +330,12 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
     return { res, fentes };
   }
 
-  const placer = (el: HTMLElement, r: Zone) =>
+  // Place et taille ; --fw et --fh donnent sa mesure à la coupe d'ouverture
+  const placer = (el: HTMLElement, r: Zone) => {
     Object.assign(el.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px', right: 'auto', bottom: 'auto' });
+    el.style.setProperty('--fw', r.w + 'px');
+    el.style.setProperty('--fh', r.h + 'px');
+  };
   // Bords sur des pixels entiers de l'écran : bordure égale sur les quatre côtés
   const surPixels = (r: Zone): Zone => {
     const k = window.devicePixelRatio, px = (v: number) => Math.round(v * k) / k;
@@ -859,7 +864,14 @@ export function installerDock(coq: HTMLElement, o: OptionsDock): Moteur {
       a.essai = undefined;
       return;
     }
-    a.essai = calculer(arbre, a.id);
+    const essai = calculer(arbre, a.id);
+    // Un essai sans case pour elle ne vaut rien
+    if (!essai.res[a.id]) {
+      a.cible = null;
+      a.essai = undefined;
+      return;
+    }
+    a.essai = essai;
     armer();
   };
 

@@ -93,7 +93,7 @@ test('prompt : consignes fixes sans donnée du visiteur ni outil retiré, contex
 
 test('outils : images et palettes lues une fois dans prompts/', () => {
   assert.ok(ASSETS.length > 30 && ASSETS.includes('CV.png - Montre le CV de Maxime Thiong-kay, Version Noir'), ASSETS.slice(0, 3).join(' | '));
-  assert.equal(PALETTES.length, 25);
+  assert.equal(PALETTES.length, 36);
   assert.deepEqual(PALETTES.slice(0, 2).map((p) => p.id), ['default', 'argenté']);
   assert.ok(PALETTES.every((p) => p.nom && p.description));
 });

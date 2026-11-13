@@ -5,12 +5,12 @@ import { appeler, telecharger, televerser } from '../../api';
 import { useSondage } from '../../activite/sondage';
 import { AuPied, MarqueAdmin, type Onglet } from '../../dock/Panneau';
 import { aOublier, repris, useGarder } from '../../stockage';
-import { useGeste, useParametresOuverts, duree } from '../commun';
+import { useGeste, duree } from '../commun';
 import { Action } from '../../elements/Action';
 import type { Dire } from '../../elements/Avis';
-import { Champ, Interrupteur, ChampSaisie, ChampZone, ChampListe, OptionsModele, SectionFiche } from '../../elements/Champ';
+import { Champ, Interrupteur, ChampSaisie, ChampZone, ChampListe, SectionFiche } from '../../elements/Champ';
 import { ICONES } from '../../elements/icones';
-import { jourMois, message, parVirgules, quand } from '../../elements/format';
+import { jourMois, message, quand } from '../../elements/format';
 
 type PieceJointe = { nom: string; type: string; taille: number; telechargeable: boolean };
 // Un mail tel que /mails et /mails/fil le rendent
@@ -27,7 +27,7 @@ export const NATURES: Record<string, string> = {
   absence_bureau: 'Absence du bureau', rebond: 'Rebond (adresse morte)', inutile: 'Inutile', hors_sujet: 'Hors sujet',
   question_recruteur: 'Question du recruteur', indetermine: 'Indéterminé',
 };
-const COULEURS_NATURE: Record<string, string> = {
+export const COULEURS_NATURE: Record<string, string> = {
   refus: '#BA1E55', rebond: '#C44800', proposition: '#258723', rendez_vous: '#3CBB3A', candidature_recue: '#415DF0',
   inscription: '#179FD9', prise_information: '#A839A4', question_recruteur: '#DB60D6', relance: '#F78400',
   absence_bureau: '#B4A40E', hors_sujet: '#936D58', inutile: '#54473F',
@@ -40,7 +40,7 @@ export const RATTACHEMENTS: Record<string, string> = {
 // Les natures qu'on pose à la main, en plus de celles que la brique trouve
 const NATURES_POSABLES = ['candidature_recue', 'refus', 'proposition', 'rendez_vous', 'prise_information', 'inscription', 'relance', 'inutile'];
 // L'ordre de ETIQUETTES_PAR_MOTS (app/services/mails.py)
-const MOTS_ETIQUETTES = ['candidature_recue', 'refus', 'proposition', 'rendez_vous', 'prise_information', 'inscription',
+export const MOTS_ETIQUETTES = ['candidature_recue', 'refus', 'proposition', 'rendez_vous', 'prise_information', 'inscription',
   'relance', 'absence_bureau', 'rebond', 'inutile', 'hors_sujet', 'question_recruteur'];
 // Le relais refuse plus de 21 Mo : 15 Mo de fichiers en base64.
 const PLAFOND_PIECES = 15 * 1024 * 1024;
@@ -441,19 +441,6 @@ export function useOngletEcrire({ allume, dire, apres }: { allume: boolean; dire
   };
 }
 
-// Réglages · Mails : la brique Mail du compte ; le Modèle n'est qu'à l'admin
-type Champ = { cle: string; libelle: string; sorte?: 'nombre' | 'inter' | 'modele'; aide?: string; infobulle?: string; admin?: boolean };
-const REPONSES: Champ[] = [
-  { cle: 'mail_timeout_secondes', libelle: 'Timeout (s)', sorte: 'nombre' },
-  { cle: 'mail_reponses', libelle: 'Rédiger les réponses', sorte: 'inter', infobulle: "Demandes d'informations et refus d'une adresse qui lit ses réponses : le brouillon attend d'être relu dans le fil, il ne part pas tout seul. Désactivé : étiquetage seul, sans tokens." },
-  { cle: 'mail_modele', libelle: 'Modèle', sorte: 'modele', admin: true, aide: 'Un des modèles définis en haut des Paramètres.' },
-  { cle: 'mail_signature', libelle: 'Signature', infobulle: 'Reprise à la fin des brouillons rédigés. Vide : aucune.' },
-  { cle: 'mail_relance_jours', libelle: 'Relancer après (jours)', sorte: 'nombre', infobulle: "Une candidature restée sans nouvelles N jours reçoit un brouillon de relance, deux au plus, jamais vers un no-reply. 0 : aucune relance." },
-  { cle: 'mail_preparation', libelle: 'Préparer les entretiens', sorte: 'inter', infobulle: "Un mail qui propose un rendez-vous fait rédiger la préparation de l'entretien, à lire dans la fiche de l'offre." },
-];
-type Parametres = Record<string, unknown> & { modeles?: { nom: string; modele?: string }[]; mail_mots_etiquettes?: Record<string, string[]> };
-const texteMots = (mots?: Record<string, string[]>) => Object.fromEntries(MOTS_ETIQUETTES.map((t) => [t, (mots?.[t] ?? []).join(', ')]));
-
 // Ce que /adresses/suivi rend : l'adresse de suivi, la règle, la confirmation
 type Suivi = {
   adresse: string; expediteurs: string[]; regle: string; empreinte: string; a_recopier: boolean;
@@ -461,7 +448,7 @@ type Suivi = {
 };
 
 // Générer les règles : la ligne Gmail à coller, pour les vraies adresses
-function GenererRegles({ actif, dire }: { actif: boolean; dire: Dire }) {
+export function GenererRegles({ dire }: { dire: Dire }) {
   const [suivi, setSuivi] = useState<Suivi | null>(null);
   const lire = async () => {
     try {
@@ -470,8 +457,8 @@ function GenererRegles({ actif, dire }: { actif: boolean; dire: Dire }) {
       /* le prochain tour réessaie */
     }
   };
-  // La demande de confirmation de Gmail arrive pendant que le panneau est ouvert
-  useSondage(lire, 5000, actif);
+  // La demande de confirmation de Gmail arrive pendant que le groupe est montré
+  useSondage(lire, 5000);
   const copier = async (texte: string, regle: boolean) => {
     try {
       await navigator.clipboard.writeText(texte);
@@ -510,93 +497,6 @@ function GenererRegles({ actif, dire }: { actif: boolean; dire: Dire }) {
       ) : <p className="aide-champ">Aucun site à compte existant pour l&apos;instant.</p>}
     </SectionFiche>
   );
-}
-
-export function useOngletReglages({ admin, actif, fermer, dire, relire }: { admin: boolean; actif: boolean; fermer: () => void; dire: Dire; relire: () => void }): Onglet {
-  // Réglages gardés d'une visite à l'autre, relus à l'ouverture.
-  const [lus, setLus] = useState(() => repris<Parametres | null>('mails:reglages', null));
-  const [valeurs, setValeurs] = useState<Record<string, unknown>>(() => lus ?? {});
-  const [mots, setMots] = useState<Record<string, string>>(() => (lus ? texteMots(lus.mail_mots_etiquettes) : {}));
-  useGarder('mails', { reglages: lus });
-  const [erreur, setErreur] = useState('');
-  const { occupe, geste } = useGeste((t) => dire(t, true));
-  const reprendre = (p: Parametres) => {
-    setLus(p);
-    setValeurs(p);
-    setMots(texteMots(p.mail_mots_etiquettes));
-  };
-  useParametresOuverts<Parametres>(actif, reprendre, setErreur);
-  const champs = REPONSES.filter((c) => admin || !c.admin);
-  const changes: Record<string, unknown> = {};
-  if (lus) {
-    for (const c of champs) if (valeurs[c.cle] !== lus[c.cle]) changes[c.cle] = c.sorte === 'nombre' ? Number(valeurs[c.cle]) : valeurs[c.cle];
-    const avant = texteMots(lus.mail_mots_etiquettes);
-    if (MOTS_ETIQUETTES.some((t) => mots[t] !== avant[t])) {
-      changes.mail_mots_etiquettes = Object.fromEntries(MOTS_ETIQUETTES.map((t) => [t, parVirgules(mots[t] ?? '')]));
-    }
-  }
-  const enregistrer = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!Object.keys(changes).length) return;
-    return geste(async () => {
-      const r = await appeler<Parametres & { rejeu_mails?: number }>('/parametres', { methode: 'PUT', corps: changes });
-      reprendre(r);
-      dire(`Réglages enregistrés${r.rejeu_mails ? ` — ${r.rejeu_mails} mail(s) réétiqueté(s) par mots-clés` : ''}.`);
-      relire();
-    });
-  };
-  const champ = (c: Champ) => {
-    const id = `rm-${c.cle}`;
-    const marque = c.admin && <MarqueAdmin />;
-    if (c.sorte === 'inter') {
-      return (
-        <Interrupteur key={c.cle} libelle={c.libelle} title={c.infobulle} checked={!!valeurs[c.cle]} onChange={(e) => setValeurs({ ...valeurs, [c.cle]: e.target.checked })} />
-      );
-    }
-    let saisie: React.ReactNode;
-    if (c.sorte === 'modele') {
-      saisie = (
-        <select id={id} className="saisie" value={String(valeurs[c.cle] ?? '')} onChange={(e) => setValeurs({ ...valeurs, [c.cle]: e.target.value })}>
-          <OptionsModele modeles={lus?.modeles ?? []} vide="Aucun" valeur={String(valeurs[c.cle] ?? '')} />
-        </select>
-      );
-    } else {
-      saisie = (
-        <input id={id} className="saisie" type={c.sorte === 'nombre' ? 'number' : 'text'} min={c.sorte === 'nombre' ? 0 : undefined}
-          value={String(valeurs[c.cle] ?? '')} onChange={(e) => setValeurs({ ...valeurs, [c.cle]: e.target.value })} />
-      );
-    }
-    return (
-      <Champ pour={id} titre={c.infobulle} libelle={<>{c.libelle}{marque}</>} aide={c.aide} key={c.cle}>{saisie}</Champ>
-    );
-  };
-  const visibles = (liste: Champ[]) => liste.filter((c) => admin || !c.admin).map(champ);
-  return {
-    cle: 'reglages', titre: 'Réglages', label: 'Réglages · Mails',
-    corps: erreur ? <p className="texte-f erreur-f" role="alert">{erreur}</p> : !lus ? <p className="texte-f">Lecture des réglages…</p> : (
-      <form id="reglages-mails" onSubmit={(e) => void enregistrer(e)}>
-        {!!lus.adresses_facade && <GenererRegles actif={actif} dire={dire} />}
-        <SectionFiche titre="Réponses">{visibles(REPONSES)}</SectionFiche>
-        <SectionFiche titre="Tri par mots-clés" className="mots-f">
-          <p className="aide-champ">Un mot lu dans l&apos;objet ou le corps d&apos;un mail reçu lui pose ce tag d&apos;office, sans appeler le modèle.</p>
-          <div className="grille-2">
-            {MOTS_ETIQUETTES.map((t) => (
-              <ChampSaisie id={`mk-${t}`} libelle={NATURES[t]} key={t} style={{ '--n': COULEURS_NATURE[t] } as React.CSSProperties} placeholder="mots séparés par des virgules" value={mots[t] ?? ''} onChange={(e) => setMots({ ...mots, [t]: e.target.value })} />
-            ))}
-          </div>
-        </SectionFiche>
-      </form>
-    ),
-    pied: (
-      <>
-        <Action onClick={() => {
-          if (lus) reprendre(lus);
-          fermer();
-        }}>Annuler</Action>
-        <Action plein iconeApres={ICONES.coche} type="submit" form="reglages-mails" disabled={occupe || !Object.keys(changes).length}>Enregistrer</Action>
-      </>
-    ),
-  };
 }
 
 // Exécuter (admin) : à la main, par l'atelier en test, sinon le pipeline.

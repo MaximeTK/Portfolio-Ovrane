@@ -120,6 +120,9 @@
 .ov.trame .appel-d .titre-appel:hover{border-bottom-color:var(--texte)}
 .ov.trame .appel-d .titre-appel:focus{border-bottom-color:var(--primaire)}
 .ov.trame .appel-d .titre-appel:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+/* Verre : titre sans trait au repos, discret au survol, blanc au focus. */
+.ov.th-verre .appel-d .titre-appel:not(:focus){border-bottom-color:transparent}
+.ov.th-verre .appel-d .titre-appel:hover:not(:focus){border-bottom-color:rgb(var(--encre) / .25)}
 /* Supprimer l'appel : la phrase passe à la ligne au lieu d'être coupée. */
 .ov.trame .appel-d .confirmer{flex-wrap:wrap;padding:4px 4px 4px 16px;border-radius:12px;white-space:normal}
 .ov.trame .appel-d .confirmer p{flex:1 1 200px;overflow:visible}

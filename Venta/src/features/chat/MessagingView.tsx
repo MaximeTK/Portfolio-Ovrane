@@ -15,6 +15,8 @@ interface MessagingViewProps {
   onLoadHistory: () => Promise<void>;
   hasMoreMessages: boolean;
   scrollTrigger: number;
+  // Une réponse se prépare : Ovrane écrit
+  enCours: boolean;
 }
 
 const memeJour = (a: Date, b: Date) => a.toDateString() === b.toDateString();
@@ -40,7 +42,7 @@ function formatMessageTime(timestamp: number): string {
   return `${date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${moment}`;
 }
 
-export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessages, scrollTrigger }: MessagingViewProps) {
+export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessages, scrollTrigger, enCours }: MessagingViewProps) {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [gallery, setGallery] = useState<{ images: string[]; index: number } | null>(null);
@@ -121,6 +123,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
   return (
     <div
       inert={!visible}
+      data-tchat=""
       className={`fixed bottom-0 left-0 right-0 z-10 h-[85vh] flex flex-col pb-32 px-4 max-w-5xl mx-auto transition-all duration-500 ease-in-out ${
         // Sans translation : le fond que recopie le verre des bulles reste fixe
         visible ? 'opacity-100 pointer-events-auto translate-none starting:opacity-0 starting:translate-y-8' : 'opacity-0 pointer-events-none translate-y-8'
@@ -183,6 +186,7 @@ export function MessagingView({ messages, visible, onLoadHistory, hasMoreMessage
               onImageLoad={stickToBottomIfNeeded}
             />
           ))}
+          {enCours && messages.at(-1)?.role === 'user' && <div className="ovrane-ecrit" aria-hidden="true" />}
           <div ref={messagesEndRef} />
         </div>
       </div>

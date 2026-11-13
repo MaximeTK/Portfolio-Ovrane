@@ -1,14 +1,15 @@
 'use client';
 
+import { useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { horsAccueil, useUIStore } from '@/lib/uiStore';
-import { TRAIT_ROND, etatLueur } from './elements';
+import { TRAIT_ROND, etatLueur, useGlyphes } from './elements';
 
 // Canaux d'Illusion, chargés pour un compte qui y a accès
 const EnteteIllusion = dynamic(() => import('@/features/illusion/ossature/Entete').then((m) => m.Entete));
 
-// Hauteur et marge haute du header : l'œil vise son centre en montant
-export const CENTRE_HEADER_PX = 16 + 44 / 2;
+// Hauteur et marge haute du header : centre à 30 px, au milieu de ses 60 px
+export const CENTRE_HEADER_PX = 8 + 44 / 2;
 const BOUTON_ENTETE = 'pointer-events-auto inline-flex min-h-11 min-w-11 items-center justify-center';
 
 function Onglet({ page, label }: { page: string; label: string }) {
@@ -70,11 +71,14 @@ export function SiteHeader() {
   const ouvert = useUIStore(horsAccueil);
   const compteIllusion = useUIStore((s) => s.compteIllusion);
   const illusion = useUIStore((s) => s.cote === 'illusion');
+  const canaux = useRef<HTMLElement>(null);
+  // Arrivée : les canaux s'écrivent en glyphes
+  useGlyphes(canaux, awake);
 
   return (
     <header
       inert={!awake}
-      className={`pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-4 font-sans transition-all duration-1000 ${
+      className={`pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-2 font-sans transition-all duration-1000 ${
         awake ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'
       }`}
     >
@@ -82,6 +86,7 @@ export function SiteHeader() {
       <div className="grid">
         {/* Colonnes latérales égales : l'œil reste au centre exact de l'écran */}
         <nav
+          ref={canaux}
           aria-label="Navigation principale"
           inert={illusion}
           className={`col-start-1 row-start-1 inline-grid h-11 grid-cols-[1fr_auto_1fr] items-center justify-self-center transition-opacity duration-200 ${
@@ -101,7 +106,7 @@ export function SiteHeader() {
         {compteIllusion && <EnteteIllusion compte={compteIllusion} visible={illusion} />}
       </div>
       {/* Hors de la bascule des canaux ; sur mobile, une icône à chaque bout */}
-      <div className="coin-site pointer-events-none absolute inset-x-2 top-4 flex justify-between gap-1 sm:left-auto sm:right-[9.4px] sm:justify-end">
+      <div className="coin-site pointer-events-none absolute inset-x-2 top-2 flex justify-between gap-1 sm:left-auto sm:right-[9.4px] sm:justify-end">
         <IconeCoin page={compteIllusion ? 'illusion/reglages' : 'reglages'} label="Réglages" icone={ICONE_REGLAGES} />
         <IconeCoin page={compteIllusion ? 'illusion/profil' : 'connexion'} label={compteIllusion ? 'Profil' : 'Compte'} icone={ICONE_COMPTE} />
       </div>

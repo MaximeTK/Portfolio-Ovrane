@@ -90,16 +90,72 @@ body {
   initial-value: #ffffff;
 }
 
-/* Verre Figma 333-2359 : voile gris, halos de coin, liseré en incrustation */
-/* Les mélanges ne voient pas le fond : chaque panneau en recopie le dégradé */
+/* ===== Fond : dégradé de la palette, fond vivant ou photo, en fondu ===== */
+.fond-degrade,
+.fond-vivant,
+.fond-voile {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.fond-degrade {
+  background: linear-gradient(180deg, var(--fond-haut), var(--fond-bas));
+}
+
+/* Arc-en-ciel : ses couleurs tournent lentement, comme ses lumières */
+.fond-degrade.arc {
+  background: linear-gradient(160deg, #3a0f52, #0f2c66 25%, #0a4f45 50%, #57480a 75%, #5c1430);
+  animation: arc-tourne 60s linear infinite;
+}
+
+@keyframes arc-tourne {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.fond-vivant,
+.fond-photo,
+.fond-voile {
+  transition: opacity 0.7s;
+}
+
+/* Photo : visible une fois chargée ; le voile garde l'en-tête lisible */
+.fond-photo {
+  object-fit: cover;
+  opacity: 0;
+}
+
+.fond-photo[data-charge] {
+  opacity: 1;
+}
+
+.fond-voile {
+  background: linear-gradient(rgb(0 0 0 / 0.45), rgb(0 0 0 / 0.12) 22%, rgb(0 0 0 / 0.22));
+}
+
+.fond-vivant[data-eteint],
+.fond-photo[data-eteint],
+.fond-voile[data-eteint] {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fond-degrade.arc {
+    animation: none;
+  }
+}
+
+/* Verre de la Bande 16 : le vrai fond flouté, liseré et reflets de coin */
+/* Ni découpe ni mélange sur la boîte : le flou de ses couches voit le fond */
 .verre {
   position: relative;
   isolation: isolate;
-  /* --verre-rayon garde le coin d'attache d'une bulle */
-  border-radius: var(--verre-rayon, 25px);
-  clip-path: inset(0 round var(--verre-rayon, 25px));
-  /* #d9d9d9 vers #737373 transparent, couleur et opacité menées ensemble */
-  --halo: rgb(217 217 217 / 0.5), rgb(204 204 204 / 0.4375) 12.5%, rgb(192 192 192 / 0.375) 25%, rgb(179 179 179 / 0.3125) 37.5%, rgb(166 166 166 / 0.25) 50%, rgb(153 153 153 / 0.1875) 62.5%, rgb(140 140 140 / 0.125) 75%, rgb(128 128 128 / 0.0625) 87.5%, rgb(115 115 115 / 0) 100%;
+  border-radius: 0;
+  /* Masque des reflets, calé sur la densité du Figma */
+  --palier-fort: rgb(0 0 0 / 0.192), rgb(0 0 0 / 0.086) 12.5%, rgb(0 0 0 / 0.037) 25%, rgb(0 0 0 / 0.007) 37.5%, transparent 50%;
 }
 
 .verre::before,
@@ -110,15 +166,13 @@ body {
   pointer-events: none;
 }
 
-/* Fond recopié et cadré comme le vrai, sous le voile gris à 10 % */
+/* Flou saturé de ce qui est derrière, assombri juste assez pour le texte */
 .verre::before {
-  position: fixed;
-  min-height: 100vh;
   z-index: -3;
-  background: linear-gradient(rgb(104 104 104 / 0.1) 0 0), linear-gradient(180deg, var(--fond-haut), var(--fond-bas));
+  backdrop-filter: blur(28px) saturate(1.6) contrast(0.8394) brightness(0.8299);
 }
 
-/* Halos de deux coins en une couche, sans les marges ni bordures du parent */
+/* Reflets de deux coins : le fond s'y éclaire, sans marges ni bordures */
 .verre-halos {
   position: absolute;
   inset: 0;
@@ -126,16 +180,18 @@ body {
   margin: 0;
   border: 0;
   pointer-events: none;
-  mix-blend-mode: color-dodge;
-  opacity: 0.75;
   transition: opacity 0.3s;
-  /* Taille relative au bloc, proportions du Figma : même éclat à toute taille */
-  background:
-    radial-gradient(22.9% 195.9% at -1px 0, var(--halo)),
-    radial-gradient(22.9% 195.9% at calc(100% - 1px) 100%, var(--halo));
+  backdrop-filter: brightness(6.71);
+  mask:
+    radial-gradient(22.9% 195.9% at -1px 0, var(--palier-fort)),
+    radial-gradient(22.9% 195.9% at calc(100% - 1px) 100%, var(--palier-fort));
 }
 
 /* Un bloc cliquable s'éclaire au survol ; son focus passe dedans */
+:is(a, button).verre > .verre-halos {
+  opacity: 0.7;
+}
+
 :is(a, button).verre:is(:hover, :focus-visible) > .verre-halos {
   opacity: 1;
 }
@@ -144,20 +200,19 @@ body {
   outline-offset: -4px;
 }
 
-/* Liseré de 2 px : en incrustation, il double la clarté du dessous */
+/* Liseré d'un pixel : la clarté du fond doublée, sur le bord seul */
 .verre::after {
   z-index: -1;
-  border-radius: inherit;
-  border: 2px solid #fff;
-  mix-blend-mode: overlay;
+  padding: 1px;
+  backdrop-filter: brightness(2);
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
 
-/* Verre des fenêtres flottantes : le flou doit voir ce qu'elles recouvrent */
+/* Verre des fenêtres, celui de la Bande 16 : angles droits, sans voile */
 /* Sans mélanges, couleur et incrustation viennent de la luminosité du fond */
 .verre-flottant {
   isolation: isolate;
-  border-radius: 25px;
-  background: rgb(104 104 104 / 0.1);
+  border-radius: 0;
   /* Masques des deux paliers de halo, calés sur la densité du Figma */
   --palier-fort: rgb(0 0 0 / 0.192), rgb(0 0 0 / 0.086) 12.5%, rgb(0 0 0 / 0.037) 25%, rgb(0 0 0 / 0.007) 37.5%, transparent 50%;
   --palier-doux: rgb(0 0 0 / 0.226), rgb(0 0 0 / 0.294) 12.5%, rgb(0 0 0 / 0.275) 25%, rgb(0 0 0 / 0.234) 37.5%, rgb(0 0 0 / 0.173) 50%, rgb(0 0 0 / 0.117) 62.5%, rgb(0 0 0 / 0.071) 75%, rgb(0 0 0 / 0.032) 87.5%, transparent;
@@ -172,13 +227,13 @@ body {
   position: absolute;
   inset: 0;
   z-index: -1;
-  border-radius: 25px;
+  border-radius: 0;
   pointer-events: none;
 }
 
-/* Le voile : flou de 25 px de ce qui est derrière */
+/* Flou saturé de ce qui est derrière, assombri juste assez pour le texte */
 .verre-flottant::before {
-  backdrop-filter: blur(25px);
+  backdrop-filter: blur(28px) saturate(1.6) contrast(0.8394) brightness(0.8299);
 }
 
 .verre-flottant-halos {
@@ -199,19 +254,22 @@ body {
     radial-gradient(22.9% 195.9% at calc(100% - 1px) 100%, var(--palier-doux));
 }
 
-/* Liseré de 2 px : clarté doublée ; seul le bord reste sous le masque */
+/* Liseré d'un pixel : clarté doublée ; seul le bord reste sous le masque */
 .verre-flottant::after {
-  padding: 2px;
+  padding: 1px;
   backdrop-filter: brightness(2);
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
 
 /* ===== Fenêtres en verre ; --zoom vient de la fenêtre ===== */
+/* Peau de la Bande 16 : trame d'Illusion, sans capitales espacées */
 .glass-morphisme {
   max-width: 90vw;
   max-height: 90vh;
   position: fixed;
   height: fit-content;
+  font-family: var(--font-roboto), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
 }
 
 .glass-morphisme-background {
@@ -222,46 +280,78 @@ body {
 
 .glass-morphisme-content {
   position: relative;
-  border-radius: 25px;
+  border-radius: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   isolation: isolate;
 }
 
+/* Barre de 48 px à filet et poignée, titre en casse normale */
 .glass-morphisme-titlebar {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  padding: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 1px solid rgb(255 255 255 / 0.12);
   position: relative;
   user-select: none;
 }
 
-.glass-morphisme-titlebar-buttons {
-  position: absolute;
-  right: 18px;
-  display: flex;
-  gap: 8px;
+.glass-morphisme-titlebar::before {
+  content: "";
+  flex: none;
+  width: 10px;
+  height: 14px;
+  opacity: 0.5;
+  background: radial-gradient(circle, currentColor 1px, transparent 1.6px) 0 0 / 5px 5px;
 }
 
+.glass-morphisme-titlebar-buttons {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  gap: 2px;
+}
+
+/* Boutons de 32 px serrés à droite, sans cercle, éclairés au survol */
 .glass-morphisme-btn-window {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.06);
+  color: rgb(255 255 255 / 0.7);
+  transition: background-color 0.15s;
   user-select: none;
-  font-size: 14px;
+  font-size: 15px;
+}
+
+.glass-morphisme-btn-window:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 0.08);
 }
 
 .glass-morphisme-btn-window:active {
   transform: scale(0.97);
+}
+
+.glass-morphisme-btn-window svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Replier : chevron vers le haut, retourné vers le bas pour Déplier */
+.glass-morphisme .chevron-f {
+  transition: transform 0.2s;
+}
+
+.glass-morphisme.minimized .chevron-f {
+  transform: rotate(180deg);
 }
 
 .glass-morphisme-content-area {
@@ -278,7 +368,7 @@ body {
   max-height: 100%;
   width: auto;
   height: calc(31vh * var(--zoom, 1));
-  padding: 0 14px 14px 14px;
+  padding: 12px;
 }
 
 .glass-morphisme-content-area > img[data-portrait] {
@@ -292,13 +382,13 @@ body {
   max-width: min(calc(640px * var(--zoom, 1)), 90vw);
   max-height: min(calc(55vh * var(--zoom, 1)), 90vh);
   overflow: auto;
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   color: rgba(248, 250, 252, 0.95);
-  font-size: calc(15px * var(--zoom, 1));
-  line-height: 1.7;
+  font-size: calc(14px * var(--zoom, 1));
+  line-height: 1.43;
   text-align: left;
   box-sizing: border-box;
   word-break: break-word;
@@ -357,17 +447,15 @@ body {
   background: rgba(15, 23, 42, 0.65);
   color: #fbbf24;
   padding: 2px 6px;
-  border-radius: 6px;
   font-size: 0.92em;
 }
 
 .text-window-markdown pre {
-  background: rgba(15, 23, 42, 0.75);
-  border-radius: 12px;
+  background: rgb(0 0 0 / 0.25);
   padding: 16px 18px;
   overflow: auto;
-  color: #e2e8f0;
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  color: rgb(255 255 255 / 0.88);
+  border: 1px solid rgb(255 255 255 / 0.16);
 }
 
 .text-window-markdown pre code {
@@ -403,7 +491,6 @@ body {
   width: 100%;
   border-collapse: collapse;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 12px;
   overflow: hidden;
   font-size: 0.95em;
 }
@@ -426,7 +513,6 @@ body {
 
 .text-window-markdown img {
   max-width: 100%;
-  border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
@@ -443,31 +529,306 @@ body {
   display: none;
 }
 
+/* Ouverture d'Illusion : une ligne au centre s'élargit puis s'ouvre */
+@property --fen-l {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+@property --fen-h {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+@keyframes fen-ouvre {
+  0% { --fen-l: 0; --fen-h: 0; }
+  40% { --fen-l: 1; --fen-h: 0; }
+  100% { --fen-l: 1; --fen-h: 1; }
+}
+
+@keyframes fen-ferme {
+  0% { --fen-l: 1; --fen-h: 1; }
+  60% { --fen-l: 1; --fen-h: 0; }
+  100% { --fen-l: 0; --fen-h: 0; }
+}
+
+@keyframes fen-voile {
+  from, to { visibility: hidden; }
+}
+
+@keyframes fen-eteint {
+  to { opacity: 0; }
+}
+
+.glass-morphisme.ov-ouvre {
+  animation: fen-ouvre 0.5s cubic-bezier(0.6, 0, 0.2, 1) both;
+}
+
+.glass-morphisme.ov-ferme {
+  animation: fen-ferme 0.5s cubic-bezier(0.8, 0, 0.4, 1) both;
+  pointer-events: none;
+}
+
+/* Contenu, verre, reflets et liseré suivent la coupe : la fenêtre, jamais */
+.glass-morphisme:is(.ov-ouvre, .ov-ferme) > .glass-morphisme-content,
+.glass-morphisme:is(.ov-ouvre, .ov-ferme) :is(.verre-flottant, .verre-flottant-halos)::before,
+.glass-morphisme:is(.ov-ouvre, .ov-ferme) :is(.verre-flottant, .verre-flottant-halos)::after {
+  clip-path: inset(calc((50% - 1px) * (1 - var(--fen-h))) calc(50% * (1 - var(--fen-l))));
+}
+
+.glass-morphisme.ov-ouvre > .glass-morphisme-content {
+  animation: fen-voile 0.2s backwards;
+}
+
+/* Deux traits de lumière, ceux d'Illusion, vont du centre au haut et au bas */
+.glass-morphisme .ouv-ligne {
+  display: none;
+}
+
+/* La clarté du fond doublée : l'éclat d'un mélange, sans couper le verre */
+.glass-morphisme:is(.ov-ouvre, .ov-ferme) .ouv-ligne {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  height: 2px;
+  pointer-events: none;
+  backdrop-filter: brightness(2);
+  top: calc((50% - 1px) * (1 - var(--fen-h)));
+  clip-path: inset(0 calc(50% * (1 - var(--fen-l))));
+}
+
+.glass-morphisme:is(.ov-ouvre, .ov-ferme) .ouv-ligne + .ouv-ligne {
+  top: calc((50% - 1px) * (1 + var(--fen-h)));
+}
+
+.glass-morphisme.ov-ouvre .ouv-ligne {
+  animation: fen-eteint 1ms 0.5s both;
+}
+
+/* Barre de saisie : elle s'ouvre et se ferme comme une fenêtre d'Illusion */
+.saisie.ouvre {
+  animation: fen-ouvre 0.5s cubic-bezier(0.6, 0, 0.2, 1) 0.15s both;
+}
+
+.saisie.ferme {
+  animation: fen-ferme 0.5s cubic-bezier(0.8, 0, 0.4, 1) both;
+}
+
+/* Le verre et le champ suivent la coupe ; la barre, jamais */
+.saisie:is(.ouvre, .ferme) form,
+.saisie:is(.ouvre, .ferme) div:has(> form)::before,
+.saisie:is(.ouvre, .ferme) div:has(> form)::after,
+.saisie:is(.ouvre, .ferme) div:has(> div > form)::after {
+  clip-path: inset(calc((50% - 1px) * (1 - var(--fen-h))) calc(50% * (1 - var(--fen-l))));
+}
+
+.saisie .ouv-ligne {
+  display: none;
+}
+
+.saisie:is(.ouvre, .ferme) .ouv-ligne {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  height: 2px;
+  pointer-events: none;
+  backdrop-filter: brightness(2);
+  top: calc((50% - 1px) * (1 - var(--fen-h)));
+  clip-path: inset(0 calc(50% * (1 - var(--fen-l))));
+}
+
+.saisie:is(.ouvre, .ferme) .ouv-ligne + .ouv-ligne {
+  top: calc((50% - 1px) * (1 + var(--fen-h)));
+}
+
+.saisie.ouvre .ouv-ligne {
+  animation: fen-eteint 1ms 0.65s both;
+}
+
+/* ===== Messagerie réunie : une bande, des bulles carrées ===== */
+[data-tchat] {
+  max-width: 760px;
+  top: 0;
+  height: 100vh;
+  padding-top: 118px;
+  transition: none;
+  font-family: var(--font-roboto), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Sans fondu en haut ni en bas : un masque couperait le verre des bulles */
+[data-tchat] .overflow-y-auto {
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+}
+
+/* Chaque message glisse en place, sans fondu qui griserait le verre */
+[data-tchat] .pt-8 > * {
+  animation: msg-entre 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes msg-entre {
+  from { transform: translateY(8px); }
+}
+
+[data-tchat] .pt-8 > .flex.w-full {
+  margin-bottom: 12px;
+}
+
+[data-tchat] .pt-8 > .flex.w-full > div {
+  max-width: 78%;
+}
+
+[data-tchat] .pt-8 > .flex.w-full .markdown {
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
+  padding: 10px 14px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Visiteur : bulle teintée de la lumière de la palette */
+[data-tchat] .pt-8 > .justify-end .markdown {
+  background: rgb(from var(--lumiere) r g b / 0.26);
+  color: #fff;
+}
+
+/* Ovrane : bulle au verre des fenêtres, flou dessous, liseré et reflets */
+[data-tchat] .pt-8 > .justify-start .verre {
+  color: rgb(255 255 255 / 0.92);
+}
+
+/* Nom et heure sous la bulle ; le nom seul en tête d'un groupe d'Ovrane */
+[data-tchat] .pt-8 > .flex.w-full .items-baseline {
+  order: 2;
+  margin: 4px 4px 0;
+  padding: 0;
+}
+
+[data-tchat] .pt-8 > .flex.w-full .items-baseline span:first-child {
+  display: none;
+}
+
+[data-tchat] .pt-8 > .flex.w-full .items-baseline span:last-child {
+  font-size: 11px;
+  line-height: 14px;
+  color: rgb(255 255 255 / 0.45);
+}
+
+[data-tchat] .pt-8 > .justify-start:has(+ .justify-start) {
+  margin-bottom: 3px;
+}
+
+[data-tchat] .pt-8 > .justify-start:has(+ .justify-start) .items-baseline {
+  display: none;
+}
+
+[data-tchat] .pt-8 > :not(.justify-start) + .flex.w-full.justify-start .items-baseline {
+  display: flex;
+  order: 0;
+  margin: 0 4px 4px;
+}
+
+[data-tchat] .pt-8 > :not(.justify-start) + .flex.w-full.justify-start .items-baseline span:first-child {
+  display: inline;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lumiere);
+}
+
+[data-tchat] .pt-8 > :not(.justify-start) + .flex.justify-start:has(+ .justify-start) .items-baseline span:last-child {
+  display: none;
+}
+
+/* Jour sans boîte entre ses deux traits, en casse normale */
+[data-tchat] .pt-8 > .justify-center > span {
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Ovrane écrit : trois points seuls, sans boîte */
+[data-tchat] .ovrane-ecrit {
+  position: relative;
+  width: 46px;
+  height: 30px;
+  margin-top: 2px;
+}
+
+[data-tchat] .ovrane-ecrit::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: ovrane-ecrit 1.2s infinite;
+}
+
+@keyframes ovrane-ecrit {
+  0%, 100% { background: #fff; box-shadow: 10px 0 0 rgb(255 255 255 / 0.3), 20px 0 0 rgb(255 255 255 / 0.3); }
+  33% { background: rgb(255 255 255 / 0.3); box-shadow: 10px 0 0 #fff, 20px 0 0 rgb(255 255 255 / 0.3); }
+  66% { background: rgb(255 255 255 / 0.3); box-shadow: 10px 0 0 rgb(255 255 255 / 0.3), 20px 0 0 #fff; }
+}
+
+/* ===== Saisie au verre de la Bande 16 : flou dessous, reflets, liseré ===== */
+div:has(> form textarea[aria-label="Question"]) {
+  background: transparent;
+  backdrop-filter: none;
+  border-radius: 0;
+  overflow: visible;
+  padding: 1px 17px 1px 1px;
+  --palier-fort: rgb(0 0 0 / 0.192), rgb(0 0 0 / 0.086) 12.5%, rgb(0 0 0 / 0.035) 25%, rgb(0 0 0 / 0.008) 37.5%, transparent 50%;
+}
+
+div:has(> form textarea[aria-label="Question"])::before,
+div:has(> form textarea[aria-label="Question"])::after,
+div:has(> div > form textarea[aria-label="Question"])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+div:has(> form textarea[aria-label="Question"])::before {
+  backdrop-filter: blur(28px) saturate(1.6) contrast(0.9169) brightness(0.8442);
+}
+
+div:has(> form textarea[aria-label="Question"])::after {
+  backdrop-filter: brightness(6.71);
+  mask:
+    radial-gradient(22.9% 195.9% at -1px 0, var(--palier-fort)),
+    radial-gradient(22.9% 195.9% at calc(100% - 1px) 100%, var(--palier-fort));
+}
+
+/* Le liseré vit sur le cadre qui entoure la saisie */
+div:has(> div > form textarea[aria-label="Question"])::after {
+  padding: 1px;
+  backdrop-filter: brightness(2);
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
 /* ===== Ondes de l'œil, émises au rythme de la voix ===== */
+/* Le fond vivant les dessine façon Bande 16 : ici, de simples signaux */
 .hexagon-wave {
-  fill: none;
-  stroke-width: 4;
-  vector-effect: non-scaling-stroke;
-  opacity: 0.9;
-  transform-origin: 50% 50%;
-  transform-box: fill-box;
-  animation: hexagon-wave-animation 2s ease-out forwards;
+  display: none;
 }
 
-@keyframes hexagon-wave-animation {
-  0% { transform: scale(1) translateZ(0); opacity: 0.9; }
-  100% { transform: scale(12) translateZ(0); opacity: 0; }
-}
-
-/* Entrée de page projet ou légale par top : un transform décalerait le fond */
+/* Entrée de page projet ou légale par top, sans fondu qui couperait le verre */
 .apparition {
   position: relative;
   animation: apparition 0.5s ease-out;
 }
 
 @keyframes apparition {
-  from { opacity: 0; top: 12px; }
-  to { opacity: 1; top: 0; }
+  from { top: 12px; }
 }
 
 /* Mouvement réduit : animations quasi instantanées, plus d'ondes */
@@ -479,9 +840,5 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-
-  .hexagon-wave {
-    display: none;
   }
 }

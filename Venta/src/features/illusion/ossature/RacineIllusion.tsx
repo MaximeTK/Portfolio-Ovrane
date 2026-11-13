@@ -4,7 +4,6 @@ import '../styles/illusion.css';
 import '../styles/themes.css';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useBackgroundStore } from '@/features/fond/backgroundStore';
-import { useUIStore } from '@/lib/uiStore';
 import { classesTheme, useApparence } from '../apparence';
 import { DUREE_FLOTTANTE, LENTEUR_FLOTTANTE } from '../dock/moteur';
 import type { Compte } from '../api';
@@ -22,11 +21,10 @@ type ProprietesRacine = {
   children: React.ReactNode;
 };
 
-// Racine des écrans d'Illusion sous l'en-tête du site : fond, matière, dock
+// Racine des écrans d'Illusion sous l'en-tête du site : matière, thème, dock
 export function RacineIllusion({ compte, page, palette, children }: ProprietesRacine) {
   const matiere = useApparence((s) => s.matiere);
   const theme = useApparence((s) => s.theme);
-  const flou = useUIStore((s) => s.verreFlou);
   // Au rendu, avant les pages : leurs brouillons se lisent sous ce compte
   if (compte) poserCompte(compte.email);
 
@@ -57,8 +55,7 @@ export function RacineIllusion({ compte, page, palette, children }: ProprietesRa
   }, [ouvre]);
 
   return (
-    <div ref={racine} className={`ov mat-${matiere} ${classesTheme(theme)}${compte?.admin ? ' admin' : ''}${flou > 0 ? ' a-flou' : ''}${page === 'accueil' ? ' vue-accueil' : ''}${ouvre ? ' ouverture' : ''}`}>
-      <div className="fond" />
+    <div ref={racine} className={`ov mat-${matiere} ${classesTheme(theme)}${compte?.admin ? ' admin' : ''}${page === 'accueil' ? ' vue-accueil' : ''}${ouvre ? ' ouverture' : ''}`}>
       <div className="place-entete" aria-hidden="true" />
       <div key={page} className="scene">
         {children}

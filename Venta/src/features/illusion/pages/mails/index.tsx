@@ -8,9 +8,9 @@ import { Fenetre, usePanneau } from '../../dock/Dock';
 import { Confirmer, MarqueAdmin, Panneau } from '../../dock/Panneau';
 import { ongletFicheEntreprise } from '../../partage/FicheEntreprise';
 import { ongletFicheOffre } from '../../partage/FicheOffre';
-import { LienIllusion } from '../../partage/LienIllusion';
+import { LienIllusion, ouvrirIllusion } from '../../partage/LienIllusion';
 import type { ProprietesPage } from '../liste';
-import { NATURES, Nature, RATTACHEMENTS, adresseSeule, nomAffiche, ongletFil, useOngletEcrire, useOngletEtiqueter, useOngletExecuter, useOngletReglages, type MailLu, pluriel } from './panneaux';
+import { NATURES, Nature, RATTACHEMENTS, adresseSeule, nomAffiche, ongletFil, useOngletEcrire, useOngletEtiqueter, useOngletExecuter, type MailLu, pluriel } from './panneaux';
 import { PaginationAller, useEchap, useFileServeur, useGeste, useLignesAuto, type FileServeur } from '../commun';
 import { useCoches } from '../../elements/Case';
 import { MenuTenu, choixDe } from '../../elements/Menu';
@@ -130,8 +130,8 @@ function Boite({ admin, file, avis, dire }: ProprietesBoite) {
           <ActionOnglet cle="etiqueter" className="selon" icone={ICONES.tag} title={`Étiqueter ${pluriel(n, 'mail')}`}>Étiqueter
           </ActionOnglet>
           <ActionSupprimer n={n} title={`Supprimer ${pluriel(n, 'mail')}`} aria-haspopup="dialog" aria-expanded={confirmation === 'supprimer'} onClick={() => setConfirmation('supprimer')} />
-          <ActionOnglet cle="reglages" icone={ICONES.reglages} title="Réglages">Réglages
-          </ActionOnglet>
+          <Action icone={ICONES.reglages} txt title="Les réglages des mails, dans la page Réglages" onClick={() => ouvrirIllusion('reglages?groupe=mails')}>Réglages
+          </Action>
           <ActionOnglet cle="ecrire" allume={false} txt={false} plein iconeApres={ICONES.plus_pages}>
             Écrire
           </ActionOnglet>
@@ -237,13 +237,12 @@ function PanneauDePage({ admin, allume, selection, dire, relire, setPage }: Prop
   const voirOffre = useCallback((c: string) => ouvrir('fiche-offre', c), [ouvrir]);
   const etiqueter = useOngletEtiqueter({ selection, dire, relire, fermer });
   const ecrire = useOngletEcrire({ allume, dire, apres: () => { fermer(); setPage(1); relire(); } });
-  const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, dire, relire });
   const executer = useOngletExecuter({ actif: admin && onglet === 'executer', fermer, dire });
   const elements = {
     fil: (id: string) => ongletFil(id, { dire, relire, voirFiche, voirOffre, fermer }),
     'fiche-offre': (c: string) => ongletFicheOffre(c, { ouvrirEntreprise: voirFiche }),
     'fiche-entreprise': (s: string) => ongletFicheEntreprise(s, { ouvrirOffre: voirOffre }),
   };
-  const onglets = onglet && COURRIER.includes(onglet) ? (selection.size ? [etiqueter] : []) : [...(admin ? [executer] : []), ecrire, reglages];
+  const onglets = onglet && COURRIER.includes(onglet) ? (selection.size ? [etiqueter] : []) : [...(admin ? [executer] : []), ecrire];
   return <Panneau elements={elements} onglets={onglets} />;
 }

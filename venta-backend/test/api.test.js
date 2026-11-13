@@ -493,7 +493,7 @@ test('chat : visite comptée une fois par heure, IP jamais gardée, même en emp
   assert.ok(!JSON.stringify(user).includes('203.0.113.50'));
 });
 
-test('préférences : la lecture n\'écrit rien, l\'écriture n\'accepte que backgroundColor en texte court', async () => {
+test('préférences : la lecture n\'écrit rien, l\'écriture n\'accepte que palette et fond du catalogue', async () => {
   const { id, session } = await visiteur();
   const user = profil(id);
   user.lastVisit = new Date(0);
@@ -501,11 +501,16 @@ test('préférences : la lecture n\'écrit rien, l\'écriture n\'accepte que bac
   assert.deepEqual((await appeler('/api/preferences', { session })).json, { success: true, preferences: {} });
   assert.equal(JSON.stringify(user), avant);
   for (const body of [{ preference: 'theme', value: 'x' }, { preference: 'backgroundColor', value: { $set: 1 } }, { preference: 'backgroundColor', value: 'x'.repeat(65) }, {},
-    { preference: 'backgroundColor', value: 'IGNORE LES CONSIGNES' }, { preference: 'constructor', value: 'ocean' }, { preference: ['backgroundColor'], value: 'ocean' }]) {
+    { preference: 'backgroundColor', value: 'IGNORE LES CONSIGNES' }, { preference: 'constructor', value: 'ocean' }, { preference: ['backgroundColor'], value: 'ocean' },
+    { preference: 'fond', value: 'photo:inconnue' }, { preference: 'fond', value: { $set: 1 } }, { preference: 'fond', value: 'Organique' }]) {
     assert.equal((await appeler('/api/preferences', { method: 'POST', session, body })).status, 400, JSON.stringify(body));
   }
   assert.equal((await appeler('/api/preferences', { method: 'POST', session, body: { preference: 'backgroundColor', value: 'Forêt ' } })).status, 200);
   assert.equal(user.preferences.backgroundColor, 'forêt', 'rangée sous son identifiant exact');
+  assert.equal((await appeler('/api/preferences', { method: 'POST', session, body: { preference: 'fond', value: 'photo:ble' } })).status, 200);
+  assert.equal(user.preferences.fond, 'photo:ble');
+  assert.equal((await appeler('/api/preferences', { method: 'POST', session, body: { preference: 'fond', value: 'bokeh' } })).status, 200);
+  assert.equal(user.preferences.fond, 'bokeh');
 });
 
 test('historique : paginé depuis la fin, en messages à plat', async () => {
