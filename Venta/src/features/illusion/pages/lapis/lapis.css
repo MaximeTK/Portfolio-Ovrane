@@ -85,7 +85,12 @@
 .ov .section-f.lapis-reglages .carte-tete h3{flex:1;min-width:0;margin:0}
 .ov .lapis-reglages .puce-p{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;font-size:var(--t-corps,12.5px);cursor:pointer;white-space:nowrap}
 .ov .lapis-reglages .ajouts-l{flex-wrap:wrap;margin:4px 0 12px}
-@supports not (appearance:base-select){.ov .lapis-reglages optgroup{background:rgb(var(--sombre-14));color:rgb(var(--encre))}}
+.ov .lapis-reglages .secteur-hote{display:flex}
+.ov .lapis-reglages .secteur-hote>.saisie{flex:1;min-width:0}
+.ov .lapis-reglages .menu-secteurs{left:0;right:0;max-height:min(320px,calc(100vh - 260px));overflow-y:auto;scrollbar-width:none}
+.ov .lapis-reglages .menu-secteurs .menu-option{flex:none;justify-content:space-between;min-width:0}
+.ov .lapis-reglages .menu-secteurs :is(.nom,.groupe){overflow:hidden;text-overflow:ellipsis}
+.ov .lapis-reglages .menu-secteurs .groupe{flex:0 1 auto;font-size:var(--t-petit,11px);opacity:.55}
 
 /* Thèmes plats : le panneau centre sa croix, ses gestes éteints se lisent. */
 .ov.trame:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete{align-items:center}

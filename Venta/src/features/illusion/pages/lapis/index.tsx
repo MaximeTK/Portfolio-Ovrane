@@ -1,7 +1,7 @@
 'use client';
 
 import './lapis.css';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 
@@ -13,6 +13,7 @@ import { decouper, useEchap, useGeste, useLecture, PaginationAller, usePaginatio
 import { Action } from '../../elements/Action';
 import { Champ, ChampSaisie, ChampListe, Interrupteur, OptionsModele } from '../../elements/Champ';
 import { ActionOnglet } from '../../elements/Groupes';
+import { Menu, OptionMenu } from '../../elements/Menu';
 import { ICONES } from '../../elements/icones';
 import { useAvis, type Dire } from '../../elements/Avis';
 import { jourMoisIso, lienSur, message, parVirgules } from '../../elements/format';
@@ -83,18 +84,29 @@ export default function PageLapis({ compte }: ProprietesPage) {
   useEffect(() => {
     void relire();
   }, [relire]);
+  // Le serveur ne répond qu'à la fin de la passe : la galerie se relit à ce moment-là
+  const suivre = useCallback(async () => {
+    try {
+      let fini = false;
+      while (!fini) fini = (await appeler<{ fini: boolean }>('/lapis/attendre')).fini;
+    } catch {
+      // Serveur coupé : la galerie se relira à la prochaine visite
+      return;
+    }
+    await relire();
+  }, [relire]);
   return (
     <PageDock id="lapis" principal="galerie" fenetres={{ galerie: { mini: [470, 260] } }} panneau={null}>
-      <Galerie donnees={donnees} erreur={erreur} avis={avis} dire={dire} />
-      <PanneauLapis admin={compte.admin} donnees={donnees} dire={dire} relire={relire} />
+      <Galerie donnees={donnees} erreur={erreur} avis={avis} dire={dire} suivre={suivre} />
+      <PanneauLapis admin={compte.admin} donnees={donnees} dire={dire} relire={relire} suivre={suivre} />
     </PageDock>
   );
 }
 
-type ProprietesGalerie = { donnees: Lapis | null; erreur: string; avis: React.ReactNode; dire: Dire };
+type ProprietesGalerie = { donnees: Lapis | null; erreur: string; avis: React.ReactNode; dire: Dire; suivre: () => Promise<void> };
 
 // Fenêtre principale : quatre onglets, ce que la passe cherche, la galerie.
-function Galerie({ donnees, erreur, avis, dire }: ProprietesGalerie) {
+function Galerie({ donnees, erreur, avis, dire, suivre }: ProprietesGalerie) {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   const [sorte, setSorte] = useState(() => repris<Sorte>('lapis:sorte', 'personnes'));
   const { page, setPage, taille, setTaille, auto, setAuto } = usePagination('lapis', 12);
@@ -126,6 +138,7 @@ function Galerie({ donnees, erreur, avis, dire }: ProprietesGalerie) {
   const lancer = () => geste(async () => {
     const r = await appeler<{ lancee: boolean }>('/briques/lapis/lancer', { methode: 'POST' });
     dire(r.lancee ? 'Passe lancée : LAPIS lit LinkedIn, sans contacter personne.' : 'Une passe de LAPIS tourne déjà.');
+    void suivre();
   });
   const ouvrirOffre = (u: string) => ouvrir('offre', u);
 
@@ -223,11 +236,11 @@ function Galerie({ donnees, erreur, avis, dire }: ProprietesGalerie) {
 }
 
 // Panneau : offres repérées, fiches des offres cherchées, puis Réglages.
-function PanneauLapis({ admin, donnees, dire, relire }: { admin: boolean; donnees: Lapis | null; dire: Dire; relire: () => Promise<void> }) {
+function PanneauLapis({ admin, donnees, dire, relire, suivre }: { admin: boolean; donnees: Lapis | null; dire: Dire; relire: () => Promise<void>; suivre: () => Promise<void> }) {
   const { onglet, fermer } = usePanneau();
   const reglages = useOngletReglages({ admin, actif: onglet === 'reglages', fermer, dire, relire });
   const elements = {
-    offre: (urn: string) => ongletOffre(urn, donnees, dire),
+    offre: (urn: string) => ongletOffre(urn, donnees, dire, suivre),
     'fiche-offre': (cle: string) => ongletFicheOffre(cle),
   };
   return <Panneau elements={elements} onglets={[reglages]} />;
@@ -237,6 +250,58 @@ type Cible = 'tout' | 'entreprise' | 'secteur';
 // Une recherche en saisie : sa cible, ses postes et ses nombres en texte
 type Carte = Omit<RechercheLapis, 'postes' | 'profils_max' | 'posts_max'> & { cible: Cible; postes: string; profils_max: string; posts_max: string };
 type Formulaire = { recherches: Carte[]; modele: string };
+
+type Secteur = OptionsLapis['secteurs'][number];
+// Sans accents ni casse : « energie » trouve « Énergie »
+const plat = (texte: string) => texte.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// Secteur choisi dans sa liste, filtrée à mesure qu'on tape
+function ChoixSecteur({ id, secteurs, valeur, changer }: { id: string; secteurs: Secteur[]; valeur: number; changer: (secteur: number) => void }) {
+  const [q, setQ] = useState('');
+  const [ouvert, setOuvert] = useState(false);
+  const choisi = secteurs.find((s) => s.id === valeur);
+  const trouves = secteurs.filter((s) => plat(`${s.nom} ${s.groupe}`).includes(plat(q.trim())));
+  const prendre = (s: Secteur) => {
+    changer(s.id);
+    setQ('');
+    setOuvert(false);
+  };
+  return (
+    <Champ pour={id} libelle="Secteur">
+      <div className="menu-hote secteur-hote">
+        <input
+          id={id} className="saisie" type="search" role="combobox" autoComplete="off" placeholder={choisi?.nom ?? 'Chercher un secteur…'}
+          value={ouvert ? q : choisi?.nom ?? ''} aria-autocomplete="list" aria-expanded={ouvert && trouves.length > 0} aria-controls={`${id}-liste`}
+          onFocus={() => setOuvert(true)}
+          onBlur={() => { setOuvert(false); setQ(''); }}
+          onChange={(e) => { setQ(e.target.value); setOuvert(true); }}
+          onKeyDown={(e) => {
+            // Entrée prend le premier secteur trouvé, sans enregistrer les réglages
+            if (e.key === 'Enter' && ouvert && trouves[0]) {
+              e.preventDefault();
+              e.stopPropagation();
+              prendre(trouves[0]);
+            } else if (e.key === 'Escape' && ouvert) {
+              e.preventDefault();
+              e.stopPropagation();
+              setOuvert(false);
+              setQ('');
+            }
+          }}
+        />
+        {ouvert && trouves.length > 0 && (
+          <Menu id={`${id}-liste`} role="listbox" aria-label="Secteurs LinkedIn" className="menu-secteurs">
+            {trouves.map((s) => (
+              <OptionMenu key={s.id} actif={s.id === valeur} onMouseDown={(e) => e.preventDefault()} onClick={() => prendre(s)}>
+                <span className="nom">{s.nom}</span><span className="groupe">{s.groupe}</span>
+              </OptionMenu>
+            ))}
+          </Menu>
+        )}
+      </div>
+    </Champ>
+  );
+}
 
 // Réglages LAPIS : la liste des recherches ; le modèle est à l'admin.
 function useOngletReglages({ admin, actif, fermer, dire, relire }: {
@@ -297,10 +362,6 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
     type, actif: true, cible: 'tout', entreprise: '', secteur: 0, postes: type === 'personnes' ? options.postes_rh.join(', ') : '',
     profils_max: '25', relations: RELATIONS, mots_cles: '', posts_max: '10',
   }] } : v));
-  // Les secteurs par groupe, posés une fois pour toutes les cartes
-  const secteurs = useMemo(() => [...new Set(options.secteurs.map((s) => s.groupe))].map((g) => (
-    <optgroup key={g} label={g}>{options.secteurs.filter((s) => s.groupe === g).map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}</optgroup>
-  )), [options.secteurs]);
   return {
     cle: 'reglages', titre: 'Réglages', label: 'Réglages · LAPIS',
     corps: (
@@ -325,10 +386,7 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
                     <ChampSaisie id={`l${i}-ent`} libelle="Entreprise" aide="Nom ou lien LinkedIn de l'entreprise." value={r.entreprise} onChange={(e) => modifier(i, { entreprise: e.target.value })} />
                   )}
                   {r.cible === 'secteur' && (
-                    <ChampListe id={`l${i}-sect`} libelle="Secteur" value={r.secteur} onChange={(e) => modifier(i, { secteur: Number(e.target.value) })}>
-                      <option value={0}>Choisir un secteur</option>
-                      {secteurs}
-                    </ChampListe>
+                    <ChoixSecteur id={`l${i}-sect`} secteurs={options.secteurs} valeur={r.secteur} changer={(secteur) => modifier(i, { secteur })} />
                   )}
                   <ChampSaisie id={`l${i}-postes`} libelle="Postes recherchés" aide="Séparés par des virgules. Vide : les postes RH par défaut." value={r.postes} onChange={(e) => modifier(i, { postes: e.target.value })} />
                   <label className="reglage">Profils maximum<input className="saisie" type="number" min={1} max={100} value={r.profils_max} onChange={(e) => modifier(i, { profils_max: e.target.value })} /></label>
@@ -378,7 +436,7 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
 }
 
 // Offre repérée : son post, contacts chez l'employeur ou file ; aucun contact.
-function ongletOffre(urn: string, donnees: Lapis | null, dire: Dire): Onglet | null {
+function ongletOffre(urn: string, donnees: Lapis | null, dire: Dire, suivre: () => Promise<void>): Onglet | null {
   const post = donnees?.offres.find((o) => o.urn === urn);
   // Pas encore relu : la fenêtre attend ; relu sans ce post, elle est vide.
   if (!post) return donnees ? null : { cle: 'offre', titre: 'Offre', label: 'Offre repérée', corps: <p className="texte-f">Lecture de LAPIS…</p> };
@@ -399,17 +457,20 @@ function ongletOffre(urn: string, donnees: Lapis | null, dire: Dire): Onglet | n
         {post.texte && <p className="resume-offre texte-post">{post.texte}</p>}
       </div>
     ),
-    pied: <PiedOffre key={urn} post={post} dire={dire} />,
+    pied: <PiedOffre key={urn} post={post} dire={dire} suivre={suivre} />,
   };
 }
 
 // Chaque geste d'une offre repérée occupe sa fenêtre le temps de son appel.
-function PiedOffre({ post, dire }: { post: Post; dire: Dire }) {
+function PiedOffre({ post, dire, suivre }: { post: Post; dire: Dire; suivre: () => Promise<void> }) {
   const { occupe, geste } = useGeste((t) => dire(t, true));
   const o = post.offre;
   const entreprise = o.entreprise || post.entreprise;
-  const contacts = () => geste(async () => dire((await appeler<{ lancee: boolean }>('/lapis/contacts', { methode: 'POST', corps: { post_urn: post.urn } })).lancee
-    ? "LAPIS cherche des contacts chez cet employeur ; personne n'est contacté." : 'Une passe de LAPIS tourne déjà.'));
+  const contacts = () => geste(async () => {
+    dire((await appeler<{ lancee: boolean }>('/lapis/contacts', { methode: 'POST', corps: { post_urn: post.urn } })).lancee
+      ? "LAPIS cherche des contacts chez cet employeur ; personne n'est contacté." : 'Une passe de LAPIS tourne déjà.');
+    void suivre();
+  });
   const ajouter = () => geste(async () => dire((await appeler<{ neuve: boolean }>('/offres', { methode: 'POST', corps: {
     url: o.lien, entreprise: entreprise || '', titre: o.intitule || '', lieu: o.lieu || '' } })).neuve ? 'Offre ajoutée à la file.' : 'Cette offre était déjà en base.'));
   return (
