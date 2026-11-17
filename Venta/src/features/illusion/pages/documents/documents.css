@@ -81,7 +81,7 @@
 .ov .docs-f .puce.ajoutee{border-color:rgb(var(--vert) / .45);color:rgb(var(--vert))}
 .ov .docs-f .puce.ajoutee b{color:rgb(var(--vert))}
 
-/* Nouveau CV, Nouvelle lettre, Réglages, modèle de CV spontané. */
+/* Créer document, Réglages, modèle de CV spontané. */
 .ov .docs-f .section-f.haut{margin-top:10px}
 .ov .docs-f textarea.court{min-height:52px}
 .ov .docs-f .inter.inactif{opacity:.45;cursor:default}

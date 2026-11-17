@@ -48,6 +48,8 @@ const TRANCHE = 40;
 const GENRES: { cle: Genre; libelle: string }[] = [{ cle: 'cv', libelle: 'CV' }, { cle: 'lettre', libelle: 'Lettres' }, { cle: 'spontanes', libelle: 'CV spontanés' }];
 const ESSAIS = [{ cle: '', libelle: 'Tous' }, { cle: 'non', libelle: 'Sans les essais' }, { cle: 'oui', libelle: 'Essais seuls' }];
 const FORMULAIRE_VIDE: Formulaire = { offre: '', entreprise: '', poste: '', profil: '', palette: [], langue: 'fr', deja_postule: false, essai: false, silencieux: true };
+// Le CV et la lettre partagent tous leurs champs, sauf la palette et la langue
+const communs = (f: Partial<Formulaire>) => Object.fromEntries(Object.entries(f).filter(([c]) => c !== 'palette' && c !== 'langue')) as Partial<Formulaire>;
 export const MODELE_VIDE = { nom: '', destination: '', profil: '', poste: '', competences: [], constructeur: true, fond: '', palette: [], cv: '', original: '' };
 const clePiece = (p: Production) => `${p.candidature}:${p.nature}`;
 
@@ -59,6 +61,8 @@ function useDocuments(admin: boolean) {
   const { dire, vue: avis } = useAvis();
   // Le lu et le choisi restent d'une visite à l'autre et se relisent derrière
   const [genre, setGenre] = useState(() => repris<Genre>('documents:genre', 'cv'));
+  // Le document à créer se choisit dans son onglet, sans changer la galerie
+  const [creation, setCreation] = useState<Genre>(genre);
   const [filtres, setFiltres] = useState(() => repris<Filtres>('documents:filtres', VIDES));
   const [lot, setLot] = useState(() => repris<Lot | null>('documents:lot', null));
   const [total, setTotal] = useState(() => repris<{ cv: number; lettre: number } | null>('documents:total', null));
@@ -69,7 +73,7 @@ function useDocuments(admin: boolean) {
   useGarder('documents', { genre, filtres, lot, total, options, parametres, profils, etats });
   const [selection, setSelection] = useState<Set<string>>(() => new Set());
   const [formulaires, setFormulaires] = useState<Record<NomAtelier, Formulaire>>({ constructeur: FORMULAIRE_VIDE, lettre: FORMULAIRE_VIDE });
-  // Rang du « Nouveau modèle » vierge : chaque clic en repart d'un neuf
+  // Rang du modèle vierge : chaque « Créer document » en repart d'un neuf
   const [vierge, setVierge] = useState(0);
   const chargement = useRef(false);
   const generation = useRef(0);
@@ -136,16 +140,19 @@ function useDocuments(admin: boolean) {
       };
       const etat = (nom: NomAtelier) => briques.find((b) => b.nom === nom)?.etat ?? null;
       setProfils(briques.find((b) => b.nom === 'constructeur')?.arguments.find((a) => a.cle === 'profil')?.choix ?? []);
-      setFormulaires({ constructeur: depart('constructeur'), lettre: depart('lettre') });
+      const cv = depart('constructeur');
+      setFormulaires({ constructeur: cv, lettre: { ...depart('lettre'), ...communs(cv) } });
       enCours.current = { constructeur: !!etat('constructeur')?.en_cours, lettre: !!etat('lettre')?.en_cours };
       setEtats({ constructeur: etat('constructeur'), lettre: etat('lettre') });
     }).catch((e) => dire(message(e), true));
   }, [dire]);
 
   const changerFormulaire = useCallback((nom: NomAtelier, champs: Partial<Formulaire>) => setFormulaires((fs) => {
-    const neuf = { ...fs[nom], ...champs };
-    ecrireBrouillon(`documents:${nom}`, neuf);
-    return { ...fs, [nom]: neuf };
+    const neufs = { constructeur: { ...fs.constructeur, ...communs(champs) }, lettre: { ...fs.lettre, ...communs(champs) } };
+    neufs[nom] = { ...fs[nom], ...champs };
+    ecrireBrouillon('documents:constructeur', neufs.constructeur);
+    ecrireBrouillon('documents:lettre', neufs.lettre);
+    return neufs;
   }), []);
 
   // Lancement manuel relu toutes les 1,5 s ; fini, il entre dans la galerie
@@ -235,7 +242,7 @@ function useDocuments(admin: boolean) {
   }, [dire]);
 
   return {
-    admin, dire, avis, genre, setGenre, filtres, setFiltres, lot, total, options, selection, setSelection, piece: (cle: string) => PIECES.get(cle),
+    admin, dire, avis, genre, setGenre, creation, setCreation, filtres, setFiltres, lot, total, options, selection, setSelection, piece: (cle: string) => PIECES.get(cle),
     marquerAjoutee, parametres, setParametres, profils, etats, formulaires, changerFormulaire, executer, vierge, viderModele: () => setVierge((n) => n + 1),
     charger, supprimer, enregistrer,
   };
@@ -304,7 +311,6 @@ function Galerie({ d }: { d: Documents }) {
   const choisies = pieces.filter((p) => selection.has(clePiece(p)));
   const { toutes: tout, cocher } = useCoches(selection, d.setSelection, pieces.map(clePiece));
   const filtre = (cle: keyof Filtres, valeur: string) => d.setFiltres({ ...filtres, [cle]: valeur });
-  const nouveau = genre === 'cv' ? 'nouveau-cv' : genre === 'lettre' ? 'nouvelle-lettre' : 'nouveau-modele';
   const modeles = d.parametres?.cv_spontanes ?? [];
   const batis = modeles.filter((m) => m.cv).length;
   const n = pieces.length, total = Math.max(d.total?.[genre === 'lettre' ? 'lettre' : 'cv'] ?? 0, n), s = n > 1 ? 's' : '';
@@ -358,11 +364,13 @@ function Galerie({ d }: { d: Documents }) {
           {choisies.length > 0 && (
             <ActionSupprimer n={choisies.length} onClick={() => setConfirmer(true)} />
           )}
-          <Action allume={onglet === nouveau} plein iconeApres={ICONES.plus_pages} txt aria-haspopup="dialog" onClick={() => {
+          <Action allume={onglet === 'creer-document'} plein iconeApres={ICONES.plus_pages} txt aria-haspopup="dialog" onClick={() => {
+            // Ouvert d'ici, l'onglet propose le genre que montre la galerie
+            d.setCreation(genre);
             if (genre === 'spontanes') d.viderModele();
-            ouvrir(nouveau);
+            ouvrir('creer-document');
           }}>
-            {genre === 'cv' ? 'Nouveau CV' : genre === 'lettre' ? 'Nouvelle lettre' : 'Nouveau modèle'}
+            Créer document
           </Action>
         </div>
       </div>
@@ -375,7 +383,7 @@ function Galerie({ d }: { d: Documents }) {
         {genre === 'spontanes' ? (
           modeles.length ? modeles.map((m) => (
             <VignetteModele key={m.nom} m={m} ouverte={onglet === 'spontane' && objet === m.nom} ouvrir={() => ouvrir('spontane', m.nom)} />
-          )) : <p className="vide-g">{d.parametres ? 'Aucun modèle encore : « Nouveau modèle », puis « Bâtir le CV ».' : 'Chargement…'}</p>
+          )) : <p className="vide-g">{d.parametres ? 'Aucun modèle encore : « Créer document », puis « Bâtir le CV ».' : 'Chargement…'}</p>
         ) : pieces.length ? pieces.map((p) => (
           <Vignette key={clePiece(p)} p={p} cochee={selection.has(clePiece(p))} ouverte={onglet === 'fiche' && objet === clePiece(p)}
             cocher={(c) => cocher([clePiece(p)], c)}

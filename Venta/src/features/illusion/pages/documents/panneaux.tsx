@@ -7,7 +7,7 @@ import { usePanneau, useVues } from '../../dock/Dock';
 import { AuPied, Confirmer, MarqueAdmin, Panneau, type Elements, type Onglet } from '../../dock/Panneau';
 import { ongletAjoutCompetence, ongletFicheOffre, type DemandeAjout } from '../../partage/FicheOffre';
 import { Couleurs, FONDS, ListeFichiers, RELAIS, court, poids, useFichiers, type Fichier } from './commun';
-import { MODELE_VIDE, type Documents, type Formulaire, type Modele, type NomAtelier, type Parametres, type Production } from './index';
+import { MODELE_VIDE, type Documents, type Formulaire, type Genre, type Modele, type NomAtelier, type Parametres, type Production } from './index';
 import { duree } from '../commun';
 import { Action } from '../../elements/Action';
 import { Champ, Interrupteur, ChampSaisie, ChampListe, ChampZone, SectionFiche, LibelleValeur } from '../../elements/Champ';
@@ -20,8 +20,8 @@ const STATUTS: Record<string, string> = {
   IGNOREE: 'Écartée', EN_COURS: 'En cours',
 };
 const REPONSES: Record<string, string> = { positive: 'réponse positive', refus: 'refus', reponse: 'réponse reçue' };
-// Ce que Nouveau CV et Nouvelle lettre se repassent
-const PARTAGES = ['profil', 'offre', 'poste', 'entreprise', 'deja_postule'] as const;
+// Ce que « Créer document » propose, un par genre de la galerie
+const CREABLES: [Genre, string][] = [['cv', 'CV'], ['lettre', 'Lettre'], ['spontanes', 'Modèle de CV spontané']];
 const hexa = (v?: string) => /^#[0-9a-f]{3,8}$/i.test(v ?? '');
 
 // Éléments, puis sous-fenêtres en onglets ; ajout de compétence avec objet
@@ -58,9 +58,28 @@ export function PanneauDocuments({ d }: { d: Documents }) {
   const cv = useOngletFabrication(d, 'constructeur');
   const lettre = useOngletFabrication(d, 'lettre');
   const reglages = useOngletReglages(d, onglet === 'reglages');
-  const nouveauModele: Onglet = {
-    cle: 'nouveau-modele', titre: 'Nouveau modèle', label: 'Nouveau modèle de CV spontané',
-    corps: <FicheModele key={d.vierge} depart={MODELE_VIDE} d={d} enregistre={(nom) => { d.viderModele(); ouvrir('spontane', nom); }} />, pied: true,
+  // Poste et profil, communs aux trois documents, tenus par les deux formulaires
+  const f = d.formulaires.constructeur;
+  // Un seul onglet pour créer : le document choisi en tête, son formulaire dessous
+  const fabrique = d.creation === 'cv' ? cv : d.creation === 'lettre' ? lettre : {
+    corps: <FicheModele key={d.vierge} depart={MODELE_VIDE} commun={{ profil: f.profil, poste: f.poste }} d={d} enregistre={(nom) => { d.viderModele(); ouvrir('spontane', nom); }} />, pied: true,
+  };
+  const creer: Onglet = {
+    cle: 'creer-document', titre: 'Créer document',
+    corps: (
+      <>
+        <ChampListe id="creer-genre" libelle="Document" value={d.creation} onChange={(e) => d.setCreation(e.target.value as Genre)}>
+          {CREABLES.map(([g, nom]) => <option key={g} value={g}>{nom}</option>)}
+        </ChampListe>
+        <ChampSaisie id="creer-poste" titre="Repris en tête du CV. Vide : celui du profil." libelle="Poste visé" value={f.poste} onChange={(e) => d.changerFormulaire('constructeur', { poste: e.target.value })} />
+        <ChampListe id="creer-profil" libelle="Profil du candidat *" value={f.profil} required onChange={(e) => d.changerFormulaire('constructeur', { profil: e.target.value })}>
+          <option value="">— choisir un profil —</option>
+          {d.profils.map((p) => <option key={p} value={p}>{sansJson(p)}</option>)}
+        </ChampListe>
+        {fabrique.corps}
+      </>
+    ),
+    pied: fabrique.pied,
   };
   const objets = Object.keys(elements).filter((c) => ouverts[c] !== undefined && elements[c](ouverts[c])).length + (demande ? 1 : 0);
   // Deux objets ouverts : un onglet de geste ne reste que s'il est ouvert
@@ -76,9 +95,7 @@ export function PanneauDocuments({ d }: { d: Documents }) {
       }
       ouvrir(demande.sorte, demande.objet);
     })] : []),
-    ...voulu(cv, d.genre === 'cv' && peu),
-    ...voulu(lettre, d.genre === 'lettre' && peu),
-    ...voulu(nouveauModele, d.genre === 'spontanes' && peu),
+    ...voulu(creer, peu),
     ...voulu(reglages, peu),
   ];
   return <Panneau elements={elements} onglets={onglets} />;
@@ -101,8 +118,9 @@ function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (
     const n = Object.keys(repris).length;
     if (!n) return d.dire('Rien à reprendre : cette pièce ne porte aucun paramètre réutilisable.', true);
     d.changerFormulaire(nom, repris);
-    d.dire(`${n} paramètre(s) repris dans « ${nom === 'constructeur' ? 'Nouveau CV' : 'Nouvelle lettre'} » — il ne reste qu'à relancer.`);
-    ouvrir(nom === 'constructeur' ? 'nouveau-cv' : 'nouvelle-lettre');
+    d.dire(`${n} paramètre(s) repris dans « Créer document » — il ne reste qu'à relancer.`);
+    d.setCreation(nom === 'constructeur' ? 'cv' : 'lettre');
+    ouvrir('creer-document');
   };
   const supprimer = async () => {
     // La fiche supprime sa pièce, pas la sélection de la galerie
@@ -184,18 +202,12 @@ function FichePiece({ p, d, ajouter }: { p: Production; d: Documents; ajouter: (
 }
 
 // Atelier de la brique : champs, Exécuter devenu Arrêter, état du lancement
-function useOngletFabrication(d: Documents, nom: NomAtelier): Onglet {
+function useOngletFabrication(d: Documents, nom: NomAtelier): Pick<Onglet, 'corps' | 'pied'> {
   const f = d.formulaires[nom];
   const etat = d.etats[nom];
   const changer = (champs: Partial<Formulaire>) => d.changerFormulaire(nom, champs);
   const cv = nom === 'constructeur';
   const motif = f.profil ? '' : 'Profil du candidat est obligatoire';
-  const reprendre = () => {
-    const autre = d.formulaires[cv ? 'lettre' : 'constructeur'];
-    const repris = PARTAGES.filter((c) => autre[c]);
-    if (repris.length) changer(Object.fromEntries(repris.map((c) => [c, autre[c]])) as Partial<Formulaire>);
-    d.dire(repris.length ? `${repris.length} paramètre(s) repris.` : "Rien à reprendre : l'autre formulaire n'a pas encore servi.", !repris.length);
-  };
   const lancer = () => {
     if (!etat?.en_cours && motif) return d.dire(`Impossible de lancer : ${motif}.`, true);
     void d.executer(nom);
@@ -216,32 +228,24 @@ function useOngletFabrication(d: Documents, nom: NomAtelier): Onglet {
       : etat.ok ? <p className="etat-l" role="status"><span className="carre finie" />terminée en {duree(etat.duree_s)}</p>
         : <p className="etat-l echec" role="alert">en échec — {etat.erreur || 'voir le journal du serveur'}</p>;
   return {
-    cle: cv ? 'nouveau-cv' : 'nouvelle-lettre',
-    titre: cv ? 'Nouveau CV' : 'Nouvelle lettre',
     corps: (
-      <form className="docs-f" aria-label={cv ? 'Nouveau CV' : 'Nouvelle lettre'} onSubmit={(e) => { e.preventDefault(); lancer(); }}>
-        <Action icone={ICONES.reprendre} onClick={reprendre}>Reprendre les paramètres {cv ? 'de la lettre' : 'du CV'}</Action>
-        <div className="section-f haut">
+      <form className="docs-f" aria-label={cv ? 'Créer un CV' : 'Créer une lettre'} onSubmit={(e) => { e.preventDefault(); lancer(); }}>
+        {/* Les champs communs d'abord, à la même place pour le CV et la lettre */}
+        <div className="section-f">
           <ChampSaisie id={id('url')} titre="L'annonce est ouverte et lue : elle donne l'intitulé, l'employeur et les compétences qui taillent le dossier. Vide : le dossier vaut pour lui-même." libelle="URL de l&apos;offre" type="url" placeholder="https://…/offre/12345" value={f.offre} onChange={(e) => changer({ offre: e.target.value })} />
           <ChampSaisie id={id('ent')} titre="Sert à nommer les fichiers ; n'apparaît pas sur le CV." libelle="Entreprise" value={f.entreprise} onChange={(e) => changer({ entreprise: e.target.value })} />
-          <ChampSaisie id={id('poste')} titre="Repris en tête du CV. Vide : celui du profil." libelle="Poste visé" value={f.poste} onChange={(e) => changer({ poste: e.target.value })} />
-          <ChampListe id={id('profil')} libelle="Profil du candidat *" value={f.profil} required onChange={(e) => changer({ profil: e.target.value })}>
-              <option value="">— choisir un profil —</option>
-              {d.profils.map((p) => <option key={p} value={p}>{sansJson(p)}</option>)}
-            </ChampListe>
+        </div>
+        <SectionFiche titre="Options">
+          {options}
           {cv ? (
             <Champ groupe libelle="Palette du fond" aide="Vide : celles de l&apos;identité de l&apos;entreprise.">
               <Couleurs valeurs={f.palette} changer={(palette) => changer({ palette })} libelle="Palette du fond" /></Champ>
           ) : (
-            <>
-              <ChampListe id={id('langue')} titre="Celle de l'offre : le corps, l'objet, la date et la formule s'y écrivent." libelle="Langue de la lettre" value={f.langue} onChange={(e) => changer({ langue: e.target.value })}>
-                  {LANGUES.map((l) => <option key={l} value={l}>{l}</option>)}
-                </ChampListe>
-              {options}
-            </>
+            <ChampListe id={id('langue')} titre="Celle de l'offre : le corps, l'objet, la date et la formule s'y écrivent." libelle="Langue de la lettre" value={f.langue} onChange={(e) => changer({ langue: e.target.value })}>
+                {LANGUES.map((l) => <option key={l} value={l}>{l}</option>)}
+              </ChampListe>
           )}
-        </div>
-        {cv && <SectionFiche titre="Options">{options}</SectionFiche>}
+        </SectionFiche>
         {badge}
         <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
       </form>
@@ -325,10 +329,10 @@ function useOngletReglages(d: Documents, actif: boolean): Onglet {
   };
 }
 
-// Modèle de CV spontané, un par fenêtre, vierge pour « Nouveau modèle »
-function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents; enregistre: (nom: string) => void }) {
+// Modèle de CV spontané, un par fenêtre, vierge dans « Créer document »
+function FicheModele({ depart, commun, d, enregistre }: { depart?: Modele; commun?: { profil: string; poste: string }; d: Documents; enregistre: (nom: string) => void }) {
   const { fermer } = usePanneau();
-  const [m, setM] = useState<(Modele & { original: string }) | null>(() => (depart ? { ...depart, original: depart.nom } : null));
+  const [m, setM] = useState<(Modele & { original: string }) | null>(() => (depart ? { ...depart, ...commun, original: depart.nom } : null));
   const [rubriques, setRubriques] = useState<[string, string[]][] | null>(null);
   const [confirmer, setConfirmer] = useState(false);
   const [batit, setBatit] = useState(false);
@@ -354,6 +358,14 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
     // Relues quand le profil choisi change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profil]);
+  const profilCommun = commun?.profil;
+  const posteCommun = commun?.poste;
+  // En création, le profil et le poste sont ceux de « Créer document »
+  useEffect(() => {
+    if (profilCommun === undefined || posteCommun === undefined) return;
+    // Un autre profil n'a plus les mêmes compétences : la sélection repart de zéro
+    setM((v) => v && { ...v, poste: posteCommun, ...(v.profil === profilCommun ? {} : { profil: profilCommun, competences: [] }) });
+  }, [profilCommun, posteCommun]);
   // Modèle supprimé ailleurs ou introuvable : la fenêtre le dit
   if (!m || (m.original && !d.parametres?.cv_spontanes?.some((x) => x.nom === m.original))) return <p className="texte-f">Ce modèle n&apos;existe plus.</p>;
   const changer = (champs: Partial<Modele>) => setM({ ...m, ...champs });
@@ -411,6 +423,11 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
     if (await d.enregistrer({ cv_spontanes: (d.parametres?.cv_spontanes ?? []).filter((x) => x.nom !== m.original) }, `Modèle « ${m.original} » supprimé.`)) fermer();
   };
   const id = (c: string) => `${base}-${c}`;
+  const champNom = <ChampSaisie id={id('nom')} libelle="Nom" placeholder="ESN" value={m.nom} onChange={(e) => changer({ nom: e.target.value })} />;
+  const miseEnPage = (
+    <Champ groupe libelle="Mise en page">
+      <div><Interrupteur libelle="celle du Constructeur" title={`Cochée : le fond et la palette réglés pour le Constructeur au moment de bâtir — aujourd'hui ${d.parametres?.constructeur_fond || 'fond tiré au sort'} —, sans rien recopier.`} checked={m.constructeur} onChange={(e) => changer({ constructeur: e.target.checked })} /></div></Champ>
+  );
   return (
     <>
       {confirmer && (
@@ -419,19 +436,23 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
       )}
       <form className="docs-f" aria-label="Modèle de CV spontané" onSubmit={(e) => { e.preventDefault(); void sauver(); }}>
         <div className="section-f">
-          <div className="grille-2">
-            <ChampSaisie id={id('nom')} libelle="Nom" placeholder="ESN" value={m.nom} onChange={(e) => changer({ nom: e.target.value })} />
-            <ChampSaisie id={id('poste')} libelle="Poste en tête du CV" placeholder="Vide : celui du profil" value={m.poste} onChange={(e) => changer({ poste: e.target.value })} />
-          </div>
+          {/* En création, le poste et le profil sont au-dessus, communs aux trois documents */}
+          {commun ? champNom : (
+            <div className="grille-2">
+              {champNom}
+              <ChampSaisie id={id('poste')} libelle="Poste en tête du CV" placeholder="Vide : celui du profil" value={m.poste} onChange={(e) => changer({ poste: e.target.value })} />
+            </div>
+          )}
           <ChampZone id={id('dest')} titre="Ce que l'IA lit pour choisir ce CV face à un employeur." libelle="Destiné à" className="saisie court" rows={2} placeholder="ESN et cabinets de conseil qui placent des consultants chez leurs clients" value={m.destination} onChange={(e) => changer({ destination: e.target.value })} />
-          <div className="grille-2">
-            <ChampListe id={id('profil')} libelle="Profil mis en page" value={m.profil} onChange={(e) => changer({ profil: e.target.value, competences: [] })}>
-                <option value="">— choisir un profil —</option>
-                {[...new Set([...d.profils, ...(m.profil ? [m.profil] : [])])].map((p) => <option key={p} value={p}>{sansJson(p)}</option>)}
-              </ChampListe>
-            <Champ groupe libelle="Mise en page">
-              <div><Interrupteur libelle="celle du Constructeur" title={`Cochée : le fond et la palette réglés pour le Constructeur au moment de bâtir — aujourd'hui ${d.parametres?.constructeur_fond || 'fond tiré au sort'} —, sans rien recopier.`} checked={m.constructeur} onChange={(e) => changer({ constructeur: e.target.checked })} /></div></Champ>
-          </div>
+          {commun ? miseEnPage : (
+            <div className="grille-2">
+              <ChampListe id={id('profil')} libelle="Profil mis en page" value={m.profil} onChange={(e) => changer({ profil: e.target.value, competences: [] })}>
+                  <option value="">— choisir un profil —</option>
+                  {[...new Set([...d.profils, ...(m.profil ? [m.profil] : [])])].map((p) => <option key={p} value={p}>{sansJson(p)}</option>)}
+                </ChampListe>
+              {miseEnPage}
+            </div>
+          )}
           {!m.constructeur && (
             <div className="grille-2">
               <ChampListe id={id('fond')} libelle="Fond" value={m.fond} onChange={(e) => changer({ fond: e.target.value })}>
@@ -441,8 +462,8 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
             </div>
           )}
           <div className="gestes">
-            <Action icone={ICONES.reprendre} title="Recopie dans ce modèle le profil et le poste de « Nouveau CV », son fond et sa palette : ils ne valent plus que pour ce modèle." onClick={reprendre}>Reprendre du Constructeur</Action>
-            <Action icone={ICONES.envoyer} title="Recopie dans « Nouveau CV » le profil, le poste et la palette de ce modèle. Son fond devient celui de tous vos CV." onClick={() => void envoyer()}>Envoyer au Constructeur</Action>
+            <Action icone={ICONES.reprendre} title="Recopie dans ce modèle le profil et le poste du CV de « Créer document », son fond et sa palette : ils ne valent plus que pour ce modèle." onClick={reprendre}>Reprendre du Constructeur</Action>
+            <Action icone={ICONES.envoyer} title="Recopie dans le CV de « Créer document » le profil, le poste et la palette de ce modèle. Son fond devient celui de tous vos CV." onClick={() => void envoyer()}>Envoyer au Constructeur</Action>
           </div>
         </div>
         <SectionFiche titre="Compétences">
@@ -453,7 +474,7 @@ function FicheModele({ depart, d, enregistre }: { depart?: Modele; d: Documents;
             ))}</div>
           ) : <p className="aide-champ">Aucune : le CV garde l&apos;ordre du profil.</p>}
           <p className="lib-champ lib-bloc profil-c">Compétences du profil</p>
-          {!m.profil ? <p className="aide-champ">Choisissez le profil mis en page : ses compétences s&apos;affichent ici.</p>
+          {!m.profil ? <p className="aide-champ">Choisissez le profil : ses compétences s&apos;affichent ici.</p>
             : rubriques === null ? <p className="aide-champ">Lecture du profil…</p>
               : !rubriques.length ? <p className="aide-champ">Ce profil ne déclare aucune compétence.</p>
                 : rubriques.map(([rub, noms]) => (
