@@ -12,8 +12,9 @@
 .ov .lapis .onglets-l{flex:none;display:flex;align-items:center}
 .ov .lapis .onglets-l .compteur{margin-left:-1px}
 .ov .lapis .onglets-l .filtre.actif .compteur{color:rgb(var(--encre))}
-/* Ce que la passe cherche, sur deux lignes à côté des onglets. */
+/* Les recherches actives à côté des onglets, coupées si elles débordent. */
 .ov .lapis .resume{display:flex;flex-direction:column;justify-content:center;min-width:0;margin-left:28px;padding-left:18px;border-left:1px solid rgb(var(--encre) / .14);font-size:var(--t-petit,11.5px);line-height:1.35;color:rgb(var(--encre) / .7);white-space:nowrap}
+.ov .lapis .resume>span{overflow:hidden;text-overflow:ellipsis}
 .ov .lapis .resume b{font-weight:500;color:rgb(var(--encre))}
 @media (max-width:1366px){.ov .lapis .resume{margin-left:16px;padding-left:12px}.ov .lapis .onglets-l .filtre+.filtre{margin-left:14px}}
 /* Fenêtre resserrée : ce que la passe cherche se retire. */
@@ -46,6 +47,7 @@
 .ov .lapis .qui .poste{font-size:var(--t-petit,11.5px);color:rgb(var(--encre) / .9)}
 .ov .lapis .qui .poste i{font-style:normal;color:rgb(var(--encre) / .55)}
 .ov .lapis .qui .nature{margin-right:6px;padding:0 5px;border:1px solid rgb(var(--encre) / .22);font-size:var(--t-petit,10.5px)}
+.ov .lapis .qui b .nature{font-weight:400}
 .ov .lapis .qui .lien{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;font-size:var(--t-petit,11.5px);font-weight:600;text-decoration:none;color:rgb(var(--encre) / .88)}
 .ov .lapis .qui .lien:hover{color:rgb(var(--encre))}
 .ov .lapis .qui .lien svg{width:10px;height:10px}
@@ -66,6 +68,7 @@
 .ov .lapis-offre .auteur p{min-width:0;font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--encre) / .75)}
 .ov .lapis-offre .auteur p b{display:block;font-size:var(--t-corps,13px);font-weight:600;color:rgb(var(--encre))}
 .ov .lapis-offre .resume-offre{margin-bottom:10px !important;font-size:var(--t-corps,12.5px);line-height:1.5;color:rgb(var(--encre) / .88)}
+.ov .lapis-offre .texte-post{margin:12px 0 0 !important;white-space:pre-line;overflow-wrap:anywhere}
 .ov .lapis-offre .liste-f>li{flex-wrap:wrap;row-gap:2px;padding:6px 0}
 .ov .lapis-offre .liste-f .d{display:inline-flex;align-items:center;gap:5px;text-align:right;overflow-wrap:anywhere}
 .ov .lapis-offre .liste-f a.d{color:rgb(var(--encre) / .75);transition:color .2s}
@@ -73,7 +76,16 @@
 .ov .lapis-offre .liste-f a.d svg{flex:none;width:10px;height:10px}
 .ov .lapis-reglages .erreur-f{margin-top:10px !important;padding:8px 10px;border-left:2px solid rgb(var(--rouge-3));background:rgb(var(--rouge-3) / .08);font-size:var(--t-corps,12px);line-height:1.4;color:rgb(var(--rouge-2));overflow-wrap:anywhere}
 .ov .lapis-reglages .champ>label .marque-admin{margin-left:8px}
-.ov .lapis-reglages .champ+.aide-champ{margin:-6px 0 12px !important}
+/* Recherches : une carte chacune, comme les veilles ; les ajouts dessous. */
+.ov .lapis-reglages .cartes{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}
+.ov .lapis-reglages .carte-f{display:flex;flex-direction:column;gap:12px;padding:12px;border:1px solid rgb(var(--encre) / .14);background:rgb(var(--noir) / .18)}
+.ov .lapis-reglages .carte-f .champ{margin-bottom:0}
+.ov .lapis-reglages .carte-f .reglage{min-height:48px}
+.ov .lapis-reglages .carte-tete{display:flex;align-items:center;gap:12px}
+.ov .section-f.lapis-reglages .carte-tete h3{flex:1;min-width:0;margin:0}
+.ov .lapis-reglages .puce-p{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;font-size:var(--t-corps,12.5px);cursor:pointer;white-space:nowrap}
+.ov .lapis-reglages .ajouts-l{flex-wrap:wrap;margin:4px 0 12px}
+@supports not (appearance:base-select){.ov .lapis-reglages optgroup{background:rgb(var(--sombre-14));color:rgb(var(--encre))}}
 
 /* Thèmes plats : le panneau centre sa croix, ses gestes éteints se lisent. */
 .ov.trame:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete{align-items:center}
@@ -118,4 +130,7 @@
 .ov.trame .lapis-offre .auteur p b{font-size:.875rem;font-weight:500;color:var(--texte)}
 .ov.trame .lapis-offre .resume-offre{font-size:.875rem;line-height:1.25rem;color:var(--texte)}
 .ov.trame .lapis-offre .liste-f a.d,.ov.trame .lapis-offre .liste-f a.d:hover{color:var(--primaire)}
+.ov.trame .lapis-reglages .carte-f{border-color:var(--filet);border-radius:12px;background:var(--surface)}
+.ov.trame .lapis-reglages .puce-p{color:var(--texte-2)}
+.ov.trame .lapis-reglages .puce-p:has(:checked){color:var(--sur-primaire-doux)}
 .ov.trame .lapis-reglages .erreur-f{padding:8px 12px;border-left:0;border-radius:8px;background:var(--erreur-douce);font-size:.875rem;line-height:1.25rem;color:var(--sur-erreur-douce)}

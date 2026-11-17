@@ -1,7 +1,7 @@
 'use client';
 
 import './lapis.css';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 
@@ -11,7 +11,7 @@ import { ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import { decouper, useEchap, useGeste, useLecture, PaginationAller, usePagination } from '../commun';
 import { Action } from '../../elements/Action';
-import { ChampSaisie, ChampListe, OptionsModele } from '../../elements/Champ';
+import { Champ, ChampSaisie, ChampListe, Interrupteur, OptionsModele } from '../../elements/Champ';
 import { ActionOnglet } from '../../elements/Groupes';
 import { ICONES } from '../../elements/icones';
 import { useAvis, type Dire } from '../../elements/Avis';
@@ -19,29 +19,35 @@ import { jourMoisIso, lienSur, message, parVirgules } from '../../elements/forma
 import { PageDock } from '../../activite/PageDock';
 
 // Ce que /lapis rend : personnes, offres, événements et derniers posts lus.
+type Degre = '1' | '2' | '3';
 type Personne = {
-  profil_url: string; nom: string; titre: string; photo: string; entreprise: string; poste: string;
+  profil_url: string; nom: string; titre: string; photo: string; entreprise: string; poste: string; relation: Degre | ''; recherche: string;
   origine: { genre?: 'post' | 'offre'; url?: string; cle?: string; texte?: string };
 };
 type Post = {
   urn: string; url: string; auteur: string; auteur_titre: string; photo: string; nature: string; entreprise: string; recherche: string; lu_le: string;
-  resume: string; offre: { intitule?: string; entreprise?: string; lieu?: string; lien?: string }; evenement: { nom?: string; date?: string; lieu?: string; lien?: string };
+  resume: string; texte?: string; offre: { intitule?: string; entreprise?: string; lieu?: string; lien?: string }; evenement: { nom?: string; date?: string; lieu?: string; lien?: string };
 };
-type Lapis = { personnes: Personne[]; offres: Post[]; evenements: Post[]; posts: Post[]; recherches: string[]; postes: string[] };
+type Lapis = { personnes: Personne[]; offres: Post[]; evenements: Post[]; posts: Post[]; recherches: string[] };
 type Sorte = 'personnes' | 'offres' | 'evenements' | 'posts';
-type Parametres = {
-  lapis_recherches: string[]; lapis_postes: string[]; lapis_posts_par_recherche: number; lapis_personnes_par_poste: number;
-  lapis_entreprises_par_passe: number; lapis_modele: string; modeles?: { nom: string }[];
+// Une recherche du compte : personnes d'une cible, ou offres lues en posts
+type RechercheLapis = {
+  type: 'personnes' | 'offres'; actif: boolean; entreprise: string; secteur: number; postes: string[]; profils_max: number;
+  relations: Degre[]; mots_cles: string; posts_max: number;
 };
+type OptionsLapis = { secteurs: { id: number; nom: string; groupe: string }[]; postes_rh: string[] };
+type Parametres = { lapis_recherches: RechercheLapis[]; lapis_modele: string; modeles?: { nom: string }[] };
 
 const SORTES: [Sorte, string][] = [['personnes', 'Personnes'], ['offres', 'Offres repérées'], ['evenements', 'Événements'], ['posts', 'Posts lus']];
 const VIDES: Record<Sorte, string> = {
-  personnes: 'Aucune personne trouvée : lancez une passe, ou « Chercher des contacts » sur une offre repérée.',
+  personnes: 'Aucune personne trouvée : ajoutez une recherche Personnes dans les Réglages, ou « Chercher des contacts » sur une offre repérée.',
   offres: 'Aucune offre repérée dans les posts lus.',
   evenements: 'Aucun événement repéré dans les posts lus.',
   posts: 'Aucun post lu : lancez une passe.',
 };
 const NATURES: Record<string, string> = { offre: 'Offre', evenement: 'Événement', autre: 'Autre' };
+const DEGRES: Record<Degre, string> = { '1': '1er', '2': '2e', '3': '3e et +' };
+const RELATIONS = Object.keys(DEGRES) as Degre[];
 const TAILLES = [24, 48];
 const initiales = (nom: string) => nom.split(/\s+/).filter(Boolean).slice(0, 2).map((m) => m[0]).join('').toUpperCase() || '?';
 
@@ -136,15 +142,14 @@ function Galerie({ donnees, erreur, avis, dire }: ProprietesGalerie) {
         </div>
         {donnees && (
           <p className="resume">
-            <span>Recherches : <b>{donnees.recherches.join(', ') || 'aucune'}</b></span>
-            <span>postes : <b>{donnees.postes.join(', ') || 'aucun'}</b></span>
+            <span title={donnees.recherches.join(', ')}>Recherches : <b>{donnees.recherches.join(', ') || 'aucune'}</b></span>
           </p>
         )}
         <span className="espace" />
         <div className="actions" role="group" aria-label="Actions">
           <ActionOnglet cle="reglages" icone={ICONES.reglages} title="Réglages">Réglages
           </ActionOnglet>
-          <Action plein iconeApres={ICONES.jouer} disabled={occupe} title="Lit les posts récents de chaque recherche, puis fouille les employeurs qu'ils nomment ; personne n'est contacté" onClick={() => void lancer()}>
+          <Action plein iconeApres={ICONES.jouer} disabled={occupe} title="Lance chaque recherche active de LAPIS ; personne n'est contacté" onClick={() => void lancer()}>
             Lancer une passe
           </Action>
         </div>
@@ -153,10 +158,11 @@ function Galerie({ donnees, erreur, avis, dire }: ProprietesGalerie) {
         {sorte === 'personnes' && (visibles as Personne[]).map((p) => (
           <article key={p.profil_url} className="personne">
             <CartePhoto url={p.photo} nom={p.nom}>
-                <b title={p.nom}>{p.nom || '—'}</b>
+                <b title={p.nom}>{p.relation && <span className="nature" title="Degré de relation LinkedIn">{DEGRES[p.relation]}</span>}{p.nom || '—'}</b>
                 <span className="titre-p" title={p.titre}>{p.titre}</span>
                 <span className="poste" title={`${p.entreprise} · poste cherché : ${p.poste}`}>{p.entreprise || '—'} · <i>poste cherché :</i> {p.poste || '—'}</span>
                 <Sortie href={p.profil_url}>Profil LinkedIn</Sortie>
+                {p.recherche && <span className="origine" title={p.recherche}>Recherche « {p.recherche} »</span>}
                 {p.origine.genre === 'post' && <span className="origine" title={p.origine.texte}>Vue dans un post · <Sortie href={p.origine.url} className="" fleche={false}>voir le post</Sortie></span>}
                 {p.origine.genre === 'offre' && p.origine.cle && (
                   <span className="origine">Cherchée pour l&apos;offre <button type="button" aria-haspopup="dialog" data-ouvre="fiche-offre" data-objet={p.origine.cle} onClick={() => ouvrir('fiche-offre', p.origine.cle!)}>{p.origine.texte}</button></span>
@@ -227,28 +233,37 @@ function PanneauLapis({ admin, donnees, dire, relire }: { admin: boolean; donnee
   return <Panneau elements={elements} onglets={[reglages]} />;
 }
 
-type Formulaire = { recherches: string; postes: string; posts: string; personnes: string; employeurs: string; modele: string };
+type Cible = 'tout' | 'entreprise' | 'secteur';
+// Une recherche en saisie : sa cible, ses postes et ses nombres en texte
+type Carte = Omit<RechercheLapis, 'postes' | 'profils_max' | 'posts_max'> & { cible: Cible; postes: string; profils_max: string; posts_max: string };
+type Formulaire = { recherches: Carte[]; modele: string };
 
-// Réglages LAPIS : recherches, postes et volumes ; le modèle est à l'admin.
+// Réglages LAPIS : la liste des recherches ; le modèle est à l'admin.
 function useOngletReglages({ admin, actif, fermer, dire, relire }: {
   admin: boolean; actif: boolean; fermer: () => void; dire: Dire; relire: () => Promise<void>;
 }): Onglet {
   // Réglages gardés d'une visite à l'autre, relus à la première ouverture.
-  const [lu, setLu] = useState(() => repris<Formulaire | null>('lapis:reglages', null));
+  const [lu, setLu] = useState(() => repris<Formulaire | null>('lapis:reglages2', null));
   const [f, setF] = useState<Formulaire | null>(lu);
   const [modeles, setModeles] = useState(() => repris<{ nom: string }[]>('lapis:modeles', []));
-  useGarder('lapis', { reglages: lu, modeles });
+  const [options, setOptions] = useState(() => repris<OptionsLapis>('lapis:options', { secteurs: [], postes_rh: [] }));
+  useGarder('lapis', { reglages2: lu, modeles, options });
   const [erreur, setErreur] = useState('');
   const { occupe, geste } = useGeste(setErreur);
   const relu = useRef(false);
-  const lire = useCallback(async () => {
+  const lire = useCallback(async (ouverture = false) => {
     try {
-      const p = await appeler<Parametres>('/parametres');
-      const forme = { recherches: p.lapis_recherches.join(', '), postes: p.lapis_postes.join(', '), posts: String(p.lapis_posts_par_recherche),
-        personnes: String(p.lapis_personnes_par_poste), employeurs: String(p.lapis_entreprises_par_passe), modele: p.lapis_modele ?? '' };
+      // Secteurs et postes RH par défaut : lus à l'ouverture seulement
+      const [p, o] = await Promise.all([appeler<Parametres>('/parametres'), ouverture ? appeler<OptionsLapis>('/lapis/options') : null]);
+      const forme = {
+        recherches: p.lapis_recherches.map((r): Carte => ({ ...r, cible: r.entreprise ? 'entreprise' : r.secteur ? 'secteur' : 'tout',
+          postes: r.postes.join(', '), profils_max: String(r.profils_max), posts_max: String(r.posts_max) })),
+        modele: p.lapis_modele ?? '',
+      };
       setLu(forme);
       setF(forme);
       setModeles(p.modeles ?? []);
+      if (o) setOptions(o);
       setErreur('');
     } catch (e) {
       // Une lecture ratée se retente à la prochaine ouverture
@@ -259,45 +274,97 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
   useEffect(() => {
     if (!actif || relu.current) return;
     relu.current = true;
-    void lire();
+    void lire(true);
   }, [actif, lire]);
   const change = !!f && JSON.stringify(f) !== JSON.stringify(lu);
   const enregistrer = () => {
     if (!f || !change) return;
     return geste(async () => {
       await appeler('/parametres', { methode: 'PUT', corps: {
-        lapis_recherches: parVirgules(f.recherches), lapis_postes: parVirgules(f.postes), lapis_posts_par_recherche: parseInt(f.posts, 10) || 0,
-        lapis_personnes_par_poste: parseInt(f.personnes, 10) || 0, lapis_entreprises_par_passe: parseInt(f.employeurs, 10) || 0,
+        lapis_recherches: f.recherches.map((r): RechercheLapis => ({
+          type: r.type, actif: r.actif, entreprise: r.entreprise.trim(), secteur: r.secteur, postes: parVirgules(r.postes),
+          profils_max: parseInt(r.profils_max, 10) || 0, relations: r.relations, mots_cles: r.mots_cles.trim(), posts_max: parseInt(r.posts_max, 10) || 0,
+        })),
         ...(admin ? { lapis_modele: f.modele } : {}),
       } });
       dire('Réglages de LAPIS enregistrés : ils valent dès la prochaine passe.');
       await Promise.all([lire(), relire()]);
     });
   };
-  const champ = (cle: keyof Formulaire, id: string, libelle: React.ReactNode, type = 'text') => (
-    <ChampSaisie id={id} libelle={libelle} type={type} min={type === 'number' ? 0 : undefined} value={f?.[cle] ?? ''} disabled={!f} onChange={(e) => setF((v) => (v ? { ...v, [cle]: e.target.value } : v))} onKeyDown={(e) => e.key === 'Enter' && !occupe && void enregistrer()} />
-  );
+  const modifier = (i: number, champs: Partial<Carte>) => setF((v) => (v ? { ...v, recherches: v.recherches.map((r, j) => (j === i ? { ...r, ...champs } : r)) } : v));
+  // Une recherche neuve : active, sur tout LinkedIn, aux volumes par défaut
+  const ajouter = (type: RechercheLapis['type']) => setF((v) => (v ? { ...v, recherches: [...v.recherches, {
+    type, actif: true, cible: 'tout', entreprise: '', secteur: 0, postes: type === 'personnes' ? options.postes_rh.join(', ') : '',
+    profils_max: '25', relations: RELATIONS, mots_cles: '', posts_max: '10',
+  }] } : v));
+  // Les secteurs par groupe, posés une fois pour toutes les cartes
+  const secteurs = useMemo(() => [...new Set(options.secteurs.map((s) => s.groupe))].map((g) => (
+    <optgroup key={g} label={g}>{options.secteurs.filter((s) => s.groupe === g).map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}</optgroup>
+  )), [options.secteurs]);
   return {
     cle: 'reglages', titre: 'Réglages', label: 'Réglages · LAPIS',
     corps: (
-      <div className="section-f lapis-reglages">
-        {champ('recherches', 'l-rech', 'Recherches de posts')}
-        <p className="aide-champ">Comme les recherches de la veille. Vide : les intitulés cherchés des profils de recherche menés.</p>
-        {champ('postes', 'l-postes', 'Postes à chercher')}
-        <p className="aide-champ">Tapés un par un dans la page « Personnes » de chaque employeur.</p>
-        <div className="grille-2">
-          {champ('posts', 'l-posts', 'Posts par recherche', 'number')}
-          {champ('personnes', 'l-pers', 'Personnes par poste', 'number')}
+      <div className="section-f lapis-reglages" onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLElement).matches('input:not([type=checkbox])') && !occupe && void enregistrer()}>
+        <div className="cartes">
+          {f?.recherches.map((r, i) => (
+            <article key={i} className="carte-f">
+              <div className="carte-tete">
+                <h3>{r.type === 'personnes' ? 'Personnes' : 'Offres dans les posts'}</h3>
+                <Interrupteur libelle="Active" title="Décochée, la recherche reste dans la liste sans être menée." checked={r.actif} onChange={(e) => modifier(i, { actif: e.target.checked })} />
+                <button type="button" className="lien-d" aria-label={`Retirer la recherche ${i + 1}`} onClick={() => setF((v) => (v ? { ...v, recherches: v.recherches.filter((_, j) => j !== i) } : v))}>Retirer</button>
+              </div>
+              {r.type === 'personnes' ? (
+                <>
+                  {/* Le serveur refuse une entreprise et un secteur ensemble */}
+                  <ChampListe id={`l${i}-cible`} libelle="Cible" value={r.cible} onChange={(e) => modifier(i, { cible: e.target.value as Cible, entreprise: '', secteur: 0 })}>
+                    <option value="tout">Tout LinkedIn</option>
+                    <option value="entreprise">Une entreprise</option>
+                    <option value="secteur">Un secteur</option>
+                  </ChampListe>
+                  {r.cible === 'entreprise' && (
+                    <ChampSaisie id={`l${i}-ent`} libelle="Entreprise" aide="Nom ou lien LinkedIn de l'entreprise." value={r.entreprise} onChange={(e) => modifier(i, { entreprise: e.target.value })} />
+                  )}
+                  {r.cible === 'secteur' && (
+                    <ChampListe id={`l${i}-sect`} libelle="Secteur" value={r.secteur} onChange={(e) => modifier(i, { secteur: Number(e.target.value) })}>
+                      <option value={0}>Choisir un secteur</option>
+                      {secteurs}
+                    </ChampListe>
+                  )}
+                  <ChampSaisie id={`l${i}-postes`} libelle="Postes recherchés" aide="Séparés par des virgules. Vide : les postes RH par défaut." value={r.postes} onChange={(e) => modifier(i, { postes: e.target.value })} />
+                  <label className="reglage">Profils maximum<input className="saisie" type="number" min={1} max={100} value={r.profils_max} onChange={(e) => modifier(i, { profils_max: e.target.value })} /></label>
+                  <Champ groupe libelle="Relations" titre="Au moins un degré reste coché." role="group" aria-label="Relations">
+                    <span className="puces">
+                      {RELATIONS.map((d) => (
+                        <label key={d} className="choix puce-p">
+                          <input type="checkbox" className="cache" checked={r.relations.includes(d)} onChange={(e) => {
+                            const relations = RELATIONS.filter((x) => (x === d ? e.target.checked : r.relations.includes(x)));
+                            if (relations.length) modifier(i, { relations });
+                          }} />
+                          {DEGRES[d]}
+                        </label>
+                      ))}
+                    </span>
+                  </Champ>
+                </>
+              ) : (
+                <>
+                  <ChampSaisie id={`l${i}-mots`} libelle="Mots-clés" aide="Comme les recherches de la veille. Vide : les intitulés cherchés des profils de recherche menés." value={r.mots_cles} onChange={(e) => modifier(i, { mots_cles: e.target.value })} />
+                  <label className="reglage">Posts maximum<input className="saisie" type="number" min={1} max={50} value={r.posts_max} onChange={(e) => modifier(i, { posts_max: e.target.value })} /></label>
+                </>
+              )}
+            </article>
+          ))}
+          {f && !f.recherches.length && <p className="texte-f">Aucune recherche : une passe ne lit rien.</p>}
         </div>
-        <div className="grille-2">
-          {champ('employeurs', 'l-empl', 'Employeurs par passe', 'number')}
-          {admin && (
-            <ChampListe id="l-modele" libelle={<>Modèle<MarqueAdmin /></>} value={f?.modele ?? ''} disabled={!f} onChange={(e) => setF((v) => (v ? { ...v, modele: e.target.value } : v))}>
-                <OptionsModele modeles={modeles} vide="Aucun" valeur={f?.modele ?? ''} detail={false} />
-              </ChampListe>
-          )}
+        <div className="actions ajouts-l" role="group" aria-label="Ajouter une recherche">
+          <Action icone={ICONES.plus_pages} disabled={!f} title="Ajouter une recherche de personnes" onClick={() => ajouter('personnes')}>Personnes</Action>
+          <Action icone={ICONES.plus_pages} disabled={!f} title="Ajouter une recherche d'offres dans les posts" onClick={() => ajouter('offres')}>Offres dans les posts</Action>
         </div>
-        <p className="aide-champ">Un employeur fouillé il y a moins de deux semaines attend. Le modèle lit les posts ; vide : celui des mails.</p>
+        {admin && (
+          <ChampListe id="l-modele" libelle={<>Modèle<MarqueAdmin /></>} aide="Il lit les posts des recherches Offres ; vide : celui des mails." value={f?.modele ?? ''} disabled={!f} onChange={(e) => setF((v) => (v ? { ...v, modele: e.target.value } : v))}>
+              <OptionsModele modeles={modeles} vide="Aucun" valeur={f?.modele ?? ''} detail={false} />
+            </ChampListe>
+        )}
         {erreur && <p className="erreur-f" role="alert">{erreur}</p>}
       </div>
     ),
@@ -329,6 +396,7 @@ function ongletOffre(urn: string, donnees: Lapis | null, dire: Dire): Onglet | n
           {o.lien && <li>Lien de l&apos;offre<Sortie href={o.lien} className="d">{o.lien.replace(/^https?:\/\//i, '')}</Sortie></li>}
           <li>Post<Sortie href={post.url} className="d">Voir le post</Sortie></li>
         </ul>
+        {post.texte && <p className="resume-offre texte-post">{post.texte}</p>}
       </div>
     ),
     pied: <PiedOffre key={urn} post={post} dire={dire} />,
