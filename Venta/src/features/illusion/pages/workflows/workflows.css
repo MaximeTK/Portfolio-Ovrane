@@ -24,7 +24,7 @@
 .ov .workflows .action .compteur{margin-left:-2px}
 /* Menu des pages sous la rangée d'outils ; une clé longue passe à la ligne. */
 .ov .workflows .filtre-hote{position:static}
-.ov .workflows .filtre-hote .menu{left:14px;right:auto;top:calc(100% + 2px);max-width:calc(100% - 28px);max-height:min(360px,calc(100vh - 260px));overflow-y:auto;scrollbar-width:none}
+.ov .workflows .filtre-hote .menu{left:14px;right:auto;top:calc(100% + 2px);max-width:calc(100% - 28px);max-height:min(360px,calc(100vh - 260px))}
 .ov .workflows .menu-option{height:auto;min-height:32px;padding:6px 16px;white-space:normal;text-align:left}
 .ov .workflows .menu-option .num{flex:none;width:14px;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11px);color:rgb(var(--encre) / .55)}
 .ov .workflows .menu-option .adr{min-width:0;font-family:var(--font-geist-mono),ui-monospace,monospace;font-size:var(--t-petit,11.5px);overflow-wrap:anywhere}

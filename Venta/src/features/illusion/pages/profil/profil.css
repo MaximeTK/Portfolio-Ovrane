@@ -94,7 +94,7 @@
 
 /* Un lieu se choisit dans la liste de référence qui s'ouvre sous le champ. */
 .ov .ed-profil .champ-lieu{position:relative}
-.ov .ed-profil .lieux{left:0;right:0;top:calc(100% + 2px);min-width:0;max-height:240px;overflow-y:auto}
+.ov .ed-profil .lieux{left:0;right:0;top:calc(100% + 2px);min-width:0;max-height:240px}
 .ov .ed-profil .lieux .menu-option{height:auto;min-height:32px;padding:6px 14px;white-space:normal;text-align:left}
 
 /* Ajouter un champ au profil, dans le panneau de l'admin. */

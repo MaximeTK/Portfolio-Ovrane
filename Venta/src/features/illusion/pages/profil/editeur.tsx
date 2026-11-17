@@ -307,14 +307,16 @@ function ChampLieu({ id, valeur, portee, exemple, changer, choisir }: { id: stri
         }} />
       {lieux.length > 0 && (
         <Menu id={`${id}-lieux`} className="lieux" role="listbox" aria-label="Lieux proposés">
-          {lieux.map((l, n) => (
-            <OptionMenu key={n} onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                rang.current++;
-                setLieux([]);
-                choisir(l);
-              }}>{l.detail ?? l.libelle}</OptionMenu>
-          ))}
+          <div className="menu-liste">
+            {lieux.map((l, n) => (
+              <OptionMenu key={n} onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  rang.current++;
+                  setLieux([]);
+                  choisir(l);
+                }}>{l.detail ?? l.libelle}</OptionMenu>
+            ))}
+          </div>
         </Menu>
       )}
     </div>

@@ -78,15 +78,17 @@ function FiltreEtMenu({ hote, ouvert, basculer, fermer, lib, titre = lib, choix,
       <BoutonFiltre lib={lib} aria-expanded={ouvert} onClick={basculer} {...bouton} />
       {ouvert && (
         <Menu className={classeMenu} role="listbox" aria-label={titre}>
-          {choix?.map((c) => (
-            <OptionMenu key={c.cle} actif={c.cle === courant} onClick={() => {
-              choisir?.(c.cle);
-              fermer();
-            }}>
-              {c.libelle}{c.n !== undefined && <span className="compteur">{c.n}</span>}{c.fin}
-            </OptionMenu>
-          ))}
-          {children}
+          <div className="menu-liste">
+            {choix?.map((c) => (
+              <OptionMenu key={c.cle} actif={c.cle === courant} onClick={() => {
+                choisir?.(c.cle);
+                fermer();
+              }}>
+                {c.libelle}{c.n !== undefined && <span className="compteur">{c.n}</span>}{c.fin}
+              </OptionMenu>
+            ))}
+            {children}
+          </div>
         </Menu>
       )}
     </div>

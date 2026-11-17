@@ -66,6 +66,10 @@
 /* Menus : colonne de choix dans la matière des fenêtres, courant allumé. */
 .ov .menu-hote{position:relative;display:inline-flex}
 .ov .menu{position:absolute;top:calc(100% + 6px);right:0;z-index:40;display:flex;flex-direction:column;min-width:210px;padding:6px 0}
+/* Seule la liste défile : le verre du menu reste derrière toutes ses lignes */
+.ov .menu>.menu-liste{display:flex;flex-direction:column;min-height:0;overflow-y:auto;scrollbar-width:none}
+/* Ses lignes gardent leur hauteur : la liste défile au lieu de les tasser */
+.ov .menu>.menu-liste>*{flex:none}
 .ov .menu-option{display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:var(--t-corps,12.5px);white-space:nowrap;color:rgb(var(--encre) / .75);transition:color .2s,background .2s}
 .ov .menu-option:hover,.ov .menu-option:focus-visible{background:rgb(var(--encre) / .05);color:rgb(var(--encre))}
 .ov .menu-option.actif{color:rgb(var(--encre));text-shadow:0 0 8px rgb(var(--encre) / .35)}

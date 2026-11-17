@@ -1,8 +1,7 @@
 /* Offres et Veille : file et écartées dans la fenêtre, profils au panneau. */
 
 /* Filtres en menus : chacun ouvre sa colonne de choix sous lui. */
-.ov :is([data-fen=offres],[data-fen=veille]) .menu-filtre .menu{left:0;right:auto;max-height:min(480px,calc(100vh - 220px));overflow-y:auto;scrollbar-width:none}
-.ov :is([data-fen=offres],[data-fen=veille]) .menu-filtre .menu::-webkit-scrollbar{display:none}
+.ov :is([data-fen=offres],[data-fen=veille]) .menu-filtre .menu{left:0;right:auto;max-height:min(480px,calc(100vh - 220px))}
 .ov [data-fen=offres] .menu-filtre+.menu-filtre{margin-left:20px}
 .ov [data-fen=offres] .menu-option .compteur{margin-left:auto;padding-left:18px}
 .ov [data-fen=offres] .filtre svg{flex:none}

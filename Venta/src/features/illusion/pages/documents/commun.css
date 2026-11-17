@@ -5,8 +5,7 @@
 .ov :is(.docs-galerie,.docs-f,.docs-constructeur) .avis-doc.erreur{border-left-color:rgb(var(--rouge-3));color:rgb(var(--rouge-2))}
 
 /* Menus des filtres posés sous leur filtre, à gauche, dans le verre */
-.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .filtre-doc .menu{left:0;right:auto;max-height:min(360px,calc(100vh - 260px));overflow-y:auto;scrollbar-width:none}
-.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .filtre-doc .menu::-webkit-scrollbar{display:none}
+.ov :is(.docs-galerie,.docs-f,.docs-constructeur) .filtre-doc .menu{left:0;right:auto;max-height:min(360px,calc(100vh - 260px))}
 .ov :is(.docs-galerie,.docs-f,.docs-constructeur) .menu-date{display:flex;flex-direction:column;gap:6px;padding:8px 16px 10px;font-size:var(--t-petit,9.5px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgb(var(--encre) / .62)}
 
 /* Couleurs : quatre pastilles au plus, croix au survol */

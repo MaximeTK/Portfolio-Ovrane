@@ -2,7 +2,7 @@
 
 /* Filtres en texte seul avec leur menu dessous, puis la recherche. */
 .ov [data-fen=boite] .filtre-hote+.filtre-hote{margin-left:20px}
-.ov [data-fen=boite] .filtre-hote .menu{left:0;right:auto;max-height:min(360px,calc(100vh - 260px));overflow-y:auto;scrollbar-width:none}
+.ov [data-fen=boite] .filtre-hote .menu{left:0;right:auto;max-height:min(360px,calc(100vh - 260px))}
 .ov [data-fen=boite] .menu-option .compteur{margin-left:auto;padding-left:16px;color:rgb(var(--encre) / .5)}
 .ov [data-fen=boite] .recherche{display:inline-flex;align-items:center;gap:8px;min-width:0;height:34px;margin-left:20px;color:rgb(var(--encre) / .6);cursor:text}
 .ov [data-fen=boite] .recherche svg{flex:none;width:13px;height:13px}
