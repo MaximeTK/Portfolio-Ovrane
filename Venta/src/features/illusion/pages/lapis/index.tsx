@@ -37,7 +37,7 @@ type RechercheLapis = {
   relations: Degre[]; mots_cles: string; posts_max: number;
 };
 type OptionsLapis = { secteurs: { id: number; nom: string; groupe: string }[]; postes_rh: string[] };
-type Parametres = { lapis_recherches: RechercheLapis[]; lapis_modele: string; modeles?: { nom: string }[] };
+type Parametres = { lapis_recherches: RechercheLapis[]; lapis_garder: boolean; lapis_modele: string; modeles?: { nom: string }[] };
 
 const SORTES: [Sorte, string][] = [['personnes', 'Personnes'], ['offres', 'Offres repérées'], ['evenements', 'Événements'], ['posts', 'Posts lus']];
 const VIDES: Record<Sorte, string> = {
@@ -220,7 +220,10 @@ function Galerie({ donnees, erreur, avis, dire, suivre }: ProprietesGalerie) {
           </article>
         ))}
         {(erreur || (donnees && !cartes.length)) && (
-          <p className={`vide-l${erreur ? ' erreur' : ''}`} role={erreur ? 'alert' : undefined}>{erreur ? `LAPIS illisible : ${erreur}` : VIDES[sorte]}</p>
+          <p className={`vide-l${erreur ? ' erreur' : ''}`} role={erreur ? 'alert' : undefined}>
+            {/* Des recherches actives qui n'ont rien ramené : aucun résultat */}
+            {erreur ? `LAPIS illisible : ${erreur}` : donnees?.recherches.length ? 'Aucun résultat.' : VIDES[sorte]}
+          </p>
         )}
       </div>
       {avis}
@@ -249,11 +252,11 @@ function PanneauLapis({ admin, donnees, dire, relire, suivre }: { admin: boolean
 type Cible = 'tout' | 'entreprise' | 'secteur';
 // Une recherche en saisie : sa cible, ses postes et ses nombres en texte
 type Carte = Omit<RechercheLapis, 'postes' | 'profils_max' | 'posts_max'> & { cible: Cible; postes: string; profils_max: string; posts_max: string };
-type Formulaire = { recherches: Carte[]; modele: string };
+type Formulaire = { recherches: Carte[]; garder: boolean; modele: string };
 
 type Secteur = OptionsLapis['secteurs'][number];
 // Sans accents ni casse : « energie » trouve « Énergie »
-const plat = (texte: string) => texte.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const plat = (texte: string) => texte.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // Secteur choisi dans sa liste, filtrée à mesure qu'on tape
 function ChoixSecteur({ id, secteurs, valeur, changer }: { id: string; secteurs: Secteur[]; valeur: number; changer: (secteur: number) => void }) {
@@ -270,7 +273,7 @@ function ChoixSecteur({ id, secteurs, valeur, changer }: { id: string; secteurs:
     <Champ pour={id} libelle="Secteur">
       <div className="menu-hote secteur-hote">
         <input
-          id={id} className="saisie" type="search" role="combobox" autoComplete="off" placeholder={choisi?.nom ?? 'Chercher un secteur…'}
+          id={id} className={`saisie${ouvert && trouves.length > 0 ? ' ouvert' : ''}`} type="search" role="combobox" autoComplete="off" placeholder={choisi?.nom ?? 'Chercher un secteur…'}
           value={ouvert ? q : choisi?.nom ?? ''} aria-autocomplete="list" aria-expanded={ouvert && trouves.length > 0} aria-controls={`${id}-liste`}
           onFocus={() => setOuvert(true)}
           onBlur={() => { setOuvert(false); setQ(''); }}
@@ -290,12 +293,16 @@ function ChoixSecteur({ id, secteurs, valeur, changer }: { id: string; secteurs:
           }}
         />
         {ouvert && trouves.length > 0 && (
-          <Menu id={`${id}-liste`} role="listbox" aria-label="Secteurs LinkedIn" className="menu-secteurs">
-            {trouves.map((s) => (
-              <OptionMenu key={s.id} actif={s.id === valeur} onMouseDown={(e) => e.preventDefault()} onClick={() => prendre(s)}>
-                <span className="nom">{s.nom}</span><span className="groupe">{s.groupe}</span>
-              </OptionMenu>
-            ))}
+          // Au-dessus de la page, comme les listes natives : son verre floute ce qu'il couvre
+          <Menu id={`${id}-liste`} role="listbox" aria-label="Secteurs LinkedIn" className="menu-secteurs" popover="manual"
+            ref={(menu) => { if (menu && !menu.matches(':popover-open')) menu.showPopover(); }}>
+            <div className="menu-liste">
+              {trouves.map((s) => (
+                <OptionMenu key={s.id} actif={s.id === valeur} onMouseDown={(e) => e.preventDefault()} onClick={() => prendre(s)}>
+                  <span className="nom">{s.nom}</span><span className="groupe">{s.groupe}</span>
+                </OptionMenu>
+              ))}
+            </div>
           </Menu>
         )}
       </div>
@@ -323,6 +330,7 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
       const forme = {
         recherches: p.lapis_recherches.map((r): Carte => ({ ...r, cible: r.entreprise ? 'entreprise' : r.secteur ? 'secteur' : 'tout',
           postes: r.postes.join(', '), profils_max: String(r.profils_max), posts_max: String(r.posts_max) })),
+        garder: !!p.lapis_garder,
         modele: p.lapis_modele ?? '',
       };
       setLu(forme);
@@ -350,6 +358,7 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
           type: r.type, actif: r.actif, entreprise: r.entreprise.trim(), secteur: r.secteur, postes: parVirgules(r.postes),
           profils_max: parseInt(r.profils_max, 10) || 0, relations: r.relations, mots_cles: r.mots_cles.trim(), posts_max: parseInt(r.posts_max, 10) || 0,
         })),
+        lapis_garder: !!f.garder,
         ...(admin ? { lapis_modele: f.modele } : {}),
       } });
       dire('Réglages de LAPIS enregistrés : ils valent dès la prochaine passe.');
@@ -418,6 +427,8 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
           <Action icone={ICONES.plus_pages} disabled={!f} title="Ajouter une recherche de personnes" onClick={() => ajouter('personnes')}>Personnes</Action>
           <Action icone={ICONES.plus_pages} disabled={!f} title="Ajouter une recherche d'offres dans les posts" onClick={() => ajouter('offres')}>Offres dans les posts</Action>
         </div>
+        <Interrupteur libelle="Garder les résultats précédents" checked={!!f?.garder} disabled={!f} onChange={(e) => setF((v) => (v ? { ...v, garder: e.target.checked } : v))} />
+        <p className="aide-champ">Désactivé, chaque passe remplace les personnes trouvées par les passes d&apos;avant ; activé, elle les ajoute.</p>
         {admin && (
           <ChampListe id="l-modele" libelle={<>Modèle<MarqueAdmin /></>} aide="Il lit les posts des recherches Offres ; vide : celui des mails." value={f?.modele ?? ''} disabled={!f} onChange={(e) => setF((v) => (v ? { ...v, modele: e.target.value } : v))}>
               <OptionsModele modeles={modeles} vide="Aucun" valeur={f?.modele ?? ''} detail={false} />

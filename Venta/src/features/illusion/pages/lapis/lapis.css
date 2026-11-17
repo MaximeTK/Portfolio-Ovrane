@@ -87,10 +87,14 @@
 .ov .lapis-reglages .ajouts-l{flex-wrap:wrap;margin:4px 0 12px}
 .ov .lapis-reglages .secteur-hote{display:flex}
 .ov .lapis-reglages .secteur-hote>.saisie{flex:1;min-width:0}
-.ov .lapis-reglages .menu-secteurs{left:0;right:0;max-height:min(320px,calc(100vh - 260px));overflow-y:auto;scrollbar-width:none}
+/* Le menu ouvert au-dessus de la page reste accroché sous son champ */
+.ov .lapis-reglages .secteur-hote>.saisie.ouvert{anchor-name:--secteur}
+.ov .lapis-reglages .menu-secteurs{position:fixed;position-anchor:--secteur;inset:auto;top:anchor(bottom);left:anchor(left);width:anchor-size(width);margin:6px 0 0;border:0;max-height:min(320px,calc(100vh - 260px))}
 .ov .lapis-reglages .menu-secteurs .menu-option{flex:none;justify-content:space-between;min-width:0}
 .ov .lapis-reglages .menu-secteurs :is(.nom,.groupe){overflow:hidden;text-overflow:ellipsis}
 .ov .lapis-reglages .menu-secteurs .groupe{flex:0 1 auto;font-size:var(--t-petit,11px);opacity:.55}
+/* Le verre seul, sans le fond par défaut d'un menu au-dessus de la page */
+.ov.th-verre .lapis-reglages .menu-secteurs{background:none}
 
 /* Thèmes plats : le panneau centre sa croix, ses gestes éteints se lisent. */
 .ov.trame:has([data-fen=galerie].lapis) [data-fen=panneau] .p-tete{align-items:center}
