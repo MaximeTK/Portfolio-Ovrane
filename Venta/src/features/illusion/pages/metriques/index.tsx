@@ -1,7 +1,7 @@
 'use client';
 
 import './metriques.css';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { appeler } from '../../api';
 import { repris, useGarder } from '../../stockage';
 
@@ -11,11 +11,12 @@ import { ongletFicheEntreprise } from '../../partage/FicheEntreprise';
 import { ongletFicheOffre } from '../../partage/FicheOffre';
 import type { ProprietesPage } from '../liste';
 import {
-  CorpsAppels, CorpsCouts, CorpsCv, CorpsFantomes, CorpsJobboards, CorpsLiens, CorpsMetiers, CorpsPartage, CorpsWinrate, CorpsWorkflows,
-  dollars, jours, nombre, nomPoste, pourcent, winrate, type Fantome, type PageMetriques, type Suivi,
+  Carte, CarteWinrate, CorpsAppels, CorpsCouts, CorpsCv, CorpsFantomes, CorpsJobboards, CorpsLiens, CorpsMetiers, CorpsPartage, CorpsWinrate,
+  CorpsWorkflows, dollars, jours, nombre, nomPoste, pluriel, pourcent, useLignesQuiTiennent, type Fantome, type PageMetriques,
+  type ProprietesCarte, type Suivi,
 } from './panneaux';
 import { useEchap } from '../commun';
-import { BoutonFiltre, Menu } from '../../elements/Menu';
+import { BoutonFiltre, Menu, MenuFiltre } from '../../elements/Menu';
 import { Action } from '../../elements/Action';
 import { ICONES } from '../../elements/icones';
 import { useAvis } from '../../elements/Avis';
@@ -29,11 +30,10 @@ const RACCOURCIS: [number, string][] = [[7, '7 jours'], [30, '30 jours'], [90, '
 const iso = (d: Date) => d.toLocaleDateString('sv-SE');
 const plage = (j: number): Periode => (j ? { debut: iso(new Date(Date.now() - (j - 1) * 864e5)), fin: iso(new Date()) } : { debut: '', fin: '' });
 const enClair = (d: string) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : '—');
-const requete = (p: Periode) => {
+const requete = (p: Record<string, string>) => {
   const q = new URLSearchParams(Object.entries(p).filter(([, v]) => v)).toString();
   return q ? `?${q}` : '';
 };
-const pluriel = (n: number, mot: string) => `${nombre(n)} ${mot}${n > 1 ? 's' : ''}`;
 // Haut de l'échelle : la valeur ronde au-dessus du jour le plus cher
 const arrondi = (v: number) => {
   if (v <= 0) return 0.1;
@@ -60,30 +60,6 @@ export default function PageMetriques(_: ProprietesPage) {
   );
 }
 
-// Lignes qui ne tiennent pas cachées, remesurées au changement de taille
-function useLignesQuiTiennent(cle: unknown) {
-  const boite = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const el = boite.current;
-    if (!el) return;
-    const ajuster = () => {
-      const lignes = [...el.querySelectorAll<HTMLElement>('[data-ligne]')];
-      lignes.forEach((l) => (l.hidden = false));
-      const bas = el.getBoundingClientRect().bottom + 0.5;
-      lignes.filter((l) => l.getBoundingClientRect().bottom > bas).forEach((l) => (l.hidden = true));
-      // Un sous-titre dont aucune ligne ne tient ne reste pas seul
-      for (const t of el.querySelectorAll<HTMLElement>('[data-titre]')) {
-        t.hidden = ![...(t.nextElementSibling?.querySelectorAll<HTMLElement>('[data-ligne]') ?? [])].some((l) => !l.hidden);
-      }
-    };
-    ajuster();
-    const observateur = new ResizeObserver(ajuster);
-    observateur.observe(el);
-    return () => observateur.disconnect();
-  }, [cle]);
-  return boite;
-}
-
 function Metriques() {
   const { onglet, objet, ouvrir, fermer } = usePanneau();
   // Période et lecture gardées d'une visite à l'autre, relues derrière
@@ -98,7 +74,10 @@ function Metriques() {
   const [erreurSuivi, setErreurSuivi] = useState('');
   const [fantomes, setFantomes] = useState(() => repris<Fantome[] | null>('metriques:fantomes', null));
   const [erreurFantomes, setErreurFantomes] = useState('');
-  useGarder('metriques', { periode, raccourci, page, suivi, fantomes });
+  // Tous les comptes réunis par défaut, ou l'un d'eux
+  const [compte, setCompte] = useState(() => repris<string>('metriques:compte', 'tous'));
+  const [comptes, setComptes] = useState<string[]>([]);
+  useGarder('metriques', { periode, raccourci, page, suivi, fantomes, compte });
   const { dire, vue } = useAvis('avis', true, page && erreur ? `Métriques illisibles. ${erreur}` : '');
   const [range, setRange] = useState(false);
   const boutonDebut = useRef<HTMLButtonElement>(null);
@@ -109,7 +88,7 @@ function Metriques() {
   // Période changée à la validation seule : le calcul relit tout le compte
   useEffect(() => {
     let vivant = true;
-    const q = requete(periode);
+    const q = requete({ ...periode, compte });
     appeler<PageMetriques>(`/metriques${q}`).then((p) => {
       if (!vivant) return;
       setPage(p);
@@ -117,7 +96,7 @@ function Metriques() {
     }).catch((e) => {
       if (vivant) setErreur(message(e));
     });
-    appeler<Suivi>('/vues/metriques/suivi').then((s) => {
+    appeler<Suivi>(`/vues/metriques/suivi${requete({ compte })}`).then((s) => {
       if (!vivant) return;
       setSuivi(s);
       setErreurSuivi('');
@@ -134,7 +113,11 @@ function Metriques() {
     return () => {
       vivant = false;
     };
-  }, [periode, version]);
+  }, [periode, version, compte]);
+
+  useEffect(() => {
+    appeler<string[]>('/metriques/comptes').then(setComptes).catch(() => undefined);
+  }, []);
 
   // Rangement après l'ouverture : une base injoignable met des secondes
   useEffect(() => {
@@ -225,6 +208,10 @@ function Metriques() {
     <>
       <Fenetre id="metriques" className="tableau" aria-label="Métriques" titrePrise="Glisser pour détacher les métriques">
         <div className="outils">
+          {comptes.length > 1 && (
+            <MenuFiltre lib="Compte" valeur={compte === 'tous' ? 'Tous les comptes' : compte} actif={compte !== 'tous'} courant={compte} choisir={setCompte}
+              choix={[{ cle: 'tous', libelle: 'Tous les comptes' }, ...comptes.map((c) => ({ cle: c, libelle: c }))]} />
+          )}
           {choixDate('debut', 'Du')}
           {choixDate('fin', 'au')}
           <span className="raccourcis" role="group" aria-label="Période">
@@ -310,27 +297,6 @@ function Tableau({ page, suivi, erreurSuivi, ouvert, ouvrir }: ProprietesTableau
   );
 }
 
-type ProprietesCarte = { page: PageMetriques; ouvert: string | null; ouvrir: (d: string) => void };
-
-// Une carte : un clic n'importe où ouvre son détail (`detail`, son nom)
-function Carte({ titre, detail, d, large, ouvert, ouvrir, className, children }: {
-  titre: string; detail: string; d?: string; large?: boolean; ouvert: string | null; ouvrir: (d: string) => void; className?: string; children: React.ReactNode;
-}) {
-  return (
-    <section className={`carte${large ? ' large' : ''}${ouvert === detail ? ' ouverte' : ''}${className ? ` ${className}` : ''}`} aria-label={titre}
-      data-ouvre="detail" data-objet={detail} onClick={() => ouvrir(detail)}>
-      <div className="carte-tete">
-        <h3 className="etiquette">{titre}</h3>{d && <span className="d">{d}</span>}
-        <button type="button" className="detail" aria-haspopup="dialog" aria-label={`Détail : ${titre}`} data-ouvre="detail" data-objet={detail} onClick={(e) => {
-          e.stopPropagation();
-          ouvrir(detail);
-        }}>Détail ›</button>
-      </div>
-      {children}
-    </section>
-  );
-}
-
 function CarteCouts({ page, ouvert, ouvrir }: ProprietesCarte) {
   const { total, par_jour: parJour, postes } = page.couts;
   const moyenne = parJour.length ? parJour.reduce((n, j) => n + j.cout, 0) / parJour.length : 0;
@@ -378,36 +344,6 @@ function CarteJobboards({ page, ouvert, ouvrir }: ProprietesCarte) {
             </tbody>
           </table>
         ) : <p className="vide-m">Aucune offre dans la période.</p>}
-      </div>
-    </Carte>
-  );
-}
-
-function CarteWinrate({ page, ouvert, ouvrir }: ProprietesCarte) {
-  const boite = useLignesQuiTiennent(page);
-  const genres: ['cv' | 'recherche', string][] = [['cv', 'Profil de CV'], ['recherche', 'Profil de recherche']];
-  return (
-    <Carte titre="Winrate des profils" detail="winrate" ouvert={ouvert} ouvrir={ouvrir}>
-      <div ref={boite} className="corps-carte">
-        {page.profils.length ? genres.map(([genre, titre]) => (
-          <div key={genre}>
-            <p className="sous-carte" data-titre>{titre}</p>
-            <ul className="winrate">
-              {page.profils.filter((p) => p.genre === genre).map((p) => {
-                const b = p.total;
-                const taux = b.envoyees ? (100 * b.entretiens) / b.envoyees : 0;
-                return (
-                  <li key={p.profil} data-ligne>
-                    <span className="w-nom" title={p.profil}>{p.profil}</span>
-                    {/* L'échelle va de 0 à 10 % : au-delà, la barre est pleine */}
-                    <span className="w-barre" title={`${b.entretiens} entretien(s) sur ${b.envoyees} envoi(s)`}><i style={{ width: `${Math.min(100, taux * 10)}%` }} /></span>
-                    <span className="w-val">{winrate(b)}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )) : <p className="vide-m">Aucune candidature envoyée dans la période.</p>}
       </div>
     </Carte>
   );

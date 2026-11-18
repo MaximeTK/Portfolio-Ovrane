@@ -25,7 +25,7 @@ type EtatVeille = {
 export type Plateforme = { nom: string; actif: boolean };
 type ProfilVeille = { nom: string; langue: string; actif: boolean; plateformes: Plateforme[]; depuis_jours: number; par_source: number; max_fiches: number; titre_exact: boolean };
 export type ProfilRecherche = { nom: string; actif: boolean; langue: string; mots_cles: string[]; mots_bannis: string[]; departements: string[]; profils_candidature: string[] };
-export type Jobboard = { url: string; nom: string; actif: boolean; veille: boolean; siren: string };
+export type Jobboard = { url: string; nom: string; actif: boolean; veille: boolean; siren: string; utilisateurs?: string[]; illusion?: boolean };
 export type Parametres = {
   departements: string[]; profils_recherche: ProfilRecherche[]; profils_veille: ProfilVeille[]; jobboards: Jobboard[];
   jobboards_heure: string; jobboards_periode_heures: number; veille_periode_minutes: number; veille_timeout_secondes: number;

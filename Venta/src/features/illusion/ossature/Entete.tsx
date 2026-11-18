@@ -9,18 +9,16 @@ import type { Compte } from '../api';
 import { DUREES, ecrire } from '../partage/glyphes';
 import { LienIllusion } from '../partage/LienIllusion';
 import { Menu, useMenu } from '../elements/Menu';
-import { ADMINISTRATION } from '../pages/liste';
+import { ADMINISTRATION, NOM_LAPIS, SLUG_LAPIS } from '../pages/liste';
 
 const TRAIT = { className: 'icone', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const;
 // Icônes des pages d'administration, reprises des canaux des planches
 const ICONES_ADMIN: Record<string, React.ReactNode> = {
-  collecte: <svg {...TRAIT}><path d="M4 5h16l-6 7v6l-4 2v-8z" /></svg>,
-  parser: <svg {...TRAIT}><path d="m8 8-4 4 4 4M16 8l4 4-4 4" /></svg>,
-  audit: <svg {...TRAIT}><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>,
+  entreprises: <svg {...TRAIT}><path d="M4 21V5l8-3v19M12 9h8v12M3 21h18M8 7v.01M8 11v.01M8 15v.01M16 13v.01M16 17v.01" /></svg>,
   veille: <svg {...TRAIT}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>,
   workflows: <svg {...TRAIT}><circle cx="6" cy="5" r="2" /><circle cx="6" cy="19" r="2" /><circle cx="18" cy="8" r="2" /><path d="M6 7v10M18 10c0 4-6 3-10 7" /></svg>,
   constructeur: <svg {...TRAIT}><path d="m12 3 9 5-9 5-9-5z" /><path d="m3 13 9 5 9-5" /></svg>,
-  lapis: <svg {...TRAIT}><circle cx="10" cy="8" r="4" /><path d="M3 20c0-3.5 3-6 7-6" /><circle cx="17" cy="16" r="3" /><path d="m21 20-1.8-1.8" /></svg>,
+  relations: <svg {...TRAIT}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><circle cx="17.5" cy="9" r="2.5" /><path d="M17.5 14c2.4 0 4 1.7 4 4.5" /></svg>,
   metriques: <svg {...TRAIT}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>,
   'parametres-serveur': <svg {...TRAIT}><rect x="3" y="4" width="18" height="7" /><rect x="3" y="13" width="18" height="7" /><path d="M7 7.5h.01M7 16.5h.01" /></svg>,
 };
@@ -58,6 +56,7 @@ export function Entete({ compte, visible }: ProprietesEntete) {
       <nav className="barre-canaux" aria-label="Canaux d'Illusion">
         <div className="cote gauche">
           {onglet('offres', 'Offres')}
+          {onglet('ma-veille', 'Ma veille')}
           {onglet('candidatures', 'Candidatures')}
           {onglet('documents', 'Documents')}
         </div>
@@ -66,7 +65,8 @@ export function Entete({ compte, visible }: ProprietesEntete) {
         <div className="cote droite">
           {onglet('mails', 'Mails')}
           {onglet('appels', 'Appels')}
-          {onglet('relations', 'Relations')}
+          {onglet(SLUG_LAPIS, NOM_LAPIS)}
+          {onglet('statistiques', 'Statistiques')}
           {compte.admin && <MenuAdministration page={page} />}
         </div>
       </nav>

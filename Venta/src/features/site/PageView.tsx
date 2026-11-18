@@ -6,7 +6,7 @@ import { partiesIllusion, useUIStore, vueIllusion } from '@/lib/uiStore';
 import { INDISPONIBLE } from '@/lib/messages';
 import { lireJson } from '@/lib/reseau';
 import { ErreurIllusion, lireCompte } from '@/features/illusion/api';
-import { ADMINISTRATION, MON_ESPACE, PAGE_DEPART, chargerAdministration, estAdmin, titreDe } from '@/features/illusion/pages/liste';
+import { ADMINISTRATION, ALIAS_PAGES, MON_ESPACE, PAGE_DEPART, chargerAdministration, estAdmin, titreDe } from '@/features/illusion/pages/liste';
 import { PROJETS, trouverProjet } from './projets';
 import { ProjectPage, Sommaire } from './ProjectPage';
 import { LegalPage } from './LegalPage';
@@ -111,8 +111,9 @@ export function PageView({ sendAuth, utilisateur }: PageViewProps) {
       setPage('connexion');
       return;
     }
-    const connue = entree.slug === 'accueil' || [...MON_ESPACE, ...ADMINISTRATION].some((p) => p.slug === entree.slug);
-    const slug = connue && (compteIllusion?.admin || !estAdmin(entree.slug)) ? entree.slug : PAGE_DEPART;
+    const demande = ALIAS_PAGES[entree.slug] ?? entree.slug;
+    const connue = demande === 'accueil' || [...MON_ESPACE, ...ADMINISTRATION].some((p) => p.slug === demande);
+    const slug = connue && (compteIllusion?.admin || !estAdmin(demande)) ? demande : PAGE_DEPART;
     const vue = vueIllusion(slug, entree.recherche);
     window.history.replaceState({ page: vue }, '', `/${vue}`);
     setPage(vue);

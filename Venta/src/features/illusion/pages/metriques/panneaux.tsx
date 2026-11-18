@@ -1,5 +1,6 @@
 'use client';
 
+import { useLayoutEffect, useRef } from 'react';
 import { POSTES } from '../../partage/FicheOffre';
 import { ouvrable } from '../../elements/Case';
 import { dureeOuTiret, jourMoisIso, libelleSource, quand } from '../../elements/format';
@@ -52,6 +53,7 @@ export const dollars = (v?: number | null) => (v == null ? '—'
 // Entretiens sur envois, ce qu'on appelle le winrate : « 3/61 · 5 % »
 export const winrate = (b?: Bilan) => (b && b.envoyees ? `${b.entretiens}/${b.envoyees} · ${pourcent(b.taux_entretien)}` : '—');
 const sur = (n: number, taux: number | null) => `${nombre(n)} · ${pourcent(taux)}`;
+export const pluriel = (n: number, mot: string) => `${nombre(n)} ${mot}${n > 1 ? 's' : ''}`;
 
 function periodeTexte(p: { debut: string; fin: string }) {
   if (!p.debut && !p.fin) return "Sur tout l'historique";
@@ -127,7 +129,7 @@ export function CorpsJobboards({ page }: { page: PageMetriques }) {
   );
 }
 
-export function CorpsWinrate({ page }: { page: PageMetriques }) {
+export function CorpsWinrate({ page }: { page: Pick<PageMetriques, 'profils'> }) {
   const genres: ['cv' | 'recherche', string][] = [['cv', 'Profil de CV'], ['recherche', 'Profil de recherche']];
   return (
     <CorpsMetrique intro="Entretiens obtenus sur candidatures envoyées, métier par métier : par profil de CV, puis par profil de recherche.">
@@ -175,7 +177,7 @@ function TableBilans<T extends Bilan>({ titre, lignes, nom, sans }: { titre: str
   );
 }
 
-export function CorpsMetiers({ page }: { page: PageMetriques }) {
+export function CorpsMetiers({ page }: { page: Pick<PageMetriques, 'metiers' | 'postes'> }) {
   return (
     <CorpsMetrique intro="Les familles de métiers des offres, puis les intitulés les plus détectés, leurs écritures voisines réunies (« H/F », tirets, majuscules).">
       {page.metiers.length ? <TableBilans titre="Métier" lignes={page.metiers} nom={(b) => b.metier} /> : <p className="texte-f">Aucune offre.</p>}
@@ -186,7 +188,7 @@ export function CorpsMetiers({ page }: { page: PageMetriques }) {
   );
 }
 
-export function CorpsFantomes({ page, fantomes, erreur, voir }: { page: PageMetriques; fantomes: Fantome[] | null; erreur: string; voir: (cle: string) => void }) {
+export function CorpsFantomes({ page, fantomes, erreur, voir }: { page: Pick<PageMetriques, 'fantomes'>; fantomes: Fantome[] | null; erreur: string; voir: (cle: string) => void }) {
   return (
     <CorpsMetrique intro="Une offre FANTÔME est un poste que l&apos;employeur avait déjà publié dans les 90 jours : republié en boucle, répond-il moins qu&apos;un poste neuf ?">
       <TableBilans titre="Publication" lignes={page.fantomes} nom={(b) => b.publication} />
@@ -274,5 +276,80 @@ export function CorpsAppels({ page }: { page: PageMetriques }) {
         <TableListe colonnes={['Quand', 'Appel', 'Durée', 'Transcription']}>{a.liste.map((x) => <tr key={x.id}><td>{quand(x.debut)}</td><td><b>{x.titre || 'Appel'}</b></td><td>{dureeOuTiret(x.duree_s)}</td><td>{dollars(x.cout)}</td></tr>)}</TableListe>
       )}
     </CorpsMetrique>
+  );
+}
+
+// Lignes qui ne tiennent pas cachées, remesurées au changement de taille
+export function useLignesQuiTiennent(cle: unknown) {
+  const boite = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = boite.current;
+    if (!el) return;
+    const ajuster = () => {
+      const lignes = [...el.querySelectorAll<HTMLElement>('[data-ligne]')];
+      lignes.forEach((l) => (l.hidden = false));
+      const bas = el.getBoundingClientRect().bottom + 0.5;
+      lignes.filter((l) => l.getBoundingClientRect().bottom > bas).forEach((l) => (l.hidden = true));
+      // Un sous-titre dont aucune ligne ne tient ne reste pas seul
+      for (const t of el.querySelectorAll<HTMLElement>('[data-titre]')) {
+        t.hidden = ![...(t.nextElementSibling?.querySelectorAll<HTMLElement>('[data-ligne]') ?? [])].some((l) => !l.hidden);
+      }
+    };
+    ajuster();
+    const observateur = new ResizeObserver(ajuster);
+    observateur.observe(el);
+    return () => observateur.disconnect();
+  }, [cle]);
+  return boite;
+}
+
+export type ProprietesCarte = { page: PageMetriques; ouvert: string | null; ouvrir: (d: string) => void };
+
+// Une carte : un clic n'importe où ouvre son détail (`detail`, son nom)
+export function Carte({ titre, detail, d, large, ouvert, ouvrir, className, children }: {
+  titre: string; detail: string; d?: string; large?: boolean; ouvert: string | null; ouvrir: (d: string) => void; className?: string; children: React.ReactNode;
+}) {
+  return (
+    <section className={`carte${large ? ' large' : ''}${ouvert === detail ? ' ouverte' : ''}${className ? ` ${className}` : ''}`} aria-label={titre}
+      data-ouvre="detail" data-objet={detail} onClick={() => ouvrir(detail)}>
+      <div className="carte-tete">
+        <h3 className="etiquette">{titre}</h3>{d && <span className="d">{d}</span>}
+        <button type="button" className="detail" aria-haspopup="dialog" aria-label={`Détail : ${titre}`} data-ouvre="detail" data-objet={detail} onClick={(e) => {
+          e.stopPropagation();
+          ouvrir(detail);
+        }}>Détail ›</button>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export function CarteWinrate({ page, ouvert, ouvrir }: Omit<ProprietesCarte, 'page'> & { page: Pick<PageMetriques, 'profils'> }) {
+  const boite = useLignesQuiTiennent(page);
+  const genres: ['cv' | 'recherche', string][] = [['cv', 'Profil de CV'], ['recherche', 'Profil de recherche']];
+  return (
+    <Carte titre="Winrate des profils" detail="winrate" ouvert={ouvert} ouvrir={ouvrir}>
+      <div ref={boite} className="corps-carte">
+        {page.profils.length ? genres.map(([genre, titre]) => (
+          <div key={genre}>
+            <p className="sous-carte" data-titre>{titre}</p>
+            <ul className="winrate">
+              {page.profils.filter((p) => p.genre === genre).map((p) => {
+                const b = p.total;
+                const taux = b.envoyees ? (100 * b.entretiens) / b.envoyees : 0;
+                return (
+                  <li key={p.profil} data-ligne>
+                    <span className="w-nom" title={p.profil}>{p.profil}</span>
+                    {/* L'échelle va de 0 à 10 % : au-delà, la barre est pleine */}
+                    <span className="w-barre" title={`${b.entretiens} entretien(s) sur ${b.envoyees} envoi(s)`}><i style={{ width: `${Math.min(100, taux * 10)}%` }} /></span>
+                    <span className="w-val">{winrate(b)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )) : <p className="vide-m">Aucune candidature envoyée dans la période.</p>}
+      </div>
+    </Carte>
   );
 }

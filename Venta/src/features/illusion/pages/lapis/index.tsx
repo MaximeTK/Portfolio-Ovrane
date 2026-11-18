@@ -8,7 +8,7 @@ import { repris, useGarder } from '../../stockage';
 import { Fenetre, usePanneau } from '../../dock/Dock';
 import { MarqueAdmin, Panneau, type Onglet } from '../../dock/Panneau';
 import { ongletFicheOffre } from '../../partage/FicheOffre';
-import type { ProprietesPage } from '../liste';
+import { NOM_LAPIS, type ProprietesPage } from '../liste';
 import { decouper, useEchap, useGeste, useLecture, PaginationAller, usePagination } from '../commun';
 import { Action } from '../../elements/Action';
 import { Champ, ChampSaisie, ChampListe, Interrupteur, OptionsModele } from '../../elements/Champ';
@@ -137,16 +137,16 @@ function Galerie({ donnees, erreur, avis, dire, suivre }: ProprietesGalerie) {
 
   const lancer = () => geste(async () => {
     const r = await appeler<{ lancee: boolean }>('/briques/lapis/lancer', { methode: 'POST' });
-    dire(r.lancee ? 'Passe lancée : LAPIS lit LinkedIn, sans contacter personne.' : 'Une passe de LAPIS tourne déjà.');
+    dire(r.lancee ? `Passe lancée : ${NOM_LAPIS} lit LinkedIn, sans contacter personne.` : `Une passe de ${NOM_LAPIS} tourne déjà.`);
     void suivre();
   });
   const ouvrirOffre = (u: string) => ouvrir('offre', u);
 
   const libelle = SORTES.find(([s]) => s === sorte)?.[1] ?? '';
   return (
-    <Fenetre id="galerie" as="main" className="tableau lapis" aria-label="LAPIS" titrePrise="Glisser pour détacher la galerie de LAPIS">
+    <Fenetre id="galerie" as="main" className="tableau lapis" aria-label={NOM_LAPIS} titrePrise={`Glisser pour détacher la galerie de ${NOM_LAPIS}`}>
       <div className="outils">
-        <div className="onglets-l" role="tablist" aria-label="Ce que LAPIS a trouvé">
+        <div className="onglets-l" role="tablist" aria-label={`Ce que ${NOM_LAPIS} a trouvé`}>
           {SORTES.map(([s, nom]) => (
             <button key={s} type="button" role="tab" aria-selected={s === sorte} className={`filtre${s === sorte ? ' actif' : ''}`} onClick={() => { setSorte(s); setPage(1); }}>
               {nom}<span className="compteur">{donnees ? donnees[s].length : ''}</span>
@@ -162,7 +162,7 @@ function Galerie({ donnees, erreur, avis, dire, suivre }: ProprietesGalerie) {
         <div className="actions" role="group" aria-label="Actions">
           <ActionOnglet cle="reglages" icone={ICONES.reglages} title="Réglages">Réglages
           </ActionOnglet>
-          <Action plein iconeApres={ICONES.jouer} disabled={occupe} title="Lance chaque recherche active de LAPIS ; personne n'est contacté" onClick={() => void lancer()}>
+          <Action plein iconeApres={ICONES.jouer} disabled={occupe} title={`Lance chaque recherche active de ${NOM_LAPIS} ; personne n'est contacté`} onClick={() => void lancer()}>
             Lancer une passe
           </Action>
         </div>
@@ -222,7 +222,7 @@ function Galerie({ donnees, erreur, avis, dire, suivre }: ProprietesGalerie) {
         {(erreur || (donnees && !cartes.length)) && (
           <p className={`vide-l${erreur ? ' erreur' : ''}`} role={erreur ? 'alert' : undefined}>
             {/* Des recherches actives qui n'ont rien ramené : aucun résultat */}
-            {erreur ? `LAPIS illisible : ${erreur}` : donnees?.recherches.length ? 'Aucun résultat.' : VIDES[sorte]}
+            {erreur ? `${NOM_LAPIS} illisible : ${erreur}` : donnees?.recherches.length ? 'Aucun résultat.' : VIDES[sorte]}
           </p>
         )}
       </div>
@@ -361,7 +361,7 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
         lapis_garder: !!f.garder,
         ...(admin ? { lapis_modele: f.modele } : {}),
       } });
-      dire('Réglages de LAPIS enregistrés : ils valent dès la prochaine passe.');
+      dire(`Réglages de ${NOM_LAPIS} enregistrés : ils valent dès la prochaine passe.`);
       await Promise.all([lire(), relire()]);
     });
   };
@@ -372,7 +372,7 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
     profils_max: '25', relations: RELATIONS, mots_cles: '', posts_max: '10',
   }] } : v));
   return {
-    cle: 'reglages', titre: 'Réglages', label: 'Réglages · LAPIS',
+    cle: 'reglages', titre: 'Réglages', label: `Réglages · ${NOM_LAPIS}`,
     corps: (
       <div className="section-f lapis-reglages" onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLElement).matches('input:not([type=checkbox])') && !occupe && void enregistrer()}>
         <div className="cartes">
@@ -450,7 +450,7 @@ function useOngletReglages({ admin, actif, fermer, dire, relire }: {
 function ongletOffre(urn: string, donnees: Lapis | null, dire: Dire, suivre: () => Promise<void>): Onglet | null {
   const post = donnees?.offres.find((o) => o.urn === urn);
   // Pas encore relu : la fenêtre attend ; relu sans ce post, elle est vide.
-  if (!post) return donnees ? null : { cle: 'offre', titre: 'Offre', label: 'Offre repérée', corps: <p className="texte-f">Lecture de LAPIS…</p> };
+  if (!post) return donnees ? null : { cle: 'offre', titre: 'Offre', label: 'Offre repérée', corps: <p className="texte-f">Lecture de {NOM_LAPIS}…</p> };
   const o = post.offre;
   const entreprise = o.entreprise || post.entreprise;
   return {
@@ -479,7 +479,7 @@ function PiedOffre({ post, dire, suivre }: { post: Post; dire: Dire; suivre: () 
   const entreprise = o.entreprise || post.entreprise;
   const contacts = () => geste(async () => {
     dire((await appeler<{ lancee: boolean }>('/lapis/contacts', { methode: 'POST', corps: { post_urn: post.urn } })).lancee
-      ? "LAPIS cherche des contacts chez cet employeur ; personne n'est contacté." : 'Une passe de LAPIS tourne déjà.');
+      ? `${NOM_LAPIS} cherche des contacts chez cet employeur ; personne n'est contacté.` : `Une passe de ${NOM_LAPIS} tourne déjà.`);
     void suivre();
   });
   const ajouter = () => geste(async () => dire((await appeler<{ neuve: boolean }>('/offres', { methode: 'POST', corps: {

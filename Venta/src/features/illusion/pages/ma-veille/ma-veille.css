@@ -1,0 +1,4 @@
+/* Ajout d'un jobboard : adresse et nom côte à côte, sans prendre toute la barre */
+.ov .ma-veille .outils{gap:8px}
+.ov .ma-veille .outils .saisie{flex:0 1 320px;min-width:0}
+.ov .ma-veille .outils .saisie+.saisie{flex-basis:200px}

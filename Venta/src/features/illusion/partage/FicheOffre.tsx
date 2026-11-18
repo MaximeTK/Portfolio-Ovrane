@@ -11,6 +11,7 @@ import { LibelleValeur } from '../elements/Champ';
 import { AvisBref, type Avis } from '../elements/Avis';
 import { dateUtc, dollars, dureeOuTiret, jourEtHeure, jourMoisIso, libelleSource, lienSur, message, MOTIFS, nomFichier, nomProfil } from '../elements/format';
 import { ICONES } from '../elements/icones';
+import { NOM_LAPIS } from '../pages/liste';
 
 // Ce que rend /offres/{cle}/dossier : offre, candidature, courrier et suites
 type Offre = {
@@ -310,10 +311,10 @@ function CorpsFiche({ cle, ajouterAuProfil }: { cle: string; ajouterAuProfil?: (
           <ul className="liste-f">{d.contacts.map((c) => (
             <li key={c.profil_url}>{lienSur(c.profil_url) ? <a className="lien" href={lienSur(c.profil_url)} target="_blank" rel="noopener noreferrer">{c.nom}</a> : c.nom}<span className="d">{c.titre}</span></li>
           ))}</ul>
-        ) : <p className="texte-f">LAPIS cherche chez l&apos;employeur les personnes aux postes réglés pour LAPIS ; personne n&apos;est contacté.</p>}
+        ) : <p className="texte-f">{NOM_LAPIS} cherche chez l&apos;employeur les personnes aux postes réglés dans {NOM_LAPIS} ; personne n&apos;est contacté.</p>}
         <Action disabled={occupe === 'lapis'} onClick={() => agir('lapis', async () => {
           const r = await poster('/lapis/contacts', { offre_cle: cle });
-          return r.lancee ? 'LAPIS cherche des contacts chez cet employeur : ils apparaîtront ici.' : 'Une passe de LAPIS tourne déjà.';
+          return r.lancee ? `${NOM_LAPIS} cherche des contacts chez cet employeur : ils apparaîtront ici.` : `Une passe de ${NOM_LAPIS} tourne déjà.`;
         })}>Chercher des contacts</Action>
       </Bloc>
       {envoi?.statut === 'POSTULEE' && (

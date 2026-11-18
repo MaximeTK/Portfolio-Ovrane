@@ -231,7 +231,8 @@ function Veille() {
                   key={`${j.url}-${i}`} className={`${j.actif ? '' : 'eteint'}${onglet === 'jobboard' && objet === j.url ? ' actif' : ''}`}
                   aria-label={`Jobboard ${j.nom || j.url} : ouvrir`} {...ouvrable('jobboard', j.url, () => ouvrir('jobboard', j.url))}
                 >
-                  <b>{j.nom || 'Sans nom'}{j.siren && <span className="tag-f">fiche</span>}</b>
+                  <b>{j.nom || 'Sans nom'}{j.siren && <span className="tag-f">fiche</span>}
+                    {j.illusion === false && <span className="tag-f" title={`Ajouté depuis Ma veille par ${j.utilisateurs?.join(', ')}`}>{j.utilisateurs?.length ?? 0} compte{(j.utilisateurs?.length ?? 0) > 1 ? 's' : ''}</span>}</b>
                   <span className="d" title={j.url}>{j.url.replace(/^https?:\/\/(www\.)?/i, '')}</span>
                   <span>{j.veille ? 'pendant la veille' : 'cycle des jobboards'}</span>
                   <label className="inter" onClick={(e) => e.stopPropagation()}>

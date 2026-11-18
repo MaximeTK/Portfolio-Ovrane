@@ -59,20 +59,6 @@ const GROUPES: Groupe[] = [
       { cle: 'liens_suivis', libelle: 'Suivre les liens des CV', sorte: 'inter', aide: "À n'activer qu'une fois Ovrane déployé avec ses routes « redirectgithub » et « redirectportfolio », et la base partagée renseignée. Les CV déjà envoyés gardent leurs liens." },
       { cle: 'ovrane_url', libelle: 'Adresse du portfolio', sorte: 'texte', aide: 'Celle que portent les liens des CV.' },
     ] }] },
-  { cle: 'lapis', titre: 'LAPIS',
-    aide: "Les posts les plus récents de chaque recherche, lus dans le navigateur piloté et rangés par le modèle, puis, chez les employeurs qu'ils nomment, les personnes aux postes cherchés. Le programme lit et défile seulement : aucune demande de connexion, aucun message.",
-    sections: [
-      { titre: 'Recherches', champs: [
-        { cle: 'lapis_recherches', libelle: 'Recherches de posts', sorte: 'liste', aide: 'Comme les recherches de la veille. Vide : les intitulés cherchés des profils de recherche menés.' },
-        { cle: 'lapis_postes', libelle: 'Postes à chercher', sorte: 'liste', aide: 'Tapés un par un dans la page « Personnes » de chaque employeur.' },
-      ] },
-      { titre: 'Volumes', champs: [
-        { cle: 'lapis_posts_par_recherche', libelle: 'Posts par recherche', sorte: 'nombre', min: 0, aide: 'Les plus récents d’abord. LinkedIn surveille les volumes : mieux vaut peu et souvent.' },
-        { cle: 'lapis_personnes_par_poste', libelle: 'Personnes par poste', sorte: 'nombre', min: 0 },
-        { cle: 'lapis_entreprises_par_passe', libelle: 'Employeurs par passe', sorte: 'nombre', min: 0, aide: 'Pris dans les posts lus ; un employeur fouillé il y a moins de deux semaines attend. 0 : aucun.' },
-        { cle: 'lapis_modele', libelle: 'Modèle', sorte: 'modele', admin: true, vide: 'Aucun : celui des mails', aide: 'Celui qui lit les posts : offre, événement ou autre, et l’employeur dont ils parlent.' },
-      ] },
-    ] },
   { cle: 'appels', titre: 'Appels',
     aide: "Les appels transcrits en direct par AssemblyAI, chaque voix séparée, puis analysés. AssemblyAI facture à la durée de la session ; seul le texte est gardé, jamais l'audio.",
     sections: [{ titre: 'RUBY', champs: [
