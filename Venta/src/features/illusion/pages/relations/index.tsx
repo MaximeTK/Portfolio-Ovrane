@@ -9,7 +9,7 @@ import { AuPied, Confirmer, Panneau, type Elements, type Onglet } from '../../do
 import type { ProprietesPage } from '../liste';
 import { useEchap, useGeste } from '../commun';
 import { Action } from '../../elements/Action';
-import { Champ, SectionFiche } from '../../elements/Champ';
+import { Champ, Interrupteur, SectionFiche } from '../../elements/Champ';
 import { ICONES } from '../../elements/icones';
 import { useAvis, type Dire } from '../../elements/Avis';
 import { jourMois, message, parVirgules, quand } from '../../elements/format';
@@ -188,6 +188,58 @@ function Nuage({ donnees, avis, dire, relire }: ProprietesNuage) {
     dire(`${nom} : ${b.crees} créée(s), ${b.completees} complétée(s), ${b.deja} déjà là.`);
     await relire();
   });
+  // Lues sur LinkedIn par Ovrane en tâche de LAPIS : la page en attend la fin
+  const importerCompte = () => geste(async () => {
+    const r = await appeler<{ lancee: boolean }>('/relations/importer/compte', { methode: 'POST' });
+    if (!r.lancee) return dire("LAPIS lit déjà LinkedIn : relancez l'import à la fin de sa passe.", true);
+    dire('LinkedIn : lecture de vos relations par Ovrane, à rythme humain…');
+    let fini = false;
+    while (!fini) fini = (await appeler<{ fini: boolean }>('/lapis/attendre')).fini;
+    const b = await appeler<{ lues?: number; crees?: number; completees?: number; deja?: number; erreur?: string }>('/relations/importer/compte');
+    dire(`LinkedIn : ${b.lues ?? 0} relation(s) lue(s), ${b.crees ?? 0} créée(s), ${b.completees ?? 0} complétée(s), ${b.deja ?? 0} déjà là`
+      + (b.erreur ? ` — ${b.erreur}.` : '.'), !!b.erreur);
+    await relire();
+  });
+
+  // Mails et appels branchés : le réglage, et l'actualisation qu'il lance
+  const [auto, setAuto] = useState<boolean | null>(null);
+  const [actualise, setActualise] = useState(false);
+  const suivre = useCallback(async () => {
+    setActualise(true);
+    try {
+      let fini = false;
+      while (!fini) fini = (await appeler<{ fini: boolean }>('/relations/attendre')).fini;
+      const b = (await appeler<{ bilan: { mails?: number; appels?: number; crees?: number; completees?: number; erreur?: string } }>('/relations/actualiser')).bilan;
+      if (b.mails !== undefined) dire(`Mails et appels : ${b.mails} mail(s) et ${b.appels ?? 0} appel(s) lus, ${b.crees ?? 0} personne(s) créée(s), ${b.completees ?? 0} complétée(s)`
+        + (b.erreur ? ` — ${b.erreur}.` : '.'), !!b.erreur);
+      await relire();
+    } catch (e) {
+      dire(message(e), true);
+    } finally {
+      setActualise(false);
+    }
+  }, [dire, relire]);
+  // À l'arrivée : le réglage, et une actualisation déjà en cours se suit
+  useEffect(() => {
+    appeler<{ relations_auto?: boolean }>('/parametres').then((p) => setAuto(!!p.relations_auto)).catch(() => setAuto(false));
+    appeler<{ en_cours: boolean }>('/relations/actualiser').then((e) => e.en_cours && void suivre()).catch(() => undefined);
+  }, [suivre]);
+  const actualiser = async () => {
+    const r = await appeler<{ lancee: boolean; mails: number; appels: number }>('/relations/actualiser', { methode: 'POST' });
+    dire(r.lancee ? `Actualisation : ${r.mails} mail(s) et ${r.appels} appel(s) à lire.` : 'Une actualisation tourne déjà.');
+    void suivre();
+  };
+  const basculer = async (oui: boolean) => {
+    setAuto(oui);
+    try {
+      await appeler('/parametres', { methode: 'PUT', corps: { relations_auto: oui } });
+      if (oui) await actualiser();
+      else dire('Mails et appels : Relations ne se remplit plus seul.');
+    } catch (e) {
+      setAuto(!oui);
+      dire(message(e), true);
+    }
+  };
   const eteinte = (n: number) => !!cherche && !trouvees.some((p) => p.numero === n);
   const montrees = new Set(trouvees.length <= 40 ? trouvees.map((p) => p.numero) : []);
 
@@ -199,7 +251,15 @@ function Nuage({ donnees, avis, dire, relire }: ProprietesNuage) {
         </label>
         <span className="espace" />
         <div className="actions" role="group" aria-label="Actions">
-          <Action icone={ICONES.televerser_relations} txt title="L'export « Connections.csv » de vos données LinkedIn" disabled={occupe} onClick={() => fichier.current?.click()}>Importer Connections.csv
+          <Interrupteur libelle="Mails et appels" checked={!!auto} disabled={auto === null}
+            title="Activé : chaque mail et appel remplit Relations avec les personnes qu'il nomme et ce qu'il en apprend, lu une seule fois. À l'activation, ceux d'avant sont lus."
+            onChange={(e) => void basculer(e.target.checked)} />
+          <Action icone={ICONES.reprendre} txt disabled={!auto || actualise} title="Lit les mails et appels pas encore lus pour Relations" onClick={() => void actualiser().catch((e) => dire(message(e), true))}>
+            {actualise ? 'Actualisation…' : 'Actualiser'}
+          </Action>
+          <Action icone={ICONES.importer} txt title="Lit votre liste de relations sur LinkedIn par Ovrane, à rythme humain : nom, titre, employeur, profil et date de connexion." disabled={occupe} onClick={() => void importerCompte()}>Importer depuis LinkedIn
+          </Action>
+          <Action icone={ICONES.televerser_relations} txt title="Un fichier que LinkedIn vous envoie sur demande : Préférences et confidentialité → Confidentialité des données → Obtenir une copie de vos données → Relations. Il arrive par e-mail, de quelques minutes à 24 h après." disabled={occupe} onClick={() => fichier.current?.click()}>Importer Connections.csv
           </Action>
           <input ref={fichier} type="file" accept=".csv,text/csv" hidden aria-label="Fichier Connections.csv" onChange={(e) => {
             const lu = e.target.files?.[0];
@@ -224,7 +284,7 @@ function Nuage({ donnees, avis, dire, relire }: ProprietesNuage) {
       )}
       <div className="nuage-r" ref={zone}>
         {donnees && !personnes.length ? (
-          <p className="vide-r"><b>Aucune relation pour l&apos;instant.</b>Ajoutez une personne, ou importez vos contacts LinkedIn (« Connections.csv » de l&apos;export de vos données).</p>
+          <p className="vide-r"><b>Aucune relation pour l&apos;instant.</b>Ajoutez une personne, ou importez vos relations LinkedIn.</p>
         ) : (
           <svg ref={svg} className={glisse ? 'glisse' : undefined} viewBox={`${courante.x} ${courante.y} ${courante.l} ${courante.h}`} preserveAspectRatio="xMidYMid meet"
             role="group" aria-label="Nuage de vos relations : un point par personne, coloré par sa première étiquette"
